@@ -26,6 +26,7 @@ Param(
     [switch] $NoDynamicPGO,
     [switch] $PhysicalPromotion,
     [switch] $NoR2R,
+    [switch] $MemoryRandomization,
     [string] $ExperimentName,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
@@ -98,6 +99,11 @@ if ($NoR2R) {
     $Configurations += " R2RType=nor2r"
 }
 
+if ($MemoryRandomization) {
+    $Configurations += " MemoryRandomization=true"
+    $ExtraBenchmarkDotNetArguments += " --memory-randomization true"
+}
+
 if ($ExperimentName) {
     $Configurations += " ExperimentName=$ExperimentName"
 }
@@ -134,6 +140,10 @@ if ($PhysicalPromotion) {
 
 if ($NoR2R) {
     $SetupArguments = "$SetupArguments --no-r2r"
+}
+
+if ($MemoryRandomization) {
+    $SetupArguments = "$SetupArguments --memory-randomization"
 }
 
 if ($ExperimentName) {

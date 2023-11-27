@@ -161,6 +161,10 @@ while (($# > 0)); do
       nor2r=true
       shift 1
       ;;
+    --memoryrandomization)
+      memoryrandomization=true
+      shift 1
+      ;;
     --experimentname)
       experimentname=$2
       shift 2
@@ -258,6 +262,7 @@ while (($# > 0)); do
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
       echo "  --physicalpromotion            Set for runs with physical promotion"
       echo "  --nor2r                        Set for No R2R runs"
+      echo "  --memoryrandomization          Set for memory randomization runs"
       echo "  --experimentname <value>       Set Experiment Name"
       echo ""
       exit 1
@@ -383,6 +388,11 @@ fi
 
 if [[ "$nor2r" == "true" ]]; then
     configurations="$configurations R2RType=nor2r"
+fi
+
+if [[ "$memoryrandomization" == "true" ]]; then
+    configurations="$configurations MemoeryRandomization=true"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memory-randomization true"
 fi
 
 if [[ ! -z "$experimentname" ]]; then

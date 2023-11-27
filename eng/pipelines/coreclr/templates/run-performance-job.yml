@@ -19,6 +19,7 @@ parameters:
   pgoRunType: ''                  # optional -- different PGO configurations
   physicalPromotionRunType: ''    # optional -- different physical promotion configurations
   r2rRunType: ''                  # optional -- different R2R configurations
+  memoryRandomization: ''         # optional -- memory randomization
   experimentName: ''              # optional -- name of the experiment
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
