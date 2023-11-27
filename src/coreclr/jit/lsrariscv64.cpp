@@ -402,6 +402,41 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_LE:
         case GT_GE:
         case GT_GT:
+        {
+            var_types op1Type = genActualType(tree->gtGetOp1()->TypeGet());
+            if (varTypeIsFloating(op1Type))
+            {
+                bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+                if (isUnordered)
+                {
+                    if (tree->OperIs(GT_EQ))
+                        buildInternalIntRegisterDefForNode(tree);
+                }
+                else
+                {
+                    if (tree->OperIs(GT_NE))
+                        buildInternalIntRegisterDefForNode(tree);
+                }
+            }
+            else
+            {
+                emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+                if (tree->gtGetOp2()->isContainedIntOrIImmed())
+                {
+                    bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
+                    if (cmpSize == EA_4BYTE && isUnsigned)
+                        buildInternalIntRegisterDefForNode(tree);
+                }
+                else
+                {
+                    if (cmpSize == EA_4BYTE)
+                        buildInternalIntRegisterDefForNode(tree);
+                }
+            }
+            buildInternalRegisterUses();
+        }
+            [[fallthrough]];
+
         case GT_JCMP:
             srcCount = BuildCmp(tree);
             break;
