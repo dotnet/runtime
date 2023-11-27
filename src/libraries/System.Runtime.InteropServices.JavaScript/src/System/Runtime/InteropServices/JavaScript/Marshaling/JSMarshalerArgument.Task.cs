@@ -172,20 +172,20 @@ namespace System.Runtime.InteropServices.JavaScript
 
             static void Complete(Task task, object? th)
             {
-                var _taskHolder = (JSObject)th!;
+                var taskHolderArg = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(_taskHolder, task.Exception);
+                    RejectPromise(taskHolderArg, task.Exception);
                 }
                 else
                 {
                     if (GetTaskResultDynamic(task, out object? result))
                     {
-                        ResolvePromise(_taskHolder, result, MarshalResult);
+                        ResolvePromise(taskHolderArg, result, MarshalResult);
                     }
                     else
                     {
-                        ResolveVoidPromise(_taskHolder);
+                        ResolveVoidPromise(taskHolderArg);
                     }
                 }
             }
@@ -241,14 +241,14 @@ namespace System.Runtime.InteropServices.JavaScript
 
             static void Complete(Task task, object? th)
             {
-                JSObject _taskHolder = (JSObject)th!;
+                JSObject taskHolderArg = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(_taskHolder, task.Exception);
+                    RejectPromise(taskHolderArg, task.Exception);
                 }
                 else
                 {
-                    ResolveVoidPromise(_taskHolder);
+                    ResolveVoidPromise(taskHolderArg);
                 }
             }
         }
