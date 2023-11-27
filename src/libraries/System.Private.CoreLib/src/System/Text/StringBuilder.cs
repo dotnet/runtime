@@ -1847,7 +1847,7 @@ namespace System.Text
         /// <param name="oldValue">The read-only character span to replace.</param>
         /// <param name="newValue">The read-only character span to replace <paramref name="oldValue"/> with.</param>
         /// <remarks>
-        /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
+        /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
         public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) => Replace(oldValue, newValue, 0, Length);
@@ -1974,7 +1974,7 @@ namespace System.Text
         /// <param name="startIndex">The index to start in this builder.</param>
         /// <param name="count">The number of characters to read in this builder.</param>
         /// <remarks>
-        /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
+        /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
         public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count)
