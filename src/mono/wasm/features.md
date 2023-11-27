@@ -368,6 +368,14 @@ You can add following elements in your .csproj
 </PropertyGroup>
 ```
 
+### Debugging non-debug configuration
+If you want to debug the application in other than Debug configuration, you need to set MSBuild property `DebuggerSupport` to `true` (globally or with condition for that particular configuration).
+```xml
+<PropertyGroup Condition="'$(Configuration)' == '[DESIRED CONFIGURATION NAME]'">
+  <DebuggerSupport>true</DebuggerSupport>
+</PropertyGroup>
+```
+
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
 For more details see also [debugger.md](debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
