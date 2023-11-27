@@ -1349,13 +1349,13 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) => Add(left, right);
         /// <summary>
-        /// __m512d _mm_add_sd (__m128d a, __m128d b)
-        ///   VADDSD xmm1 {k1}{z}, xmm2, xmm3/m128/m64{er}
-        /// </summary>
-        public static Vector128<double> AddScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => AddScalar(left, right, mode);
-        /// <summary>
         /// __m512d _mm_add_ss (__m128d a, __m128d b)
         ///   VADDSD xmm1 {k1}{z}, xmm2, xmm3/m128/m32{er}
+        /// </summary>
+        public static Vector128<float> AddScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => AddScalar(left, right, mode);
+        /// <summary>
+        /// __m512d _mm_add_sd (__m128d a, __m128d b)
+        ///   VADDSD xmm1 {k1}{z}, xmm2, xmm3/m128/m64{er}
         /// </summary>
         public static Vector128<double> AddScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => AddScalar(left, right, mode);
         /// <summary>
@@ -2844,12 +2844,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm128_mul_ss (__m128 a, __m128 b)
         ///   VMULSS xmm1 {k1}{z}, xmm2, xmm3{er}
         /// </summary>
-        public static Vector512<float> MultiplyScalar(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => MultiplyScalar(left, right, mode);
+        public static Vector128<float> MultiplyScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => MultiplyScalar(left, right, mode);
         /// <summary>
         /// __m128 _mm128_mul_sd (__m128 a, __m128 b)
         ///   VMULSD xmm1 {k1}{z}, xmm2, xmm3{er}
         /// </summary>
-        public static Vector512<double> MultiplyScalar(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => MultiplyScalar(left, right, mode);
+        public static Vector128<double> MultiplyScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => MultiplyScalar(left, right, mode);
         /// <summary>
         /// __m512i _mm512_mullo_epi32 (__m512i a, __m512i b)
         ///   VPMULLD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
@@ -3659,12 +3659,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128d _mm_sub_ss (__m128 a, __m128 b)
         ///   VSUBSS xmm1 {k1}{z}, xmm2, xmm3{er}
         /// </summary>
-        public static Vector512<float> SubtractScalar(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => SubtractScalar(left, right, mode);
+        public static Vector128<float> SubtractScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => SubtractScalar(left, right, mode);
         /// <summary>
         /// __m128d _mm_sub_sd (__m128 a, __m128 b)
         ///   VSUBSD xmm1 {k1}{z}, xmm2, xmm3{er}
         /// </summary>
-        public static Vector512<double> SubtractScalar(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => SubtractScalar(left, right, mode);
+        public static Vector128<double> SubtractScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => SubtractScalar(left, right, mode);
 
         /// <summary>
         /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, int imm)
