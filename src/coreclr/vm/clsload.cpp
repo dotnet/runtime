@@ -2057,6 +2057,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
 
     if (TypeFromToken(typeDefOrRefOrSpec) == mdtTypeSpec)
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefOrSpecThrowing / mdTypeSpec");
+        
         ULONG cSig;
         PCCOR_SIGNATURE pSig;
 
@@ -2083,6 +2085,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
     }
     else
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefOrSpecThrowing / LoadTypeDefOrRefThrowing");
+
         RETURN (LoadTypeDefOrRefThrowing(pModule, typeDefOrRefOrSpec,
                                          fNotFoundAction,
                                          fUninstantiated,
@@ -2289,6 +2293,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                                                  mdToken tokenNotToLoad,
                                                  ClassLoadLevel level)
 {
+    INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing");
 
     CONTRACT(TypeHandle)
     {
@@ -2358,6 +2363,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
 
         else if (tokType == mdtTypeRef)
         {
+            INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing / TypeRef");
+
             BOOL fNoResolutionScope;
             Module *pFoundModule = Assembly::FindModuleByTypeRef(pModule, typeDefOrRef,
                                                                  tokenNotToLoad==tdAllTypes ?
@@ -2384,6 +2391,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                 {
                     if (fNoResolutionScope && pFoundModule->IsFullModule())
                     {
+                        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing / LoadTypeByNameThrowing");
+
                         // Everett C++ compiler can generate a TypeRef with RS=0
                         // without respective TypeDef for unmanaged valuetypes,
                         // referenced only by pointers to them,
@@ -2403,6 +2412,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                     }
                     else
                     {
+                        INSTRUMENTED_METHOD("ClassLoader::LoadTypeDefOrRefThrowing / LoadTypeHandleThrowIfFailed");
+                        
                         NameHandle nameHandle(pModule, typeDefOrRef);
                         nameHandle.SetName(pszNameSpace, pszClassName);
                         nameHandle.SetTokenNotToLoad(tokenNotToLoad);

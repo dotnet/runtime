@@ -99,20 +99,32 @@ void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, in
 
 void InstrumentedMethod::DumpAllTiming()
 {
-    int64_t sumCount = 0;
-    int64_t sumTicks = 0;
-
-    for (InstrumentedMethod *list = s_list; list != nullptr; list = list->_next)
+    const InstrumentedMethod *minMethod = nullptr;
+    const InstrumentedMethod *nextMethod;
+    do
     {
-        list->DumpTiming();
-        sumCount += list->_count;
-        sumTicks += list->_ticks;
+        nextMethod = nullptr;
+        for (InstrumentedMethod *list = s_list; list != nullptr; list = list->_next)
+        {
+            if (minMethod != nullptr && strcmp(list->_methodName, minMethod->_methodName) <= 0)
+            {
+                continue;
+            }
+            if (nextMethod == nullptr || strcmp(list->_methodName, nextMethod->_methodName) < 0)
+            {
+                nextMethod = list;
+            }
+        }
+        if (nextMethod != nullptr)
+        {
+            nextMethod->DumpTiming();
+            minMethod = nextMethod;
+        }
     }
-
-    DumpTimingInfo("InstrumentedMethod", 0, sumCount, sumTicks);
+    while (nextMethod != nullptr);
 }
 
-void InstrumentedMethod::DumpTiming()
+void InstrumentedMethod::DumpTiming() const
 {
 #if !defined(DACCESS_COMPILE)
     DumpTimingInfo(_methodName, 0, _count, _ticks);
@@ -9379,6 +9391,8 @@ bool InstantiationIsAllTypeVariables(const Instantiation &inst)
 void
 MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 {
+    INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap");
+    
     CONTRACTL
     {
         STANDARD_VM_CHECK;
@@ -9445,6 +9459,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     DWORD nAssigned = 0;
     do
     {
+        INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / do-while retry");
+
         nAssigned = 0;
         retry = false;
         duplicates = false;
@@ -9459,6 +9475,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
         InterfaceImplEnum ie(pMT->GetModule(), pMT->GetCl(), NULL);
         while ((hr = ie.Next()) == S_OK)
         {
+            INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / do-while retry / LoadTypeDefOrRefOrSpecThrowing");
+
             MethodTable *pNewIntfMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pMT->GetModule(),
                                                                                 ie.CurrentToken(),
                                                                                 &typeContext,
@@ -9484,6 +9502,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
                     if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
                     {
+                        INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / HasInstantiation && ContainsGenericVariables");
+                        
                         // We allow a limited set of interface generic shapes with type variables. In particular, we require the
                         // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
                         // so that the fallback instantiating logic works efficiently
@@ -9535,6 +9555,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)
     {
+        INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / duplicates");
+
         //#LoadExactInterfaceMap_Algorithm2
         // Exact interface instantiation loading TECHNIQUE 2 - The exact instantiation has caused some duplicates to
         // appear in the interface map!  This may not be an error: if the duplicates were ones that arose because of

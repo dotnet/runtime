@@ -436,7 +436,7 @@ public:
     void Add(int64_t ticks);
     
 private:
-    void DumpTiming();
+    void DumpTiming() const;
 };
 
 #ifndef DACCESS_COMPILE

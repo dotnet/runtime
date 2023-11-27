@@ -1060,6 +1060,8 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 
     if (pParentMT != NULL && pParentMT->HasInstantiation())
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadExactParentAndInterfacesTransitively / LoadTypeDefOrRefOrSpecThrowing");
+        
         // Fill in exact parent if it's instantiated
         mdToken crExtends;
         IfFailThrow(pInternalImport->GetTypeDefProps(
@@ -1090,12 +1092,15 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 
     if (pParentMT != NULL)
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadExactParentAndInterfacesTransitively / EnsureLoaded");
         EnsureLoaded(pParentMT, CLASS_LOAD_EXACTPARENTS);
     }
 
 
     if (pParentMT != NULL && pParentMT->HasPerInstInfo())
     {
+        INSTRUMENTED_METHOD("ClassLoader::LoadExactParentAndInterfacesTransitively / CopyDictionaryPointers");
+
         // Copy down all inherited dictionary pointers which we
         // could not embed.
         DWORD nDicts = pParentMT->GetNumDicts();
@@ -1108,7 +1113,10 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
         }
     }
 
-    MethodTableBuilder::LoadExactInterfaceMap(pMT);
+    {
+        INSTRUMENTED_METHOD("ClassLoader::LoadExactParentAndInterfacesTransitively / LoadExactInterfaceMap");
+        MethodTableBuilder::LoadExactInterfaceMap(pMT);
+    }
 
 #ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(pMT->GetDebugClassName()))
