@@ -1263,18 +1263,54 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
-            /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
-            ///   VCVTUSI2SS xmm1, xmm2, r/m64
+            /// __m128d _mm_cvtsi64_sd (__m128d a, __int64 b)
+            ///   VCVTUSI2SD xmm1, xmm2, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
-            public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, ulong value) => ConvertScalarToVector128Single(upper, value);
+            public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, long value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Double(upper, value, mode);
             /// <summary>
             /// __m128d _mm_cvtsi64_sd (__m128d a, __int64 b)
             ///   VCVTUSI2SD xmm1, xmm2, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, ulong value) => ConvertScalarToVector128Double(upper, value);
+            /// <summary>
+            /// __m128d _mm_cvtsi64_sd (__m128d a, __int64 b)
+            ///   VCVTUSI2SD xmm1, xmm2, r/m64
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, ulong value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Double(upper, value, mode);
+            /// <summary>
+            /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
+            ///   VCVTUSI2SS xmm1, xmm2, r/m64
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Single(upper, value, mode);
+            /// <summary>
+            /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
+            ///   VCVTUSI2SS xmm1, xmm2, r/m64
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, ulong value) => ConvertScalarToVector128Single(upper, value);
+            /// <summary>
+            /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
+            ///   VCVTUSI2SS xmm1, xmm2, r/m64
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, ulong value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Single(upper, value, mode);
 
+            /// <summary>
+            /// unsigned __int64 _mm_cvtss_u64 (__m128 a)
+            ///   VCVTSS2USI r64, xmm1/m32{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static long ConvertToInt64(Vector128<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToInt64(value, mode);
+            /// <summary>
+            /// unsigned __int64 _mm_cvtsd_u64 (__m128d a)
+            ///   VCVTSD2USI r64, xmm1/m64{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static long ConvertToInt64(Vector128<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToInt64(value, mode);
             /// <summary>
             /// unsigned __int64 _mm_cvtss_u64 (__m128 a)
             ///   VCVTSS2USI r64, xmm1/m32{er}
@@ -1286,7 +1322,19 @@ namespace System.Runtime.Intrinsics.X86
             ///   VCVTSD2USI r64, xmm1/m64{er}
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
+            public static ulong ConvertToUInt64(Vector128<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToUInt64(value, mode);
+            /// <summary>
+            /// unsigned __int64 _mm_cvtsd_u64 (__m128d a)
+            ///   VCVTSD2USI r64, xmm1/m64{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
             public static ulong ConvertToUInt64(Vector128<double> value) => ConvertToUInt64(value);
+            /// <summary>
+            /// unsigned __int64 _mm_cvtsd_u64 (__m128d a)
+            ///   VCVTSD2USI r64, xmm1/m64{er}
+            /// This intrinsic is only available on 64-bit processes
+            /// </summary>
+            public static ulong ConvertToUInt64(Vector128<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToUInt64(value, mode);
 
             /// <summary>
             /// unsigned __int64 _mm_cvttss_u64 (__m128 a)
@@ -1348,6 +1396,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
         /// </summary>
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) => Add(left, right);
+        /// <summary>
+        /// __m512 _mm512_add_ps (__m512 a, __m512 b)
+        ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Add(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Add(left, right, mode);
         /// <summary>
         /// __m512d _mm_add_ss (__m128d a, __m128d b)
         ///   VADDSD xmm1 {k1}{z}, xmm2, xmm3/m128/m32{er}
@@ -1842,21 +1895,59 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, uint value) => ConvertScalarToVector128Single(upper, value);
         /// <summary>
+        /// __m128 _mm_cvtsi64_ss (__m128 a, __int32 b)
+        ///   VCVTUSI2SS xmm1, xmm2, r/m64
+        /// This intrinsic is only available on 64-bit processes
+        /// </summary>
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, int value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Single(upper, value, mode);
+        /// <summary>
+        /// __m128 _mm_cvtsi64_ss (__m128 a, __m128 b)
+        ///   VCVTUSI2SS xmm1, xmm2, r/m64
+        /// This intrinsic is only available on 64-bit processes
+        /// </summary>
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, Vector128<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Single(upper, value, mode);
+        /// <summary>
         /// __m128d _mm_cvtsi32_sd (__m128d a, int b)
         ///   VCVTUSI2SD xmm1, xmm2, r/m32
         /// </summary>
         public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, uint value) => ConvertScalarToVector128Double(upper, value);
+        /// <summary>
+        /// __m128d _mm_cvtsi64_sd (__m128d a,__m128 b)
+        ///   VCVTUSI2SD xmm1, xmm2, r/m64
+        /// This intrinsic is only available on 64-bit processes
+        /// </summary>
+        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, Vector128<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Double(upper, value, mode);
 
+        /// <summary>
+        /// unsigned __int64 _mm_cvtss_u64 (__m128 a)
+        ///   VCVTSS2USI r64, xmm1/m32{er}
+        /// </summary>
+        public static int ConvertToInt32(Vector128<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToInt32(value, mode);
+        /// <summary>
+        /// unsigned __int64 _mm_cvtss_u64 (__m128 a)
+        ///   VCVTSS2USI r64, xmm1/m32{er}
+        /// </summary>
+        public static int ConvertToInt32(Vector128<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToInt32(value, mode);
         /// <summary>
         /// unsigned int _mm_cvtss_u32 (__m128 a)
         ///   VCVTSS2USI r32, xmm1/m32{er}
         /// </summary>
         public static uint ConvertToUInt32(Vector128<float> value) => ConvertToUInt32(value);
         /// <summary>
+        /// unsigned int _mm_cvtss_u32 (__m128 a)
+        ///   VCVTSS2USI r32, xmm1/m32{er}
+        /// </summary>
+        public static uint ConvertToUInt32(Vector128<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToUInt32(value, mode);
+        /// <summary>
         /// unsigned int _mm_cvtsd_u32 (__m128d a)
         ///   VCVTSD2USI r32, xmm1/m64{er}
         /// </summary>
         public static uint ConvertToUInt32(Vector128<double> value) => ConvertToUInt32(value);
+        /// <summary>
+        /// unsigned int _mm_cvtsd_u32 (__m128d a)
+        ///   VCVTSD2USI r32, xmm1/m64{er}
+        /// </summary>
+        public static uint ConvertToUInt32(Vector128<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToUInt32(value, mode);
         /// <summary>
         /// unsigned int _mm_cvttss_u32 (__m128 a)
         ///   VCVTTSS2USI r32, xmm1/m32{er}
@@ -1984,6 +2075,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<int> ConvertToVector256Int32(Vector512<double> value) => ConvertToVector256Int32(value);
         /// <summary>
+        /// __m256i _mm512_cvtpd_epi32 (__m512d a)
+        ///   VCVTPD2DQ ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector256<int> ConvertToVector256Int32(Vector512<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector256Int32(value, mode);
+        /// <summary>
         /// __m256i _mm512_cvtepi64_epi32 (__m512i a)
         ///   VPMOVQD ymm1/m256 {k1}{z}, zmm2
         /// </summary>
@@ -2010,6 +2106,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPD2PS ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
         public static Vector256<float> ConvertToVector256Single(Vector512<double> value) => ConvertToVector256Single(value);
+        /// <summary>
+        /// __m256 _mm512_cvtpd_ps (__m512d a)
+        ///   VCVTPD2PS ymm1,         zmm2/m512
+        ///   VCVTPD2PS ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector256<float> ConvertToVector256Single(Vector512<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector256Single(value, mode);
 
         /// <summary>
         /// __m256i _mm512_cvtepi32_epi16 (__m512i a)
@@ -2032,6 +2134,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPD2UDQ ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
         /// </summary>
         public static Vector256<uint> ConvertToVector256UInt32(Vector512<double> value) => ConvertToVector256UInt32(value);
+        /// <summary>
+        /// __m256i _mm512_cvtpd_epu32 (__m512d a)
+        ///   VCVTPD2UDQ ymm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector256<uint> ConvertToVector256UInt32(Vector512<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector256UInt32(value, mode);
         /// <summary>
         /// __m256i _mm512_cvtepi64_epi32 (__m512i a)
         ///   VPMOVQD ymm1/m256 {k1}{z}, zmm2
@@ -2064,6 +2171,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<double> ConvertToVector512Double(Vector256<float> value) => ConvertToVector512Double(value);
         /// <summary>
+        /// __m512d _mm512_cvtps_pd (__m256 a)
+        ///   VCVTPS2PD zmm1 {k1}{z}, ymm2/m256/m32bcst{sae}
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Double(value, mode);
+        /// <summary>
         /// __m512d _mm512_cvtepu32_pd (__m256i a)
         ///   VCVTUDQ2PD zmm1 {k1}{z}, ymm2/m256/m32bcst
         /// </summary>
@@ -2093,6 +2205,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
         /// </summary>
         public static Vector512<int> ConvertToVector512Int32(Vector512<float> value) => ConvertToVector512Int32(value);
+        /// <summary>
+        /// __m512i _mm512_cvtps_epi32 (__m512 a)
+        ///   VCVTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<int> ConvertToVector512Int32(Vector512<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Int32(value, mode);
         /// <summary>
         /// __m512i _mm512_cvttps_epi32 (__m512 a)
         ///   VCVTTPS2DQ zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
@@ -2134,6 +2251,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> ConvertToVector512Single(Vector512<int> value) => ConvertToVector512Single(value);
         /// <summary>
+        /// __m512 _mm512_cvtepi32_ps (__m512i a)
+        ///   VCVTDQ2PS zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> ConvertToVector512Single(Vector512<int> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Single(value, mode);
+        /// <summary>
         /// __m512 _mm512_cvtepu32_ps (__m512i a)
         ///   VCVTUDQ2PS zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
         /// </summary>
@@ -2163,6 +2285,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPS2UDQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
         /// </summary>
         public static Vector512<uint> ConvertToVector512UInt32(Vector512<float> value) => ConvertToVector512UInt32(value);
+        /// <summary>
+        /// __m512i _mm512_cvtps_epu32 (__m512 a)
+        ///   VCVTPS2UDQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<uint> ConvertToVector512UInt32(Vector512<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512UInt32(value, mode);
         /// <summary>
         /// __m512i _mm512_cvttps_epu32 (__m512 a)
         ///   VCVTTPS2UDQ zmm1 {k1}{z}, zmm2/m512/m32bcst{er}
@@ -2832,12 +2959,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> Multiply(Vector512<double> left, Vector512<double> right) => Multiply(left, right);
         /// <summary>
         /// __m512 _mm512_mul_ps (__m512 a, __m512 b)
-        ///   VMULPS zmm1 {k1}{z}, zmm2, zmm3{er}
+        ///   VMULPS zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<float> Multiply(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Multiply(left, right, mode);
         /// <summary>
         /// __m512d _mm512_mul_pd (__m512d a, __m512d b)
-        ///   VMULPD zmm1 {k1}{z}, zmm2, zmm3{er}
+        ///   VMULPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Multiply(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => Multiply(left, right, mode);
         /// <summary>
