@@ -29,10 +29,9 @@ namespace System.Runtime.CompilerServices
 
             T[] dest;
 
-            if (typeof(T).IsValueType || typeof(T[]) == array.GetType())
+            if (typeof(T[]) == array.GetType())
             {
-                // We know the type of the array to be exactly T[] or an array variance
-                // compatible value type substitution like int[] <-> uint[].
+                // We know the type of the array to be exactly T[].
 
                 if (length == 0)
                 {

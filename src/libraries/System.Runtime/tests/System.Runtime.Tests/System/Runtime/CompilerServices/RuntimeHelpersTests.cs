@@ -367,6 +367,10 @@ namespace System.Runtime.CompilerServices.Tests
             object[] arr = new string[10];
             object[] slice = RuntimeHelpers.GetSubArray<object>(arr, new Range(Index.FromStart(1), Index.FromEnd(2)));
             Assert.IsType<string[]>(slice);
+
+            uint[] arr2 = (uint[])(object)new int[10];
+            uint[] slice2 = RuntimeHelpers.GetSubArray<uint>(arr2, new Range(Index.FromStart(1), Index.FromEnd(2)));
+            Assert.IsType<int[]>(slice2);
         }
 
         [Fact]
