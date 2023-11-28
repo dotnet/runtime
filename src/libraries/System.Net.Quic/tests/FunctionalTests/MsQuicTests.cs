@@ -1056,7 +1056,7 @@ namespace System.Net.Quic.Tests
 
         [Fact]
         [OuterLoop("May take several seconds")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85331", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrLower)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85331", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrLower))]
         public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
         {
             const int writeSize = 64 * 1024;
