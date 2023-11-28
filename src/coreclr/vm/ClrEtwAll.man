@@ -1791,21 +1791,23 @@
                         <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
                         <data name="AssociatedObjectID" inType="win:Pointer" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
+
                         <UserData>
-                            <WaitHandle xmlns="myNs">
+                            <WaitHandleWaitStart xmlns="myNs">
                                 <WaitSource> %1 </WaitSource>
                                 <AssociatedObjectID> %2 </AssociatedObjectID>
                                 <ClrInstanceID> %3 </ClrInstanceID>
-                            </WaitHandle>
+                            </WaitHandleWaitStart>
                         </UserData>
                     </template>
 
                     <template tid="WaitHandleWaitStop">
                         <data name="ClrInstanceID" inType="win:UInt16" />
+
                         <UserData>
-                            <WaitHandle xmlns="myNs">
+                            <WaitHandleWaitStop xmlns="myNs">
                                 <ClrInstanceID> %1 </ClrInstanceID>
-                            </WaitHandle>
+                            </WaitHandleWaitStop>
                         </UserData>
                     </template>
 
