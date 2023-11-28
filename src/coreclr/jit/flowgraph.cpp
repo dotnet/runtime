@@ -108,7 +108,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
 
-        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_NONE, BBJ_THROW, BBJ_CALLFINALLY));
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY));
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -206,9 +206,9 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             //
             newStmt = fgNewStmtAtBeg(block, call);
         }
-        else if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_NONE))
+        else if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY))
         {
-            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE we don't need to insert it before the condition.
+            // For BBJ_ALWAYS and BBJ_CALLFINALLY, we don't need to insert it before the condition.
             // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
@@ -277,10 +277,12 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
         }
 
-        BasicBlock* poll          = fgNewBBafter(BBJ_NONE, top, true);
+        BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetJumpDest());
         BBjumpKinds   oldJumpKind = top->GetJumpKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
+        poll->SetJumpDest(bottom);
+        assert(poll->JumpsToNext());
 
         // Update block flags
         const BasicBlockFlags originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
@@ -294,7 +296,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
                                             BBF_RETLESS_CALL);
         bottom->inheritWeight(top);
-        poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
+        poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_NONE_QUIRK);
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
@@ -396,9 +398,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // (1 for unconditional branches, 2 for conditional branches, N for switches).
         switch (oldJumpKind)
         {
-            case BBJ_NONE:
-                fgReplacePred(bottom->Next(), top, bottom);
-                break;
             case BBJ_RETURN:
             case BBJ_THROW:
                 // no successors
@@ -2985,14 +2984,15 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::New(this, BBJ_NONE);
-    newHead->bbFlags |= BBF_INTERNAL;
+    BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS, block);
+    newHead->bbFlags |= (BBF_INTERNAL | BBF_NONE_QUIRK);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
     fgInsertBBbefore(block, newHead); // insert the new block in the block list
-    fgExtendEHRegionBefore(block);    // Update the EH table to make the prolog block the first block in the block's EH
-                                      // block.
+    assert(newHead->JumpsToNext());
+    fgExtendEHRegionBefore(block); // Update the EH table to make the prolog block the first block in the block's EH
+                                   // block.
 
     // Distribute the pred list between newHead and block. Incoming edges coming from outside
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
@@ -3422,13 +3422,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                         fgAddRefPred(transitionBlock, prevToFirstColdBlock);
                     }
                     break;
-
-                case BBJ_NONE:
-                    // If the block preceding the first cold block is BBJ_NONE,
-                    // convert it to BBJ_ALWAYS to force an explicit jump.
-
-                    prevToFirstColdBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstColdBlock);
-                    break;
             }
         }
     }
@@ -3601,13 +3594,13 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
     assert(!fgRngChkThrowAdded);
 
     const static BBjumpKinds jumpKinds[] = {
-        BBJ_NONE,  // SCK_NONE
-        BBJ_THROW, // SCK_RNGCHK_FAIL
-        BBJ_THROW, // SCK_DIV_BY_ZERO
-        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
-        BBJ_THROW, // SCK_ARG_EXCPN
-        BBJ_THROW, // SCK_ARG_RNG_EXCPN
-        BBJ_THROW, // SCK_FAIL_FAST
+        BBJ_ALWAYS, // SCK_NONE
+        BBJ_THROW,  // SCK_RNGCHK_FAIL
+        BBJ_THROW,  // SCK_DIV_BY_ZERO
+        BBJ_THROW,  // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW,  // SCK_ARG_EXCPN
+        BBJ_THROW,  // SCK_ARG_RNG_EXCPN
+        BBJ_THROW,  // SCK_FAIL_FAST
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3622,6 +3615,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         // regions since the time the descriptor was created.
         //
         assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
+        assert(add->acdKind != SCK_NONE);
 
         BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* jumpDest */ nullptr,
                                                    /* runRarely */ true, /* insertAtEnd */ true);
@@ -3934,7 +3928,8 @@ PhaseStatus Compiler::fgSetBlockOrder()
             {
                 case BBJ_COND:
                 case BBJ_ALWAYS:
-                    partiallyInterruptible = EDGE_IS_GC_SAFE(block, block->GetJumpDest());
+                    partiallyInterruptible =
+                        ((block->bbFlags & BBF_NONE_QUIRK) != 0) || EDGE_IS_GC_SAFE(block, block->GetJumpDest());
                     break;
 
                 case BBJ_SWITCH:

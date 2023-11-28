@@ -143,13 +143,13 @@ private:
 
         // Current block now becomes the test block
         BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_NONE, block);
+        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block, block->Next());
 
         // Update flow and flags
         block->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
         block->bbFlags |= BBF_INTERNAL;
 
-        helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
+        helperBlock->bbFlags |= (BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
 
         compiler->fgAddRefPred(helperBlock, block);
         compiler->fgAddRefPred(remainderBlock, helperBlock);

@@ -8,6 +8,8 @@
 
 #ifdef TARGET_LOONGARCH64
 #define BAD_CODE 0XFFFFFFFF
+#elif TARGET_RISCV64
+#define BAD_CODE 0X00000000
 #else
 #define BAD_CODE 0x0BADC0DE // better not match a real encoding!
 #endif

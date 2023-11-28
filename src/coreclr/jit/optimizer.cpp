@@ -742,7 +742,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
             bool initBlockOk = (predBlock == initBlock);
             if (!initBlockOk)
             {
-                if (predBlock->KindIs(BBJ_NONE) && predBlock->NextIs(optLoopTable[loopInd].lpEntry) &&
+                if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->HasJumpTo(optLoopTable[loopInd].lpEntry) &&
                     (predBlock->countOfInEdges() == 1) && (predBlock->firstStmt() == nullptr) &&
                     !predBlock->IsFirst() && predBlock->Prev()->bbFallsThrough())
                 {
@@ -1137,7 +1137,7 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loop table, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_NONE) && initBlock->NextIs(top) && (initBlock->countOfInEdges() == 1) &&
+        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->HasJumpTo(top) && (initBlock->countOfInEdges() == 1) &&
             !initBlock->IsFirst() && initBlock->Prev()->bbFallsThrough())
         {
             initBlock = initBlock->Prev();
@@ -1379,8 +1379,6 @@ void Compiler::optCheckPreds()
                     {
                         break;
                     }
-                    FALLTHROUGH;
-                case BBJ_NONE:
                     noway_assert(bb->NextIs(block));
                     break;
                 case BBJ_EHFILTERRET:
@@ -1788,7 +1786,7 @@ private:
             }
         }
         // Can we fall through into the loop?
-        else if (head->KindIs(BBJ_NONE, BBJ_COND))
+        else if (head->KindIs(BBJ_COND))
         {
             // The ENTRY is at the TOP (a do-while loop)
             return top;
@@ -2294,14 +2292,6 @@ private:
         }
         else if (block->KindIs(BBJ_ALWAYS) && block->HasJumpTo(newNext))
         {
-            // We've made `block`'s jump target its bbNext, so remove the jump.
-            if (!comp->fgOptimizeBranchToNext(block, newNext, block->Prev()))
-            {
-                // If optimizing away the goto-next failed for some reason, mark it KEEP_BBJ_ALWAYS to
-                // prevent assertions from complaining about it.
-                block->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
-            }
-
             // If block is newNext's only predecessor, move the IR from block to newNext,
             // but keep the now-empty block around.
             //
@@ -2348,9 +2338,6 @@ private:
             }
         }
 
-        // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
-        assert(!block->KindIs(BBJ_COND, BBJ_ALWAYS) || !block->HasJumpTo(newNext) ||
-               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
         return newBlock;
     }
 
@@ -2399,9 +2386,6 @@ private:
                     lastExit = block;
                     exitCount++;
                 }
-                break;
-
-            case BBJ_NONE:
                 break;
 
             case BBJ_EHFINALLYRET:
@@ -2711,7 +2695,6 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 
     switch (blk->GetJumpKind())
     {
-        case BBJ_NONE:
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFILTERRET:
@@ -2721,6 +2704,13 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             break;
 
         case BBJ_ALWAYS:
+            // Fall-through successors are assumed correct and are not modified
+            if (blk->JumpsToNext() && ((blk->bbFlags & BBF_NONE_QUIRK) != 0))
+            {
+                break;
+            }
+
+            FALLTHROUGH;
         case BBJ_LEAVE:
         case BBJ_CALLFINALLY:
         case BBJ_COND:
@@ -2731,11 +2721,11 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
                 {
                     fgRemoveRefPred(blk->GetJumpDest(), blk);
                 }
+                blk->SetJumpDest(newJumpDest);
                 if (updatePreds || addPreds)
                 {
                     fgAddRefPred(newJumpDest, blk);
                 }
-                blk->SetJumpDest(newJumpDest);
             }
             else if (addPreds)
             {
@@ -2826,6 +2816,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             break;
         default:
             to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest());
+            to->bbFlags |= (from->bbFlags & BBF_NONE_QUIRK);
             break;
     }
 
@@ -2928,11 +2919,12 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
     // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
     // head block. See FindEntry() for the logic that allows this.
-    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && ((h->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0))
     {
         // Insert new head
 
-        BasicBlock* const newH = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
+        BasicBlock* const newH = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true, /*jumpDest*/ h->Next());
+        newH->bbFlags |= BBF_NONE_QUIRK;
         newH->inheritWeight(h);
         newH->bbNatLoopNum = h->bbNatLoopNum;
         h->SetJumpDest(newH);
@@ -2945,7 +2937,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
         JITDUMP("in optCanonicalizeLoop: " FMT_LP " head " FMT_BB
                 " is BBJ_ALWAYS of BBJ_CALLFINALLY/BBJ_ALWAYS pair that targets top " FMT_BB
-                ". Replacing with new BBJ_NONE head " FMT_BB ".",
+                ". Replacing with new BBJ_ALWAYS head " FMT_BB ".",
                 loopInd, h->bbNum, t->bbNum, newH->bbNum);
 
         h        = newH;
@@ -3027,7 +3019,8 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
             JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
 
-            BasicBlock* const newH = fgNewBBbefore(BBJ_NONE, t, /*extendRegion*/ false);
+            BasicBlock* const newH = fgNewBBbefore(BBJ_ALWAYS, t, /*extendRegion*/ false, /*jumpDest*/ t);
+            newH->bbFlags |= BBF_NONE_QUIRK;
 
             fgSetEHRegionForNewLoopHead(newH, t);
 
@@ -3136,7 +3129,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // this block. In this case, we need to insert a new block for the outer loop
     // in the same EH region as the branch from the "bottom":
     //
-    // BB30 BBJ_NONE
+    // BB30 BBJ_ALWAYS
     // BB08 try { }
     // ...
     // BB10 BBJ_ALWAYS => BB08
@@ -3197,20 +3190,26 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // Because of this, introducing a block before t automatically gives us
     // the right flow out of h.
     //
-    assert(h->NextIs(t));
-    assert(h->bbFallsThrough());
-    assert(h->KindIs(BBJ_NONE, BBJ_COND));
-    if (h->KindIs(BBJ_COND))
-    {
-        BasicBlock* const hj = h->GetJumpDest();
-        assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
-    }
+    assert(h->NextIs(t) || !h->KindIs(BBJ_COND));
+    assert(h->HasJumpTo(t) || !h->KindIs(BBJ_ALWAYS));
+    assert(h->KindIs(BBJ_ALWAYS, BBJ_COND));
 
     // If the bottom block is in the same "try" region, then we extend the EH
     // region. Otherwise, we add the new block outside the "try" region.
     //
     const bool        extendRegion = BasicBlock::sameTryRegion(t, b);
-    BasicBlock* const newT         = fgNewBBbefore(BBJ_NONE, t, extendRegion);
+    BasicBlock* const newT         = fgNewBBbefore(BBJ_ALWAYS, t, extendRegion, t);
+    newT->bbFlags |= BBF_NONE_QUIRK;
+
+    if (h->KindIs(BBJ_COND))
+    {
+        BasicBlock* const hj = h->GetJumpDest();
+        assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
+    }
+    else
+    {
+        h->SetJumpDest(newT);
+    }
 
     fgRemoveRefPred(t, h);
     fgAddRefPred(t, newT);
@@ -3351,8 +3350,9 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
              childLoop != BasicBlock::NOT_IN_LOOP;                    //
              childLoop = optLoopTable[childLoop].lpSibling)
         {
+            assert(newT->KindIs(BBJ_ALWAYS));
             if ((optLoopTable[childLoop].lpEntry == origE) && (optLoopTable[childLoop].lpHead == h) &&
-                newT->KindIs(BBJ_NONE) && newT->NextIs(origE))
+                newT->HasJumpTo(origE))
             {
                 optUpdateLoopHead(childLoop, h, newT);
 
@@ -3423,16 +3423,8 @@ bool Compiler::optLoopContains(unsigned l1, unsigned l2) const
 BasicBlock* Compiler::optLoopEntry(BasicBlock* preHeader)
 {
     assert((preHeader->bbFlags & BBF_LOOP_PREHEADER) != 0);
-
-    if (preHeader->KindIs(BBJ_NONE))
-    {
-        return preHeader->Next();
-    }
-    else
-    {
-        assert(preHeader->KindIs(BBJ_ALWAYS));
-        return preHeader->GetJumpDest();
-    }
+    assert(preHeader->KindIs(BBJ_ALWAYS));
+    return preHeader->GetJumpDest();
 }
 
 //-----------------------------------------------------------------------------
@@ -4352,9 +4344,9 @@ PhaseStatus Compiler::optUnrollLoops()
                 // every iteration.
                 for (BasicBlock* block = loop.lpTop; !loop.lpBottom->NextIs(block); block = block->Next())
                 {
-                    // Use BBJ_NONE to avoid setting a jump target for now.
+                    // Don't set a jump target for now.
                     // Compiler::optCopyBlkDest() will fix the jump kind/target in the loop below.
-                    BasicBlock* newBlock = insertAfter = fgNewBBafter(BBJ_NONE, insertAfter, /*extendRegion*/ true);
+                    BasicBlock* newBlock = insertAfter = fgNewBBafter(BBJ_ALWAYS, insertAfter, /*extendRegion*/ true);
                     blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
 
                     if (!BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval))
@@ -4388,7 +4380,8 @@ PhaseStatus Compiler::optUnrollLoops()
                     newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-                    assert(newBlock->KindIs(BBJ_NONE));
+                    assert(newBlock->KindIs(BBJ_ALWAYS));
+                    assert(!newBlock->HasInitializedJumpDest());
 
                     if (block == bottom)
                     {
@@ -4417,7 +4410,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 {
                     // Jump kind/target should not be set yet
                     BasicBlock* newBlock = blockMap[block];
-                    assert(newBlock->KindIs(BBJ_NONE));
+                    assert(!newBlock->HasInitializedJumpDest());
 
                     // Now copy the jump kind/target
                     optCopyBlkDest(block, newBlock);
@@ -4428,7 +4421,16 @@ PhaseStatus Compiler::optUnrollLoops()
                 // or from the previous unroll clone of the bottom block (subsequent iterations).
                 // After doing this, all the newly cloned blocks now have proper flow and pred lists.
                 //
-                BasicBlock* const clonedTop = blockMap[loop.lpTop];
+                BasicBlock* const clonedTop     = blockMap[loop.lpTop];
+                BasicBlock*       clonedTopPrev = clonedTop->Prev();
+                assert(clonedTopPrev->KindIs(BBJ_ALWAYS, BBJ_COND));
+
+                if (clonedTopPrev->KindIs(BBJ_ALWAYS))
+                {
+                    assert(!clonedTopPrev->HasInitializedJumpDest());
+                    clonedTopPrev->SetJumpDest(clonedTop);
+                }
+
                 fgAddRefPred(clonedTop, clonedTop->Prev());
 
                 /* update the new value for the unrolled iterator */
@@ -4481,9 +4483,10 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->SetJumpKindAndTarget(BBJ_NONE);
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
                 block->bbStmtList   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
+                block->bbFlags |= BBF_NONE_QUIRK;
 
                 // Remove a few unnecessary flags (this list is not comprehensive).
                 block->bbFlags &= ~(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
@@ -4516,7 +4519,7 @@ PhaseStatus Compiler::optUnrollLoops()
             // the pre-header HEAD (if it exists), or the now empty TOP (if totalIter == 0),
             // or the first cloned top.
             //
-            // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_NONE block).
+            // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_ALWAYS block).
             //
             if (initBlock->KindIs(BBJ_COND))
             {
@@ -4525,14 +4528,15 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
-                initBlock->SetJumpKindAndTarget(BBJ_NONE);
+                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->Next());
+                initBlock->bbFlags |= BBF_NONE_QUIRK;
             }
             else
             {
                 /* the loop must execute */
                 assert(!dupCond);
                 assert(totalIter > 0);
-                noway_assert(initBlock->KindIs(BBJ_NONE));
+                noway_assert(initBlock->KindIs(BBJ_ALWAYS));
             }
 
             // The loop will be removed, so no need to fix up the pre-header.
@@ -4542,7 +4546,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 // For unrolled loops, all the unrolling preconditions require the pre-header block to fall
                 // through into TOP.
-                assert(head->KindIs(BBJ_NONE));
+                assert(head->KindIs(BBJ_ALWAYS));
+                assert(head->JumpsToNext());
             }
 
             // If we actually unrolled, tail is now reached
@@ -4551,7 +4556,12 @@ PhaseStatus Compiler::optUnrollLoops()
             //
             if (totalIter > 0)
             {
-                fgAddRefPred(tail, blockMap[bottom]);
+                BasicBlock* clonedBottom = blockMap[bottom];
+                assert(clonedBottom->KindIs(BBJ_ALWAYS));
+                assert(!clonedBottom->HasInitializedJumpDest());
+
+                clonedBottom->SetJumpDest(tail);
+                fgAddRefPred(tail, clonedBottom);
                 fgRemoveRefPred(tail, bottom);
             }
 
@@ -4834,7 +4844,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Does the BB end with an unconditional jump?
 
-    if (!block->KindIs(BBJ_ALWAYS) || (block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    if (!block->KindIs(BBJ_ALWAYS) || block->JumpsToNext() || ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0))
     {
         // It can't be one of the ones we use for our exception magic
         return false;
@@ -5071,8 +5081,10 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    block->SetJumpKindAndTarget(BBJ_NONE);
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
+    block->SetJumpKindAndTarget(BBJ_ALWAYS, bNewCond);
+    block->bbFlags |= BBF_NONE_QUIRK;
+    assert(block->JumpsToNext());
 
     // Clone each statement in bTest and append to bNewCond.
     for (Statement* const stmt : bTest->Statements())
@@ -8188,15 +8200,10 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // Allocate a new basic block for the pre-header.
 
     const bool  isTopEntryLoop = loop.lpIsTopEntry();
-    BasicBlock* preHead;
-
+    BasicBlock* preHead        = BasicBlock::New(this, BBJ_ALWAYS, entry);
     if (isTopEntryLoop)
     {
-        preHead = BasicBlock::New(this, BBJ_NONE);
-    }
-    else
-    {
-        preHead = BasicBlock::New(this, BBJ_ALWAYS, entry);
+        preHead->bbFlags |= BBF_NONE_QUIRK;
     }
 
     preHead->bbFlags |= BBF_INTERNAL | BBF_LOOP_PREHEADER;
@@ -8343,14 +8350,6 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
         switch (predBlock->GetJumpKind())
         {
-            case BBJ_NONE:
-                // This 'entry' predecessor that isn't dominated by 'entry' must be outside the loop,
-                // meaning it must be fall-through to 'entry', and we must have a top-entry loop.
-                noway_assert((entry == top) && (predBlock == head) && predBlock->NextIs(preHead));
-                fgRemoveRefPred(entry, predBlock);
-                fgAddRefPred(preHead, predBlock);
-                break;
-
             case BBJ_COND:
                 if (predBlock->HasJumpTo(entry))
                 {
