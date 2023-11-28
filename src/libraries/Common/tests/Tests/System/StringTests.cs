@@ -1038,6 +1038,7 @@ namespace System.Tests
                     Assert.Equal(
                         Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
                         Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
+
                     Assert.Equal(
                         string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
                         firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
@@ -2153,15 +2154,12 @@ namespace System.Tests
                     Assert.False(firstSpan.EndsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
-                    {
-                        Assert.Equal(
-                            firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                            firstSpan.EndsWith(secondSpan, StringComparison.CurrentCulture));
-                        Assert.Equal(
-                            firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                            firstSpan.EndsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    }
+                    Assert.Equal(
+                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCulture));
+                    Assert.Equal(
+                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
                     Assert.Equal(
                         firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
                         firstSpan.EndsWith(secondSpan, StringComparison.InvariantCulture));
@@ -7275,15 +7273,12 @@ namespace System.Tests
                     Assert.False(firstSpan.StartsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
-                    {
-                        Assert.Equal(
-                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                            firstSpan.StartsWith(secondSpan, StringComparison.CurrentCulture));
-                        Assert.Equal(
-                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                            firstSpan.StartsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    }
+                    Assert.Equal(
+                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCulture));
+                    Assert.Equal(
+                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
                     Assert.Equal(
                         firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
                         firstSpan.StartsWith(secondSpan, StringComparison.InvariantCulture));
