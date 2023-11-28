@@ -2072,7 +2072,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // Make a new pre-header block 'h2' for the loop. 'h' will fall through to 'h2'.
     JITDUMP("Create new header block for loop\n");
 
-    BasicBlock* h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true, /*jumpDest*/ loop.lpEntry);
+    BasicBlock* h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
     h2->bbWeight     = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     h2->bbNatLoopNum = ambientLoop;
@@ -2168,6 +2168,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     for (unsigned i = 0; i < numBlocks; i++)
     {
+        BasicBlock* blk = lexicalBlocks[i];
         // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later with optCopyBlkDest()
         BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
@@ -2220,11 +2221,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         // need to insert a new block to redirect.
         if ((i < numBlocks - 1) && blk->bbFallsThrough() && !blk->NextIs(lexicalBlocks[i + 1]))
         {
-            if (blk->KindIs(BBJ_NONE))
-            {
-                // Changed to BBJ_ALWAYS in below loop.
-            }
-            else if (blk->KindIs(BBJ_COND))
+            if (blk->KindIs(BBJ_COND))
             {
                 // Need to insert a block.
                 BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, blk->Next());
