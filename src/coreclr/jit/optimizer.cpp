@@ -6018,47 +6018,16 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 /* Is this a cast from the type we're narrowing to or a smaller one? */
 
-                if (oprSize <= dstSize)
+                if ((oprSize == dstSize) && !varTypeIsSmall(dstt) && (varTypeToSigned(dstt) == oprt))
                 {
-                    /* Bash the target type of the cast */
-
                     if (doit)
                     {
-                        if (!varTypeIsSmall(dstt))
-                        {
-                            dstt = varTypeToSigned(dstt);
-                        }
-
-                        if ((oprSize == dstSize) &&
-                            ((varTypeIsUnsigned(dstt) == varTypeIsUnsigned(oprt)) || !varTypeIsSmall(dstt)))
-                        {
-                            // Same size and there is no signedness mismatch for small types: change the CAST
-                            // into a NOP
-
-                            JITDUMP("Cast operation has no effect, bashing [%06d] GT_CAST into a GT_NOP.\n",
-                                    dspTreeID(tree));
-
-                            tree->ChangeOper(GT_NOP);
-                            tree->gtType = dstt;
-                            // Clear the GTF_UNSIGNED flag, as it may have been set on the cast node
-                            tree->gtFlags &= ~GTF_UNSIGNED;
-                            tree->AsOp()->gtOp2 = nullptr;
-                            tree->gtVNPair      = op1->gtVNPair; // Set to op1's ValueNumber
-                        }
-                        else
-                        {
-                            // oprSize is smaller or there is a signedness mismatch for small types
-
-                            // Change the CastToType in the GT_CAST node
-                            tree->CastToType() = dstt;
-
-                            // The result type of a GT_CAST is never a small type.
-                            // Use genActualType to widen dstt when it is a small types.
-                            tree->gtType = genActualType(dstt);
-                            tree->SetVNs(vnpNarrow);
-                        }
+                        tree->ChangeOper(GT_NOP);
+                        tree->gtType = varTypeToSigned(dstt);
+                        tree->gtFlags &= ~GTF_UNSIGNED;
+                        tree->AsOp()->gtOp2 = nullptr;
+                        tree->gtVNPair      = op1->gtVNPair;
                     }
-
                     return true;
                 }
             }
