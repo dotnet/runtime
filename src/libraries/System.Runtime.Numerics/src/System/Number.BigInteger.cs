@@ -395,15 +395,15 @@ namespace System
             return result;
         }
 
-        private static ParsingStatus BinaryNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        private static ParsingStatus BinaryNumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
-            if (number.digits is null || number.digits.Length == 0)
+            if (number.DigitsCount == 0)
             {
                 result = default;
                 return ParsingStatus.Failed;
             }
 
-            int totalDigitCount = number.digits.Length - 1;   // Ignore trailing '\0'
+            int totalDigitCount = number.DigitsCount;
             int partialDigitCount;
 
             (int blockCount, int remainder) = int.DivRem(totalDigitCount, BigInteger.kcbitUint);
@@ -417,8 +417,8 @@ namespace System
                 partialDigitCount = BigInteger.kcbitUint - remainder;
             }
 
-            Debug.Assert(number.digits[0] is '0' or '1');
-            bool isNegative = number.digits[0] == '1';
+            Debug.Assert(number.Digits[0] is (byte)'0' or (byte)'1');
+            bool isNegative = number.Digits[0] == (byte)'1';
             uint currentBlock = isNegative ? 0xFF_FF_FF_FFu : 0x0;
 
             uint[]? arrayFromPool = null;
@@ -430,28 +430,24 @@ namespace System
 
             try
             {
-                foreach (ReadOnlyMemory<char> digitsChunkMem in number.digits.GetChunks())
+                for (int i = 0; i < number.DigitsCount; i++)
                 {
-                    ReadOnlySpan<char> chunkDigits = digitsChunkMem.Span;
-                    for (int i = 0; i < chunkDigits.Length; i++)
+                    byte digitChar = number.Digits[i];
+                    if (digitChar == 0)
                     {
-                        char digitChar = chunkDigits[i];
-                        if (digitChar == '\0')
-                        {
-                            break;
-                        }
+                        break;
+                    }
 
-                        Debug.Assert(digitChar is '0' or '1');
-                        currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
-                        partialDigitCount++;
+                    Debug.Assert(digitChar is (byte)'0' or (byte)'1');
+                    currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
+                    partialDigitCount++;
 
-                        if (partialDigitCount == BigInteger.kcbitUint)
-                        {
-                            buffer[bufferPos--] = currentBlock;
-                            partialDigitCount = 0;
+                    if (partialDigitCount == BigInteger.kcbitUint)
+                    {
+                        buffer[bufferPos--] = currentBlock;
+                        partialDigitCount = 0;
 
-                            // we do not need to reset currentBlock now, because it should always set all its bits by left shift in subsequent iterations
-                        }
+                        // we do not need to reset currentBlock now, because it should always set all its bits by left shift in subsequent iterations
                     }
                 }
 
@@ -499,10 +495,6 @@ namespace System
                     ArrayPool<uint>.Shared.Return(arrayFromPool);
                 }
             }
-
-        FailExit:
-            result = default;
-            return ParsingStatus.Failed;
         }
 
         //
