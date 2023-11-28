@@ -648,8 +648,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Defines the text used as indent when <see cref="WriteIndented" /> is enabled
-        /// By default, the JSON is indented with 2 white spaces.
+        /// Defines the indentation string being used when <see cref="WriteIndented" /> is enabled. Defaults to two space characters.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
