@@ -232,7 +232,7 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">  
+  <ItemGroup Condition="Exists('$(XUnitLogCheckerLibrariesOutDir)')">
     <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />
   </ItemGroup>  
 
