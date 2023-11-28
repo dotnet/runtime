@@ -139,10 +139,6 @@ if ($NoR2R) {
     $SetupArguments = "$SetupArguments --no-r2r"
 }
 
-if ($MemoryRandomization) {
-    $SetupArguments = "$SetupArguments --memory-randomization"
-}
-
 if ($ExperimentName) {
     $SetupArguments = "$SetupArguments --experiment-name '$ExperimentName'"
 }

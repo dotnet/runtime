@@ -385,14 +385,9 @@ if [[ "$nor2r" == "true" ]]; then
     configurations="$configurations R2RType=nor2r"
 fi
 
-if [[ "$memoryrandomization" == "true" ]]; then
-    configurations="$configurations MemoeryRandomization=true"
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memory-randomization true"
-fi
-
 if [[ ! -z "$experimentname" ]]; then
     configurations="$configurations ExperimentName=$experimentname"
-    if [[ "$experimentname" == "memoeryrandomization" ]]; then
+    if [[ "$experimentname" == "memoryrandomization" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memoryRandomization true"
     fi
 fi
