@@ -197,13 +197,93 @@ namespace System.Runtime.InteropServices.JavaScript
             return BindManagedFunctionImpl(fullyQualifiedName, signatureHash, signatures);
         }
 
+#if FEATURE_WASM_THREADS
+
+        [ThreadStatic]
+        internal static JSSynchronizationContext? CurrentCallTargetContext;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
+        {
+            // obtain target context
+            IntPtr targetTID;
+            JSSynchronizationContext? currentJSSynchronizationContext = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            JSSynchronizationContext targetContext;
+            IntPtr currentTID = currentJSSynchronizationContext?.TargetTID ?? IntPtr.Zero;
+
+            if (signature.IsThreadCaptured)
+            {
+                targetContext = CurrentCallTargetContext!;
+                if (targetContext == null)
+                {
+                    Environment.FailFast("Expected CurrentCallTargetContext");
+                }
+                targetTID = targetContext.TargetTID;
+            }
+            else
+            {
+                targetContext = currentJSSynchronizationContext ?? JSSynchronizationContext.MainJSSynchronizationContext!;
+                targetTID = targetContext.TargetTID;
+                CurrentCallTargetContext = targetContext;
+            }
+
+            // if we are on correct thread already or this is synchronous call, just call it
+            if (currentTID == targetTID || !signature.IsAsync)
+            {
+                fixed (JSMarshalerArgument* args = arguments)
+                {
+                    InvokeJSImportSync(signature, targetTID, args);
+                }
+            }
+            else
+            {
+                // TODO pre-create promise handle
+                // register the handle in a way that UI could resolve/reject it
+                // TODO get rid of GC root problem with MonoString*
+
+                // this is freed in mono_wasm_run_import_async_body
+                var bytes = 16 * arguments.Length;
+                var cpy = (void*)Marshal.AllocHGlobal(bytes);
+                var src = Unsafe.AsPointer(ref arguments[0]);
+                Unsafe.CopyBlock(cpy, src, (uint)bytes);
+
+                InvokeJSImportAsync(signature, targetTID, (JSMarshalerArgument*)cpy);
+
+                // error is propagated by the promise resolve/reject, no handling here
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void InvokeJSImportSync(JSFunctionBinding signature, IntPtr targetTID, JSMarshalerArgument* arguments)
+        {
+            // this is blocking until the target thread returns
+            Interop.Runtime.InvokeJSImportSync(targetTID, arguments, signature.Header);
+
+            ref JSMarshalerArgument exceptionArg = ref arguments[0];
+            if (exceptionArg.slot.Type != MarshalerType.None)
+            {
+                JSHostImplementation.ThrowException(ref exceptionArg);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void InvokeJSImportAsync(JSFunctionBinding signature, IntPtr targetTID, JSMarshalerArgument* arguments)
+        {
+            Interop.Runtime.InvokeJSImportAsync(targetTID, arguments, signature.Header);
+
+            // this never throws directly, because any result would be reject/resolve callback
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void InvokeJSImpl(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
+        {
+            throw new NotImplementedException();
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImpl(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
             ObjectDisposedException.ThrowIf(jsFunction.IsDisposed, jsFunction);
-#if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(jsFunction);
-#endif
 
             var functionHandle = (int)jsFunction.JSHandle;
             fixed (JSMarshalerArgument* ptr = arguments)
@@ -230,20 +310,19 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
         }
+#endif
 
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
-#if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
-#endif
-
             var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);
 
+#if !FEATURE_WASM_THREADS
             Interop.Runtime.BindJSImport(signature.Header, out int isException, out object exceptionMessage);
             if (isException != 0)
                 throw new JSException((string)exceptionMessage);
 
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
+#endif
 
             return signature;
         }

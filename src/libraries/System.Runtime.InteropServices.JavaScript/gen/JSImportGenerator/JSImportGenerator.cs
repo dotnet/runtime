@@ -120,9 +120,14 @@ namespace Microsoft.Interop.JavaScript
 
             FieldDeclarationSyntax sigField = FieldDeclaration(VariableDeclaration(IdentifierName(Constants.JSFunctionSignatureGlobal))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(stub.BindingName)))))
-                .AddModifiers(Token(SyntaxKind.StaticKeyword))
-                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
+                .AddModifiers(Token(SyntaxKind.StaticKeyword));
+
+            // TODO add API for this decision
+            if (!stub.AssemblyName.StartsWith("System"))
+            {
+                sigField = sigField.WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                     Attribute(IdentifierName(Constants.ThreadStaticGlobal))))));
+            }
 
             MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(stubMethod, sigField);
             return toPrint;

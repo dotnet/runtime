@@ -71,8 +71,11 @@ namespace Sample
         public static async Task DisposeTest()
         {
             Console.WriteLine("DisposeTest A ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
-            var test1 = JSHost.GlobalThis.GetPropertyAsJSObject("test1");
-            var test2 = JSHost.GlobalThis.GetPropertyAsJSObject("test2");
+            var gt = JSHost.GlobalThis;
+            Console.WriteLine("DisposeTest B ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            var test1 = gt.GetPropertyAsJSObject("test1");
+            Console.WriteLine("DisposeTest C ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            var test2 = gt.GetPropertyAsJSObject("test2");
             Console.WriteLine("DisposeTest 0 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
             await Task.Delay(10).ConfigureAwait(false);
             Console.WriteLine("DisposeTest 1 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
@@ -111,7 +114,7 @@ namespace Sample
         internal static Task TestHelloWebWorker()
         {
             Console.WriteLine($"smoke: TestHelloWebWorker 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-            Task t = WebWorker.RunAsync(() =>
+            Task t = WebWorker.Run(() =>
             {
                 Console.WriteLine($"smoke: TestHelloWebWorker 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 GlobalThisConsoleLog($"smoke: TestHelloWebWorker 3 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");

@@ -14,13 +14,6 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void ReleaseCSOwnedObject(IntPtr jsHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSFunction(int functionHandle, void* data);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImport(int importHandle, void* data);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ResolveOrRejectPromise(void* data);
@@ -34,6 +27,20 @@ internal static partial class Interop
         public static extern void InstallWebWorkerInterop();
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSImportSync(IntPtr targetTID, void* data, void* signature);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSImportAsync(IntPtr targetTID, void* data, void* signature);
+
+#else
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSFunction(int functionHandle, void* data);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSImport(int importHandle, void* data);
 #endif
 
         #region Legacy

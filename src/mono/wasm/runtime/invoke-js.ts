@@ -35,6 +35,38 @@ export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exce
     }
 }
 
+export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signature: JSFunctionSignature) {
+    if (!MonoWasmThreads) return;
+    assert_bindings();
+
+    const function_handle = get_signature_handle(signature);
+
+    let bound_fn = js_import_wrapper_by_fn_handle[function_handle];
+    if (bound_fn == undefined) {
+        // it was not bound yet, let's do it now
+        bound_fn = bind_js_import(signature);
+    }
+    mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
+
+    bound_fn(args);
+}
+
+export function mono_wasm_invoke_import_sync(args: JSMarshalerArguments, signature: JSFunctionSignature) {
+    if (!MonoWasmThreads) return;
+    assert_bindings();
+
+    const function_handle = get_signature_handle(signature);
+
+    let bound_fn = js_import_wrapper_by_fn_handle[function_handle];
+    if (bound_fn == undefined) {
+        // it was not bound yet, let's do it now
+        bound_fn = bind_js_import(signature);
+    }
+    mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
+
+    bound_fn(args);
+}
+
 function bind_js_import(signature: JSFunctionSignature): Function {
     const mark = startMeasure();
 

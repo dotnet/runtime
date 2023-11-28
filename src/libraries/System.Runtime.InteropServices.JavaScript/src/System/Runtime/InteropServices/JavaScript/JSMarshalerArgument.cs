@@ -47,6 +47,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(8)]
             internal int Length;
+            [FieldOffset(8)]
+            internal IntPtr TargetThreadId;
 
             /// <summary>
             /// Discriminators

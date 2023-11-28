@@ -73,7 +73,10 @@ namespace System.Runtime.InteropServices.JavaScript
             TargetTID = targetTID;
             Queue = queue;
             _DataIsAvailable = DataIsAvailable;
+            ThreadJsOwnedHolders = JSHostImplementation.ThreadJsOwnedHolders;
         }
+
+        internal Dictionary<nint, PromiseHolder> ThreadJsOwnedHolders;
 
         public override SynchronizationContext CreateCopy()
         {

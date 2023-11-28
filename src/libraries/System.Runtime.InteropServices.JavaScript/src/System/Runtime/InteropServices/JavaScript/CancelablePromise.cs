@@ -23,6 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
+            // TODO replace with emscripten dispatch
             holder.SynchronizationContext!.Send(static (JSHostImplementation.PromiseHolder holder) =>
             {
 #endif
@@ -44,6 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
+            // TODO replace with emscripten dispatch
             holder.SynchronizationContext!.Send((JSHostImplementation.PromiseHolder holder) =>
             {
 #endif

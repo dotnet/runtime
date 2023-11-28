@@ -48,6 +48,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // this is similar to GCHandle, but the GCVHandle is allocated on JS side and this keeps the C# proxy alive
 #if FEATURE_WASM_THREADS
+        // TODO does this need to be [ThreadStatic] ?
+        // TODO is this registration on caller or callee thread ?
         [ThreadStatic]
 #endif
         private static Dictionary<nint, PromiseHolder>? s_jsOwnedHolders;
@@ -65,11 +67,13 @@ namespace System.Runtime.InteropServices.JavaScript
         // It's used when we need to create JSHandle-like identity ahead of time, before calling JS.
         // they have negative values, so that they don't collide with JSHandles.
 #if FEATURE_WASM_THREADS
+        // TODO does this need to be [ThreadStatic] ?
         [ThreadStatic]
 #endif
         public static nint NextJSVHandle;
 
 #if FEATURE_WASM_THREADS
+        // TODO does this need to be [ThreadStatic] ?
         [ThreadStatic]
 #endif
         private static List<nint>? s_JSVHandleFreeList;
@@ -115,6 +119,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
                 JSSynchronizationContext.AssertWebWorkerContext();
 #endif
+                // TODO are we on the right thread ?
                 ThreadCsOwnedObjects.Remove(jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
@@ -314,6 +319,32 @@ namespace System.Runtime.InteropServices.JavaScript
 
             }
 
+#if FEATURE_WASM_THREADS
+            signature.ImportHandle = (int)Interlocked.Increment(ref JSFunctionBinding.nextImportHandle);
+#else
+            signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
+#endif
+            signature.Header[0].ImportHandle = signature.ImportHandle;
+            signature.Header[0].FunctionNameLength = functionNameBytes;
+            signature.Header[0].FunctionNameOffset = functionNameOffset;
+            signature.Header[0].ModuleNameLength = moduleNameBytes;
+            signature.Header[0].ModuleNameOffset = moduleNameOffset;
+            if (functionNameBytes != 0)
+            {
+                fixed (void* fn = functionName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + functionNameOffset, fn, (uint)functionNameBytes);
+                }
+            }
+            if (moduleNameBytes != 0)
+            {
+                fixed (void* mn = moduleName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + moduleNameOffset, mn, (uint)moduleNameBytes);
+                }
+
+            }
+
             return signature;
         }
 
@@ -361,24 +392,24 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Interop.Runtime.InstallWebWorkerInterop();
             var currentTID = GetNativeThreadId();
-            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
-            if (ctx == null)
-            {
-                ctx = new JSSynchronizationContext(Thread.CurrentThread, currentTID);
-                ctx.previousSynchronizationContext = SynchronizationContext.Current;
-                JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
-                SynchronizationContext.SetSynchronizationContext(ctx);
-                if (isMainThread)
+                var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+                if (ctx == null)
                 {
-                    JSSynchronizationContext.MainJSSynchronizationContext = ctx;
+                ctx = new JSSynchronizationContext(Thread.CurrentThread, currentTID);
+                    ctx.previousSynchronizationContext = SynchronizationContext.Current;
+                    JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
+                    SynchronizationContext.SetSynchronizationContext(ctx);
+                    if (isMainThread)
+                    {
+                        JSSynchronizationContext.MainJSSynchronizationContext = ctx;
+                    }
                 }
-            }
             else if (ctx.TargetTID != currentTID)
-            {
+                {
                 Environment.FailFast($"JSSynchronizationContext.Install has wrong native thread id {ctx.TargetTID} != {currentTID}");
+                }
+                ctx.AwaitNewData();
             }
-            ctx.AwaitNewData();
-        }
 
         public static void UninstallWebWorkerInterop()
         {
