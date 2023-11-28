@@ -3185,9 +3185,11 @@ namespace System.Tests
             Assert.NotEqual(TimeZoneInfo.Utc.StandardName, TimeZoneInfo.Local.StandardName);
         }
 
+        private static bool SupportICUAndRemoteExecution => PlatformDetection.IsIcuGlobalization && RemoteExecutor.IsSupported;
+
         [InlineData("Pacific Standard Time")]
         [InlineData("America/Los_Angeles")]
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(nameof(SupportICUAndRemoteExecution))]
         public static void TestZoneNamesUsingAlternativeId(string zoneId)
         {
             RemoteExecutor.Invoke(id =>
