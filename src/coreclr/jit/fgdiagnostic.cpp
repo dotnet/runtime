@@ -2970,6 +2970,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
 
     unsigned numBlocks = 0;
+    unsigned maxBBNum  = 0;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2980,6 +2981,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             // Check that bbNum is sequential
             assert(block->IsLast() || (block->bbNum + 1 == block->Next()->bbNum));
         }
+
+        maxBBNum = max(maxBBNum, block->bbNum);
 
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
@@ -3184,6 +3187,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
     assert(fgBBcount == numBlocks);
+    assert(fgBBNumMax >= maxBBNum);
 
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
