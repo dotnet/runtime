@@ -114,7 +114,7 @@ namespace System.Threading
             {
                 NativeRuntimeEventSource.Log.WaitHandleWaitStart(
                     NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
-                    *(nint*)Unsafe.AsPointer(ref this));
+                    0);
             }
 
             uint recursionCount = _lock.ExitAll();
