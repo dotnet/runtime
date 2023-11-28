@@ -463,7 +463,7 @@ Affected public APIs:
 - CompareInfo.GetSortKeyLength
 - CompareInfo.GetHashCode
 
-Apple Native API does not have an equivalent, so they throw `PlatformNotSupportedException`.
+Implemeneted using [stringByFoldingWithOptions:locale:](https://developer.apple.com/documentation/foundation/nsstring/1413779-stringbyfoldingwithoptions)
 
 
 ## Case change

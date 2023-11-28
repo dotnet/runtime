@@ -821,7 +821,7 @@ namespace System.Tests
             yield return new object[] { "abc", "abc", "def", true, CultureInfo.InvariantCulture, "def" };
             yield return new object[] { "abc", "ABC", "def", true, CultureInfo.InvariantCulture, "def" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
             {
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, null, "def" };
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, null, "def" };
