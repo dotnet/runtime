@@ -11368,34 +11368,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 if (GenTree::OperIsUnary(oper))
                 {
-                    if (tree->AsOp()->gtOp1 != nullptr)
-                    {
-                        ValueNumPair op1VNP;
-                        ValueNumPair op1VNPx;
-                        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
+                    assert(tree->gtGetOp1() != nullptr);
+                    ValueNumPair op1VNP;
+                    ValueNumPair op1VNPx;
+                    vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
 
-                        // If we are fetching the array length for an array ref that came from global memory
-                        // then for CSE safety we must use the conservative value number for both
-                        //
-                        if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
-                        {
-                            // use the conservative value number for both when computing the VN for the ARR_LENGTH
-                            op1VNP.SetBoth(op1VNP.GetConservative());
-                        }
-
-                        tree->gtVNPair =
-                            vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
-                    }
-                    else // Is actually nullary.
+                    // If we are fetching the array length for an array ref that came from global memory
+                    // then for CSE safety we must use the conservative value number for both
+                    //
+                    if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
                     {
-                        // Mostly we'll leave these without a value number, assuming we'll detect these as VN failures
-                        // if they actually need to have values.  With the exception of NOPs, which can sometimes have
-                        // meaning.
-                        if (tree->OperGet() == GT_NOP)
-                        {
-                            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                        }
+                        // use the conservative value number for both when computing the VN for the ARR_LENGTH
+                        op1VNP.SetBoth(op1VNP.GetConservative());
                     }
+
+                    tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
                 }
                 else // we have a binary oper
                 {

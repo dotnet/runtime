@@ -9041,8 +9041,7 @@ DONE_MORPHING_CHILDREN:
     {
         return tree;
     }
-
-    if (tree->IsNothingNode())
+    else if (tree->IsNothingNode())
     {
         return tree;
     }

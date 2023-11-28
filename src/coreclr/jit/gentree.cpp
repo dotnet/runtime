@@ -12127,6 +12127,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         // Vanilla leaves. No qualifying information available. So do nothing
 
+        case GT_NOP:
         case GT_NO_OP:
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
