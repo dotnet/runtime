@@ -551,6 +551,8 @@
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'" />
+      <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
+      <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <_MonoRollupEnvironmentVariable Include="MonoDiagnosticsMock:$(MonoDiagnosticsMock)" />
       <_MonoRollupEnvironmentVariable Include="ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)" />
     </ItemGroup>
