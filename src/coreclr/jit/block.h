@@ -65,7 +65,6 @@ enum BBjumpKinds : BYTE
     BBJ_EHCATCHRET,  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
     BBJ_THROW,       // block ends with 'throw'
     BBJ_RETURN,      // block ends with 'ret'
-    BBJ_NONE,        // block flows into the next one (no jump)
     BBJ_ALWAYS,      // block always jumps to the target
     BBJ_LEAVE,       // block always jumps to the target, maybe out of guarded region. Only used until importing.
     BBJ_CALLFINALLY, // block always calls the target finally
@@ -83,7 +82,6 @@ const char* const BBjumpKindNames[] = {
     "BBJ_EHCATCHRET",
     "BBJ_THROW",
     "BBJ_RETURN",
-    "BBJ_NONE",
     "BBJ_ALWAYS",
     "BBJ_LEAVE",
     "BBJ_CALLFINALLY",
@@ -428,6 +426,10 @@ enum BasicBlockFlags : unsigned __int64
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(38), // Block has recursive tailcall that may turn into a loop
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(39), // Block should kill off any incoming CSE
     BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(40), // Ok to add pred edge to this block, even when "safe" edge creation disabled
+    BBF_NONE_QUIRK                     = MAKE_BBFLAG(41), // Block was created as a BBJ_ALWAYS to the next block,
+                                                          // and should be treated as if it falls through.
+                                                          // This is just to reduce diffs from removing BBJ_NONE.
+                                                          // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
 
     // The following are sets of flags.
 
@@ -457,7 +459,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
@@ -539,10 +541,10 @@ public:
     void SetJumpKind(BBjumpKinds jumpKind)
     {
         // If this block's jump kind requires a target, ensure it is already set
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
         bbJumpKind = jumpKind;
         // If new jump kind requires a target, ensure a target is already set
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
     BasicBlock* Prev() const
@@ -597,6 +599,8 @@ public:
 
     bool IsFirstColdBlock(Compiler* compiler) const;
 
+    bool CanRemoveJumpToNext(Compiler* compiler);
+
     unsigned GetJumpOffs() const
     {
         return bbJumpOffs;
@@ -609,10 +613,16 @@ public:
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
+    bool HasJumpDest() const
+    {
+        // These block types should always have bbJumpDest set
+        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
+    }
+
     BasicBlock* GetJumpDest() const
     {
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
         return bbJumpDest;
     }
 
@@ -621,7 +631,7 @@ public:
         // SetJumpKindAndTarget() nulls jumpDest for non-jump kinds,
         // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
         bbJumpDest = jumpDest;
-        assert(HasJump());
+        assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
     void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
@@ -630,24 +640,24 @@ public:
         bbJumpDest = jumpDest;
 
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+        assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
-    bool HasJump() const
+    bool HasInitializedJumpDest() const
     {
+        assert(HasJumpDest());
         return (bbJumpDest != nullptr);
     }
 
     bool HasJumpTo(const BasicBlock* jumpDest) const
     {
-        assert(HasJump());
-        assert(!KindIs(BBJ_SWITCH, BBJ_EHFINALLYRET));
+        assert(HasInitializedJumpDest());
         return (bbJumpDest == jumpDest);
     }
 
     bool JumpsToNext() const
     {
-        assert(HasJump());
+        assert(HasInitializedJumpDest());
         return (bbJumpDest == bbNext);
     }
 
@@ -721,7 +731,7 @@ public:
     unsigned dspPreds();               // Print the predecessors (bbPreds)
     void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
                                        // regions are printed: see NumSucc() for details.
-    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
+    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
@@ -1763,12 +1773,6 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             m_end      = &m_succs[1];
             break;
 
-        case BBJ_NONE:
-            m_succs[0] = block->bbNext;
-            m_begin    = &m_succs[0];
-            m_end      = &m_succs[1];
-            break;
-
         case BBJ_COND:
             m_succs[0] = block->bbNext;
             m_begin    = &m_succs[0];
@@ -2095,7 +2099,7 @@ public:
     }
 
     // Returns the next available successor or `nullptr` if there are no more successors.
-    BasicBlock* NextSuccessor(Compiler* comp)
+    BasicBlock* NextSuccessor()
     {
         m_curSucc++;
         if (m_curSucc >= m_numSuccs)
