@@ -5,7 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>2</ServicingVersion>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides a strongly typed way of specifying and accessing settings using dependency injection.</PackageDescription>
   </PropertyGroup>
 
