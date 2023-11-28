@@ -22,7 +22,7 @@ variables:
 - name: isNotExtraPlatformsBuild
   value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
 - name: isWasmOnlyBuild
-  value: ${{ in(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-wasm-dbgtests', 'runtime-wasm-optional', 'runtime-wasm-hg-tests') }}
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-wasm-dbgtests', 'runtime-wasm-optional') }}
 - name: isiOSLikeOnlyBuild
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-ioslike') }}
 - name: isiOSLikeSimulatorOnlyBuild

@@ -11,13 +11,12 @@ parameters:
   excludeNonLibTests: false
   excludeOptional: true
   debuggerTestsOnly: false
-  hybridGlobalizationOnly: false
 
 jobs:
 
 #
 # ************ Rolling builds: *************
-# - only run eat, and aot tests
+# - only run eat, aot and hg tests
 # - rest are covered by runtime
 #
 - ${{ if eq(parameters.isRollingBuild, true) }}:
@@ -81,7 +80,7 @@ jobs:
 # - run everything, if relevant paths changed
 # - For runtime-wasm, force run all the jobs
 #
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true), ne(parameters.hybridGlobalizationOnly, true)) }}:
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Library tests
   # these run on runtime also
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -195,7 +194,23 @@ jobs:
       scenarios:
         - normal
 
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true), ne(parameters.hybridGlobalizationOnly, true)) }}:
+  # Hybrid Globalization tests
+  # ToDo: add AOT version when this is confirmed to work
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      nameSuffix: _HybridGlobalization
+      extraHelixArgs: /p:HybridGlobalization=true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJS
+
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Builds only
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
     parameters:
@@ -244,7 +259,7 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
-- ${{ if and(ne(parameters.isRollingBuild, true), or(ne(parameters.excludeNonLibTests, true), eq(parameters.debuggerTestsOnly, true), ne(parameters.hybridGlobalizationOnly, true))) }}:
+- ${{ if and(ne(parameters.isRollingBuild, true), or(ne(parameters.excludeNonLibTests, true), eq(parameters.debuggerTestsOnly, true))) }}:
   # Debugger tests
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
     parameters:
@@ -298,20 +313,3 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
-
-- ${{ if and(ne(parameters.isRollingBuild, true), or(ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true), eq(parameters.hybridGlobalizationOnly, true))) }}:
-  # Hybrid Globalization tests
-  #ToDo: add AOT version when this is confirmed to work
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        - browser_wasm_win
-      nameSuffix: _HybridGlobalization
-      extraHelixArgs: /p:HybridGlobalization=true
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJS
