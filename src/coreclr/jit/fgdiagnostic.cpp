@@ -3247,7 +3247,6 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
 
             if (node->OperIs(GT_NOP))
             {
-                assert(node->gtGetOp1() == nullptr && "GT_NOP should be a leaf node.");
                 assert(node->TypeIs(TYP_VOID) && "GT_NOP should be TYP_VOID.");
             }
 

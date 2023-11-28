@@ -6384,6 +6384,11 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
                 return WALK_ABORT;
             }
 
+            if (tree->OperIs(GT_NOP))
+            {
+                // GT_NOP might appear due to stores that end up as
+                // self-stores, which get morphed to GT_NOP.
+            }
             // We might see arbitrary chains of stores that trivially
             // propagate the result. Example:
             //
@@ -9033,6 +9038,11 @@ DONE_MORPHING_CHILDREN:
         return tree;
     }
     else if (tree->OperIsConst())
+    {
+        return tree;
+    }
+
+    if (tree->IsNothingNode())
     {
         return tree;
     }
