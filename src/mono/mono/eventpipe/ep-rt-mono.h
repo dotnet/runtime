@@ -1892,7 +1892,6 @@ ep_rt_write_event_wait_handle_wait_start (
 
 bool
 ep_rt_write_event_wait_handle_wait_stop (
-	uint8_t wait_source,
 	uint16_t clr_instance_id);
 
 /*

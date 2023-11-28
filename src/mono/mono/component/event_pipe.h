@@ -250,7 +250,6 @@ typedef bool
 
 typedef bool
 (*event_pipe_component_write_event_wait_handle_wait_stop_func)(
-	uint8_t wait_source,
 	uint16_t clr_instance_id);
 
 /*
