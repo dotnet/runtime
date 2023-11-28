@@ -299,9 +299,9 @@ namespace System
             // For compatibility, we need to allow trailing zeros at the end of a number string
             value.Slice(index).IndexOfAnyExcept('\0') < 0;
 
-        private static bool IsWhite(int ch) => ch == 0x20 || (uint)(ch - 0x09) <= (0x0D - 0x09);
+        private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
 
-        private static bool IsDigit(int ch) => ((uint)ch - '0') <= 9;
+        private static bool IsDigit(uint ch) => (ch - '0') <= 9;
 
         internal enum ParsingStatus
         {
