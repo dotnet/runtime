@@ -13,9 +13,9 @@ using Wasm.Build.Tests;
 
 namespace Wasi.Build.Tests;
 
-public class BuildThenRunTests : BuildTestBase
+public class BuildThenRun : BuildTestBase
 {
-    public BuildThenRunTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public BuildThenRun(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
@@ -61,27 +61,32 @@ public class BuildThenRunTests : BuildTestBase
         Assert.Contains("Hello, Wasi Console!", res.Output);
     }
 
-
     [Theory]
-    [InlineData("Debug", /*singleFileBundle*/ false)]
-    [InlineData("Release", /*singleFileBundle*/ false)]
-    // [InlineData("Debug", /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    // [InlineData("Release", /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    public void ConsoleBuildThenRunAOTForDifferentBundlings(string config, bool singleFileBundle)
+    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ false)]
+    [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ false)]
+    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ false)]
+    [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ false)]
+    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ true)]
+    // [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ true)]
+    // [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    public void ConsoleBuildThenRunThenPublish(string config, bool aot, bool singleFileBundle)
     {
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
 
-        var buildArgs = new BuildArgs(projectName, config, true, id, null);
+        var buildArgs = new BuildArgs(projectName, config, aot, id, null);
         buildArgs = ExpandBuildArgs(buildArgs);
 
-        string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>";
+        string extraProperties = "";
+        if (aot)
+            extraProperties = "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>";
         if (singleFileBundle)
             extraProperties += "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
         if (!string.IsNullOrEmpty(extraProperties))
-            AddItemsPropertiesToProject(projectFile, extraProperties);
+        AddItemsPropertiesToProject(projectFile, extraProperties);
 
         BuildProject(buildArgs,
                     id: id,
@@ -105,5 +110,22 @@ public class BuildThenRunTests : BuildTestBase
         Assert.Contains("args[0] = x", res.Output);
         Assert.Contains("args[1] = y", res.Output);
         Assert.Contains("args[2] = z", res.Output);
+
+        if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
+            throw new XunitException($"Test bug: could not get the build product in the cache");
+
+        File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+
+        _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
+
+        bool expectRelinking = config == "Release";
+        BuildProject(buildArgs,
+                    id: id,
+                    new BuildProjectOptions(
+                        DotnetWasmFromRuntimePack: !expectRelinking,
+                        CreateProject: false,
+                        Publish: true,
+                        TargetFramework: BuildTestBase.DefaultTargetFramework,
+                        UseCache: false));
     }
 }

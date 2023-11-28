@@ -13,14 +13,14 @@ using Wasm.Build.Tests;
 
 namespace Wasi.Build.Tests;
 
-public class PublishThenRunTests : BuildTestBase
+public class TimezoneTests : BuildTestBase
 {
-    public PublishThenRunTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public TimezoneTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
 
-    public static TheoryData<string, bool, bool> TestDataForConsolePublishThenRunWithWorkloads()
+    public static TheoryData<string, bool, bool> TestDataForConsoleTimezonesSingleFile()
     {
         var data = new TheoryData<string, bool, bool>();
         data.Add("Debug", false, false);
@@ -29,47 +29,24 @@ public class PublishThenRunTests : BuildTestBase
         return data;
     }
 
-
-    public static TheoryData<string, bool, bool> TestDataForConsolePublishThenRun()
-    {
-        var data = new TheoryData<string, bool, bool>();
-        data.Add("Debug", true, true);
-        data.Add("Release", true, true);
-        data.Add("Debug", true, false);
-        data.Add("Release", true, false);
-        data.Add("Debug", false, false);
-        data.Add("Release", false, false);
-        return data;
-    }
-
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-    [MemberData(nameof(TestDataForConsolePublishThenRunWithWorkloads))]
-    public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone) =>
-        ConsolePublishThenRunForDifferentBundlings(config, relinking, invariantTimezone, false, true);
-
-
-    [Theory]
-    [MemberData(nameof(TestDataForConsolePublishThenRun))]
-    public void ConsolePublishAndRun(string config, bool aot, bool singleFileBundle) =>
-        ConsolePublishThenRunForDifferentBundlings(config, false, false, aot, singleFileBundle);
-
-    private void ConsolePublishThenRunForDifferentBundlings(string config, bool relinking, bool invariantTimezone, bool aot, bool singleFileBundle)
+    [MemberData(nameof(TestDataForConsoleTimezonesSingleFile))]
+    public void ConsoleWithTimezonesForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
     {
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Timezones.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
 
-        string extraProperties = @$"<WasmSingleFileBundle>{singleFileBundle}</WasmSingleFileBundle>
-            <InvariantTimezone>{invariantTimezone}</InvariantTimezone>";
+        string extraProperties = "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
         if (relinking)
             extraProperties += "<WasmBuildNative>true</WasmBuildNative>";
-        if (aot)
-            extraProperties += "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>";
+        if (invariantTimezone)
+            extraProperties += "<InvariantTimezone>true</InvariantTimezone>";
 
         AddItemsPropertiesToProject(projectFile, extraProperties);
 
-        var buildArgs = new BuildArgs(projectName, config, /*aot*/aot, id, null);
+        var buildArgs = new BuildArgs(projectName, config, /*aot*/false, id, null);
         buildArgs = ExpandBuildArgs(buildArgs);
 
         bool expectRelinking = config == "Release" || relinking;

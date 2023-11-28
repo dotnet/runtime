@@ -21,11 +21,15 @@ public class BuildThenPublishTests : BuildTestBase
     }
 
     [Theory]
-    [InlineData("Debug", /*aot*/ false)]
-    [InlineData("Debug", /*aot*/ true)]
-    [InlineData("Release", /*aot*/ false)]
-    [InlineData("Release", /*aot*/ true)]
-    public void ConsoleBuildThenRunThenPublish(string config, bool aot)
+    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ false)]
+    [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ false)]
+    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ false)]
+    [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ false)]
+    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ true)]
+    // [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ true)]
+    // [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    public void ConsoleBuildThenPublish(string config, bool aot, bool singleFileBundle)
     {
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
@@ -35,10 +39,13 @@ public class BuildThenPublishTests : BuildTestBase
         var buildArgs = new BuildArgs(projectName, config, aot, id, null);
         buildArgs = ExpandBuildArgs(buildArgs);
 
+        string extraProperties = "";
         if (aot)
-        {
-            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>");
-        }
+            extraProperties = "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>";
+        if (singleFileBundle)
+            extraProperties += "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
+        if (!string.IsNullOrEmpty(extraProperties))
+        AddItemsPropertiesToProject(projectFile, extraProperties);
 
         BuildProject(buildArgs,
                     id: id,
@@ -50,18 +57,6 @@ public class BuildThenPublishTests : BuildTestBase
 
         // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
         int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
-
-        string runArgs = $"run --no-build -c {config}";
-        runArgs += " x y z";
-        var res = new RunCommand(s_buildEnv, _testOutput, label: id)
-                            .WithWorkingDirectory(_projectDir!)
-                            .ExecuteWithCapturedOutput(runArgs)
-                            .EnsureExitCode(expectedExitCode);
-
-        Assert.Contains("Hello, Wasi Console!", res.Output);
-        Assert.Contains("args[0] = x", res.Output);
-        Assert.Contains("args[1] = y", res.Output);
-        Assert.Contains("args[2] = z", res.Output);
 
         if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -79,38 +74,5 @@ public class BuildThenPublishTests : BuildTestBase
                         Publish: true,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
                         UseCache: false));
-    }
-
-    [Theory]
-    [InlineData("Debug", /*singleFileBundle*/ false)]
-    [InlineData("Release", /*singleFileBundle*/ false)]
-    // [InlineData("Debug", /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    // [InlineData("Release", /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    // after fixing the issue this test can be integrated into ConsoleBuildThenRunThenPublish
-    public void ConsoleBuildWithAOTDifferentBundlings(string config, bool singleFileBundle)
-    {
-        string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
-        string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
-
-        var buildArgs = new BuildArgs(projectName, config, /*aot*/true, id, null);
-        buildArgs = ExpandBuildArgs(buildArgs);
-
-        string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>";
-        if (singleFileBundle)
-            extraProperties += "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
-        AddItemsPropertiesToProject(projectFile, extraProperties);
-
-        BuildProject(buildArgs,
-                    id: id,
-                    new BuildProjectOptions(
-                        DotnetWasmFromRuntimePack: true,
-                        CreateProject: false,
-                        Publish: false,
-                        TargetFramework: BuildTestBase.DefaultTargetFramework));
-
-        // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
-        int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
     }
 }
