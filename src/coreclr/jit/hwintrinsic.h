@@ -596,6 +596,21 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbRoundingCompatible) != 0;
     }
+
+    static size_t EmbRoundingArgPos(NamedIntrinsic id)
+    {
+        // This helper function returns the expected position,
+        // where the embedded rounding control argument should be.
+        assert(IsEmbRoundingCompatible(id));
+        switch (id)
+        {
+            case NI_AVX512F_Add:
+                return 3;
+            
+            default:
+                unreached();
+        }
+    }
 #endif // TARGET_XARCH
 
     static bool IsMaybeCommutative(NamedIntrinsic id)

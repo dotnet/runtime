@@ -1057,51 +1057,50 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
     {
-        switch (intrinsicId)
+        
+        size_t numArgs        = node->GetOperandCount();
+        size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+        if(numArgs == expectedArgNum)
         {
-            case NI_AVX512F_Add:
-            {
-                // This branch manages the binary arithmetic intrinsic that is embedded rounding compatible.
-                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-                uint32_t    simdSize        = node->GetSimdSize();
-                size_t      numArgs         = node->GetOperandCount();
-                var_types   simdType        = node->TypeGet();
-                if (numArgs == 2)
-                {
-                    break;
-                }
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            uint32_t    simdSize        = node->GetSimdSize();
+            var_types   simdType        = node->TypeGet();
 
-                // If we reach this point, then we have rounding mode parameter.
-                GenTree* op3 = node->Op(numArgs);
-                assert(op3->IsCnsIntOrI());
-                uint8_t             mode = static_cast<uint8_t>(node->Op(numArgs)->AsIntCon()->IconValue());
-                GenTreeHWIntrinsic* binaryNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2), intrinsicId, simdBaseJitType, simdSize);
-                binaryNode->SetEmbRoundingMode(mode);
-                BlockRange().InsertAfter(op3, binaryNode);
-                LIR::Use use;
-                if (BlockRange().TryGetUse(node, &use))
-                {
-                    use.ReplaceWith(binaryNode);
-                }
-                else
-                {
-                    binaryNode->SetUnusedValue();
-                }
-                BlockRange().Remove(node);
-                BlockRange().Remove(op3);
-                node = binaryNode;
-                if (mode == 0x08)
-                {
-                    // if the rounding mode is ToEven, the default setting we can seek for contain opportunities.
+            GenTree* LastOp = node->Op(numArgs);
+            assert(LastOp->IsCnsIntOrI());
+            uint8_t  mode = static_cast<uint8_t>(LastOp->AsIntCon()->IconValue());
+
+            GenTreeHWIntrinsic* embRoundingNode;
+            switch (numArgs)
+            {
+                case 3:
+                    embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2), intrinsicId, simdBaseJitType, simdSize);
                     break;
-                }
+                
+                default:
+                    unreached();
+            }
+
+            embRoundingNode->SetEmbRoundingMode(mode);
+            BlockRange().InsertAfter(LastOp, embRoundingNode);
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(embRoundingNode);
+            }
+            else
+            {
+                embRoundingNode->SetUnusedValue();
+            }
+            BlockRange().Remove(node);
+            BlockRange().Remove(LastOp);
+            node = embRoundingNode;
+            if (mode != 0x08)
+            {
                 // As embedded rounding can only work under register-to-register form, we can skip contain check at this
                 // point.
                 return node->gtNext;
             }
-            
-            default:
-                unreached();
         }
     }
 
