@@ -2191,7 +2191,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         assert(b && newblk != nullptr);
 
         // Jump target should not be set yet
-        assert(!newblk->HasJump());
+        assert(!newblk->HasInitializedJumpDest());
 
         // First copy the jump destination(s) from "blk".
         optCopyBlkDest(blk, newblk);
@@ -2265,7 +2265,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     // We haven't set the jump target yet
     assert(slowHead->KindIs(BBJ_ALWAYS));
-    assert(!slowHead->HasJump());
+    assert(!slowHead->HasInitializedJumpDest());
     slowHead->SetJumpDest(e2);
 
     fgAddRefPred(e2, slowHead);

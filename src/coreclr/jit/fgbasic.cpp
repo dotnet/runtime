@@ -2940,7 +2940,7 @@ void Compiler::fgLinkBasicBlocks()
                 BasicBlock* const jumpDest = jumpsToNext ? curBBdesc->Next() : fgLookupBB(curBBdesc->GetJumpOffs());
 
                 // Redundantly use SetJumpKindAndTarget() instead of SetJumpDest() just this once,
-                // so we don't break the HasJump() invariant of SetJumpDest().
+                // so we don't break the HasInitializedJumpDest() invariant of SetJumpDest().
                 curBBdesc->SetJumpKindAndTarget(curBBdesc->GetJumpKind(), jumpDest);
                 fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
@@ -5537,8 +5537,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     break;
             }
         }
-        else if (bSrc->KindIs(BBJ_ALWAYS) && ((bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) && bSrc->HasJump() &&
-                 bSrc->JumpsToNext())
+        else if (bSrc->KindIs(BBJ_ALWAYS) && ((bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
+                 bSrc->HasInitializedJumpDest() && bSrc->JumpsToNext())
         {
             bSrc->bbFlags |= BBF_NONE_QUIRK;
         }

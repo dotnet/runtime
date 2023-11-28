@@ -2376,7 +2376,7 @@ private:
             case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                assert(block->HasJump());
+                assert(block->HasInitializedJumpDest());
                 exitPoint = block->GetJumpDest();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
@@ -4394,7 +4394,8 @@ PhaseStatus Compiler::optUnrollLoops()
                     newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-                    assert(!newBlock->HasJump());
+                    assert(newBlock->KindIs(BBJ_ALWAYS));
+                    assert(!newBlock->HasInitializedJumpDest());
 
                     if (block == bottom)
                     {
@@ -4423,7 +4424,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 {
                     // Jump kind/target should not be set yet
                     BasicBlock* newBlock = blockMap[block];
-                    assert(!newBlock->HasJump());
+                    assert(!newBlock->HasInitializedJumpDest());
 
                     // Now copy the jump kind/target
                     optCopyBlkDest(block, newBlock);
@@ -4440,7 +4441,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 if (clonedTopPrev->KindIs(BBJ_ALWAYS))
                 {
-                    assert(!clonedTopPrev->HasJump());
+                    assert(!clonedTopPrev->HasInitializedJumpDest());
                     clonedTopPrev->SetJumpDest(clonedTop);
                 }
 
@@ -4571,7 +4572,7 @@ PhaseStatus Compiler::optUnrollLoops()
             {
                 BasicBlock* clonedBottom = blockMap[bottom];
                 assert(clonedBottom->KindIs(BBJ_ALWAYS));
-                assert(!clonedBottom->HasJump());
+                assert(!clonedBottom->HasInitializedJumpDest());
 
                 clonedBottom->SetJumpDest(tail);
                 fgAddRefPred(tail, clonedBottom);
