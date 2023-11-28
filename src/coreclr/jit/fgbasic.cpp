@@ -68,7 +68,8 @@ void Compiler::fgInit()
     fgBBVarSetsInited = false;
     fgReturnCount     = 0;
 
-    m_dfs = nullptr;
+    m_dfs   = nullptr;
+    m_loops = nullptr;
 
     // Initialize BlockSet data.
     fgCurBBEpoch             = 0;
