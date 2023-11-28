@@ -892,7 +892,6 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_CNS_STR:
         case GT_FIELD_ADDR:
         case GT_LCL_ADDR:
-        case GT_CLS_VAR_ADDR:
             return false;
 
         case GT_IND:

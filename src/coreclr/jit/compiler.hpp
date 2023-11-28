@@ -4410,7 +4410,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
