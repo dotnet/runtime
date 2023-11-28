@@ -686,17 +686,27 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         /// <summary>
-        /// Returns true if both keys are null or equals, or if key1 is KeyedService.AnyKey and key2 is not null
+        /// Returns true if both keys are null or equals, or if either key is KeyedService.AnyKey.
         /// </summary>
         private static bool KeysMatch(object? key1, object? key2)
         {
-            if (key1 == null && key2 == null)
-                return true;
+            // Use reference equality when comparing to AnyKey or null.
+            // Use key1's definition of equality when comparing key1 and key2.
 
-            if (key1 != null && key2 != null)
-                return key1.Equals(KeyedService.AnyKey) || key1.Equals(key2);
+            if (key1 is null)
+            {
+                return key2 is null || key2 == KeyedService.AnyKey;
+            }
 
-            return false;
+            if (key2 is null)
+            {
+                return key1 == KeyedService.AnyKey;
+            }
+
+            return
+                key1 == KeyedService.AnyKey ||
+                key2 == KeyedService.AnyKey ||
+                key1.Equals(key2);
         }
 
         private struct ServiceDescriptorCacheItem

@@ -101,6 +101,30 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveKeyedServicesAnyKey()
+        {
+            var service1 = new Service();
+            var service2 = new Service();
+            var service3 = new Service();
+            var service4 = new Service();
+            var service5 = new Service();
+            var service6 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service1);
+            serviceCollection.AddKeyedSingleton<IService>("service", service2);
+            serviceCollection.AddKeyedSingleton<IService>("service", service3);
+            serviceCollection.AddKeyedSingleton<IService>("service", service4);
+            serviceCollection.AddKeyedSingleton<IService>(null, service5);
+            serviceCollection.AddSingleton<IService>(service6);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
+            Assert.Equal(6, allServices.Count);
+            Assert.Equal(new[] { service1, service2, service3, service4, service5, service6 }, allServices);
+        }
+
+        [Fact]
         public void ResolveKeyedGenericServices()
         {
             var service1 = new FakeService();
