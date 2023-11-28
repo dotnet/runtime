@@ -2146,8 +2146,10 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
-    BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
-    loop->VisitLoopBlocksLexical([=, &newPred](BasicBlock* blk) {
+    BlockToBlockMap* blockMap      = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
+    unsigned         numBlocksLeft = loop->NumLoopBlocks();
+
+    loop->VisitLoopBlocksLexical([=, &newPred, &numBlocksLeft](BasicBlock* blk) {
         // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later with optCopyBlkDest()
         BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
@@ -2196,9 +2198,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         newPred = newBlk;
         blockMap->Set(blk, newBlk);
 
+        numBlocksLeft--;
+        assert(numBlocksLeft >= 0);
+
         // If the block falls through to a block outside the loop then we may
         // need to insert a new block to redirect.
-        if (blk->bbFallsThrough() && !loop->ContainsBlock(blk->Next()))
+        if ((numBlocksLeft > 0) && blk->bbFallsThrough() && !loop->ContainsBlock(blk->Next()))
         {
             if (blk->KindIs(BBJ_COND))
             {
