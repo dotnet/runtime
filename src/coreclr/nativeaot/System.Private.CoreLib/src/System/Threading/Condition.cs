@@ -5,6 +5,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -97,7 +98,7 @@ namespace System.Threading
 
         public bool Wait(TimeSpan timeout) => Wait(WaitHandle.ToTimeoutMilliseconds(timeout));
 
-        public unsafe bool Wait(int millisecondsTimeout)
+        public unsafe bool Wait(int millisecondsTimeout, object? associatedObject = null)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
@@ -112,9 +113,10 @@ namespace System.Threading
                 NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
             if (isWaitHandleKeywordEnabled)
             {
+                associatedObject ??= this;
                 NativeRuntimeEventSource.Log.WaitHandleWaitStart(
                     NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
-                    0);
+                    *(nint*)Unsafe.AsPointer(ref associatedObject));
             }
 
             uint recursionCount = _lock.ExitAll();
