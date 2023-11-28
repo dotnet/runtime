@@ -4289,8 +4289,7 @@ BitVecTraits FlowGraphNaturalLoop::LoopBlockTraits()
 // Remarks:
 //   Containment here means that the block is in the SCC of the loop; i.e. it
 //   is in a cycle with the header block. Note that EH successors are taken
-//   into acount; for example, a BBJ_RETURN may still be a loop block provided
-//   that its handler can reach the loop header.
+//   into account.
 //
 bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
 {
@@ -4302,6 +4301,18 @@ bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
 
     BitVecTraits traits = LoopBlockTraits();
     return BitVecOps::IsMember(&traits, m_blocks, index);
+}
+
+//------------------------------------------------------------------------
+// NumLoopBlocks: Get the number of blocks in the SCC of the loop.
+//
+// Returns:
+//   Count of blocks.
+//
+unsigned FlowGraphNaturalLoop::NumLoopBlocks()
+{
+    BitVecTraits loopTraits = LoopBlockTraits();
+    return BitVecOps::Count(&loopTraits, m_blocks);
 }
 
 //------------------------------------------------------------------------

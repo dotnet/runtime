@@ -2100,6 +2100,8 @@ public:
 
     bool ContainsBlock(BasicBlock* block);
 
+    unsigned NumLoopBlocks();
+
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocksReversePostOrder(TFunc func);
 

@@ -1853,8 +1853,9 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 
     // TODO-Quirk: Reject loops that with the old loop cloning would put us
     // above max number of returns. Return blocks are not considered part of
-    // loops in the new loop finding since they are never part of the SCC.
-    // (Is that true? What about due to EH successors?)
+    // loops in the new loop finding since they are never part of the SCC (and
+    // they aren't present inside try-regions).
+    //
     LoopDsc* oldLoop      = m_newToOldLoop[loop->GetIndex()];
     unsigned loopRetCount = 0;
     for (BasicBlock* const blk : oldLoop->LoopBlocks())
@@ -1932,10 +1933,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         assert((op1->gtOper == GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
 #endif
     }
-
-    // Otherwise, we're going to add those return blocks.
-    fgReturnCount += loopRetCount;
-    assert(loopRetCount == 0);
 
     return true;
 }
@@ -2149,18 +2146,17 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
-    unsigned numBlocks = 0;
-    loop->VisitLoopBlocks([&numBlocks](BasicBlock* block) {
-        numBlocks++;
-        return BasicBlockVisit::Continue;
-    });
+    unsigned numBlocks = loop->NumLoopBlocks();
 
     BasicBlock** lexicalBlocks = new (this, CMK_LoopClone) BasicBlock*[numBlocks];
     unsigned     index         = 0;
     loop->VisitLoopBlocks([=, &index](BasicBlock* block) {
+        assert(index < numBlocks);
         lexicalBlocks[index++] = block;
         return BasicBlockVisit::Continue;
     });
+
+    assert(index == numBlocks);
 
     jitstd::sort(lexicalBlocks, lexicalBlocks + numBlocks,
                  [](BasicBlock* lhs, BasicBlock* rhs) { return lhs->bbNum < rhs->bbNum; });

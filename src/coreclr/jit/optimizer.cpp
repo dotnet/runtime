@@ -5646,12 +5646,18 @@ PhaseStatus Compiler::optFindLoopsPhase()
         assert(m_newToOldLoop[loop->GetIndex()] == nullptr);
         m_oldToNewLoop[head->bbNatLoopNum] = loop;
         m_newToOldLoop[loop->GetIndex()]   = dsc;
+    }
 
+#ifdef DEBUG
+    for (unsigned i = 0; i < optLoopCount; i++)
+    {
+        assert(m_oldToNewLoop[i] != nullptr);
+        LoopDsc* dsc = &optLoopTable[i];
         if ((dsc->lpFlags & LPFLG_ITER) == 0)
             continue;
 
         NaturalLoopIterInfo iter;
-        bool                analyzed = loop->AnalyzeIteration(&iter);
+        bool                analyzed = m_oldToNewLoop[i]->AnalyzeIteration(&iter);
         assert(analyzed);
 
         assert(iter.HasConstInit == ((dsc->lpFlags & LPFLG_CONST_INIT) != 0));
@@ -5666,12 +5672,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
         }
         assert(iter.TestTree == dsc->lpTestTree);
     }
-
-    // New loop finding should be strictly more general.
-    for (unsigned i = 0; i < optLoopCount; i++)
-    {
-        assert(m_oldToNewLoop[i] != nullptr);
-    }
+#endif
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
