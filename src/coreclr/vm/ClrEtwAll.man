@@ -4249,12 +4249,12 @@
                     <!-- Wait Handle events -->
                     <event value="301" version="0" level="win:Verbose" template="WaitHandleWaitStart"
                            keywords="WaitHandleKeyword" opcode="win:Start"
-                           task="WaitHandle"
+                           task="WaitHandleWait"
                            symbol="WaitHandleWaitStart" message="$(string.RuntimePublisher.WaitHandleWaitStartEventMessage)"/>
 
                     <event value="302" version="0" level="win:Verbose" template="WaitHandleWaitStop"
                            keywords="WaitHandleKeyword" opcode="win:Stop"
-                           task="WaitHandle"
+                           task="WaitHandleWait"
                            symbol="WaitHandleWaitStop" message="$(string.RuntimePublisher.WaitHandleWaitStopEventMessage)"/>
 
                 </events>
