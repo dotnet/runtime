@@ -17,14 +17,14 @@ namespace Microsoft.Extensions.DependencyModel
         {
             ThrowHelper.ThrowIfNull(self);
 
-            return SelectManyWithParameterHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultNativeAssets(context), self);
+            return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultNativeAssets(context), self);
         }
 
         public static IEnumerable<RuntimeFile> GetDefaultNativeRuntimeFileAssets(this DependencyContext self)
         {
             ThrowHelper.ThrowIfNull(self);
 
-            return SelectManyWithParameterHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultNativeRuntimeFileAssets(context), self);
+            return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultNativeRuntimeFileAssets(context), self);
         }
 
         public static IEnumerable<string> GetRuntimeNativeAssets(this DependencyContext self, string runtimeIdentifier)
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.DependencyModel
             ThrowHelper.ThrowIfNull(self);
             ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
-            return SelectManyWithParameterHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeNativeAssets(context, id), self, runtimeIdentifier);
+            return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeNativeAssets(context, id), self, runtimeIdentifier);
         }
 
         public static IEnumerable<RuntimeFile> GetRuntimeNativeRuntimeFileAssets(this DependencyContext self, string runtimeIdentifier)
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyModel
             ThrowHelper.ThrowIfNull(self);
             ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
-            return SelectManyWithParameterHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeNativeRuntimeFileAssets(context, id), self, runtimeIdentifier);
+            return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeNativeRuntimeFileAssets(context, id), self, runtimeIdentifier);
         }
 
         public static IEnumerable<string> GetDefaultNativeAssets(this RuntimeLibrary self, DependencyContext context)
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             ThrowHelper.ThrowIfNull(self);
 
-            return SelectManyWithParameterHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultAssemblyNames(context), self);
+            return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultAssemblyNames(context), self);
         }
 
         public static IEnumerable<AssemblyName> GetRuntimeAssemblyNames(this DependencyContext self, string runtimeIdentifier)
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.DependencyModel
             ThrowHelper.ThrowIfNull(self);
             ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
-            return SelectManyWithParameterHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeAssemblyNames(context, id), self, runtimeIdentifier);
+            return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeAssemblyNames(context, id), self, runtimeIdentifier);
         }
 
         public static IEnumerable<AssemblyName> GetDefaultAssemblyNames(this RuntimeLibrary self, DependencyContext context)

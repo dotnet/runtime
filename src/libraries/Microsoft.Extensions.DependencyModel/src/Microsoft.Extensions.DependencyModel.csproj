@@ -13,8 +13,6 @@ By default, the dependency manifest contains information about the application's
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\System.Linq\src\System\Linq\SelectManyWithParameterHelpers.cs"
-             Link="System\Linq\SelectManyWithParameterHelpers.cs" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
