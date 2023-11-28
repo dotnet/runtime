@@ -3751,7 +3751,8 @@ class GCSafePointSuccessorEnumerator
     unsigned m_curSucc = UINT_MAX;
 
 public:
-    // Constructs an enumerator of all `block`'s successors.
+    // Constructs an enumerator of successors to be used for checking for GC
+    // safe point cycles.
     GCSafePointSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
     {
         m_numSuccs = 0;
