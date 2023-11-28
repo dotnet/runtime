@@ -19,6 +19,13 @@ static bool strictArmAsm;
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
+enum PredicateType
+{
+    PREDICATE_NONE = 0,
+    PREDICATE_MERGE,
+    PREDICATE_ZERO,
+};
+
 const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg);
@@ -45,7 +52,8 @@ void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
-void emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma);
+void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
+void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -452,6 +460,9 @@ static code_t insEncodeExtendScale(ssize_t imm);
 // Returns the encoding to have the Rm register be auto scaled by the ld/st size
 static code_t insEncodeReg3Scale(bool isScaled);
 
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+static code_t insEncodeSveElemsize(insOpts opt);
+
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
 {
@@ -702,6 +713,16 @@ inline static bool isValidVectorElemsizeFloat(emitAttr size)
     return (size == EA_8BYTE) || (size == EA_4BYTE);
 }
 
+inline static bool isValidVectorElemsizeSveFloat(emitAttr size)
+{
+    return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
+}
+
+inline static bool isScalableVectorSize(emitAttr size)
+{
+    return (size == EA_SCALABLE);
+}
+
 inline static bool isGeneralRegister(regNumber reg)
 {
     return (reg >= REG_INT_FIRST) && (reg <= REG_LR);
@@ -730,6 +751,11 @@ inline static bool isFloatReg(regNumber reg)
 inline static bool isPredicateRegister(regNumber reg)
 {
     return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+}
+
+inline static bool isLowPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LOW_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -830,8 +856,56 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 
 inline static bool insOptsScalable(insOpts opt)
 {
-    return ((opt == INS_OPTS_SCALABLE_B || opt == INS_OPTS_SCALABLE_H || opt == INS_OPTS_SCALABLE_S ||
-             opt == INS_OPTS_SCALABLE_D));
+    // Opt is any of the scalable types.
+    return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableToSimd(opt)) ||
+            (insOptsScalableToScalar(opt)));
+}
+
+inline static bool insOptsScalableSimple(insOpts opt)
+{
+    // `opt` is any of the standard scalable types.
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
+            (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableWords(insOpts opt)
+{
+    // `opt` is any of the standard word and above scalable types.
+    return ((opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableFloat(insOpts opt)
+{
+    // `opt` is any of the standard scalable types that are valid for FP.
+    return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableWide(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for widening to size D.
+    return ((opt == INS_OPTS_SCALABLE_WIDE_B) || (opt == INS_OPTS_SCALABLE_WIDE_H) ||
+            (opt == INS_OPTS_SCALABLE_WIDE_S));
+}
+
+inline static bool insOptsScalableToSimd(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for conversion to a scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD) || (opt == INS_OPTS_SCALABLE_H_TO_SIMD) ||
+            (opt == INS_OPTS_SCALABLE_S_TO_SIMD) || (opt == INS_OPTS_SCALABLE_D_TO_SIMD));
+}
+
+inline static bool insOptsScalableToSimdFloat(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for conversion to an FP scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_H_TO_SIMD) || (opt == INS_OPTS_SCALABLE_S_TO_SIMD) ||
+            (opt == INS_OPTS_SCALABLE_D_TO_SIMD));
+}
+
+inline static bool insOptsScalableToScalar(insOpts opt)
+{
+    // `opt` is any of the SIMD scalable types that are valid for conversion to scalar.
+    return ((opt == INS_OPTS_SCALABLE_B_TO_SCALAR) || (opt == INS_OPTS_SCALABLE_H_TO_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_S_TO_SCALAR) || (opt == INS_OPTS_SCALABLE_D_TO_SCALAR));
 }
 
 static bool isValidImmCond(ssize_t imm);

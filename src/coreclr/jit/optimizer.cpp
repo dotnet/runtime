@@ -1120,23 +1120,9 @@ bool Compiler::optExtractInitTestIncr(
         incrStmt = incrStmt->GetPrevStmt();
     }
 
-    if (incrStmt == nullptr || optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM)
+    if (incrStmt == nullptr || (optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM))
     {
-        if (top == nullptr || top->bbStmtList == nullptr || top->bbStmtList->GetPrevStmt() == nullptr)
-        {
-            return false;
-        }
-
-        // If the prev stmt to loop test is not incr, then check if we have loop test evaluated into a tmp.
-        Statement* toplastStmt = top->lastStmt();
-        if (optIsLoopIncrTree(toplastStmt->GetRootNode()) != BAD_VAR_NUM)
-        {
-            incrStmt = toplastStmt;
-        }
-        else
-        {
-            return false;
-        }
+        return false;
     }
 
     assert(testStmt != incrStmt);
@@ -2389,7 +2375,7 @@ private:
             case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                assert(block->HasJump());
+                assert(block->HasInitializedJumpDest());
                 exitPoint = block->GetJumpDest();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
@@ -4402,7 +4388,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-                    assert(!newBlock->HasJump());
+                    assert(newBlock->KindIs(BBJ_NONE));
 
                     if (block == bottom)
                     {

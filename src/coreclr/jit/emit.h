@@ -502,6 +502,9 @@ protected:
         OPSZ32     = 5,
         OPSZ64     = 6,
         OPSZ_COUNT = 7,
+#elif defined(TARGET_ARM64)
+        OPSZ_SCALABLE = 5,
+        OPSZ_COUNT    = 6,
 #else
         OPSZ_COUNT = 5,
 #endif
@@ -509,7 +512,7 @@ protected:
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP      = OPSZ4,
+        OPSZP         = OPSZ4,
 #endif
     };
 
@@ -1700,7 +1703,9 @@ protected:
 #define PERFSCORE_THROUGHPUT_8C 8.0f     // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C 9.0f     // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C 10.0f   // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C 13.0f   // slower - 13 cycles
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles

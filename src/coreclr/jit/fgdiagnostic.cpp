@@ -3121,9 +3121,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         // Blocks with these jump kinds must have non-null jump targets
-        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE))
+        if (block->HasJumpDest())
         {
-            assert(block->HasJump());
+            assert(block->HasInitializedJumpDest());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated

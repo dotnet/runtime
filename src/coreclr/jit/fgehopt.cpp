@@ -454,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Time to optimize.
         //
         // (1) Convert the callfinally to a normal jump to the handler
-        assert(callFinally->HasJump());
+        assert(callFinally->HasInitializedJumpDest());
         callFinally->SetJumpKind(BBJ_ALWAYS);
 
         // Identify the leave block and the continuation
@@ -1081,7 +1081,7 @@ PhaseStatus Compiler::fgCloneFinally()
             newBlock->clearHndIndex();
 
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-            assert(!newBlock->HasJump());
+            assert(newBlock->KindIs(BBJ_NONE));
         }
 
         if (!clonedOk)

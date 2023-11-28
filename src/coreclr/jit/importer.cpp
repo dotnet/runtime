@@ -4323,7 +4323,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(step == DUMMY_INIT(NULL));
                 callBlock = block;
 
-                assert(callBlock->HasJump());
+                assert(callBlock->HasInitializedJumpDest());
                 fgRemoveRefPred(callBlock->GetJumpDest(), callBlock);
 
                 // callBlock will call the finally handler. Convert the BBJ_LEAVE to BBJ_CALLFINALLY
@@ -4353,7 +4353,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step, HBtab->ebdHndBeg);
 
                 // step's jump target shouldn't be set yet
-                assert(!step->HasJump());
+                assert(!step->HasInitializedJumpDest());
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
                 step->SetJumpDest(callBlock);
@@ -4453,7 +4453,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         finalStep->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
 
         // step's jump target shouldn't be set yet
-        assert(!step->HasJump());
+        assert(!step->HasInitializedJumpDest());
 
         step->SetJumpDest(finalStep);
         fgAddRefPred(finalStep, step);
@@ -4598,7 +4598,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 BasicBlock* exitBlock = fgNewBBinRegion(BBJ_EHCATCHRET, 0, XTnum + 1, step);
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
-                assert((step == block) || !step->HasJump());
+                assert((step == block) || !step->HasInitializedJumpDest());
                 if (step == block)
                 {
                     fgRemoveRefPred(step->GetJumpDest(), step);
@@ -4669,7 +4669,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 callBlock = block;
 
-                assert(callBlock->HasJump());
+                assert(callBlock->HasInitializedJumpDest());
                 fgRemoveRefPred(callBlock->GetJumpDest(), callBlock);
 
                 // callBlock will call the finally handler. Convert the BBJ_LEAVE to BBJ_CALLFINALLY
@@ -4706,7 +4706,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // stack walks.)
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
-                assert((step == block) || !step->HasJump());
+                assert((step == block) || !step->HasInitializedJumpDest());
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 if (step->KindIs(BBJ_EHCATCHRET))
@@ -4749,7 +4749,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // !FEATURE_EH_CALLFINALLY_THUNKS
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
-                assert((step == block) || !step->HasJump());
+                assert((step == block) || !step->HasInitializedJumpDest());
 
                 // callBlock will call the finally handler
                 callBlock =
@@ -4841,7 +4841,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             if ((stepType == ST_FinallyReturn) || (stepType == ST_Catch))
             {
                 assert(step);
-                assert((step == block) || !step->HasJump());
+                assert((step == block) || !step->HasInitializedJumpDest());
 
                 if (stepType == ST_FinallyReturn)
                 {
@@ -4909,7 +4909,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     }
     else
     {
-        assert((step == block) || !step->HasJump());
+        assert((step == block) || !step->HasInitializedJumpDest());
 
         if (step == block)
         {
@@ -7529,11 +7529,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
-
-                if (block->KindIs(BBJ_NONE))
-                {
-                    assert(!block->HasJump());
-                }
 
                 if (opts.OptimizationEnabled() && (block->KindIs(BBJ_NONE) || block->JumpsToNext()))
                 {
