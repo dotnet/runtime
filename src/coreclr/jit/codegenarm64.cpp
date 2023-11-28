@@ -10194,11 +10194,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_CN_3A
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_2BYTE, REG_V12, REG_P1, REG_V15,
-                              INS_OPTS_SCALABLE_H_TO_SIMD); /* CLASTA  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR); /* CLASTA  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_V13, REG_P2, REG_V16,
-                              INS_OPTS_SCALABLE_S_TO_SIMD); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_V14, REG_P0, REG_V17,
-                              INS_OPTS_SCALABLE_D_TO_SIMD); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
 
     // IF_SVE_CO_3A
     // Note: EA_4BYTE used for B and H (destination register is W)
@@ -10299,11 +10299,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_HJ_3A
     theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_2BYTE, REG_V21, REG_P6, REG_V14,
-                              INS_OPTS_SCALABLE_H_TO_SIMD); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_4BYTE, REG_V22, REG_P5, REG_V13,
-                              INS_OPTS_SCALABLE_S_TO_SIMD); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_8BYTE, REG_V23, REG_P4, REG_V12,
-                              INS_OPTS_SCALABLE_D_TO_SIMD); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
     // IF_SVE_HL_3A
     theEmitter->emitIns_R_R_R(INS_sve_fabd, EA_SCALABLE, REG_V24, REG_P3, REG_V11,
                               INS_OPTS_SCALABLE_H); /* FABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
@@ -10339,13 +10339,13 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_AF_3A
     theEmitter->emitIns_R_R_R(INS_sve_andv, EA_1BYTE, REG_V0, REG_P0, REG_V0,
-                              INS_OPTS_SCALABLE_B_TO_SIMD); /* ANDV    <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_TO_SIMD_SCALAR); /* ANDV    <V><d>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_eorv, EA_2BYTE, REG_V1, REG_P1, REG_V1,
-                              INS_OPTS_SCALABLE_H_TO_SIMD); /* EORV    <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR); /* EORV    <V><d>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_orv, EA_4BYTE, REG_V2, REG_P2, REG_V2,
-                              INS_OPTS_SCALABLE_S_TO_SIMD); /* ORV     <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR); /* ORV     <V><d>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_orv, EA_8BYTE, REG_V3, REG_P3, REG_V3,
-                              INS_OPTS_SCALABLE_D_TO_SIMD); /* ORV     <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR); /* ORV     <V><d>, <Pg>, <Zn>.<T> */
 
     // IF_SVE_AG_3A
     // These are not yet supported by capstone.
@@ -10360,11 +10360,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_AI_3A
     theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_1BYTE, REG_V1, REG_P4, REG_V2,
-                              INS_OPTS_SCALABLE_B_TO_SIMD); /* SADDV   <Dd>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_TO_SIMD_SCALAR); /* SADDV   <Dd>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_2BYTE, REG_V2, REG_P5, REG_V3,
-                              INS_OPTS_SCALABLE_H_TO_SIMD); /* SADDV   <Dd>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR); /* SADDV   <Dd>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_uaddv, EA_4BYTE, REG_V3, REG_P6, REG_V4,
-                              INS_OPTS_SCALABLE_S_TO_SIMD); /* UADDV   <Dd>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR); /* UADDV   <Dd>, <Pg>, <Zn>.<T> */
 
     // IF_SVE_AJ_3A
     // These are not yet supported by capstone.
@@ -10373,13 +10373,13 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_AK_3A
     theEmitter->emitIns_R_R_R(INS_sve_smaxv, EA_8BYTE, REG_V15, REG_P7, REG_V4,
-                              INS_OPTS_SCALABLE_D_TO_SIMD); /* SMAXV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR); /* SMAXV   <V><d>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_sminv, EA_4BYTE, REG_V16, REG_P6, REG_V14,
-                              INS_OPTS_SCALABLE_S_TO_SIMD); /* SMINV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR); /* SMINV   <V><d>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_umaxv, EA_2BYTE, REG_V17, REG_P5, REG_V24,
-                              INS_OPTS_SCALABLE_H_TO_SIMD); /* UMAXV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR); /* UMAXV   <V><d>, <Pg>, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_uminv, EA_1BYTE, REG_V18, REG_P4, REG_V31,
-                              INS_OPTS_SCALABLE_B_TO_SIMD); /* UMINV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_TO_SIMD_SCALAR); /* UMINV   <V><d>, <Pg>, <Zn>.<T> */
 
     // IF_SVE_AL_3A
     // These are not yet supported by capstone.
