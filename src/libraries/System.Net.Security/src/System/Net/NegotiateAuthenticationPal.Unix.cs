@@ -470,6 +470,15 @@ namespace System.Net
                 else
                 {
                     // Native shim currently supports only NTLM, Negotiate and Kerberos
+
+                    if (UseManagedNtlm)
+                    {
+                        // use constructor taking the message as it does not
+                        // call into libSystem.Net.Security.Native which may be
+                        // unavailable on platforms using Managed NTLM implementation
+                        throw new Interop.NetSecurityNative.GssApiException(SR.Format(SR.net_gssapi_operation_failed_majoronly, Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE.ToString("x")));
+                    }
+
                     throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE, 0);
                 }
             }
