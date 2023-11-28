@@ -818,6 +818,7 @@ public:
           m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0),
 #endif
+          m_finalCodeAddressSlot(NULL),
           m_gphCache()
     {
         CONTRACTL
@@ -901,6 +902,8 @@ public:
 
     void WriteCode(EEJitManager * jitMgr);
 
+    void PublishFinalCodeAddress(PCODE addr);
+
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
@@ -979,6 +982,7 @@ protected :
     PatchpointInfo        * m_pPatchpointInfoFromRuntime;
     unsigned                m_ilOffset;
 #endif
+    PCODE* m_finalCodeAddressSlot;
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread
     // for this method, these values are filled in.   Thereafter, these values are used

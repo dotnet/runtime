@@ -579,7 +579,7 @@ void Async2Transformation::Transform(
     // Fill in 'state'
     newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
-    GenTree* stateNumNode = m_comp->gtNewIconNode((ssize_t)stateNum, TYP_I_IMPL);
+    GenTree* stateNumNode = m_comp->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode);
     LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
 

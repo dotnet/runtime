@@ -10786,6 +10786,16 @@ void CEEJitInfo::WriteCodeBytes()
     }
 }
 
+void CEEJitInfo::PublishFinalCodeAddress(PCODE addr)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (m_finalCodeAddressSlot != NULL)
+    {
+        *m_finalCodeAddressSlot = addr;
+    }
+}
+
 /*********************************************************************/
 void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
 {
@@ -13082,6 +13092,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         ret |= THUMB_CODE;
 #endif
 
+        jitInfo.PublishFinalCodeAddress(ret);
+
         // We are done
         break;
     }
@@ -14376,7 +14388,13 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     }
     else
     {
-        pCode->EmitLDC((DWORD_PTR)config->GetNativeCodeSlot());
+        {
+            AllocMemTracker pamTracker;
+            m_finalCodeAddressSlot = (PCODE*)pamTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
+            pamTracker.SuppressRelease();
+        }
+
+        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
         pCode->EmitLDIND_I();
     }
 
