@@ -104,7 +104,9 @@ namespace System.IO.Tests
             using var writer = new StreamWriter(new FileStream(handle, FileAccess.ReadWrite));
             writer.AutoFlush = true;
             writer.WriteLine("now: " + DateTime.Now);
-            await Task.Delay(2000);
+            // According to https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-win32_file_attribute_data
+            // write time has a resolution of 2 seconds on FAT. Let's wait a little bit longer.
+            await Task.Delay(TimeSpan.FromSeconds(3));
             writer.WriteLine("now: " + DateTime.Now);
 
             var timeAfterWrite = File.GetLastWriteTime(handle);
