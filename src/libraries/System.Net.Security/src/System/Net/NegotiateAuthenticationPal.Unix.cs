@@ -19,6 +19,8 @@ namespace System.Net
 {
     internal partial class NegotiateAuthenticationPal
     {
+        private static readonly Lazy<bool> _hasSystemNetSecurityNative = new Lazy<bool>(CheckHasSystemNetSecurityNative);
+        internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
         private static bool UseManagedNtlm { get; } =
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :
@@ -35,7 +37,7 @@ namespace System.Net
                         return ManagedNtlmNegotiateAuthenticationPal.Create(clientOptions);
 
                     case NegotiationInfoClass.Negotiate:
-                        return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: true);
+                        return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: HasSystemNetSecurityNative);
                 }
             }
 
@@ -470,15 +472,6 @@ namespace System.Net
                 else
                 {
                     // Native shim currently supports only NTLM, Negotiate and Kerberos
-
-                    if (UseManagedNtlm)
-                    {
-                        // use constructor taking the message as it does not
-                        // call into libSystem.Net.Security.Native which may be
-                        // unavailable on platforms using Managed NTLM implementation
-                        throw new Interop.NetSecurityNative.GssApiException(SR.Format(SR.net_gssapi_operation_failed_majoronly, Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE.ToString("x")));
-                    }
-
                     throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE, 0);
                 }
             }
@@ -774,6 +767,19 @@ namespace System.Net
                     default:
                         return NegotiateAuthenticationStatusCode.GenericFailure;
                 }
+            }
+        }
+
+        public static bool CheckHasSystemNetSecurityNative()
+        {
+            try
+            {
+                return Interop.NetSecurityNative.IsNtlmInstalled();
+            }
+            catch (Exception e) when (e is EntryPointNotFoundException || e is DllNotFoundException || e is TypeInitializationException)
+            {
+                // libSystem.Net.Security.Native is not available
+                return false;
             }
         }
     }
