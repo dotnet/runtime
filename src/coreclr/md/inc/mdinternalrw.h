@@ -418,23 +418,6 @@ public:
         ULONG       *pcbSigBlob);           // [OUT] actual size of signature blob
 
     //*****************************************
-    // look up function for TypeDef
-    //*****************************************
-    __checkReturn
-    STDMETHODIMP FindTypeDef(
-        LPCSTR      szNamespace,            // [IN] Namespace for the TypeDef.
-        LPCSTR      szName,                 // [IN] Name of the TypeDef.
-        mdToken     tkEnclosingClass,       // [IN] TypeDef/TypeRef of enclosing class.
-        mdTypeDef   *ptypedef);             // [OUT] return typedef
-
-    __checkReturn
-    STDMETHODIMP FindTypeDefByGUID(
-        REFGUID     guid,                   // guid to look up
-        mdTypeDef   *ptypedef);             // return typedef
-
-
-
-    //*****************************************
     // return name and sig of a memberref
     //*****************************************
     __checkReturn

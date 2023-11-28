@@ -38,6 +38,14 @@ DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 
 #include "mdfileformat.h"
 
+    //*****************************************
+    // look up function for TypeDef
+    //*****************************************
+HRESULT FindTypeDef(IMDInternalImport *pImport, 
+        LPCSTR      szNamespace,            // [IN] Namespace for the TypeDef.
+        LPCSTR      szName,                 // [IN] Name of the TypeDef.
+        mdToken     tkEnclosingClass,       // [IN] TypeRef/TypeDef Token for the enclosing class.
+        mdTypeDef   *ptypedef);        // [IN] return typedef
 
 struct MIDescriptor
 {
@@ -471,7 +479,7 @@ HRESULT IsClassRefInScope(mdTypeRef classref)
     MAKE_NAME_IF_NONE(pszClassName,classref);
     IfFailRet(g_pImport->GetResolutionScopeOfTypeRef(classref, &tkRes));
 
-    hr = g_pImport->FindTypeDef(pszNameSpace, pszClassName,
+    hr = FindTypeDef(g_pImport, pszNameSpace, pszClassName,
         (TypeFromToken(tkRes) == mdtTypeRef) ? tkRes : mdTokenNil, &classdef);
 
     return hr;
@@ -1337,7 +1345,7 @@ mdToken ResolveTypeDefReflectionNotation(IMDInternalImport *pIMDI,
         szNamespace = "";
         szName = pch+1;
     }
-    if(SUCCEEDED(pIMDI->FindTypeDef(szNamespace,szName,tkEncloser,&tk)))
+    if(SUCCEEDED(FindTypeDef(pIMDI, szNamespace,szName,tkEncloser,&tk)))
         return tk;
     else
         return 0;
@@ -1599,7 +1607,7 @@ mdToken TypeRefToTypeDef(mdToken tk, IMDInternalImport *pIMDI, IMDInternalImport
             goto AssignAndReturn;
         }
 
-        if (FAILED((*ppIMDInew)->FindTypeDef(szNamespace,szName,tkEncloser,&tkTypeDef)))
+        if (FAILED(FindTypeDef(*ppIMDInew, szNamespace,szName,tkEncloser,&tkTypeDef)))
         {
             tkTypeDef = mdTypeDefNil;
         }
@@ -7820,6 +7828,102 @@ exit:
         pMetaDataDispenser->Release();
     return fSuccess;
 }
+
+//*****************************************************************************
+// Given a classname, return the typedef
+//*****************************************************************************
+HRESULT
+FindTypeDef(
+    IMDInternalImport *pImport,
+    LPCSTR      szTypeDefNamespace, // [IN] Namespace for the TypeDef.
+    LPCSTR      szTypeDefName,      // [IN] Name of the TypeDef.
+    mdToken     tkEnclosingClass,   // [IN] TypeDef/TypeRef of enclosing class.
+    mdTypeDef * ptkTypeDef)         // [OUT] return typedef
+{
+    HRESULT hr = S_OK;
+
+    _ASSERTE((szTypeDefName != NULL) && (ptkTypeDef != NULL));
+    _ASSERTE((TypeFromToken(tkEnclosingClass) == mdtTypeRef) ||
+             (TypeFromToken(tkEnclosingClass) == mdtTypeDef) ||
+             IsNilToken(tkEnclosingClass));
+
+    // initialize the output parameter
+    *ptkTypeDef = mdTypeDefNil;
+
+    // Treat no namespace as empty string.
+    if (szTypeDefNamespace == NULL)
+        szTypeDefNamespace = "";
+
+    // Do a linear search
+    HENUMInternal typeDefEnum;
+
+    LPCSTR      szName;
+    LPCSTR      szNamespace;
+    DWORD        dwFlags;
+
+    // Get TypeDef of the tkEnclosingClass passed in
+    if (TypeFromToken(tkEnclosingClass) == mdtTypeRef)
+    {
+        mdToken      tkResolutionScope;
+        IfFailRet(pImport->GetResolutionScopeOfTypeRef(tkEnclosingClass, &tkResolutionScope));
+        IfFailRet(pImport->GetNameOfTypeRef(tkEnclosingClass, &szNamespace, &szName));
+
+        // Update tkEnclosingClass to TypeDef
+        IfFailRet(FindTypeDef(
+                    pImport,
+                    szNamespace,
+                    szName,
+                    (TypeFromToken(tkResolutionScope) == mdtTypeRef) ? tkResolutionScope : mdTokenNil,
+                    &tkEnclosingClass));
+        _ASSERTE(TypeFromToken(tkEnclosingClass) == mdtTypeDef);
+    }
+
+    // Search for the TypeDef
+    IfFailRet(pImport->EnumTypeDefInit(&typeDefEnum));
+    mdTypeDef td;
+    
+    while (pImport->EnumNext(&typeDefEnum, &td))
+    {
+        IfFailRet(pImport->GetTypeDefProps(td, &dwFlags, NULL));
+
+        if (!IsTdNested(dwFlags) && !IsNilToken(tkEnclosingClass))
+        {
+            // If the class is not Nested and EnclosingClass passed in is not nil
+            continue;
+        }
+        else if (IsTdNested(dwFlags) && IsNilToken(tkEnclosingClass))
+        {
+            // If the class is nested and EnclosingClass passed is nil
+            continue;
+        }
+        else if (!IsNilToken(tkEnclosingClass))
+        {
+            _ASSERTE(TypeFromToken(tkEnclosingClass) == mdtTypeDef);
+            mdTypeDef        tkEnclosingClassTmp;
+            HRESULT hr = pImport->GetNestedClassProps(td, &tkEnclosingClassTmp);
+            if (hr == CLDB_E_RECORD_NOTFOUND)
+                continue; // td is not nested
+            IfFailRet(hr); // All other failure HRESULTS result in this function failing
+
+            if (tkEnclosingClass != tkEnclosingClassTmp)
+                continue;
+        }
+
+        IfFailRet(pImport->GetNameOfTypeDef(td, &szName, &szNamespace));
+
+        if (strcmp(szTypeDefName, szName) == 0)
+        {
+            if (strcmp(szTypeDefNamespace, szNamespace) == 0)
+            {
+                *ptkTypeDef = td;
+                return S_OK;
+            }
+        }
+    }
+    // Cannot find the TypeDef by name
+    return CLDB_E_RECORD_NOTFOUND;
+} // FindTypeDef
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif

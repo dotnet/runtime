@@ -2634,31 +2634,6 @@ ErrExit:
 } // MDInternalRW::GetMethodSpecProps
 
 //*****************************************************************************
-// Given a classname, return the typedef
-//*****************************************************************************
-__checkReturn
-HRESULT MDInternalRW::FindTypeDef(      // return hresult
-    LPCSTR      szNamespace,            // [IN] Namespace for the TypeDef.
-    LPCSTR      szName,                 // [IN] Name of the TypeDef.
-    mdToken     tkEnclosingClass,       // [IN] TypeDef/TypeRef of enclosing class.
-    mdTypeDef   *ptypedef)              // [OUT] return typedef
-{
-    HRESULT hr = S_OK;
-    LOCKREADIFFAILRET();
-
-    _ASSERTE(ptypedef);
-
-    // initialize the output parameter
-    *ptypedef = mdTypeDefNil;
-
-    return ImportHelper::FindTypeDefByName(&(m_pStgdb->m_MiniMd),
-                                        szNamespace,
-                                        szName,
-                                        tkEnclosingClass,
-                                        ptypedef);
-} // MDInternalRW::FindTypeDef
-
-//*****************************************************************************
 // Given a memberref, return a pointer to memberref's name and signature
 //*****************************************************************************
 __checkReturn

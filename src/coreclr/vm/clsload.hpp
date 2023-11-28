@@ -735,6 +735,10 @@ public:
                                            Module* pLookInThisModuleOnly=NULL);
 
     mdTypeDef LookupTypeDefTokenThatMatchesTypeRef(mdTypeRef typeRef);
+    mdTypeDef LookupTypeDefTokenThatMatchesToken(IMDInternalImport* pMDImportTokenLookup, mdToken token);
+private:
+    mdTypeDef LookupTypeDefTokenThatMatchesTokenHelper(IMDInternalImport* pMDImportTokenLookup, mdToken token, NameHandle *pName);
+
 public:
     // Looks up class in the local module table, if it is there it succeeds,
     // Otherwise it fails, This is meant only for optimizations etc
@@ -865,7 +869,7 @@ public:
 
     static HRESULT FindTypeDefByExportedType(IMDInternalImport *pCTImport,
                                              mdExportedType mdCurrent,
-                                             IMDInternalImport *pTDImport,
+                                             Module *pTDModule,
                                              mdTypeDef *mtd);
 
     class AvailableClasses_LockHolder : public CrstHolder

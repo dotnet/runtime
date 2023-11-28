@@ -3270,23 +3270,8 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             // in a different scope.
             if(TypeFromToken(typeref) == mdtTypeRef)
             {
-                LPCUTF8 pszNameSpace;
-                LPCUTF8 pszClassName;
-
-                if (FAILED(pMDInternalImport->GetNameOfTypeRef(typeref, &pszNameSpace, &pszClassName)))
-                {
-                    IfFailRet(COR_E_TYPELOAD);
-                }
-                mdToken tkRes;
-                if (FAILED(pMDInternalImport->GetResolutionScopeOfTypeRef(typeref, &tkRes)))
-                {
-                    IfFailRet(COR_E_TYPELOAD);
-                }
-                hr = pMDInternalImport->FindTypeDef(pszNameSpace,
-                                                    pszClassName,
-                                                    (TypeFromToken(tkRes) == mdtTypeRef) ? tkRes : mdTokenNil,
-                                                    &tkDef);
-                if(FAILED(hr))
+                tkDef = GetModule()->GetClassLoader()->LookupTypeDefTokenThatMatchesTypeRef(typeref);
+                if (tkDef == mdTypeDefNil)
                 {
                     IfFailRet(COR_E_TYPELOAD);
                 }

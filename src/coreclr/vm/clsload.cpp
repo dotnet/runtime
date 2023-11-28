@@ -451,10 +451,30 @@ EEClassHashEntry_t* ClassLoader::InsertValue(EEClassHashTable *pClassHash, EECla
 
         return pEntry;
     }
-
 }
 
+#endif // #ifndef DACCESS_COMPILE
+
 mdTypeDef ClassLoader::LookupTypeDefTokenThatMatchesTypeRef(mdTypeRef typeRef)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Module *pModule = GetAssembly()->GetModule();
+    NameHandle typeName(pModule, mdtBaseType);
+    typeName.SetTokenNotToLoad(tdAllTypes);
+    return LookupTypeDefTokenThatMatchesTokenHelper(pModule->GetMDImport(), typeRef, &typeName);
+}
+
+mdTypeDef ClassLoader::LookupTypeDefTokenThatMatchesToken(IMDInternalImport* pMDImportTokenLookup, mdToken token)
+{
+    WRAPPER_NO_CONTRACT;
+
+    NameHandle typeName(GetAssembly()->GetModule(), mdtBaseType);
+    typeName.SetTokenNotToLoad(tdAllTypes);
+    return LookupTypeDefTokenThatMatchesTokenHelper(pMDImportTokenLookup, token, &typeName);
+}
+
+mdTypeDef ClassLoader::LookupTypeDefTokenThatMatchesTokenHelper(IMDInternalImport* pMDImportTokenLookup, mdToken token, NameHandle *pName)
 {
     CONTRACTL
     {
@@ -466,86 +486,87 @@ mdTypeDef ClassLoader::LookupTypeDefTokenThatMatchesTypeRef(mdTypeRef typeRef)
     }
     CONTRACTL_END
 
-    _ASSERTE(TypeFromToken(typeRef) == mdtTypeRef);
-    mdToken mdFoundTypeToken;
 
     Module* pModule = GetAssembly()->GetModule();
 
-    NameHandle nhTypeRef(pModule, typeRef);
-
     LPCUTF8 pszNameSpace;
     LPCUTF8 pszClassName;
-    if (FAILED(pModule->GetMDImport()->GetNameOfTypeRef(typeRef, &pszNameSpace, &pszClassName)))
+    mdToken resolutionScope;
+
+    if (TypeFromToken(token) == mdtTypeRef)
     {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
+        if (FAILED(pMDImportTokenLookup->GetNameOfTypeRef(token, &pszNameSpace, &pszClassName)))
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        if (FAILED(pMDImportTokenLookup->GetResolutionScopeOfTypeRef(token, &resolutionScope)))
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+    }
+    else
+    {
+        _ASSERTE(TypeFromToken(token) == mdtExportedType);
+        if (FAILED(pMDImportTokenLookup->GetExportedTypeProps(
+            token,
+            &pszNameSpace,
+            &pszClassName,
+            &resolutionScope,
+            NULL,   //binding (type def)
+            NULL))) //flags
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
     }
 
-    nhTypeRef.SetName(pszNameSpace, pszClassName);
-
-#ifdef FEATURE_READYTORUN
-    if (pModule->IsReadyToRun())
+    if ((TypeFromToken(resolutionScope) == mdtTypeRef) || ((TypeFromToken(resolutionScope) == mdtExportedType) && resolutionScope != mdExportedTypeNil))
     {
-        if (pModule->GetReadyToRunInfo()->HasHashtableOfTypes() && pModule->GetAvailableClassHash() == NULL)
+        mdTypeDef tkTypeDef = LookupTypeDefTokenThatMatchesTokenHelper(pMDImportTokenLookup, resolutionScope, pName);
+        if (tkTypeDef == mdTypeDefNil)
         {
-            // For R2R modules, we only search the hashtable of token types stored in the module's image, and don't fallback
-            // to searching m_pAvailableClasses or m_pAvailableClassesCaseIns (in fact, we don't even allocate them for R2R modules).
-            // Also note that type lookups in R2R modules only support case sensitive lookups.
-            if (pModule->GetReadyToRunInfo()->TryLookupTypeTokenFromName(&nhTypeRef, &mdFoundTypeToken))
-            {
-                if (TypeFromToken(mdFoundTypeToken) == mdtTypeDef)
-                {
-                    return mdFoundTypeToken;
-                }
-            }
             return mdTypeDefNil;
         }
-        if (pModule->GetAvailableClassHash() == NULL)
-        {
-            // Old R2R image generated without the hashtable of types.
-            // We fallback to the slow path of creating the hashtable dynamically
-            // at execution time in that scenario.
-            // Take the lock. To make sure the table is not being built by another thread.
-            ClassLoader::AvailableClasses_LockHolder lh(this);
 
-            if (m_cUnhashedModules != 0)
-            {
-                // Note: This codepath is only valid for R2R scenarios
-                LazyPopulateCaseSensitiveHashTables();
-            }
-        }
+        // This bucket will be used for the followon type lookup
+        _ASSERTE(!pName->GetBucket().IsNull());
     }
-#endif
 
-    EEClassHashEntry_t* entry = pModule->GetAvailableClassHash()->FindByNameHandle(&nhTypeRef);
-    if (entry != NULL)
+    pName->SetName(pszNameSpace, pszClassName);
+    TypeHandle thUnused;
+    Module *pFoundModule;
+    mdToken foundExportedTypeUnused = mdTokenNil;
+    mdToken mdFoundTypeToken = mdTokenNil;
+    HashedTypeEntry foundEntry;
+
+    if (!FindClassModuleThrowing(
+            pName,
+            &thUnused,
+            &mdFoundTypeToken,
+            &pFoundModule,
+            &foundExportedTypeUnused,
+            &foundEntry,
+            pModule,
+            pName->OKToLoad() ? Loader::Load
+                                : Loader::DontLoad))
     {
-        HashDatum Data = entry->GetData();
-        if ((dac_cast<TADDR>(Data) & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-        {
-            TypeHandle t = TypeHandle::FromPtr(Data);
-            if (!t.IsTypeDesc())
-            {
-                MethodTable *pMT = t.AsMethodTable();
-                if (pMT->GetModule() == pModule)
-                {
-                    return pMT->GetCl();
-                }
-            }
-        }
-        else
-        {
-            mdFoundTypeToken = pModule->GetAvailableClassHash()->UncompressModuleAndClassDef(Data);
-            if (TypeFromToken(mdFoundTypeToken) == mdtTypeDef)
-            {
-                return mdFoundTypeToken;
-            }
-        }
+        // Didn't find anything, no point in further processing
+        return mdTypeDefNil;
     }
 
-    return mdTypeDefNil;
-}
+    if (TypeFromToken(mdFoundTypeToken) != mdtTypeDef || RidFromToken(mdFoundTypeToken) == 0)
+    {
+        return mdTypeDefNil;
+    }
 
-#endif // #ifndef DACCESS_COMPILE
+    _ASSERTE(!foundEntry.IsNull());
+
+    if (pName->GetTypeToken() == mdtBaseType)
+    {   // We should return the found bucket in the pName
+        pName->SetBucket(foundEntry);
+    }
+
+    return mdFoundTypeToken;
+}
 
 void ClassLoader::GetClassValue(NameHandleTable nhTable,
                                     const NameHandle *pName,
@@ -1397,7 +1418,7 @@ ClassLoader::LoadTypeHandleThrowing(
                     if (SUCCEEDED(pClsLdr->FindTypeDefByExportedType(
                             pClsLdr->GetAssembly()->GetMDImport(),
                             FoundExportedType,
-                            pFoundModule->GetMDImport(),
+                            pFoundModule,
                             &FoundCl)))
                     {
                         typeHnd = pClsLdr->LoadTypeDefThrowing(
@@ -1601,7 +1622,7 @@ TypeHandle ClassLoader::LoadGenericInstantiationThrowing(Module *pModule,
 // token for the type we care about.
 /*static*/
 HRESULT ClassLoader::FindTypeDefByExportedType(IMDInternalImport *pCTImport, mdExportedType mdCurrent,
-                                               IMDInternalImport *pTDImport, mdTypeDef *mtd)
+                                               Module *pTDModule, mdTypeDef *mtd)
 {
     CONTRACTL
     {
@@ -1613,30 +1634,12 @@ HRESULT ClassLoader::FindTypeDefByExportedType(IMDInternalImport *pCTImport, mdE
     }
     CONTRACTL_END
 
-    mdToken mdImpl;
-    LPCSTR szcNameSpace;
-    LPCSTR szcName;
-    HRESULT hr;
-
-    IfFailRet(pCTImport->GetExportedTypeProps(
-        mdCurrent,
-        &szcNameSpace,
-        &szcName,
-        &mdImpl,
-        NULL, //binding
-        NULL)); //flags
-
-    if ((TypeFromToken(mdImpl) == mdtExportedType) &&
-        (mdImpl != mdExportedTypeNil)) {
-        // mdCurrent is a nested ExportedType
-        IfFailRet(FindTypeDefByExportedType(pCTImport, mdImpl, pTDImport, mtd));
-
-        // Get TypeDef token for this nested type
-        return pTDImport->FindTypeDef(szcNameSpace, szcName, *mtd, mtd);
+    *mtd = pTDModule->GetClassLoader()->LookupTypeDefTokenThatMatchesToken(pCTImport, mdCurrent);
+    if (*mtd == mdTypeDefNil)
+    {
+        return E_FAIL;
     }
-
-    // Get TypeDef token for this top-level type
-    return pTDImport->FindTypeDef(szcNameSpace, szcName, mdTokenNil, mtd);
+    return S_OK;
 }
 
 #ifndef DACCESS_COMPILE

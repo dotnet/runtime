@@ -677,16 +677,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         mdToken        *ptkType) PURE;
 
     //*****************************************
-    // look up function for TypeDef
-    //*****************************************
-    __checkReturn
-    STDMETHOD(FindTypeDef)(
-        LPCSTR      szNamespace,            // [IN] Namespace for the TypeDef.
-        LPCSTR      szName,                 // [IN] Name of the TypeDef.
-        mdToken     tkEnclosingClass,       // [IN] TypeRef/TypeDef Token for the enclosing class.
-        mdTypeDef   *ptypedef) PURE;        // [IN] return typedef
-
-    //*****************************************
     // return name and sig of a memberref
     //*****************************************
     __checkReturn
