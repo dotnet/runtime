@@ -65,11 +65,13 @@ namespace System.Runtime.InteropServices.JavaScript
         // It's used when we need to create JSHandle-like identity ahead of time, before calling JS.
         // they have negative values, so that they don't collide with JSHandles.
 #if FEATURE_WASM_THREADS
+        // TODO does this need to be [ThreadStatic] ?
         [ThreadStatic]
 #endif
         public static nint NextJSVHandle;
 
 #if FEATURE_WASM_THREADS
+        // TODO does this need to be [ThreadStatic] ?
         [ThreadStatic]
 #endif
         private static List<nint>? s_JSVHandleFreeList;
@@ -115,6 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
                 JSSynchronizationContext.AssertWebWorkerContext();
 #endif
+                // TODO are we on the right thread ?
                 ThreadCsOwnedObjects.Remove(jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }

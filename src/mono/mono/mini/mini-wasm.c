@@ -14,6 +14,7 @@
 #ifdef HOST_BROWSER
 #ifndef DISABLE_THREADS
 #include <mono/utils/mono-threads-wasm.h>
+#include <mono/utils/mono-coop-semaphore.h>
 #endif
 #endif
 
@@ -259,7 +260,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedVTOnStack) {
 		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr = ");
+			// printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
 		}
 	}
@@ -597,6 +598,8 @@ mono_wasm_execute_timer (void)
 	cb ();
 }
 
+extern void mono_wasm_cancel_promise(int task_holder_gc_handle);
+
 #ifdef DISABLE_THREADS
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
@@ -607,6 +610,75 @@ mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 	timer_handler = timerHandler;
     mono_wasm_schedule_timer (shortestDueTimeMs);
 }
+#else
+
+extern void mono_wasm_invoke_import_async(void* args, void* signature);
+extern void mono_wasm_invoke_import_sync(void* args, void* signature);
+extern void mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+extern void mono_threads_wasm_async_run_in_target_thread_viii (pthread_t target_thread, void (*func) (gpointer, gpointer, gpointer), gpointer user_data1, gpointer user_data2, gpointer user_data3);
+
+// this will run on the target thread
+static void mono_wasm_run_import_async_body(void* args, void* signature)
+{
+	mono_wasm_invoke_import_async(args, signature);
+	free (args);
+}
+
+// this will run on the calling thread
+static void mono_wasm_run_js_import_async(void* target_thread, void* args, void* signature)
+{
+	// if we are on the target thread run synchronously
+	pthread_t id = pthread_self ();
+	if (id == (pthread_t)target_thread) {
+		mono_wasm_run_import_async_body(args, signature);
+		return;
+	}
+
+	mono_threads_wasm_async_run_in_target_thread_vii ((void*) target_thread, (void*)mono_wasm_run_import_async_body, (gpointer)args, (gpointer)signature);
+}
+
+// this will run on the target thread
+static void mono_wasm_run_import_sync_body(void* args, void* signature, MonoCoopSem* done_sem)
+{
+	mono_wasm_invoke_import_sync(args, signature);
+	// resume the thread that called us
+	mono_coop_sem_post(done_sem);
+}
+
+// this will run on the calling thread
+static void mono_wasm_run_js_import_sync(void* target_thread, void* args, void* signature)
+{
+	// if we are on the target thread run synchronously
+	pthread_t id = pthread_self ();
+	if (id == (pthread_t)target_thread) {
+		mono_wasm_invoke_import_sync(args, signature);
+		return;
+	}
+
+	// create a semaphore to suspend this thread, until the target thread finishes
+	MonoCoopSem done_sem;
+	mono_coop_sem_init (&done_sem, 0);
+	
+	mono_threads_wasm_async_run_in_target_thread_viii ((void*) target_thread, (void*)mono_wasm_run_import_sync_body, (gpointer)args, (gpointer)signature, (gpointer)&done_sem);
+	
+	// wait for the target thread to finish
+	mono_coop_sem_wait (&done_sem, 0);
+	mono_coop_sem_destroy (&done_sem);
+}
+
+// this will run on the calling thread
+static void mono_wasm_run_cancel_promise(void* target_thread, int task_holder_gc_handle)
+{
+	// if we are on the target thread run synchronously
+	pthread_t id = pthread_self ();
+	if (id == (pthread_t)target_thread) {
+		mono_wasm_cancel_promise(task_holder_gc_handle);
+		return;
+	}
+
+	mono_threads_wasm_async_run_in_target_thread_vi ((void*) target_thread, (void*)mono_wasm_cancel_promise, (gpointer)task_holder_gc_handle);
+}
+
 #endif
 #endif
 
@@ -617,8 +689,12 @@ mono_arch_register_icall (void)
 #ifdef DISABLE_THREADS
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
+	mono_add_internal_call_internal ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
 #else
 	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::TargetThreadScheduleBackgroundJob", mono_target_thread_schedule_background_job);
+	mono_add_internal_call_internal ("Interop/Runtime::InvokeJSImportSync", mono_wasm_run_js_import_sync);
+	mono_add_internal_call_internal ("Interop/Runtime::InvokeJSImportAsync", mono_wasm_run_js_import_async);
+	mono_add_internal_call_internal ("Interop/Runtime::CancelPromise", mono_wasm_run_cancel_promise);
 #endif /* DISABLE_THREADS */
 #endif /* HOST_BROWSER */
 }

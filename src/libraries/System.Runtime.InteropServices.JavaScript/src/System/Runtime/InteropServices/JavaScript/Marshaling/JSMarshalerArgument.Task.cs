@@ -114,13 +114,18 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // TODO unregister and collect pending PromiseHolder also when no C# is awaiting ?
-        private static PromiseHolder CreateJSOwnedHolder(nint gcvHandle)
+        private static PromiseHolder CreateJSOwnedHolder(nint gcHandle)
         {
-#if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
-#endif
-            var holder = new PromiseHolder(gcvHandle);
-            ThreadJsOwnedHolders.Add(gcvHandle, holder);
+            PromiseHolder holder;
+            if (IsGCVHandle(gcHandle))
+            {
+                holder = new PromiseHolder(gcHandle);
+                ThreadJsOwnedHolders.Add(gcHandle, holder);
+            }
+            else
+            {
+                holder = (PromiseHolder)((GCHandle)gcHandle).Target!;
+            }
             return holder;
         }
 
@@ -161,10 +166,12 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             slot.Type = MarshalerType.Task;
 
+            // TODO, this assumes we are on correct thread already
             slot.JSHandle = AllocJSVHandle();
             var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
+            slot.TargetTID = taskHolder.OwnerTID;
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
@@ -230,10 +237,12 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             slot.Type = MarshalerType.Task;
 
+            // TODO, this assumes we are on correct thread already
             slot.JSHandle = AllocJSVHandle();
             var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
+            slot.TargetTID = taskHolder.OwnerTID;
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
@@ -290,10 +299,13 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
             slot.Type = MarshalerType.Task;
+
+            // TODO, this assumes we are on correct thread already
             slot.JSHandle = AllocJSVHandle();
             var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
+            slot.TargetTID = taskHolder.OwnerTID;
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
@@ -332,6 +344,9 @@ namespace System.Runtime.InteropServices.JavaScript
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskRejected;
             arg_handle.slot.JSHandle = holder.JSHandle;
+#if FEATURE_WASM_THREADS
+            arg_handle.slot.TargetTID = holder.OwnerTID;
+#endif
 
             // should fail it with exception
             arg_value.ToJS(ex);
@@ -357,6 +372,9 @@ namespace System.Runtime.InteropServices.JavaScript
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskResolved;
             arg_handle.slot.JSHandle = holder.JSHandle;
+#if FEATURE_WASM_THREADS
+            arg_handle.slot.TargetTID = holder.OwnerTID;
+#endif
 
             arg_value.slot.Type = MarshalerType.Void;
 
@@ -381,6 +399,9 @@ namespace System.Runtime.InteropServices.JavaScript
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskResolved;
             arg_handle.slot.JSHandle = holder.JSHandle;
+#if FEATURE_WASM_THREADS
+            arg_handle.slot.TargetTID = holder.OwnerTID;
+#endif
 
             // and resolve it with value
             marshaler(ref arg_value, value);

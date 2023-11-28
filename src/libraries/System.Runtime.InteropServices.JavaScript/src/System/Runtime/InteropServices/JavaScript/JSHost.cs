@@ -56,6 +56,8 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             JSSynchronizationContext.AssertWebWorkerContext();
 #endif
+            //TODO dispatch this (to UI thread when there is no JSSynchronizationContext)
+
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
 

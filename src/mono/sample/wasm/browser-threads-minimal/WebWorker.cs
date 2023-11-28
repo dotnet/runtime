@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "work in progress")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern", Justification = "work in progress")]
-        public static Task RunAsync(Action body, CancellationToken cancellationToken)
+        public static Task Run(Action body, CancellationToken cancellationToken)
         {
             if(runMethod == null)
             {
@@ -68,9 +68,9 @@ namespace System.Runtime.InteropServices.JavaScript
             return (Task)runMethod.Invoke(null, new object[] { body, cancellationToken });
         }
 
-        public static Task RunAsync(Action body)
+        public static Task Run(Action body)
         {
-            return RunAsync(body, CancellationToken.None);
+            return Run(body, CancellationToken.None);
         }
     }
 }

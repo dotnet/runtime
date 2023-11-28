@@ -554,6 +554,11 @@ mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void 
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
 }
 
+void
+mono_threads_wasm_async_run_in_target_thread_viii (pthread_t target_thread, void (*func) (gpointer, gpointer, gpointer), gpointer user_data1, gpointer user_data2, gpointer user_data3)
+{
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIII, func, NULL, user_data1, user_data2, user_data3);
+}
 
 #endif /* DISABLE_THREADS */
 

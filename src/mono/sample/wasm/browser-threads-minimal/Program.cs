@@ -15,10 +15,17 @@ namespace Sample
 {
     public partial class Test
     {
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            await Delay(100);
+            Console.WriteLine("Hello world");
             return 0;
+        }
+
+        [JSExport]
+        internal static async Task PrintMeaning(Task<int> meaningPromise)
+        {
+            Console.WriteLine("Meaning of life is " + await meaningPromise);
         }
 
         [JSExport]
@@ -71,8 +78,11 @@ namespace Sample
         public static async Task DisposeTest()
         {
             Console.WriteLine("DisposeTest A ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
-            var test1 = JSHost.GlobalThis.GetPropertyAsJSObject("test1");
-            var test2 = JSHost.GlobalThis.GetPropertyAsJSObject("test2");
+            var gt = JSHost.GlobalThis;
+            Console.WriteLine("DisposeTest B ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            var test1 = gt.GetPropertyAsJSObject("test1");
+            Console.WriteLine("DisposeTest C ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            var test2 = gt.GetPropertyAsJSObject("test2");
             Console.WriteLine("DisposeTest 0 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
             await Task.Delay(10).ConfigureAwait(false);
             Console.WriteLine("DisposeTest 1 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
@@ -104,14 +114,14 @@ namespace Sample
         [JSImport("responseText", fetchhelper)]
         private static partial Task<string> FetchHelperResponseText(JSObject response, int delayMs);
 
-        [JSImport("delay", fetchhelper)]
+        [JSImport("delay", "main.js")]
         private static partial Task Delay(int timeoutMs);
 
         [JSExport]
         internal static Task TestHelloWebWorker()
         {
             Console.WriteLine($"smoke: TestHelloWebWorker 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-            Task t = WebWorker.RunAsync(() =>
+            Task t = WebWorker.Run(() =>
             {
                 Console.WriteLine($"smoke: TestHelloWebWorker 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 GlobalThisConsoleLog($"smoke: TestHelloWebWorker 3 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
