@@ -3480,11 +3480,12 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
+    SArray<EEClassHashEntry_t *> classEntries();
 
     AddAvailableClassHaveLock(
         pModule,
         classdef,
-        NULL,
+        &classEntries,
         pamTracker);
 }
 
@@ -3533,7 +3534,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
 
         COUNT_T classEntryIndex = RidFromToken(enclosing) - 1;
         _ASSERTE(RidFromToken(enclosing) < RidFromToken(classdef));
-        if (classEntries != NULL && classEntries->GetCount() > classEntryIndex)
+        if (classEntries->GetCount() > classEntryIndex)
         {
             pEncloser = (*classEntries)[classEntryIndex];
         }
@@ -3560,10 +3561,9 @@ VOID ClassLoader::AddAvailableClassHaveLock(
     insertedEntry = InsertValue(pClassHash, pClassCaseInsHash, pszNameSpace, pszName, EEClassHashTable::CompressClassDef(classdef), pEncloser, pamTracker);
 
     _ASSERTE(insertedEntry != NULL);
-    if (classEntries != NULL)
+    COUNT_T classEntryIndex = RidFromToken(classdef) - 1;
+    if (classEntryIndex < classEntries->GetCount())
     {
-        COUNT_T classEntryIndex = RidFromToken(classdef) - 1;
-        _ASSERTE(classEntryIndex < classEntries->GetCount());
         (*classEntries)[classEntryIndex] = insertedEntry;
     }
 }

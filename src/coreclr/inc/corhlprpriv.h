@@ -298,11 +298,8 @@ public:
     {
         LPSTR buffer = (LPSTR) AllocThrows(len + 1);
 
-        if (buffer != NULL)
-        {
-            memcpy(buffer, pStr, len);
-            buffer[len] = 0;
-        }
+        memcpy(buffer, pStr, len);
+        buffer[len] = 0;
 
         return buffer;
     }
