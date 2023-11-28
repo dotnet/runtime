@@ -2223,6 +2223,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, blk->Next());
                 newRedirBlk->copyEHRegion(newPred);
                 newRedirBlk->bbNatLoopNum = ambientLoop;
+                newRedirBlk->inheritWeight(blk->Next());
+                newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
                 // This block isn't part of the loop, so below loop won't add
                 // refs for it.
                 fgAddRefPred(blk->Next(), newRedirBlk);
