@@ -9780,7 +9780,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
     if (varTypeIsFloating(indir))
     {
         // Check for a misaligned floating point indirection.
-        GenTree*       effAddr = addr->gtEffectiveVal(true);
+        GenTree*       effAddr = addr->gtEffectiveVal();
         target_ssize_t offset;
         gtPeelOffsets(&effAddr, &offset);
 
