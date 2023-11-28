@@ -3715,12 +3715,7 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
 //
 PhaseStatus Compiler::fgSetBlockOrder()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgSetBlockOrder()\n");
-    }
-#endif // DEBUG
+    JITDUMP("*************** In fgSetBlockOrder()\n");
 
 #ifdef DEBUG
     BasicBlock::s_nMaxTrees = 0;
@@ -3728,6 +3723,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
 
     if (compCanEncodePtrArgCntMax() && fgHasCycleWithoutGCSafePoint())
     {
+        JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
     }
 
@@ -3736,12 +3732,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
         fgSetBlockOrder(block);
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("The biggest BB has %4u tree nodes\n", BasicBlock::s_nMaxTrees);
-    }
-#endif // DEBUG
+    JITDUMP("The biggest BB has %4u tree nodes\n", BasicBlock::s_nMaxTrees);
 
     // Return "everything" to enable consistency checking of the statement links during post phase.
     //
@@ -3881,6 +3872,23 @@ bool Compiler::fgHasCycleWithoutGCSafePoint()
 
                 if (!BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
                 {
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("Found a cycle that does not go through a GC safe point:\n");
+                        printf(FMT_BB, succ->bbNum);
+                        for (int index = 0; index < stack.Height(); index++)
+                        {
+                            BasicBlock* block = stack.TopRef(index).Block();
+                            printf(" <- " FMT_BB, block->bbNum);
+
+                            if (block == succ)
+                                break;
+                        }
+                        printf("\n");
+                    }
+#endif
+
                     return true;
                 }
 
