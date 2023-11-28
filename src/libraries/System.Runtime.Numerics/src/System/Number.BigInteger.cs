@@ -321,18 +321,22 @@ namespace System
             return true;
         }
 
-        internal static ParsingStatus TryParseBigInteger(string? value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static unsafe ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
-            if (value == null)
+            if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
             {
-                result = default;
-                return ParsingStatus.Failed;
+                throw e; // TryParse still throws ArgumentException on invalid NumberStyles
             }
 
-            return TryParseBigInteger(value.AsSpan(), style, info, out result);
+            if ((style & NumberStyles.AllowHexSpecifier) != 0)
+            {
+                return TryParseBigIntegerHexNumberStyle(value, style, out result);
+            }
+
+            return TryParseBigIntegerNumber(value, style, info, out result);
         }
 
-        internal static unsafe ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static unsafe ParsingStatus TryParseBigIntegerNumber(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
@@ -357,17 +361,9 @@ namespace System
                     result = default;
                     ret = ParsingStatus.Failed;
                 }
-                else if ((style & NumberStyles.AllowHexSpecifier) != 0)
-                {
-                    ret = NumberToBigInteger(ref number, out result);
-                }
-                else if ((style & NumberStyles.AllowBinarySpecifier) != 0)
-                {
-                    ret = HexNumberToBigInteger(ref number, out result); ;
-                }
                 else
                 {
-                    ret = BinaryNumberToBigInteger(ref number, out result);
+                    ret = NumberToBigInteger(ref number, out result);
                 }
             }
 
@@ -395,17 +391,42 @@ namespace System
             return result;
         }
 
-        private static ParsingStatus HexNumberToBigInteger(ref NumberBuffer number, out BigInteger result)
+        internal static ParsingStatus TryParseBigIntegerHexNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
         {
-            if (number.DigitsCount == 0)
+            int whiteIndex = 0;
+
+            // Skip past any whitespace at the beginning.
+            if ((style & NumberStyles.AllowLeadingWhite) != 0)
             {
-                result = default;
-                return ParsingStatus.Failed;
+                for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
+                {
+                    if (!IsWhite(value[whiteIndex]))
+                        break;
+                }
+
+                value = value[whiteIndex..];
+            }
+
+            // Skip past any whitespace at the end.
+            if ((style & NumberStyles.AllowTrailingWhite) != 0)
+            {
+                for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
+                {
+                    if (!IsWhite(value[whiteIndex]))
+                        break;
+                }
+
+                value = value[..(whiteIndex + 1)];
+            }
+
+            if (value.IsEmpty)
+            {
+                goto FailExit;
             }
 
             const int DigitsPerBlock = 8;
 
-            int totalDigitCount = number.DigitsCount;
+            int totalDigitCount = value.Length;
             int blockCount, partialDigitCount;
 
             blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainder);
@@ -419,7 +440,8 @@ namespace System
                 partialDigitCount = DigitsPerBlock - remainder;
             }
 
-            bool isNegative = HexConverter.FromChar(number.Digits[0]) >= 8;
+            if (!HexConverter.IsHexChar(value[0])) goto FailExit;
+            bool isNegative = HexConverter.FromChar(value[0]) >= 8;
             uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
 
             uint[]? arrayFromPool = null;
@@ -432,16 +454,12 @@ namespace System
 
             try
             {
-                for (int i = 0; i < number.DigitsCount; i++)
+                for (int i = 0; i < value.Length; i++)
                 {
-                    byte digitChar = number.Digits[i];
-                    if (digitChar == 0)
-                    {
-                        break;
-                    }
+                    char digitChar = value[i];
 
+                    if (!HexConverter.IsHexChar(digitChar)) goto FailExit;
                     int hexValue = HexConverter.FromChar(digitChar);
-                    Debug.Assert(hexValue != 0xFF);
 
                     partialValue = (partialValue << 4) | (uint)hexValue;
                     partialDigitCount++;
@@ -457,11 +475,6 @@ namespace System
 
                 Debug.Assert(partialDigitCount == 0 && bitsBufferPos == -1);
 
-                if (isNegative)
-                {
-                    NumericsHelpers.DangerousMakeTwosComplement(bitsBuffer);
-                }
-
                 // BigInteger requires leading zero blocks to be truncated.
                 bitsBuffer = bitsBuffer.TrimEnd(0u);
 
@@ -473,15 +486,26 @@ namespace System
                     sign = 0;
                     bits = null;
                 }
-                else if (bitsBuffer.Length == 1 && bitsBuffer[0] <= int.MaxValue)
+                else if (bitsBuffer.Length == 1)
                 {
-                    sign = (int)bitsBuffer[0] * (isNegative ? -1 : 1);
+                    sign = (int)bitsBuffer[0];
                     bits = null;
+
+                    if ((!isNegative && sign < 0) || sign == int.MinValue)
+                    {
+                        bits = new[] { (uint)sign };
+                        sign = isNegative ? -1 : 1;
+                    }
                 }
                 else
                 {
                     sign = isNegative ? -1 : 1;
                     bits = bitsBuffer.ToArray();
+
+                    if (isNegative)
+                    {
+                        NumericsHelpers.DangerousMakeTwosComplement(bits);
+                    }
                 }
 
                 result = new BigInteger(sign, bits);
@@ -494,6 +518,10 @@ namespace System
                     ArrayPool<uint>.Shared.Return(arrayFromPool);
                 }
             }
+
+        FailExit:
+            result = default;
+            return ParsingStatus.Failed;
         }
 
         private static ParsingStatus BinaryNumberToBigInteger(ref NumberBuffer number, out BigInteger result)
