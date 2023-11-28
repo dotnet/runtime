@@ -1,6 +1,4 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
-
-namespace Mono.Linker.Tests.Cases.Statics
+﻿namespace Mono.Linker.Tests.Cases.Statics
 {
 	class UnusedStaticConstructorGetsRemoved
 	{

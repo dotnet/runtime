@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -30,6 +32,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArraySetElementAndInitializerMultipleElementsMix<TestType> (typeof (TestType));
 
 			TestGetElementAtUnknownIndex ();
+			TestGetMergedArrayElement ();
 			TestMergedArrayElementWithUnknownIndex (0);
 
 			// Array reset - certain operations on array are not tracked fully (or impossible due to unknown inputs)
@@ -47,7 +50,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			WriteCapturedArrayElement.Test ();
 
+			WriteElementOfCapturedArray.Test ();
+
 			ConstantFieldValuesAsIndex.Test ();
+
+			HoistedArrayMutation.Test ();
 		}
 
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -84,7 +91,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type[] arr = new Type[] { typeof (TestType), typeof (TProperties), typeAll };
 			arr[0].RequiresAll ();
 			arr[1].RequiresPublicProperties ();
-			arr[1].RequiresPublicFields (); // Should warn
+			arr[1].RequiresPublicFields (); // Should warn - member types mismatch
 			arr[2].RequiresAll ();
 			arr[3].RequiresPublicMethods (); // Should warn - unknown value at this index
 		}
@@ -201,6 +208,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			Type[] arr = new Type[] { typeof (TestType) };
 			arr[i].RequiresPublicFields ();
+		}
+
+		// https://github.com/dotnet/runtime/issues/93416 tracks the discrepancy between
+		// the analyzer and ILLink/ILCompiler.
+		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2072", nameof (GetMethods), nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (GetFields), nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = Tool.Analyzer)]
+		static void TestGetMergedArrayElement (bool b = true)
+		{
+			Type[] arr = new Type[] { GetMethods () };
+			Type[] arr2 = new Type[] { GetFields () };
+			if (b)
+				arr = arr2;
+			arr[0].RequiresAll ();
 		}
 
 		// Trimmer code doesnt handle locals from different branches separetely, therefore merges incorrectly GetMethods with Unknown producing both warnings
@@ -612,6 +636,102 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		class WriteElementOfCapturedArray
+		{
+			[Kept]
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll))]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll))]
+			// Analysis hole: https://github.com/dotnet/runtime/issues/90335
+			// The array element assignment assigns to a temp array created as a copy of
+			// arr1 or arr2, and writes to it aren't reflected back in arr1/arr2.
+			static void TestArrayElementAssignment (bool b = true)
+			{
+				var arr1 = new Type[] { GetUnknownType () };
+				var arr2 = new Type[] { GetTypeWithPublicConstructors () };
+				(b ? arr1 : arr2)[0] = GetWithPublicMethods ();
+				arr1[0].RequiresAll ();
+				arr2[0].RequiresAll ();
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (InlineArrayAttribute))]
+			[InlineArray (8)]
+			public struct InlineTypeArray
+			{
+				[Kept]
+				public Type t;
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
+			static void TestInlineArrayElementReferenceAssignment (bool b = true)
+			{
+				var arr1 = new InlineTypeArray ();
+				arr1[0] = GetUnknownType ();
+				var arr2 = new InlineTypeArray ();
+				arr2[0] = GetTypeWithPublicConstructors ();
+				(b ? ref arr1[0] : ref arr2[0]) = GetTypeWithPublicConstructors ();
+				arr1[0].RequiresAll ();
+				arr2[0].RequiresAll ();
+			}
+
+			// Inline array references are not allowed in conditionals, unlike array references.
+			// static void TestInlineArrayElementAssignment (bool b = true)
+			// {
+			// 	var arr1 = new InlineTypeArray ();
+			// 	arr1[0] = GetUnknownType ();
+			// 	var arr2 = new InlineTypeArray ();
+			// 	arr2[0] = GetTypeWithPublicConstructors ();
+			// 	(b ? arr1 : arr2)[0] = GetWithPublicMethods ();
+			// 	arr1[0].RequiresAll ();
+			// 	arr2[0].RequiresAll ();
+			// }
+
+			[ExpectedWarning ("IL2087", nameof (T), nameof (DataFlowTypeExtensions.RequiresAll))]
+			[ExpectedWarning ("IL2087", nameof (U), nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+			// Missing warnings for 'V' possibly assigned to arr or arr2 because write to temp
+			// array isn't reflected back in the local variables. https://github.com/dotnet/linker/issues/2158
+			static void TestNullCoalesce<T, U, V> (bool b = false)
+			{
+				Type[]? arr = new Type[1] { typeof (T) };
+				Type[] arr2 = new Type[1] { typeof (U) };
+
+				(arr ?? arr2)[0] = typeof (V);
+				arr[0].RequiresAll ();
+				arr2[0].RequiresPublicFields ();
+			}
+
+			[ExpectedWarning ("IL2087", nameof (T), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2087", nameof (U), nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+			// Missing warnings for 'V' possibly assigned to arr or arr2 because write to temp
+			// array isn't reflected back in the local variables. https://github.com/dotnet/linker/issues/2158
+			// This also causes an extra analyzer warning for 'U' in 'arr', because the analyzer models the
+			// possible assignment of arr2 to arr, without overwriting index '0'. And it produces a warning
+			// for each possible value, unlike ILLink/ILCompiler, which produce an unknown value for a merged
+			// array value: https://github.com/dotnet/runtime/issues/93416
+			[ExpectedWarning ("IL2087", nameof (U), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void TestNullCoalescingAssignment<T, U, V> (bool b = true)
+			{
+				Type[]? arr = new Type[1] { typeof (T) };
+				Type[] arr2 = new Type[1] { typeof (U) };
+
+				(arr ??= arr2)[0] = typeof (V);
+				arr[0].RequiresAll ();
+				arr2[0].RequiresPublicFields ();
+			}
+
+			public static void Test ()
+			{
+				TestArrayElementAssignment ();
+				TestInlineArrayElementReferenceAssignment ();
+				// TestInlineArrayElementAssignment ();
+				TestNullCoalesce<int, int, int> ();
+				TestNullCoalescingAssignment<int, int, int> ();
+			}
+		}
+
 		class ConstantFieldValuesAsIndex
 		{
 			private const sbyte ConstSByte = 1;
@@ -635,6 +755,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				types[ConstUShort].RequiresPublicMethods ();
 				types[ConstInt].RequiresPublicMethods ();
 				types[ConstUInt].RequiresPublicMethods ();
+			}
+		}
+
+		class HoistedArrayMutation
+		{
+			static void LoopAssignmentWithInitAfter ()
+			{
+				// This is a repro for https://github.com/dotnet/runtime/issues/86379
+				// The array value is a hoisted local
+				// It's first used in the main method (in the for loop)
+				// this doesn't get a deep clone of the value, it takes the value from
+				// the hoisted locals dictionary - and modifies it.
+				// The local function Initialize then creates a deep copy and uses that.
+				// Because of a bug, the changes done in the main body method are also
+				// visible in the "old" interprocedural state. So the state never settles
+				// and this causes an endless loop in the analyzer.
+				int[] arr;
+
+				Initialize ();
+				for (int i = 0; i < arr.Length; i++) {
+					arr[i] = 0;
+				}
+
+				void Initialize ()
+				{
+					arr = new int[10];
+				}
+			}
+
+			public static void Test ()
+			{
+				LoopAssignmentWithInitAfter ();
 			}
 		}
 

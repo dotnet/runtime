@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Diagnostics.Tracing
 {
@@ -219,7 +219,7 @@ namespace System.Diagnostics.Tracing
                 catch (NotImplementedException)
                 {
                     // send message to debugger without delay
-                    System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
+                    Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
                 }
             }
         }
@@ -359,7 +359,7 @@ namespace System.Diagnostics.Tracing
                     }
                     else
                     {
-                        int appDomainID = System.Threading.Thread.GetDomainID();
+                        int appDomainID = Thread.GetDomainID();
                         // We start with the appdomain number to make this unique among appdomains.
                         activityPathGuidOffsetStart = AddIdToGuid(outPtr, activityPathGuidOffsetStart, (uint)appDomainID);
                     }

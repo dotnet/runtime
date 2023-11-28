@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Only needed to run GCStress out-of-proc -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

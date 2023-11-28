@@ -298,7 +298,7 @@ namespace System.Reflection
         /// </summary>
         public static bool ReferenceMatchesDefinition(AssemblyName? reference, AssemblyName? definition)
         {
-            if (object.ReferenceEquals(reference, definition))
+            if (ReferenceEquals(reference, definition))
                 return true;
             ArgumentNullException.ThrowIfNull(reference);
             ArgumentNullException.ThrowIfNull(definition);

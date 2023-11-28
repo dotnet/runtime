@@ -2,21 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Text;
-using System.Globalization;
-using System.Security.Cryptography.X509Certificates;
-using System.Runtime.InteropServices;
-using System.Net;
-using System.Security.Principal;
-
+using System.Diagnostics;
 using System.DirectoryServices;
-
-using MACLPrinc = System.Security.Principal;
+using System.Globalization;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Security.AccessControl;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
+using System.Text;
+using MACLPrinc = System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -904,7 +902,7 @@ namespace System.DirectoryServices.AccountManagement
                 Debug.Assert(values[0] is string);
 
                 string commaSeparatedValues = (string)values[0];
-                string[] individualValues = commaSeparatedValues.Split(new char[] { ',' });
+                string[] individualValues = commaSeparatedValues.Split(s_comma);
 
                 // ValueCollection<string> is Load'ed from a List<string>
                 List<string> list = new List<string>(individualValues.Length);
@@ -1078,7 +1076,7 @@ namespace System.DirectoryServices.AccountManagement
             // first time, it'll keep returning null even if we refresh the cache.
 
             if (!de.Properties.Contains("nTSecurityDescriptor"))
-                de.RefreshCache(new string[] { "nTSecurityDescriptor" });
+                de.RefreshCache(s_nTSecurityDescriptor);
 
             ActiveDirectorySecurity adsSecurity = de.ObjectSecurity;
 
@@ -1637,6 +1635,8 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
+        private static readonly string[] s_objectSid = new string[] { "objectSid" };
+
         // Builds a SID dn for the principal <SID=...>
         protected static string GetSidPathFromPrincipal(Principal p)
         {
@@ -1661,7 +1661,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Force it to load if it hasn't been already loaded
                 if (!de.Properties.Contains("objectSid"))
-                    de.RefreshCache(new string[] { "objectSid" });
+                    de.RefreshCache(s_objectSid);
 
                 byte[] sid = (byte[])de.Properties["objectSid"].Value;
 

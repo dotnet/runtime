@@ -1,9 +1,4 @@
-cmake_minimum_required(VERSION 3.6.2)
-
-if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
-    cmake_policy(SET CMP0091 NEW)
-endif()
-
+cmake_minimum_required(VERSION 3.20)
 project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
@@ -11,7 +6,7 @@ include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if (MSVC)
     # Host components don't try to handle asynchronous exceptions
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
+    set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
 
     # Explicitly re-enable warnings about declaration hiding (currently disabled by configurecompiler.cmake)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4456>) # declaration of 'identifier' hides previous local declaration
@@ -32,6 +27,12 @@ add_subdirectory(apphost)
 add_subdirectory(dotnet)
 add_subdirectory(nethost)
 add_subdirectory(test)
+
+# If there's a dynamic ASAN runtime, then install it in the directories where we put our executables.
+if (NOT "${ASAN_RUNTIME}" STREQUAL "")
+    install(FILES ${ASAN_RUNTIME} DESTINATION corehost)
+    install(FILES ${ASAN_RUNTIME} DESTINATION corehost_test)
+endif()
 
 if (NOT RUNTIME_FLAVOR STREQUAL Mono)
     if(CLR_CMAKE_TARGET_WIN32)

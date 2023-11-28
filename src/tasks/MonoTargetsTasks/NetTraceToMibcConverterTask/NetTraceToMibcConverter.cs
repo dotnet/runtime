@@ -109,7 +109,7 @@ public class NetTraceToMibcConverter : ToolTask
             string? fullPath = refAsmItem.GetMetadata("FullPath");
             mibcConverterArgsStr.Append($" --reference \"{fullPath}\" ");
         }
-
+        mibcConverterArgsStr.Append($" --compressed false");
         mibcConverterArgsStr.Append($" --output \"{MibcFilePath}\"");
 
         return mibcConverterArgsStr.ToString();

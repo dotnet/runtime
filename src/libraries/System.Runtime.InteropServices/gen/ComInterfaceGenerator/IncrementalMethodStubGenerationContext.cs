@@ -4,11 +4,10 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
-using System.Collections.Immutable;
 
 namespace Microsoft.Interop
 {
-    internal abstract record GeneratedMethodContextBase(ManagedTypeInfo OriginalDefiningType, SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+    internal abstract record GeneratedMethodContextBase(ManagedTypeInfo OriginalDefiningType, SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
     internal sealed record IncrementalMethodStubGenerationContext(
         SignatureContext SignatureContext,
@@ -18,9 +17,9 @@ namespace Microsoft.Interop
         SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
         VirtualMethodIndexData VtableIndexData,
         MarshallingInfo ExceptionMarshallingInfo,
-        MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
-        MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
+        EnvironmentFlags EnvironmentFlags,
         ManagedTypeInfo TypeKeyOwner,
-        SequenceEqualImmutableArray<Diagnostic> Diagnostics,
-        MarshallingInfo ManagedThisMarshallingInfo) : GeneratedMethodContextBase(TypeKeyOwner, Diagnostics);
+        ManagedTypeInfo DeclaringType,
+        SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics,
+        MarshallingInfo ManagedThisMarshallingInfo) : GeneratedMethodContextBase(DeclaringType, Diagnostics);
 }

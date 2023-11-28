@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime.Extensions {}
-.assembly TailCallBufferMemmoveTests {
+.assembly BufferMemmoveTailCall {
     // Allow access to private members of System.Private.CoreLib
     .custom instance void System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute::.ctor(string) = (
         01 00 16 53 79 73 74 65 6d 2e 50 72 69 76 61 74
@@ -14,8 +15,11 @@
 .class public abstract auto ansi sealed beforefieldinit TailCallBufferMemmove
        extends [System.Runtime]System.Object
 {
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .maxstack 8
     .entrypoint
 

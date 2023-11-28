@@ -36,7 +36,7 @@
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
@@ -46,6 +46,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-wasm.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/ftnptr.h>
 #include <mono/metadata/w32handle.h>
@@ -115,16 +116,6 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 
 #define LOCK_THREAD(thread) lock_thread((thread))
 #define UNLOCK_THREAD(thread) unlock_thread((thread))
-
-typedef union {
-	gint32 ival;
-	gfloat fval;
-} IntFloatUnion;
-
-typedef union {
-	gint64 ival;
-	gdouble fval;
-} LongDoubleUnion;
 
 typedef struct _StaticDataFreeList StaticDataFreeList;
 struct _StaticDataFreeList {
@@ -1078,7 +1069,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	/* Don't need to close the handle to this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
-	 * when the Thread object is finalised.
+	 * when the Thread object is finalized.
 	 */
 }
 
@@ -1246,7 +1237,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	if (G_UNLIKELY (external_eventloop)) {
 		/* if the thread wants to stay alive in an external eventloop, don't clean up after it */
 		if (mono_thread_platform_external_eventloop_keepalive_check ())
-			return 0;
+			return 0; // MONO_ENTER_GC_SAFE_UNBALANCED is done in start_wrapper
 	}
 
 	/* Do any cleanup needed for apartment state. This
@@ -1283,7 +1274,7 @@ start_wrapper (gpointer data)
 		/* if the thread wants to stay alive, don't clean up after it */
 		if (mono_thread_platform_external_eventloop_keepalive_check ()) {
 			/* while we wait in the external eventloop, we're GC safe */
-			MONO_REQ_GC_SAFE_MODE;
+			MONO_ENTER_GC_SAFE_UNBALANCED;
 			return 0;
 		}
 	}
@@ -2178,18 +2169,6 @@ ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*loc
 	mono_gc_wbarrier_generic_nostore_internal ((gpointer)location); // FIXME volatile
 }
 
-gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
-{
-	IntFloatUnion val, ret;
-	if (G_UNLIKELY (!location))
-		return (gfloat)set_pending_null_reference_exception ();
-
-	val.fval = value;
-	ret.ival = mono_atomic_xchg_i32((gint32 *) location, val.ival);
-
-	return ret.fval;
-}
-
 gint64
 ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 value)
 {
@@ -2207,19 +2186,6 @@ ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 v
 	}
 #endif
 	return mono_atomic_xchg_i64 (location, value);
-}
-
-gdouble
-ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdouble value)
-{
-	LongDoubleUnion val, ret;
-	if (G_UNLIKELY (!location))
-		return (gdouble)set_pending_null_reference_exception ();
-
-	val.fval = value;
-	ret.ival = (gint64)mono_atomic_xchg_i64((gint64 *) location, val.ival);
-
-	return ret.fval;
 }
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
@@ -2259,46 +2225,6 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volat
 	//
 	*res = (MonoObject*)mono_atomic_cas_ptr ((volatile gpointer*)location, *value, *comparand);
 	mono_gc_wbarrier_generic_nostore_internal ((gpointer)location); // FIXME volatile
-}
-
-gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
-{
-	IntFloatUnion val, ret, cmp;
-	if (G_UNLIKELY (!location))
-		return (gfloat)set_pending_null_reference_exception ();
-
-	val.fval = value;
-	cmp.fval = comparand;
-	ret.ival = mono_atomic_cas_i32((gint32 *) location, val.ival, cmp.ival);
-
-	return ret.fval;
-}
-
-gdouble
-ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location, gdouble value, gdouble comparand)
-{
-	if (G_UNLIKELY (!location))
-		return (gdouble)set_pending_null_reference_exception ();
-
-#if SIZEOF_VOID_P == 8
-	LongDoubleUnion val, comp, ret;
-
-	val.fval = value;
-	comp.fval = comparand;
-	ret.ival = (gint64)mono_atomic_cas_ptr((gpointer *) location, (gpointer)val.ival, (gpointer)comp.ival);
-
-	return ret.fval;
-#else
-	gdouble old;
-
-	mono_interlocked_lock ();
-	old = *location;
-	if (old == comparand)
-		*location = value;
-	mono_interlocked_unlock ();
-
-	return old;
-#endif
 }
 
 gint64

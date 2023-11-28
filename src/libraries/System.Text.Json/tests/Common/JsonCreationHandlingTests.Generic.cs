@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -42,7 +41,14 @@ namespace System.Text.Json.Serialization.Tests
             set => _list[index] = (T)value;
         }
 
+        [JsonConstructor]
         public StructList() { }
+
+        public StructList(IEnumerable<T> values)
+        {
+            _list.AddRange(values);
+            _count = _list.Count;
+        }
 
         public void Add(T item)
         {
@@ -261,7 +267,14 @@ namespace System.Text.Json.Serialization.Tests
         // we track count separately to make sure tests are not passing by accident because we use reference to list inside of struct
         private int _count;
 
+        [JsonConstructor]
         public StructDictionary() { }
+
+        public StructDictionary(IEnumerable<KeyValuePair<TKey, TValue>> entries)
+        {
+            _dict = entries.ToDictionary(kv => kv.Key, kv => kv.Value);
+            _count = _dict.Count;
+        }
 
         public TValue this[TKey key]
         {
@@ -415,121 +428,97 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(List<int>))]
-        [InlineData(typeof(IList<int>))]
-        [InlineData(typeof(IList))]
-        [InlineData(typeof(Queue<int>))]
-        [InlineData(typeof(Queue))]
-        [InlineData(typeof(ConcurrentQueue<int>))]
-        [InlineData(typeof(Stack<int>))]
-        [InlineData(typeof(Stack))]
-        [InlineData(typeof(ConcurrentStack<int>))]
-        [InlineData(typeof(ICollection<int>))]
-        [InlineData(typeof(ISet<int>))]
-        [InlineData(typeof(Dictionary<string, int>))]
-        [InlineData(typeof(IDictionary<string, int>))]
-        [InlineData(typeof(IDictionary))]
-        [InlineData(typeof(ConcurrentDictionary<string, int>))]
-        [InlineData(typeof(SortedDictionary<string, int>))]
-        public Task CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeNull(Type type)
-        {
-            return (Task)typeof(JsonCreationHandlingTests)
-                .GetMethod(nameof(CreationHandling_PopulatedPropertyDeserializeNullGeneric), BindingFlags.NonPublic | BindingFlags.Instance)
-                .MakeGenericMethod(type).Invoke(this, null);
-        }
+        [MemberData(nameof(GetTestedCollectionTypes))]
+        public Task CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeNull(TypeWitness typeWitness)
+            => typeWitness.Accept(CreationHandling_PopulatedPropertyDeserializeNull_TestBody.Instance, Serializer);
 
-        private async Task CreationHandling_PopulatedPropertyDeserializeNullGeneric<T>()
+        private sealed class CreationHandling_PopulatedPropertyDeserializeNull_TestBody : ITypeVisitor<JsonSerializerWrapper, Task>
         {
-            JsonSerializerOptions options = Serializer.CreateOptions();
-            string json = """{"Property":null}""";
-            var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<T>>(json, options);
-            Assert.Null(obj.Property);
+            public readonly static CreationHandling_PopulatedPropertyDeserializeNull_TestBody Instance = new();
+            public async Task Visit<T>(JsonSerializerWrapper serializer)
+            {
+                string json = """{"Property":null}""";
+                var obj = await serializer.DeserializeWrapper<ClassWithWritableProperty<T>>(json);
+                Assert.Null(obj.Property);
+            }
         }
 
         [Theory]
-        [InlineData(typeof(List<int>))]
-        [InlineData(typeof(IList<int>))]
-        [InlineData(typeof(IList))]
-        [InlineData(typeof(Queue<int>))]
-        [InlineData(typeof(Queue))]
-        [InlineData(typeof(ConcurrentQueue<int>))]
-        [InlineData(typeof(Stack<int>))]
-        [InlineData(typeof(Stack))]
-        [InlineData(typeof(ConcurrentStack<int>))]
-        [InlineData(typeof(ICollection<int>))]
-        [InlineData(typeof(ISet<int>))]
-        [InlineData(typeof(Dictionary<string, int>))]
-        [InlineData(typeof(IDictionary<string, int>))]
-        [InlineData(typeof(IDictionary))]
-        [InlineData(typeof(ConcurrentDictionary<string, int>))]
-        [InlineData(typeof(SortedDictionary<string, int>))]
-        public Task CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeNullOnReadOnlyProperty(Type type)
-        {
-            return (Task)typeof(JsonCreationHandlingTests)
-                .GetMethod(nameof(CreationHandling_PopulatedPropertyDeserializeNullOnReadOnlyPropertyGeneric), BindingFlags.NonPublic | BindingFlags.Instance)
-                .MakeGenericMethod(type).Invoke(this, null);
-        }
+        [MemberData(nameof(GetTestedCollectionTypes))]
+        public Task CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeNullOnReadOnlyProperty(TypeWitness typeWitness)
+            => typeWitness.Accept(CreationHandling_PopulatedPropertyDeserializeNullOnReadOnlyPropertyGeneric_TestBody.Instance, Serializer);
 
-        private async Task CreationHandling_PopulatedPropertyDeserializeNullOnReadOnlyPropertyGeneric<T>()
+        private sealed class CreationHandling_PopulatedPropertyDeserializeNullOnReadOnlyPropertyGeneric_TestBody : ITypeVisitor<JsonSerializerWrapper, Task>
         {
-            JsonSerializerOptions options = Serializer.CreateOptions();
-            string json = """{"Property":null}""";
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>(json, options));
+            public readonly static CreationHandling_PopulatedPropertyDeserializeNullOnReadOnlyPropertyGeneric_TestBody Instance = new();
+            public async Task Visit<T>(JsonSerializerWrapper serializer)
+            {
+                string json = """{"Property":null}""";
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>(json));
+            }
         }
 
         [Theory]
-        [InlineData(typeof(List<int>), true)]
-        [InlineData(typeof(IList<int>), true)]
-        [InlineData(typeof(IList), true)]
-        [InlineData(typeof(Queue<int>), true)]
-        [InlineData(typeof(Queue), true)]
-        [InlineData(typeof(ConcurrentQueue<int>), true)]
-        [InlineData(typeof(Stack<int>), true)]
-        [InlineData(typeof(Stack), true)]
-        [InlineData(typeof(ConcurrentStack<int>), true)]
-        [InlineData(typeof(ICollection<int>), true)]
-        [InlineData(typeof(ISet<int>), true)]
-        [InlineData(typeof(Dictionary<string, int>), false)]
-        [InlineData(typeof(IDictionary<string, int>), false)]
-        [InlineData(typeof(IDictionary), false)]
-        [InlineData(typeof(ConcurrentDictionary<string, int>), false)]
-        [InlineData(typeof(SortedDictionary<string, int>), false)]
-        [InlineData(typeof(StructList<int>?), true)]
-        [InlineData(typeof(StructCollection<int>?), true)]
-        [InlineData(typeof(StructSet<int>?), true)]
-        [InlineData(typeof(StructDictionary<string, int>?), false)]
-        public Task CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeInitiallyNull(Type type, bool isArray)
+        [MemberData(nameof(GetTestedCollectionTypes))]
+        public Task CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeInitiallyNull(TypeWitness typeWitness)
+            => typeWitness.Accept(CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeInitiallyNull_TestBody.Instance, Serializer);
+
+        private sealed class CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeInitiallyNull_TestBody : ITypeVisitor<JsonSerializerWrapper, Task>
         {
-            return (Task)typeof(JsonCreationHandlingTests)
-                .GetMethod(nameof(CreationHandling_PopulatedPropertyDeserializeInitiallyNullGeneric), BindingFlags.NonPublic | BindingFlags.Instance)
-                .MakeGenericMethod(type).Invoke(this, new object[] { isArray });
+            public readonly static CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeInitiallyNull_TestBody Instance = new();
+            public async Task Visit<T>(JsonSerializerWrapper serializer)
+            {
+                JsonTypeInfoKind kind = serializer.DefaultOptions.GetTypeInfo(typeof(T)).Kind;
+                Assert.True(kind is JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary);
+                string json = kind is JsonTypeInfoKind.Enumerable ? """{"Property":[1,2,3]}""" : """{"Property":{"a":1,"b":2,"c":3}}""";
+
+                if (typeof(T).IsValueType)
+                {
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>("{}"));
+                }
+                else
+                {
+                    var obj = await serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>("{}");
+                    Assert.Null(obj.Property);
+
+                    obj = await serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>(json);
+                    Assert.Null(obj.Property);
+                }
+
+                {
+                    var obj = await serializer.DeserializeWrapper<ClassWithWritableProperty<T>>("{}");
+                    Assert.Null(obj.Property);
+
+                    obj = await serializer.DeserializeWrapper<ClassWithWritableProperty<T>>(json);
+                    Assert.NotNull(obj.Property);
+                }
+            }
         }
 
-        private async Task CreationHandling_PopulatedPropertyDeserializeInitiallyNullGeneric<T>(bool isArray)
+        public static IEnumerable<object[]> GetTestedCollectionTypes()
         {
-            JsonSerializerOptions options = Serializer.CreateOptions();
-            string json = isArray ? """{"Property":[1,2,3]}""" : """{"Property":{"a":1,"b":2,"c":3}}""";
+            yield return Wrap(new TypeWitness<List<int>>());
+            yield return Wrap(new TypeWitness<IList<int>>());
+            yield return Wrap(new TypeWitness<IList>());
+            yield return Wrap(new TypeWitness<Queue<int>>());
+            yield return Wrap(new TypeWitness<Queue>());
+            yield return Wrap(new TypeWitness<ConcurrentQueue<int>>());
+            yield return Wrap(new TypeWitness<Stack<int>>());
+            yield return Wrap(new TypeWitness<Stack>());
+            yield return Wrap(new TypeWitness<ConcurrentStack<int>>());
+            yield return Wrap(new TypeWitness<ICollection<int>>());
+            yield return Wrap(new TypeWitness<ISet<int>>());
+            yield return Wrap(new TypeWitness<Dictionary<string, int>>());
+            yield return Wrap(new TypeWitness<IDictionary<string, int>>());
+            yield return Wrap(new TypeWitness<IDictionary>());
+            yield return Wrap(new TypeWitness<ConcurrentDictionary<string, int>>());
+            yield return Wrap(new TypeWitness<SortedDictionary<string, int>>());
+            yield return Wrap(new TypeWitness<StructList<int>?>());
+            yield return Wrap(new TypeWitness<StructCollection<int>?>());
+            yield return Wrap(new TypeWitness<StructSet<int>?>());
+            yield return Wrap(new TypeWitness<StructDictionary<string, int>?>());
 
-            if (typeof(T).IsValueType)
-            {
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>("{}", options));
-            }
-            else
-            {
-                var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>("{}", options);
-                Assert.Null(obj.Property);
-
-                obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty<T>>(json, options);
-                Assert.Null(obj.Property);
-            }
-
-            {
-                var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<T>>("{}", options);
-                Assert.Null(obj.Property);
-
-                obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<T>>(json, options);
-                Assert.NotNull(obj.Property);
-            }
+            static object[] Wrap(TypeWitness witness) => new object[] { witness };
         }
 
         private static void CheckGenericDictionaryContent(IDictionary<string, int> dict, int expectedNumberOfElements = 6)
@@ -628,13 +617,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
-                Assert.True(false, "This converter should never be used");
+                Assert.Fail("This converter should never be used");
                 return default;
             }
 
             public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
             {
-                Assert.True(false, "This converter should never be used");
+                Assert.Fail("This converter should never be used");
             }
         }
     }

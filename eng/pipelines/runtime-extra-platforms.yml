@@ -65,14 +65,11 @@ extends:
           isRollingBuild: ${{ variables.isRollingBuild }}
 
       # Add iOS/tvOS simulator jobs
-      #
-      # Disabled pending queue backup investigation 
-      #
-      #- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslikesimulator.yml
-      #  parameters:
-      #    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-      #    isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
-      #    isRollingBuild: ${{ variables.isRollingBuild }}
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslikesimulator.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
 
       # Add Android jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-android.yml
@@ -89,14 +86,11 @@ extends:
           isRollingBuild: ${{ variables.isRollingBuild }}
 
       # Add Mac Catalyst jobs
-      #
-      # Disabled pending queue backup investigation 
-      #
-      #- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-maccatalyst.yml
-      #  parameters:
-      #    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-      #    isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
-      #    isRollingBuild: ${{ variables.isRollingBuild }}
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-maccatalyst.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
 
       # Add Linux Bionic jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-linuxbionic.yml

@@ -117,6 +117,8 @@ namespace Microsoft.Extensions.Logging.EventSource
         private const string UseAppFilters = "UseAppFilters";
         private const string WriteEventCoreSuppressionJustification = "WriteEventCore is safe when eventData object is a primitive type which is in this case.";
         private const string WriteEventDynamicDependencySuppressionJustification = "DynamicDependency attribute will ensure that the required properties are not trimmed.";
+        private static readonly char[] s_semicolon = new[] { ';' };
+        private static readonly char[] s_colon = new[] { ':' };
 
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
@@ -366,7 +368,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             var rules = new List<LoggerFilterRule>();
             int ruleStringsStartIndex = 0;
-            string[] ruleStrings = filterSpec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] ruleStrings = filterSpec.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
             if (ruleStrings.Length > 0 && ruleStrings[0].Equals(UseAppFilters, StringComparison.OrdinalIgnoreCase))
             {
                 // Avoid adding default rule to disable event source loggers
@@ -381,7 +383,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 string rule = ruleStrings[i];
                 LogLevel level = defaultLevel;
-                string[] parts = rule.Split(new[] { ':' }, 2);
+                string[] parts = rule.Split(s_colon, 2);
                 string loggerName = parts[0];
                 if (loggerName.Length == 0)
                 {

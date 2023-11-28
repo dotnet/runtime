@@ -616,7 +616,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
             Utils.InvokeJS(@"
-                var sym = INTERNAL.mono_intern_string(""interned string 3"");
+                var sym = INTERNAL.stringToMonoStringIntern(""interned string 3"");
                 App.call_test_method (""InvokeString"", [ sym ], ""s"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
             ");
@@ -633,7 +633,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var s = ""long interned string"";
                 for (var i = 0; i < 1024; i++)
                     s += String(i % 10);
-                var sym = INTERNAL.mono_intern_string(s);
+                var sym = INTERNAL.stringToMonoStringIntern(s);
                 App.call_test_method (""InvokeString"", [ sym ], ""S"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
             ");
@@ -647,7 +647,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._stringResource = null;
             Utils.InvokeJS(@"
                 for (var i = 0; i < 10240; i++)
-                    INTERNAL.mono_intern_string('s' + i);
+                    INTERNAL.stringToMonoStringIntern('s' + i);
                 App.call_test_method (""InvokeString"", [ 's5000' ], ""S"");
             ");
             Assert.Equal("s5000", HelperMarshal._stringResource);
@@ -672,7 +672,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InternedStringReturnValuesWork()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            var fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.UnitTests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
+            var fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
             Utils.InvokeJS(
                 $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
                 $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +
@@ -743,6 +743,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalSynchronousTask()
         {
             bool success = await MarshalTask("SynchronousTask");
@@ -750,6 +751,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalAsynchronousTask()
         {
             bool success = await MarshalTask("AsynchronousTask");
@@ -757,18 +759,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static Task MarshalSynchronousTaskInt()
         {
             return MarshalTaskReturningInt("SynchronousTaskInt");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static Task MarshalAsynchronousTaskInt()
         {
             return MarshalTaskReturningInt("AsynchronousTaskInt");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalFailedSynchronousTask()
         {
             bool success = await MarshalTask("FailedSynchronousTask");
@@ -776,56 +781,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/94253", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static async Task MarshalFailedAsynchronousTask()
         {
             bool success = await MarshalTask("FailedAsynchronousTask");
             Assert.False(success, "FailedAsynchronousTask didn't failed.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalSynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("SynchronousValueTask");
-            Assert.True(success, "SynchronousValueTask didn't succeeded.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalAsynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("AsynchronousValueTask");
-            Assert.True(success, "AsynchronousValueTask didn't succeeded.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static Task MarshalSynchronousValueTaskIntDoesNotWorkYet()
-        {
-            return MarshalTaskReturningInt("SynchronousValueTaskInt");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static Task MarshalAsynchronousValueTaskIntDoesNotWorkYet()
-        {
-            return MarshalTaskReturningInt("AsynchronousValueTaskInt");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalFailedSynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("FailedSynchronousValueTask");
-            Assert.False(success, "FailedSynchronousValueTask didn't failed.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalFailedAsynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("FailedAsynchronousValueTask");
-            Assert.False(success, "FailedAsynchronousValueTask didn't failed.");
         }
     }
 }

@@ -4,10 +4,16 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
-    <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
+    <_HostOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows</_HostOS>
+    <_HostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_HostOS>
+    <_HostOS Condition="'$(_HostOS)' == ''">linux</_HostOS>
+
+    <_IsLibraryMode Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
+    <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
     <AndroidBuildDependsOn>
+        $(_ReadRuntimeComponentsManifestTargetName);
         _InitializeCommonProperties;
         _BeforeAndroidBuild;
         _AndroidResolveReferences;
@@ -17,5 +23,11 @@
         _AndroidGenerateAppBundle;
         _AfterAndroidBuild
     </AndroidBuildDependsOn>
+
+    <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
+    <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
+
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
 </Project>

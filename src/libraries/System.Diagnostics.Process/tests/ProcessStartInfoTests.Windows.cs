@@ -4,6 +4,7 @@
 using System.IO;
 using System.Security;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -16,6 +17,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
         public void TestUserNetworkCredentialsPropertiesOnWindows()
         {
             const string ShareName = "testForDotNet";
@@ -81,6 +83,12 @@ namespace System.Diagnostics.Tests
         [InlineData(ProcessWindowStyle.Maximized, false)]
         public void TestWindowStyle(ProcessWindowStyle windowStyle, bool useShellExecute)
         {
+            if (useShellExecute && PlatformDetection.IsMonoRuntime)
+            {
+                // https://github.com/dotnet/runtime/issues/34360
+                throw new SkipTestException("ShellExecute tries to set STA COM apartment state which is not implemented by Mono.");
+            }
+
             // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
             (int expectedDwFlag, int expectedWindowFlag) = windowStyle switch
             {

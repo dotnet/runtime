@@ -9,12 +9,16 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class MD5Tests : HashAlgorithmTestDriver
+    public class MD5Tests : HashAlgorithmTestDriver<MD5Tests.Traits>
     {
-        protected override HashAlgorithm Create()
+        public sealed class Traits : IHashTrait
         {
-            return MD5.Create();
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => MD5.HashSizeInBytes;
         }
+
+        protected override HashAlgorithm Create() => MD5.Create();
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.MD5;
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
@@ -147,6 +151,13 @@ namespace System.Security.Cryptography.Tests
         public async Task MD5_Rfc1321_7_AsStream_Async()
         {
             await VerifyRepeatingAsync("1234567890", 8, "57edf4a22be3c955ac49da2e2107b67a");
+        }
+
+        [Fact]
+        public void MD5_HashSizes()
+        {
+            Assert.Equal(128, MD5.HashSizeInBits);
+            Assert.Equal(16, MD5.HashSizeInBytes);
         }
     }
 }

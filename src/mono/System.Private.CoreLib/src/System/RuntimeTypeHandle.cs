@@ -34,8 +34,8 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System
@@ -170,6 +170,12 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
         }
 
+        internal static bool IsFunctionPointer(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
+        }
+
         internal static bool IsArray(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -240,11 +246,6 @@ namespace System
             return false;
         }
 #pragma warning restore IDE0060
-
-        internal static bool IsInterface(RuntimeType type)
-        {
-            return (type.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetArrayRank(QCallTypeHandle type);

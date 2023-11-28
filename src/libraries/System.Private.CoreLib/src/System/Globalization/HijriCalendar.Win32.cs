@@ -57,22 +57,19 @@ namespace System.Globalization
                 if (string.Compare(str, 0, HijriAdvanceRegKeyEntry, 0, HijriAdvanceRegKeyEntry.Length, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     if (str!.Length == HijriAdvanceRegKeyEntry.Length)
+                    {
                         hijriAdvance = -1;
+                    }
                     else
                     {
-                        try
+                        if (int.TryParse(str.AsSpan(HijriAdvanceRegKeyEntry.Length), CultureInfo.InvariantCulture, out int advance) &&
+                            (advance >= MinAdvancedHijri) &&
+                            (advance <= MaxAdvancedHijri))
                         {
-                            int advance = int.Parse(str.AsSpan(HijriAdvanceRegKeyEntry.Length), provider: CultureInfo.InvariantCulture);
-                            if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri))
-                            {
-                                hijriAdvance = advance;
-                            }
+                            hijriAdvance = advance;
                         }
-                        // If we got garbage from registry just ignore it.
+                        // If parsing fails due to garbage from registry just ignore it.
                         // hijriAdvance = 0 because of declaraction assignment up above.
-                        catch (ArgumentException) { }
-                        catch (FormatException) { }
-                        catch (OverflowException) { }
                     }
                 }
                 return hijriAdvance;

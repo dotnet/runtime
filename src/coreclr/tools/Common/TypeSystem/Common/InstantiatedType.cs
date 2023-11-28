@@ -159,6 +159,14 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
         }
 
+        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        {
+            MethodDesc typicalMethodDef = _typeDef.GetMethodWithEquivalentSignature(name, signature, substitution);
+            if (typicalMethodDef == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
+        }
+
         public override MethodDesc GetStaticConstructor()
         {
             MethodDesc typicalCctor = _typeDef.GetStaticConstructor();

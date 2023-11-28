@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -580,7 +581,16 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ClassWithReadOnlyPropertyIDictionary_BackedBy_DictionaryOfStringToJsonElement() {}
 
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public IDictionary Property { get; } = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>("""{"a":1,"b":2,"c":3}""");
+        public IDictionary Property { get; } = ParseJsonObject("""{"a":1,"b":2,"c":3}""").ToDictionary(kv => kv.Key, kv => kv.Value);
+    }
+
+    private static IEnumerable<KeyValuePair<string, JsonElement>> ParseJsonObject(string json)
+    {
+        JsonDocument doc = JsonDocument.Parse(json);
+        foreach (var entry in doc.RootElement.EnumerateObject())
+        {
+            yield return new KeyValuePair<string, JsonElement>(entry.Name, entry.Value);
+        }
     }
 
     [Fact]
@@ -625,7 +635,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyIDictionary_BackedBy_DictionaryOfStringToJsonElementWithoutPopulateAttribute() {}
 
-        public IDictionary Property { get; } = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>("""{"a":1,"b":2,"c":3}""");
+        public IDictionary Property { get; } = ParseJsonObject("""{"a":1,"b":2,"c":3}""").ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
@@ -633,7 +643,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyIDictionary_BackedBy_DictionaryOfStringToJsonElementWithAttributeOnType() {}
 
-        public IDictionary Property { get; } = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>("""{"a":1,"b":2,"c":3}""");
+        public IDictionary Property { get; } = ParseJsonObject("""{"a":1,"b":2,"c":3}""").ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
     [Fact]
@@ -670,7 +680,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     internal class ClassWithReadOnlyPropertyIDictionary_BackedBy_StructDictionaryOfStringToJsonElement
     {
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public IDictionary Property { get; } = JsonSerializer.Deserialize<StructDictionary<string, JsonElement>>("""{"a":1,"b":2,"c":3}""");
+        public IDictionary Property { get; } = new StructDictionary<string, JsonElement>(ParseJsonObject("""{"a":1,"b":2,"c":3}"""));
     }
 
     [Fact]
@@ -716,13 +726,13 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
 
     internal class ClassWithReadOnlyPropertyIDictionary_BackedBy_StructDictionaryOfStringToJsonElementWithoutPopulateAttribute
     {
-        public IDictionary Property { get; } = JsonSerializer.Deserialize<StructDictionary<string, JsonElement>>("""{"a":1,"b":2,"c":3}""");
+        public IDictionary Property { get; } = new StructDictionary<string, JsonElement>(ParseJsonObject("""{"a":1,"b":2,"c":3}"""));
     }
 
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
     internal class ClassWithReadOnlyPropertyIDictionary_BackedBy_StructDictionaryOfStringToJsonElementWithAttributeOnType
     {
-        public IDictionary Property { get; } = JsonSerializer.Deserialize<StructDictionary<string, JsonElement>>("""{"a":1,"b":2,"c":3}""");
+        public IDictionary Property { get; } = new StructDictionary<string, JsonElement>(ParseJsonObject("""{"a":1,"b":2,"c":3}"""));
     }
 
     [Fact]

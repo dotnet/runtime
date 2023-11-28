@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -45,7 +46,7 @@ namespace Internal.TypeSystem
         Variant = 0x51,
     }
 
-    public class MarshalAsDescriptor
+    public class MarshalAsDescriptor: IEquatable<MarshalAsDescriptor>
     {
         private TypeDesc _marshallerType;
         private string _cookie;
@@ -80,6 +81,31 @@ namespace Internal.TypeSystem
             SizeConst = sizeConst;
             _marshallerType = customMarshallerType;
             _cookie = cookie;
+        }
+
+        public bool Equals(MarshalAsDescriptor other)
+        {
+            if ((Type != other.Type) ||
+                (ArraySubType != other.ArraySubType) ||
+                (SizeParamIndex != other.SizeParamIndex) ||
+                (SizeConst != other.SizeConst))
+                return false;
+
+            return true;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is MarshalAsDescriptor other)
+            {
+                return Equals(other);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return Type.GetHashCode() ^ (ArraySubType.GetHashCode() << 3);
         }
     }
 }

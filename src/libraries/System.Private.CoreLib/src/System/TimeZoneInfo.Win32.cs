@@ -8,12 +8,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
-
 using Internal.Win32;
-
 using REG_TZI_FORMAT = Interop.Kernel32.REG_TZI_FORMAT;
-using TIME_ZONE_INFORMATION = Interop.Kernel32.TIME_ZONE_INFORMATION;
 using TIME_DYNAMIC_ZONE_INFORMATION = Interop.Kernel32.TIME_DYNAMIC_ZONE_INFORMATION;
+using TIME_ZONE_INFORMATION = Interop.Kernel32.TIME_ZONE_INFORMATION;
 
 namespace System
 {
@@ -32,7 +30,6 @@ namespace System
         private const string FirstEntryValue = "FirstEntry";
         private const string LastEntryValue = "LastEntry";
 
-        private const int MaxKeyLength = 255;
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
         private sealed partial class CachedData
@@ -87,6 +84,30 @@ namespace System
             }
 
             return (AdjustmentRule[])_adjustmentRules.Clone();
+        }
+
+        private static string? PopulateDisplayName()
+        {
+            // Keep window's implementation to populate via constructor
+            // This should not be reached
+            Debug.Assert(false);
+            return null;
+        }
+
+        private static string? PopulateStandardDisplayName()
+        {
+            // Keep window's implementation to populate via constructor
+            // This should not be reached
+            Debug.Assert(false);
+            return null;
+        }
+
+        private static string? PopulateDaylightDisplayName()
+        {
+            // Keep window's implementation to populate via constructor
+            // This should not be reached
+            Debug.Assert(false);
+            return null;
         }
 
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
@@ -314,56 +335,13 @@ namespace System
 
         /// <summary>
         /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
-        /// This function wraps the logic necessary to keep the private
-        /// SystemTimeZones cache in working order
         ///
-        /// This function will either return a valid TimeZoneInfo instance or
-        /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
+        /// This function may return null.
+        ///
+        /// assumes cachedData lock is taken
         /// </summary>
-        public static TimeZoneInfo FindSystemTimeZoneById(string id)
-        {
-            ArgumentNullException.ThrowIfNull(id);
-
-            // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
-            if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
-            {
-                return Utc;
-            }
-
-            if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains('\0'))
-            {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
-            }
-
-            TimeZoneInfo? value;
-            Exception? e;
-
-            TimeZoneInfoResult result;
-
-            CachedData cachedData = s_cachedData;
-
-            lock (cachedData)
-            {
-                result = TryGetTimeZone(id, false, out value, out e, cachedData);
-            }
-
-            if (result == TimeZoneInfoResult.Success)
-            {
-                return value!;
-            }
-            else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
-            {
-                throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidRegistryData, id), e);
-            }
-            else if (result == TimeZoneInfoResult.SecurityException)
-            {
-                throw new SecurityException(SR.Format(SR.Security_CannotReadRegistryData, id), e);
-            }
-            else
-            {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
-            }
-        }
+        private static TimeZoneInfoResult TryGetTimeZone(string id, out TimeZoneInfo? timeZone, out Exception? e, CachedData cachedData)
+            => TryGetTimeZone(id, false, out timeZone, out e, cachedData);
 
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
         internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
@@ -944,9 +922,9 @@ namespace System
                     value = new TimeZoneInfo(
                         id,
                         new TimeSpan(0, -(defaultTimeZoneInformation.Bias), 0),
-                        displayName,
-                        standardName,
-                        daylightName,
+                        displayName ?? string.Empty,
+                        standardName ?? string.Empty,
+                        daylightName ?? string.Empty,
                         adjustmentRules,
                         disableDaylightSavingTime: false);
 

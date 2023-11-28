@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
 
@@ -84,6 +87,30 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public async void GetService_Throws_WhenGetServiceForScopedServiceIsCalledOnRoot_IL_Replacement()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IBar, Bar>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(validateScopes: true);
+
+            // Act + Assert
+            using (var scope = serviceProvider.CreateScope())
+            {
+                // Switch to an emit-based version which is triggered in the background after 2 calls to GetService.
+                scope.ServiceProvider.GetRequiredService(typeof(IBar));
+                scope.ServiceProvider.GetRequiredService(typeof(IBar));
+
+                // Give the background thread time to generate the emit version.
+                await Task.Delay(100);
+
+                // Ensure the emit-based version has the correct scope checks.
+                var exception = Assert.Throws<InvalidOperationException>(serviceProvider.GetRequiredService<IBar>);
+                Assert.Equal($"Cannot resolve scoped service '{typeof(IBar)}' from root provider.", exception.Message);
+            }
+        }
+
+        [Fact]
         public void GetService_Throws_WhenGetServiceForScopedServiceIsCalledOnRootViaTransient()
         {
             // Arrange
@@ -95,6 +122,49 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Act + Assert
             var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IFoo)));
             Assert.Equal($"Cannot resolve '{typeof(IFoo)}' from root provider because it requires scoped service '{typeof(IBar)}'.", exception.Message);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void GetService_DoesNotThrow_WhenGetServiceForPolymorphicServiceIsCalledOnRoot_AndTheLastOneIsNotScoped(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IBar, Bar>();
+            serviceCollection.AddTransient<IBar, Bar3>();
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actual = serviceProvider.GetService<IBar>();
+
+            // Assert
+            Assert.IsType<Bar3>(actual);
+        }
+
+        [Fact]
+        public void ScopeValidation_ShouldBeAbleToDistingushGenericCollections_WhenGetServiceIsCalledOnRoot()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<IBar, Bar>();
+            serviceCollection.AddScoped<IBar, Bar3>();
+
+            serviceCollection.AddTransient<IBaz, Baz>();
+            serviceCollection.AddTransient<IBaz, Baz2>();
+
+            // Act
+            using var serviceProvider = serviceCollection.BuildServiceProvider(validateScopes: true);
+            Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService<IEnumerable<IBar>>());
+            var actual = serviceProvider.GetService<IEnumerable<IBaz>>();
+
+            // Assert
+            Assert.IsType<Baz>(actual.First());
+            Assert.IsType<Baz2>(actual.Last());
         }
 
         [Fact]
@@ -206,6 +276,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
         }
 
+
         private class Bar2 : IBar
         {
             public Bar2(IBaz baz)
@@ -213,11 +284,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        private class Bar3 : IBar
+        {
+        }
+
         private interface IBaz
         {
         }
 
         private class Baz : IBaz
+        {
+        }
+
+        private class Baz2 : IBaz
         {
         }
 

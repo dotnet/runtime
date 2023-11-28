@@ -8,7 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly reference_i { }
+.assembly ASSEMBLY_NAME { }
 .method public static class System.String 
         rems(int32& n,
              int32& m) il managed

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /// <summary>Generic chaos types</summary>
 /// <remarks>CommandLine:
 ///<code>GenericChaos.exe /mtc:10 /mtcc:2 /mic:10 /ol:Cs /ol:Vb /mtpc:2 /mmtpc:2
@@ -3450,8 +3451,8 @@ namespace Chaos
 
     public class Program
     {
-
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             A0 v0 = new A0();
             v0.CreateAllTypesA0();
@@ -3486,7 +3487,6 @@ namespace Chaos
             A0A0A0A0A0<A0A0A3<A0A0A0<A0A3>>, A0A1A4<A0A3, A0A0>> v15 = new A0A0A0A0A0<A0A0A3<A0A0A0<A0A3>>, A0A1A4<A0A3, A0A0>>();
             v15.CreateAllTypesA0A0A0A0A0();
             System.Console.WriteLine("Test SUCCESS");
-            return 100;
         }
     }
 

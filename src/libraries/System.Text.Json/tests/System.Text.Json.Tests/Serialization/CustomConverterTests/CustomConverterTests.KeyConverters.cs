@@ -71,7 +71,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(InvalidCustomKeyConverter.InvalidOperationType.HandleEntireProperty)]
         public static void InvalidCustomKeyConverter_Serialization(InvalidCustomKeyConverter.InvalidOperationType invalidOperationType)
         {
-            var options = new JsonSerializerOptions { Converters = { new InvalidCustomKeyConverter { Type = invalidOperationType } } };
+            var options = new JsonSerializerOptions { Converters = { new InvalidCustomKeyConverter { OperationType = invalidOperationType } } };
             var value = new Dictionary<string, int> { ["key"] = 42 };
 
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize(value, options));
@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(InvalidCustomKeyConverter.InvalidOperationType.ReturnNull, typeof(ArgumentNullException))]
         public static void InvalidCustomKeyConverter_Deserialization(InvalidCustomKeyConverter.InvalidOperationType invalidOperationType, Type exceptionType)
         {
-            var options = new JsonSerializerOptions { Converters = { new InvalidCustomKeyConverter { Type = invalidOperationType } } };
+            var options = new JsonSerializerOptions { Converters = { new InvalidCustomKeyConverter { OperationType = invalidOperationType } } };
             string json = @"{""key1"" : 1, ""key2"" : 2 }";
 
             Assert.Throws(exceptionType, () => JsonSerializer.Deserialize<Dictionary<string, int>>(json, options));
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Tests
                 DoNothing, HandleEntireProperty, HandleEntireParentObject, ReturnNull
             }
 
-            public InvalidOperationType Type { get; init; }
+            public InvalidOperationType OperationType { get; init; }
 
             public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
                 => throw new NotSupportedException();
@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void WriteAsPropertyName(Utf8JsonWriter writer, string value, JsonSerializerOptions _)
             {
-                switch (Type)
+                switch (OperationType)
                 {
                     case InvalidOperationType.HandleEntireProperty:
                         writer.WriteString("key", value);
@@ -138,7 +138,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public override string ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions _)
             {
-                switch (Type)
+                switch (OperationType)
                 {
                     case InvalidOperationType.HandleEntireProperty:
                         reader.Read();

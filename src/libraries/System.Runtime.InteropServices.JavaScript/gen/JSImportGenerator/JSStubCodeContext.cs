@@ -16,8 +16,6 @@ namespace Microsoft.Interop.JavaScript
         {
             return _inner.GetIdentifiers(info);
         }
-
-        public override (TargetFramework framework, Version version) GetTargetFramework() => _inner.GetTargetFramework();
     }
 
     internal sealed record JSImportCodeContext : JSStubCodeContext
@@ -27,6 +25,7 @@ namespace Microsoft.Interop.JavaScript
             _inner = inner;
             Direction = MarshalDirection.ManagedToUnmanaged;
             AttributeData = attributeData;
+            CodeEmitOptions = inner.CodeEmitOptions;
         }
 
         public JSImportData AttributeData { get; set; }
@@ -39,6 +38,7 @@ namespace Microsoft.Interop.JavaScript
             _inner = inner;
             Direction = MarshalDirection.UnmanagedToManaged;
             AttributeData = attributeData;
+            CodeEmitOptions = inner.CodeEmitOptions;
         }
 
         public JSExportData AttributeData { get; set; }

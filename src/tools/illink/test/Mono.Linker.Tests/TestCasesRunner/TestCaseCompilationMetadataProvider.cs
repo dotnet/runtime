@@ -148,13 +148,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				yield return Path.Combine (referenceDir, "mscorlib.dll");
 				yield return Path.Combine (referenceDir, "System.Collections.dll");
+				yield return Path.Combine (referenceDir, "System.Collections.Immutable.dll");
 				yield return Path.Combine (referenceDir, "System.ComponentModel.TypeConverter.dll");
 				yield return Path.Combine (referenceDir, "System.Console.dll");
 				yield return Path.Combine (referenceDir, "System.Linq.Expressions.dll");
+				yield return Path.Combine (referenceDir, "System.Memory.dll");
 				yield return Path.Combine (referenceDir, "System.ObjectModel.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.Extensions.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.InteropServices.dll");
+				yield return Path.Combine (referenceDir, "System.Threading.dll");
 			} else {
 				yield return "mscorlib.dll";
 			}
@@ -227,7 +230,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				References = ((CustomAttributeArgument[]) ctorArguments[2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument[]) ctorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Resources = ResourcesForAttributeArgument (ctorArguments[4]),
-				AdditionalArguments = (string) ctorArguments[5].Value,
+				AdditionalArguments = ((CustomAttributeArgument[]) ctorArguments[5].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				CompilerToUse = (string) ctorArguments[6].Value,
 				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true,
 				RemoveFromLinkerInput = ctorArguments.Count >= 9 ? (bool) ctorArguments[8].Value : false,

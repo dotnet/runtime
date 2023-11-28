@@ -44,6 +44,7 @@ namespace DebuggerTests
              });
 
         [ConditionalFact(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceUsingThisAsync.AnonymousMethod__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -66,6 +67,7 @@ namespace DebuggerTests
              });
 
          [Fact] // NestedContinueWith
+         [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsync",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -140,7 +142,6 @@ namespace DebuggerTests
         public async Task InspectLocalsInAsyncVBMethod()
         {
             var expression = $"{{ invoke_static_method('[debugger-test-vb] DebuggerTestVB.TestVbScope:Run'); }}";
-
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
                 "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 14, 12,
@@ -152,6 +153,21 @@ namespace DebuggerTests
                     CheckNumber(locals, "data", 10);
                 }
             );
+        }
+
+        [ConditionalFact(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
+        public async Task StepOutOfAsyncMethod()
+        {
+            await SetJustMyCode(true);
+            string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+            await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
+                "DebuggerTests.AsyncStepClass.TestAsyncStepOut2");
+
+            await StepAndCheck(StepKind.Out, source_file, 16, 8, "DebuggerTests.AsyncStepClass.TestAsyncStepOut");
         }
     }
 }

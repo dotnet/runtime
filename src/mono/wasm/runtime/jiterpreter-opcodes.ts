@@ -3,51 +3,21 @@
 
 // Keep this file in sync with mintops.def. The order and values need to match exactly.
 
-import { Module } from "./globals";
 import cwraps from "./cwraps";
-
-export const enum MintOpArgType {
-	MintOpNoArgs = 0,
-	MintOpShortInt,
-	MintOpUShortInt,
-	MintOpInt,
-	MintOpLongInt,
-	MintOpFloat,
-	MintOpDouble,
-	MintOpBranch,
-	MintOpShortBranch,
-	MintOpSwitch,
-	MintOpMethodToken,
-	MintOpFieldToken,
-	MintOpClassToken,
-	MintOpTwoShorts,
-	MintOpTwoInts,
-	MintOpShortAndInt,
-	MintOpShortAndShortBranch,
-	MintOpPair2,
-	MintOpPair3,
-	MintOpPair4
-}
-
-export const enum OpcodeInfoType {
-    Name = 0,
-    Length,
-    Sregs,
-    Dregs,
-    OpArgType
-}
+import { utf8ToString } from "./strings";
+import { OpcodeInfoType } from "./jiterpreter-enums";
 
 export type OpcodeNameTable = {
     [key: number]: string;
 }
 
-const opcodeNameCache : OpcodeNameTable = {};
+const opcodeNameCache: OpcodeNameTable = {};
 
-export function getOpcodeName (opcode: number) : string {
+export function getOpcodeName(opcode: number): string {
     let result = opcodeNameCache[opcode];
     if (typeof (result) !== "string") {
         const pName = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Name);
-        opcodeNameCache[opcode] = result = Module.UTF8ToString(<any>pName);
+        opcodeNameCache[opcode] = result = utf8ToString(<any>pName);
     }
     return result;
 }
@@ -55,11 +25,53 @@ export function getOpcodeName (opcode: number) : string {
 export type SimdInfoSubtable = Array<string>
 
 export type SimdInfoTable = {
-    [argument_count: number] : SimdInfoSubtable
+    [argument_count: number]: SimdInfoSubtable
+}
+
+export const enum MintOpArgType {
+    MintOpNoArgs = 0,
+    MintOpShortInt,
+    MintOpUShortInt,
+    MintOpInt,
+    MintOpLongInt,
+    MintOpFloat,
+    MintOpDouble,
+    MintOpBranch,
+    MintOpShortBranch,
+    MintOpSwitch,
+    MintOpMethodToken,
+    MintOpFieldToken,
+    MintOpClassToken,
+    MintOpTwoShorts,
+    MintOpTwoInts,
+    MintOpShortAndInt,
+    MintOpShortAndShortBranch,
+    MintOpPair2,
+    MintOpPair3,
+    MintOpPair4
+}
+
+// keep in sync with jiterpreter.c, see mono_jiterp_relop_fp
+export const enum JiterpSpecialOpcode {
+    CNE_UN_R4 = 0xFFFF + 0,
+    CGE_UN_R4,
+    CLE_UN_R4,
+    CNE_UN_R8,
+    CGE_UN_R8,
+    CLE_UN_R8,
 }
 
 // Keep this in sync with the wasm spec (but I don't think any changes will impact it),
 // Note that prefix opcodes aren't in this enum, since making them write properly is awkward.
+
+export const enum WasmValtype {
+    void = 0x40,
+    i32 = 0x7F,
+    i64 = 0x7E,
+    f32 = 0x7D,
+    f64 = 0x7C,
+    v128 = 0x7B,
+}
 
 export const enum WasmOpcode {
     unreachable = 0x00,

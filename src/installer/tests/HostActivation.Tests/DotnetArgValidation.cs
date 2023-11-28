@@ -82,6 +82,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.FindAnySdk(false);
         }
 
+        [Fact]
+        public void DotNetInfo_NoSDK()
+        {
+            sharedTestState.BuiltDotNet.Exec("--info")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutMatching($@"Architecture:\s*{RepoDirectoriesProvider.Default.BuildArchitecture}")
+                .And.HaveStdOutMatching($@"RID:\s*{RepoDirectoriesProvider.Default.BuildRID}");
+        }
+
+        [Fact]
+        public void DotNetInfo_WithSDK()
+        {
+            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, RepoDirectoriesProvider.Default.BuiltDotnet, "withSdk")
+                .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("1.0.0")
+                .AddMockSDK("1.0.0", "1.0.0")
+                .Build();
+
+            dotnet.Exec("--info")
+                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.NotHaveStdOutMatching($@"RID:\s*{RepoDirectoriesProvider.Default.BuildRID}");
+        }
+
         // Return a non-existent path that contains a mix of / and \
         private string GetNonexistentAndUnnormalizedPath()
         {

@@ -24,14 +24,16 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics)> CreateCompilation (
 			string src,
+			bool consoleApplication,
 			(string, string)[]? globalAnalyzerOptions = null,
 			IEnumerable<MetadataReference>? additionalReferences = null,
 			IEnumerable<SyntaxTree>? additionalSources = null,
 			IEnumerable<AdditionalText>? additionalFiles = null)
-			=> CreateCompilation (CSharpSyntaxTree.ParseText (src), globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
+			=> CreateCompilation (CSharpSyntaxTree.ParseText (src), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
 
 		public static async Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics)> CreateCompilation (
 			SyntaxTree src,
+			bool consoleApplication,
 			(string, string)[]? globalAnalyzerOptions = null,
 			IEnumerable<MetadataReference>? additionalReferences = null,
 			IEnumerable<SyntaxTree>? additionalSources = null,
@@ -45,7 +47,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				assemblyName: Guid.NewGuid ().ToString ("N"),
 				syntaxTrees: sources,
 				references: (await TestCaseUtils.GetNet6References ()).Add (mdRef).AddRange (additionalReferences),
-				new CSharpCompilationOptions (OutputKind.DynamicallyLinkedLibrary));
+				new CSharpCompilationOptions (consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
 			var analyzerOptions = new AnalyzerOptions (
 				additionalFiles: additionalFiles?.ToImmutableArray () ?? ImmutableArray<AdditionalText>.Empty,
 				new SimpleAnalyzerOptions (globalAnalyzerOptions));

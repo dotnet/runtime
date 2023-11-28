@@ -25,6 +25,7 @@ namespace ILCompiler
             TargetDetails targetDetails = defType.Context.Target;
 
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
+            layoutFromMetadata.IsVectorTOrHasVectorTFields = true;
 
             LayoutInt instanceFieldSize;
 
@@ -53,6 +54,7 @@ namespace ILCompiler
                 FieldAlignment = layoutFromMetadata.FieldAlignment,
                 FieldSize = instanceFieldSize,
                 Offsets = layoutFromMetadata.Offsets,
+                IsVectorTOrHasVectorTFields = true,
             };
         }
 

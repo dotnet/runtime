@@ -279,7 +279,7 @@
 #elif defined(TARGET_LOONGARCH64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
 #elif defined(TARGET_RISCV64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5641
+#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5064
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -710,28 +710,6 @@ inline size_t unsigned_abs(__int64 x)
 
 /*****************************************************************************/
 
-#define HISTOGRAM_MAX_SIZE_COUNT 64
-
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
-class Histogram
-{
-public:
-    Histogram(const unsigned* const sizeTable);
-
-    void dump(FILE* output);
-    void record(unsigned size);
-
-private:
-    unsigned              m_sizeCount;
-    const unsigned* const m_sizeTable;
-    unsigned              m_counts[HISTOGRAM_MAX_SIZE_COUNT];
-};
-
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
-
-/*****************************************************************************/
-
 #include "error.h"
 
 /*****************************************************************************/
@@ -761,7 +739,7 @@ private:
 #define CLFLG_CSE 0x00004
 #define CLFLG_REGVAR 0x00008
 #define CLFLG_RNGCHKOPT 0x00010
-#define CLFLG_DEADASGN 0x00020
+#define CLFLG_DEADSTORE 0x00020
 #define CLFLG_CODEMOTION 0x00040
 #define CLFLG_QMARK 0x00080
 #define CLFLG_TREETRANS 0x00100
@@ -780,7 +758,7 @@ private:
 #endif
 
 #define CLFLG_MAXOPT                                                                                                   \
-    (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADASGN | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS |  \
+    (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADSTORE | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS | \
      CLFLG_INLINING | CLFLG_STRUCTPROMOTE)
 
 #define CLFLG_MINOPT (CLFLG_TREETRANS)

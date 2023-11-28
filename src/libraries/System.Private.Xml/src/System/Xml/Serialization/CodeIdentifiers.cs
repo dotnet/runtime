@@ -3,8 +3,8 @@
 
 using System;
 using System.Collections;
-using System.IO;
 using System.Globalization;
+using System.IO;
 
 namespace System.Xml.Serialization
 {

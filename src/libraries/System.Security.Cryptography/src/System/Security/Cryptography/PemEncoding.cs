@@ -254,12 +254,6 @@ namespace System.Security.Cryptography
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsBase64Character(char ch)
-        {
-            return char.IsAsciiLetterOrDigit(ch) || ch is '+' or '/';
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsWhiteSpaceCharacter(char ch)
         {
             // Match white space characters from Convert.Base64

@@ -14,8 +14,11 @@ using ThrowHelper = System.ThrowHelper;
 
 namespace Microsoft.Extensions.Logging
 {
+    /// <summary>
+    /// Provides extension methods for the <see cref="ILoggingBuilder"/> and <see cref="ILoggerProviderConfiguration{ConsoleLoggerProvider}"/> classes.
+    /// </summary>
     [UnsupportedOSPlatform("browser")]
-    public static class ConsoleLoggerExtensions
+    public static partial class ConsoleLoggerExtensions
     {
         internal const string RequiresDynamicCodeMessage = "Binding TOptions to configuration values may require generating dynamic code at runtime.";
         internal const string TrimmingRequiresUnreferencedCodeMessage = "TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.";

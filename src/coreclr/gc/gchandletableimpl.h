@@ -25,6 +25,9 @@ public:
     virtual ~GCHandleStore();
 
     HandleTableBucket _underlyingBucket;
+
+private:
+    HHANDLETABLE GetTable();
 };
 
 extern GCHandleStore* g_gcGlobalHandleStore;

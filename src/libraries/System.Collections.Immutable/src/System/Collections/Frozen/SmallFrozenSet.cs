@@ -18,7 +18,7 @@ namespace System.Collections.Frozen
 
         internal SmallFrozenSet(HashSet<T> source) : base(source.Comparer)
         {
-            _items = source.ToArray(source.Count);
+            _items = source.ToArray();
         }
 
         private protected override T[] ItemsCore => _items;

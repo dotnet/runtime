@@ -171,7 +171,6 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
             # The RID catalog is here: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog.
             #   Windows x64 => win-x64
             #   Windows x86 => win-x86
-            #   Windows arm32 => win-arm
             #   Windows arm64 => win-arm64
             #   Linux x64 => linux-x64
             #   Linux arm32 => linux-arm

@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.IntrinsicSupport
@@ -91,7 +92,7 @@ namespace Internal.IntrinsicSupport
                 Environment.FailFast("Unable to create comparer");
             }
 
-            return RuntimeAugments.NewObject(comparerType);
+            return RuntimeAugments.RawNewObject(comparerType);
         }
 
         //-----------------------------------------------------------------------

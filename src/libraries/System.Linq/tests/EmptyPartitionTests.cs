@@ -30,7 +30,6 @@ namespace System.Linq.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core returns the instance as an optimization")]
         public void SkipSame()
         {
             IEnumerable<int> empty = GetEmptyPartition<int>();
@@ -38,7 +37,6 @@ namespace System.Linq.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core returns the instance as an optimization")]
         public void TakeSame()
         {
             IEnumerable<int> empty = GetEmptyPartition<int>();
@@ -103,6 +101,35 @@ namespace System.Linq.Tests
             en.Reset();
             en.Reset();
             en.Reset();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        public void IListImplementationIsValid()
+        {
+            IList<int> list = Assert.IsAssignableFrom<IList<int>>(Enumerable.Empty<int>());
+            IReadOnlyList<int> roList = Assert.IsAssignableFrom<IReadOnlyList<int>>(Enumerable.Empty<int>());
+
+            Assert.Throws<NotSupportedException>(() => list.Add(42));
+            Assert.Throws<NotSupportedException>(() => list.Insert(0, 42));
+            Assert.Throws<NotSupportedException>(() => list.Clear());
+            Assert.Throws<NotSupportedException>(() => list.Remove(42));
+            Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
+            Assert.Throws<NotSupportedException>(() => list[0] = 42);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[0]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => roList[0]);
+
+            Assert.True(list.IsReadOnly);
+            Assert.Equal(0, list.Count);
+            Assert.Equal(0, roList.Count);
+
+            Assert.False(list.Contains(42));
+            Assert.Equal(-1, list.IndexOf(42));
+
+            list.CopyTo(Array.Empty<int>(), 0);
+            list.CopyTo(Array.Empty<int>(), 1);
+            int[] array = new int[1] { 42 };
+            list.CopyTo(array, 0);
+            Assert.Equal(42, array[0]);
         }
     }
 }

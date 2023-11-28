@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Numerics;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             int Count = System.Numerics.Vector<int>.Count;
-            return 100;
         }
     }
 }

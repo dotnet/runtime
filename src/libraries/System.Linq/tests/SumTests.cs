@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -361,12 +362,58 @@ namespace System.Linq.Tests
 
         #region SourceSumsToOverflow - OverflowExceptionThrown or Infinity returned
 
+        // For testing vectorized overflow, confirms that overflow is detected in multiple vertical lanes
+        // and with the overflow occurring at different vector offsets into the list of data. This includes
+        // the 5th and 6th vectors in the data to ensure overflow checks after the unrolled loop that processes
+        // four vectors at a time.
+        public static IEnumerable<object[]> SumOverflowsVerticalVectorLanes()
+        {
+            for (int element = 0; element < 2; element++)
+            {
+                for (int verticalOffset = 1; verticalOffset < 6; verticalOffset++)
+                {
+                    yield return new object[] {element, verticalOffset};
+                }
+            }
+        }
+
         [Fact]
         public void SumOfInt_SourceSumsToOverflow_OverflowExceptionThrown()
         {
             IEnumerable<int> sourceInt = new int[] { int.MaxValue, 1 };
             Assert.Throws<OverflowException>(() => sourceInt.Sum());
             Assert.Throws<OverflowException>(() => sourceInt.Sum(x => x));
+        }
+
+        [Fact]
+        public void SumOfInt_SourceSumsToOverflowVectorHorizontally_OverflowExceptionThrown()
+        {
+            int[] sourceInt = new int[Vector<int>.Count * 4];
+            Array.Fill(sourceInt, 0);
+
+            for (int i = 0; i < Vector<int>.Count; i++)
+            {
+                sourceInt[i] = int.MaxValue - 3;
+            }
+            for (int i = Vector<int>.Count; i < sourceInt.Length; i++)
+            {
+                sourceInt[i] = 1;
+            }
+
+            Assert.Throws<OverflowException>(() => sourceInt.Sum());
+        }
+
+        [Theory]
+        [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
+        public void SumOfInt_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
+        {
+            int[] sourceInt = new int[Vector<int>.Count * 6];
+            Array.Fill(sourceInt, 0);
+
+            sourceInt[element] = int.MaxValue;
+            sourceInt[element + Vector<int>.Count * verticalOffset] = 1;
+
+            Assert.Throws<OverflowException>(() => sourceInt.Sum());
         }
 
         [Fact]
@@ -383,6 +430,37 @@ namespace System.Linq.Tests
             IEnumerable<long> sourceLong = new long[] { long.MaxValue, 1L };
             Assert.Throws<OverflowException>(() => sourceLong.Sum());
             Assert.Throws<OverflowException>(() => sourceLong.Sum(x => x));
+        }
+
+        [Fact]
+        public void SumOfLong_SourceSumsToOverflowVectorHorizontally_OverflowExceptionThrown()
+        {
+            long[] sourceLong = new long[Vector<long>.Count * 4];
+            Array.Fill(sourceLong, 0);
+
+            for (int i = 0; i < Vector<long>.Count; i++)
+            {
+                sourceLong[i] = long.MaxValue - 3;
+            }
+            for (int i = Vector<long>.Count; i < sourceLong.Length; i++)
+            {
+                sourceLong[i] = 1;
+            }
+
+            Assert.Throws<OverflowException>(() => sourceLong.Sum());
+        }
+
+        [Theory]
+        [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
+        public void SumOfLong_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
+        {
+            long[] sourceLong = new long[Vector<long>.Count * 6];
+            Array.Fill(sourceLong, 0);
+
+            sourceLong[element] = long.MaxValue;
+            sourceLong[element + Vector<long>.Count * verticalOffset] = 1;
+
+            Assert.Throws<OverflowException>(() => sourceLong.Sum());
         }
 
         [Fact]

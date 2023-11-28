@@ -13,78 +13,65 @@ using System.Reflection;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
-    internal sealed class PgoRootCommand : RootCommand
+    internal sealed class PgoRootCommand : CliRootCommand
     {
-        public Option<List<string>> InputFilesToMerge { get; } =
-            new(new[] { "--input", "-i" }, result => Helpers.BuildPathList(result.Tokens), false, "Input .mibc files to be merged. Multiple input arguments are specified as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = ArgumentArity.OneOrMore };
-        public Option<string[]> InputFilesToCompare { get; } =
-            new(new[] { "--input", "-i" }, "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = new ArgumentArity(2, 2) /* exactly two */ };
-        public Option<string> InputFileToDump { get; } =
-            new(new[] { "--input", "-i" }, "Name of the input mibc file to dump") { IsRequired = true, Arity = ArgumentArity.ExactlyOne };
-        public Option<string> TraceFilePath { get; } =
-            new(new[] { "--trace", "-t" }, "Specify the trace file to be parsed");
-        public Option<string> OutputFilePath { get; } =
-            new(new[] { "--output", "-o" }, "Specify the output filename to be created");
-        public Option<string> PreciseDebugInfoFile { get; } =
-            new(new[] { "--precise-debug-info-file" }, "Name of file of newline separated JSON objects containing precise debug info");
-        public Option<int> Pid { get; } =
-            new(new[] { "--pid" }, "The pid within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified");
-        public Option<string> ProcessName { get; } =
-            new(new[] { "--process-name" }, "The process name within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified");
-        public Option<List<string>> Reference =
-            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathList(result.Tokens), true, "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option");
-        public Option<int> ClrInstanceId { get; } =
-            new("--clr-instance-id", "If the process contains multiple .NET runtimes, the instance ID must be specified");
-        public Option<bool> Spgo { get; } =
-            new("--spgo", "Base profile on samples in the input. Uses last branch records if available and otherwise raw IP samples");
-        public Option<int> SpgoMinSamples { get; } =
-            new("--spgo-min-samples", () => 50, "The minimum number of total samples a function must have before generating profile data for it with SPGO. Default: 50");
-        public Option<bool> IncludeFullGraphs { get; } =
-            new("--include-full-graphs", "Include all blocks and edges in the written .mibc file, regardless of profile counts");
-        public Option<double> ExcludeEventsBefore { get; } =
-            new("--exclude-events-before", () => Double.MinValue, "Exclude data from events before specified time. Time is specified as milliseconds from the start of the trace");
-        public Option<double> ExcludeEventsAfter { get; } =
-            new("--exclude-events-after", () => Double.MaxValue, "Exclude data from events after specified time. Time is specified as milliseconds from the start of the trace");
-        public Option<bool> Compressed { get; } =
-            new("--compressed", () => true, "Generate compressed mibc");
-        public Option<int> DumpWorstOverlapGraphs { get; } =
-            new("--dump-worst-overlap-graphs", () => -1, "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory");
-        public Option<string> DumpWorstOverlapGraphsTo { get; } =
-            new("--dump-worst-overlap-graphs-to", "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory");
-        public Option<bool> InheritTimestamp { get; } =
-            new("--inherit-timestamp", "If specified, set the output's timestamp to the max timestamp of the input files");
-        public Option<bool> AutomaticReferences { get; } =
-            new("--automatic-references", () => true, "Attempt to find references by using paths embedded in the trace file. Defaults to true");
-        public Option<AssemblyName[]> IncludedAssemblies { get; } =
-            new("--include-reference", result =>
-            {
-                if (result.Tokens.Count > 0)
-                {
-                    var includedAssemblies = new List<AssemblyName>();
-                    foreach (Token token in result.Tokens)
-                    {
-                        try
-                        {
-                            includedAssemblies.Add(new AssemblyName(token.Value));
-                        }
-                        catch
-                        {
-                            throw new FormatException($"Unable to parse '{token.Value}' as an Assembly Name.");
-                        }
-                    }
-                }
+        public CliOption<List<string>> InputFilesToMerge { get; } =
+            new("--input", "-i") { CustomParser = result => Helpers.BuildPathList(result.Tokens), Description = "Input .mibc files to be merged. Multiple input arguments are specified as --input file1.mibc --input file2.mibc", Required = true, Arity = ArgumentArity.OneOrMore };
+        public CliOption<string[]> InputFilesToCompare { get; } =
+            new("--input", "-i") { Description = "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc", Required = true, Arity = new ArgumentArity(2, 2) /* exactly two */ };
+        public CliOption<string> InputFileToDump { get; } =
+            new("--input", "-i") { Description = "Name of the input mibc file to dump", Required = true, Arity = ArgumentArity.ExactlyOne };
+        public CliOption<string> TraceFilePath { get; } =
+            new("--trace", "-t") { Description = "Specify the trace file to be parsed" };
+        public CliOption<string> OutputFilePath { get; } =
+            new("--output", "-o") { Description = "Specify the output filename to be created" };
+        public CliOption<string> PreciseDebugInfoFile { get; } =
+            new("--precise-debug-info-file") { Description = "Name of file of newline separated JSON objects containing precise debug info" };
+        public CliOption<int> Pid { get; } =
+            new("--pid") { Description = "The pid within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified" };
+        public CliOption<string> ProcessName { get; } =
+            new("--process-name") { Description = "The process name within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified" };
+        public CliOption<List<string>> Reference =
+            new("--reference", "-r") { CustomParser = result => Helpers.BuildPathList(result.Tokens), DefaultValueFactory = result => Helpers.BuildPathList(result.Tokens), Description = "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option" };
+        public CliOption<int> ClrInstanceId { get; } =
+            new("--clr-instance-id") { Description = "If the process contains multiple .NET runtimes, the instance ID must be specified" };
+        public CliOption<bool> Spgo { get; } =
+            new("--spgo") { Description = "Base profile on samples in the input. Uses last branch records if available and otherwise raw IP samples" };
+        public CliOption<int> SpgoMinSamples { get; } =
+            new("--spgo-min-samples") { DefaultValueFactory = _ => 50, Description = "The minimum number of total samples a function must have before generating profile data for it with SPGO. Default: 50" };
+        public CliOption<bool> IncludeFullGraphs { get; } =
+            new("--include-full-graphs") { Description = "Include all blocks and edges in the written .mibc file, regardless of profile counts" };
+        public CliOption<double> ExcludeEventsBefore { get; } =
+            new("--exclude-events-before") { DefaultValueFactory = _ => Double.MinValue, Description = "Exclude data from events before specified time. Time is specified as milliseconds from the start of the trace" };
+        public CliOption<double> ExcludeEventsAfter { get; } =
+            new("--exclude-events-after") { DefaultValueFactory = _ => Double.MaxValue, Description = "Exclude data from events after specified time. Time is specified as milliseconds from the start of the trace" };
+        public CliOption<string> ExcludeEventsBeforeJittingMethod { get; } =
+            new("--exclude-events-before-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events before observing a specific method getting jitted. Method is matched using a regular expression against the method name. Note that the method name is formatted the same as in PerfView which includes typed parameters." };
+        public CliOption<string> ExcludeEventsAfterJittingMethod { get; } =
+            new("--exclude-events-after-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events after observing a specific method getting jitted. Method is matched using a regular expression against the method name. Note that the method name is formatted the same as in PerfView which includes typed parameters." };
+        public CliOption<string> IncludeMethods { get; } =
+            new("--include-methods") { DefaultValueFactory = _ => string.Empty, Description = "Include methods with names matching regular expression. Note that the method names are formatted the same as in PerfView which includes typed parameters." };
+        public CliOption<string> ExcludeMethods { get; } =
+            new("--exclude-methods") { DefaultValueFactory = _ => string.Empty, Description = "Exclude methods with names matching regular expression. Note that the method names are formatted the same as in PerfView which includes typed parameters." };
+        public CliOption<bool> Compressed { get; } =
+            new("--compressed") { DefaultValueFactory = _ => true, Description = "Generate compressed mibc" };
+        public CliOption<int> DumpWorstOverlapGraphs { get; } =
+            new("--dump-worst-overlap-graphs") { DefaultValueFactory = _ => -1, Description = "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory" };
+        public CliOption<string> DumpWorstOverlapGraphsTo { get; } =
+            new("--dump-worst-overlap-graphs-to") { Description = "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory" };
+        public CliOption<bool> AutomaticReferences { get; } =
+            new("--automatic-references") { DefaultValueFactory = _ => true, Description = "Attempt to find references by using paths embedded in the trace file. Defaults to true" };
+        public CliOption<AssemblyName[]> IncludedAssemblies { get; } =
+            new("--include-reference") { CustomParser = MakeAssemblyNameArray, DefaultValueFactory = MakeAssemblyNameArray, Description = "If specified, include in Mibc file only references to the specified assemblies. Assemblies are specified as assembly names, not filenames. For instance, `System.Private.CoreLib` not `System.Private.CoreLib.dll`. Multiple --include-reference options may be specified." };
 
-                return Array.Empty<AssemblyName>();
-            }, true, "If specified, include in Mibc file only references to the specified assemblies. Assemblies are specified as assembly names, not filenames. For instance, `System.Private.CoreLib` not `System.Private.CoreLib.dll`. Multiple --include-reference options may be specified.");
-
-        private Option<bool> _includeReadyToRun { get; } =
-            new("--includeReadyToRun", "Include ReadyToRun methods in the trace file");
-        private Option<Verbosity> _verbosity { get; } =
-            new(new[] { "--verbose" }, () => Verbosity.normal, "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic");
-        private Option<bool> _isSorted { get; } =
-            new("--sorted", "Generate sorted output.");
-        private Option<bool> _showTimestamp { get; } =
-            new("--showtimestamp", "Show timestamps in output");
+        private CliOption<bool> _includeReadyToRun { get; } =
+            new("--includeReadyToRun") { Description = "Include ReadyToRun methods in the trace file" };
+        private CliOption<Verbosity> _verbosity { get; } =
+            new("--verbose") { DefaultValueFactory = _ => Verbosity.normal, Description = "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic" };
+        private CliOption<bool> _isSorted { get; } =
+            new("--sorted") { Description = "Generate sorted output." };
+        private CliOption<bool> _showTimestamp { get; } =
+            new("--showtimestamp") { Description = "Show timestamps in output" };
 
         public PgoFileType? FileType;
         public bool ProcessJitEvents;
@@ -110,7 +97,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         public PgoRootCommand(string[] args) : base(".NET PGO Tool")
         {
-            Command createMbicCommand = new("create-mibc", "Transform a trace file into a Mibc profile data file")
+            CliCommand createMbicCommand = new("create-mibc", "Transform a trace file into a Mibc profile data file")
             {
                 TraceFilePath,
                 OutputFilePath,
@@ -120,6 +107,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ClrInstanceId,
                 ExcludeEventsBefore,
                 ExcludeEventsAfter,
+                ExcludeEventsBeforeJittingMethod,
+                ExcludeEventsAfterJittingMethod,
+                IncludeMethods,
+                ExcludeMethods,
                 AutomaticReferences,
                 _verbosity,
                 Compressed,
@@ -129,7 +120,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 IncludeFullGraphs
             };
 
-            createMbicCommand.SetHandler(context =>
+            createMbicCommand.SetAction(result =>
             {
                 FileType = PgoFileType.mibc;
                 GenerateCallGraph = true;
@@ -141,14 +132,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ValidateOutputFile = false;
 #endif
 
-                TryExecuteWithContext(context, true);
+                return ExecuteWithContext(result, true);
             });
 
-            AddCommand(createMbicCommand);
+            Subcommands.Add(createMbicCommand);
 
             JitTraceOptions = JitTraceOptions.none;
 #if DEBUG
-            Command createJitTraceCommand = new("create-jittrace","Transform a trace file into a jittrace runtime file")
+            CliCommand createJitTraceCommand = new("create-jittrace","Transform a trace file into a jittrace runtime file")
             {
                 TraceFilePath,
                 OutputFilePath,
@@ -165,40 +156,39 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 _includeReadyToRun
             };
 
-            createJitTraceCommand.SetHandler(context =>
+            createJitTraceCommand.SetAction(result =>
             {
                 FileType = PgoFileType.jittrace;
                 ProcessJitEvents = true;
                 ValidateOutputFile = false;
-                ProcessR2REvents = context.ParseResult.GetValue(_includeReadyToRun);
+                ProcessR2REvents = result.GetValue(_includeReadyToRun);
 
-                if (context.ParseResult.GetValue(_isSorted))
+                if (result.GetValue(_isSorted))
                 {
                     JitTraceOptions |= JitTraceOptions.sorted;
                 }
 
-                if (context.ParseResult.GetValue(_showTimestamp))
+                if (result.GetValue(_showTimestamp))
                 {
                     JitTraceOptions |= JitTraceOptions.showtimestamp;
                 }
 
-                TryExecuteWithContext(context, true);
+                return ExecuteWithContext(result, true);
             });
 
-            AddCommand(createJitTraceCommand);
+            Subcommands.Add(createJitTraceCommand);
 #endif
 
-            Command mergeCommand = new("merge", "Merge multiple Mibc profile data files into one file")
+            CliCommand mergeCommand = new("merge", "Merge multiple Mibc profile data files into one file")
             {
                 InputFilesToMerge,
                 OutputFilePath,
                 IncludedAssemblies,
-                InheritTimestamp,
                 _verbosity,
                 Compressed
             };
 
-            mergeCommand.SetHandler(context =>
+            mergeCommand.SetAction(result =>
             {
 #if DEBUG
                 ValidateOutputFile = true;
@@ -206,44 +196,44 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ValidateOutputFile = false;
 #endif
 
-                TryExecuteWithContext(context, true);
+                return ExecuteWithContext(result, true);
             });
 
-            AddCommand(mergeCommand);
+            Subcommands.Add(mergeCommand);
 
-            Command dumpCommand = new("dump", "Dump the contents of a Mibc file")
+            CliCommand dumpCommand = new("dump", "Dump the contents of a Mibc file")
             {
                 _verbosity,
                 InputFileToDump,
                 OutputFilePath,
             };
 
-            dumpCommand.SetHandler(context =>
+            dumpCommand.SetAction(result =>
             {
                 DumpMibc = true;
-                TryExecuteWithContext(context, true);
+                return ExecuteWithContext(result, true);
             });
 
-            AddCommand(dumpCommand);
+            Subcommands.Add(dumpCommand);
 
-            Command compareMbicCommand = new Command("compare-mibc", "Compare two .mibc files")
+            CliCommand compareMbicCommand = new("compare-mibc", "Compare two .mibc files")
             {
                 InputFilesToCompare,
                 DumpWorstOverlapGraphs,
                 DumpWorstOverlapGraphsTo
             };
 
-            compareMbicCommand.SetHandler(context => TryExecuteWithContext(context, false));
+            compareMbicCommand.SetAction(result => ExecuteWithContext(result, false));
 
-            AddCommand(compareMbicCommand);
+            Subcommands.Add(compareMbicCommand);
 
-            void TryExecuteWithContext(InvocationContext context, bool setVerbosity)
+            int ExecuteWithContext(ParseResult result, bool setVerbosity)
             {
-                Result = context.ParseResult;
+                Result = result;
 
                 if (setVerbosity)
                 {
-                    Verbosity verbosity = context.ParseResult.GetValue(_verbosity);
+                    Verbosity verbosity = Result.GetValue(_verbosity);
                     BasicProgressMessages = (int)verbosity >= (int)Verbosity.normal;
                     Warnings = (int)verbosity >= (int)Verbosity.normal;
                     VerboseWarnings = (int)verbosity >= (int)Verbosity.detailed;
@@ -253,7 +243,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 try
                 {
-                    context.ExitCode = new Program(this).Run();
+                    return new Program(this).Run();
                 }
                 catch (Exception e)
                 {
@@ -264,15 +254,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     Console.Error.WriteLine(e.ToString());
 
                     Console.ResetColor();
-
-                    context.ExitCode = 1;
                 }
+
+                return 1;
             }
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext context)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext context)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             if (context.Command.Name == "create-mibc" || context.Command.Name == "create-jittrace")
@@ -290,8 +280,31 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 ""perfview collect -LogFile:logOfCollection.txt -DataFile:jittrace.etl -Zip:false -merge:false -providers:Microsoft-Windows-DotNETRuntime:0x1E000080018:4""
 - Capture Jit and R2R events via perfview of all processes running using ETW tracing
 ");
+                    return true;
                 };
             }
+        }
+
+        private static AssemblyName[] MakeAssemblyNameArray(ArgumentResult result)
+        {
+            if (result.Tokens.Count > 0)
+            {
+                var includedAssemblies = new List<AssemblyName>();
+                foreach (CliToken token in result.Tokens)
+                {
+                    try
+                    {
+                        includedAssemblies.Add(new AssemblyName(token.Value));
+                    }
+                    catch
+                    {
+                        throw new FormatException($"Unable to parse '{token.Value}' as an Assembly Name.");
+                    }
+                }
+                return includedAssemblies.ToArray();
+            }
+
+            return Array.Empty<AssemblyName>();
         }
     }
 }

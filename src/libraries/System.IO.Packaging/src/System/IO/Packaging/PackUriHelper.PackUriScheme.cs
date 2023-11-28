@@ -285,7 +285,11 @@ namespace System.IO.Packaging
             // This is currently enforced by the order of characters in the s_specialCharacterChars array
             foreach (char c in s_specialCharacterChars)
             {
+#if NET5_0_OR_GREATER
+                if (path.Contains(c))
+#else
                 if (path.IndexOf(c) != -1)
+#endif
                 {
                     path = path.Replace(c.ToString(), Uri.HexEscape(c));
                 }

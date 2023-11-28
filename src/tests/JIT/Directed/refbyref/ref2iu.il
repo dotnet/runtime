@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly ref2iu {}
+.assembly ASSEMBLY_NAME {}
 .class public auto ansi ref2iu {
 .method public static int32 Main()
 {

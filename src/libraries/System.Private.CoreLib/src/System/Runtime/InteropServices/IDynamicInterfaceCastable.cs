@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
         ///
         /// If <paramref name="throwIfNotImplemented" /> is false, this function should
         /// avoid throwing exceptions. If <paramref name="throwIfNotImplemented" /> is
-        /// true and this function returns false, then <see cref="System.InvalidCastException" />
+        /// true and this function returns false, then <see cref="InvalidCastException" />
         /// will be thrown unless an exception is thrown by the implementation.
         /// </remarks>
         bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices
         ///
         /// The returned type must be an interface type and be marked with the
         /// <see cref="DynamicInterfaceCastableImplementationAttribute"/>. Otherwise,
-        /// <see cref="System.InvalidOperationException" /> will be thrown.
+        /// <see cref="InvalidOperationException" /> will be thrown.
         /// </remarks>
         RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType);
     }

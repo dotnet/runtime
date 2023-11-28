@@ -847,10 +847,6 @@ public:
         FieldDesc*              pOptionalTargetField,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
-    static BOOL CanAccessFamilyVerification(
-        TypeHandle              thCurrentClass,
-        TypeHandle              thInstanceClass);
-
 private:
     // Access check helpers
     static BOOL CanAccessMethodInstantiation(

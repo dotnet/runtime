@@ -4,16 +4,15 @@
 #ifndef __thread_h__
 #define __thread_h__
 
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
-
-#include "forward_declarations.h"
+#include "slist.h" // DefaultSListTraits
 
 struct gc_alloc_context;
 class RuntimeInstance;
 class ThreadStore;
 class CLREventStatic;
 class Thread;
+class TypeManager;
 
 #ifdef TARGET_UNIX
 #include "UnixContext.h"
@@ -76,8 +75,12 @@ struct GCFrameRegistration
 
 struct InlinedThreadStaticRoot
 {
+    // The reference to the memory block that stores variables for the current {thread, typeManager} combination
     Object* m_threadStaticsBase;
+    // The next root in the list. All roots in the list belong to the same thread, but to different typeManagers.
     InlinedThreadStaticRoot* m_next;
+    // m_typeManager is used by NativeAOT.natvis when debugging
+    TypeManager* m_typeManager;
 };
 
 struct ThreadBuffer
@@ -91,7 +94,7 @@ struct ThreadBuffer
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-    uintptr_t               m_uHijackedReturnValueFlags;            
+    uintptr_t               m_uHijackedReturnValueFlags;
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     Object*                 m_pThreadLocalStatics;
@@ -109,6 +112,9 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+    void *                  m_alternateStack;                      // ptr to alternate signal stack
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 };
 
 struct ReversePInvokeFrame
@@ -149,7 +155,7 @@ public:
                                                     // For suspension APCs it is mostly harmless, but wasteful and in extreme
                                                     // cases may force the target thread into stack oveflow.
                                                     // We use this flag to avoid sending another APC when one is still going through.
-                                                    // 
+                                                    //
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
     };
@@ -296,7 +302,7 @@ public:
     Object** GetThreadStaticStorage();
 
     InlinedThreadStaticRoot* GetInlinedThreadStaticList();
-    void RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot);
+    void RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, TypeManager* typeManager);
 
     NATIVE_CONTEXT* GetInterruptedContext();
 
@@ -309,6 +315,11 @@ public:
 
     bool                IsActivationPending();
     void                SetActivationPending(bool isPending);
+
+#if defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
+    bool EnsureSignalAlternateStack();
+    void FreeSignalAlternateStack();
+#endif // defined(TARGET_UNIX) && !HAVE_MACH_EXCEPTIONS && !defined(HOST_TVOS)
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

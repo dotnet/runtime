@@ -1,4 +1,3 @@
-using System;
 using Mono.Linker.Tests.Cases.LinkAttributes.Dependencies;
 
 [assembly: TestRemove]

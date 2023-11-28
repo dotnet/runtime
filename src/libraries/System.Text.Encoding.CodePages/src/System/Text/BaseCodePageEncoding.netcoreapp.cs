@@ -66,12 +66,10 @@ namespace System.Text
                         default:    codePageName = new string(&codePageIndex.CodePageName); break;
                     }
 
-                    string? resourceName = EncodingNLS.GetLocalizedEncodingNameResource(codePageIndex.CodePage);
                     string? displayName = null;
-
-                    if (resourceName != null && resourceName.StartsWith("Globalization_cp_", StringComparison.OrdinalIgnoreCase))
+                    if (!SR.UsingResourceKeys())
                     {
-                        displayName = SR.GetResourceString(resourceName);
+                        displayName = EncodingNLS.GetLocalizedEncodingNameResource(codePageIndex.CodePage);
                     }
 
                     encodingInfoList[i] = new EncodingInfo(provider, codePageIndex.CodePage, codePageName, displayName ?? codePageName);

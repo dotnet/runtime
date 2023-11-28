@@ -13,6 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/hostmisc)
+include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 set(RESOURCES)
 if (CLR_CMAKE_TARGET_WIN32)
@@ -40,8 +41,6 @@ function(set_common_libs TargetType)
         if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
             target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE "pthread")
         endif()
-
-        target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
     endif()
 
     if (NOT ${TargetType} STREQUAL "lib-static")
@@ -53,5 +52,7 @@ function(set_common_libs TargetType)
                 target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE atomic.a)
             endif()
         endif()
+
+        target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
     endif()
 endfunction()

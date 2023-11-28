@@ -52,7 +52,7 @@ public:
         }
 
         int count = 0;
-        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->bbNext))
+        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
@@ -101,12 +101,13 @@ private:
     // Arguments:
     //    jumpKind - jump kind for the new basic block
     //    insertAfter - basic block, after which compiler has to insert the new one.
+    //    jumpDest - jump target for the new basic block. Defaults to nullptr.
     //
     // Return Value:
     //    new basic block.
-    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
+    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
     {
-        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
+        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
         block->bbFlags |= BBF_IMPORTED;
         return block;
     }
@@ -145,8 +146,7 @@ private:
         BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_NONE, block);
 
         // Update flow and flags
-        block->bbJumpKind = BBJ_COND;
-        block->bbJumpDest = remainderBlock;
+        block->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
         block->bbFlags |= BBF_INTERNAL;
 
         helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
@@ -162,12 +162,11 @@ private:
         //
         // --ppCounter;
         GenTree* ppCounterBefore = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAfter  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
         GenTree* one             = compiler->gtNewIconNode(1, TYP_INT);
         GenTree* ppCounterSub    = compiler->gtNewOperNode(GT_SUB, TYP_INT, ppCounterBefore, one);
-        GenTree* ppCounterAsg    = compiler->gtNewAssignNode(ppCounterAfter, ppCounterSub);
+        GenTree* ppCounterUpdate = compiler->gtNewStoreLclVarNode(ppCounterLclNum, ppCounterSub);
 
-        compiler->fgNewStmtAtEnd(block, ppCounterAsg);
+        compiler->fgNewStmtAtEnd(block, ppCounterUpdate);
 
         // if (ppCounter > 0), bypass helper call
         GenTree* ppCounterUpdated = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
@@ -201,10 +200,9 @@ private:
         }
 
         GenTree* initialCounterNode = compiler->gtNewIconNode(initialCounterValue, TYP_INT);
-        GenTree* ppCounterRef       = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAsg       = compiler->gtNewAssignNode(ppCounterRef, initialCounterNode);
+        GenTree* ppCounterStore     = compiler->gtNewStoreLclVarNode(ppCounterLclNum, initialCounterNode);
 
-        compiler->fgNewStmtNearEnd(block, ppCounterAsg);
+        compiler->fgNewStmtNearEnd(block, ppCounterStore);
     }
 
     //------------------------------------------------------------------------
@@ -235,8 +233,7 @@ private:
         }
 
         // Update flow
-        block->bbJumpKind = BBJ_THROW;
-        block->bbJumpDest = nullptr;
+        block->SetJumpKindAndTarget(BBJ_THROW);
 
         // Add helper call
         //

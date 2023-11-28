@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -36,7 +37,8 @@ namespace BenchmarksGame
             return r + " " + c;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 

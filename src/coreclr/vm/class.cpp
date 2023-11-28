@@ -146,12 +146,16 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
         if (pDelegateEEClass->m_pStaticCallStub)
         {
+            // Collect data to remove stub entry from StubManager if
+            // stub is deleted.
+            BYTE* entry = (BYTE*)pDelegateEEClass->m_pStaticCallStub->GetEntryPoint();
+            UINT length = pDelegateEEClass->m_pStaticCallStub->GetNumCodeBytes();
+
             ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
             BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
-
             if (fStubDeleted)
             {
-                DelegateInvokeStubManager::g_pManager->RemoveStub(pDelegateEEClass->m_pStaticCallStub);
+                StubLinkStubManager::g_pManager->RemoveStubRange(entry, length);
             }
         }
         if (pDelegateEEClass->m_pInstRetBuffCallStub)
@@ -243,7 +247,7 @@ MethodTable *MethodTable::LoadEnclosingMethodTable(ClassLoadLevel targetLevel)
 
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
 //*******************************************************************************
 VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdFieldDef fieldDef)
@@ -839,7 +843,7 @@ HRESULT EEClass::AddMethodDesc(
     return S_OK;
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 //---------------------------------------------------------------------------------------
 //
@@ -942,35 +946,52 @@ EEClass::CheckVarianceInSig(
                 if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, typeref, &pDefModule, &typeDef))
                     return TRUE;
 
-                HENUMInternal   hEnumGenericPars;
-                if (FAILED(pDefModule->GetMDImport()->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars)))
-                {
-                    pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
-                }
+                bool foundHasVarianceResult;
 
-                for (unsigned i = 0; i < ntypars; i++)
+                if (!pDefModule->m_pTypeGenericInfoMap->HasVariance(typeDef, &foundHasVarianceResult) && foundHasVarianceResult)
                 {
-                    mdGenericParam tkTyPar;
-                    pDefModule->GetMDImport()->EnumNext(&hEnumGenericPars, &tkTyPar);
-                    DWORD flags;
-                    if (FAILED(pDefModule->GetMDImport()->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
+                    // Fast path, now that we know there isn't variance
+                    uint32_t genericArgCount = pDefModule->m_pTypeGenericInfoMap->GetGenericArgumentCount(typeDef, pDefModule->GetMDImport());
+                    for (uint32_t iGenericArgCount = 0; iGenericArgCount < genericArgCount; iGenericArgCount++)
+                    {
+                        if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, gpNonVariant))
+                            return FALSE;
+
+                        IfFailThrow(psig.SkipExactlyOne());
+                    }
+                }
+                else
+                {
+                    HENUMInternal   hEnumGenericPars;
+                    if (FAILED(pDefModule->GetMDImport()->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars)))
                     {
                         pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
                     }
-                    CorGenericParamAttr genPosition = (CorGenericParamAttr) (flags & gpVarianceMask);
-                    // If the surrounding context is contravariant then we need to flip the variance of this parameter
-                    if (position == gpContravariant)
-                    {
-                        genPosition = genPosition == gpCovariant ? gpContravariant
-                                    : genPosition == gpContravariant ? gpCovariant
-                                    : gpNonVariant;
-                    }
-                    if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, genPosition))
-                        return FALSE;
 
-                    IfFailThrow(psig.SkipExactlyOne());
+                    for (unsigned i = 0; i < ntypars; i++)
+                    {
+                        mdGenericParam tkTyPar;
+                        pDefModule->GetMDImport()->EnumNext(&hEnumGenericPars, &tkTyPar);
+                        DWORD flags;
+                        if (FAILED(pDefModule->GetMDImport()->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
+                        {
+                            pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
+                        }
+                        CorGenericParamAttr genPosition = (CorGenericParamAttr) (flags & gpVarianceMask);
+                        // If the surrounding context is contravariant then we need to flip the variance of this parameter
+                        if (position == gpContravariant)
+                        {
+                            genPosition = genPosition == gpCovariant ? gpContravariant
+                                        : genPosition == gpContravariant ? gpCovariant
+                                        : gpNonVariant;
+                        }
+                        if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, genPosition))
+                            return FALSE;
+
+                        IfFailThrow(psig.SkipExactlyOne());
+                    }
+                    pDefModule->GetMDImport()->EnumClose(&hEnumGenericPars);
                 }
-                pDefModule->GetMDImport()->EnumClose(&hEnumGenericPars);
             }
 
             return TRUE;
@@ -1097,7 +1118,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 
 namespace
 {
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     void CreateAllEnCStaticFields(MethodTable* pMT, MethodTable* pMTCanon, EditAndContinueModule* pModule)
     {
         CONTRACTL
@@ -1167,7 +1188,7 @@ namespace
             }
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 }
 
 // CLASS_LOAD_EXACTPARENTS phase of loading:
@@ -1187,8 +1208,6 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     }
     CONTRACT_END;
 
-    MethodTable *pApproxParentMT = pMT->GetParentMethodTable();
-
     if (!pMT->IsCanonicalMethodTable())
     {
         EnsureLoaded(TypeHandle(pMT->GetCanonicalMethodTable()), CLASS_LOAD_EXACTPARENTS);
@@ -1196,11 +1215,13 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
 
     LoadExactParentAndInterfacesTransitively(pMT);
 
-    MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
+    if (pMT->GetClass()->HasVTableMethodImpl())
+    {
+        MethodTableBuilder::CopyExactParentSlots(pMT);
+        PropagateCovariantReturnMethodImplSlots(pMT);
+    }
 
-    PropagateCovariantReturnMethodImplSlots(pMT);
-
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Generics for EnC - create static FieldDescs.
     // Instance FieldDescs don't need to be created here because they
     // are added during type load by reading the updated metadata tables.
@@ -1215,7 +1236,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
                 CreateAllEnCStaticFields(pMT, pMTCanon, (EditAndContinueModule*)pModule);
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
@@ -2069,7 +2090,7 @@ TypeHandle MethodTable::SetupCoClassForInterface()
         CoClassType = TypeName::GetTypeReferencedByCustomAttribute(ss.GetUnicode(), GetAssembly());
 
         // Cache the coclass type
-        GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
+        GetClass()->SetCoClassForInterface(CoClassType);
     }
     return CoClassType;
 }
@@ -2435,7 +2456,7 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     }
 
     // Cache the interface type
-    GetClass_NoLogging()->SetComInterfaceType(ItfType);
+    GetClass()->SetComInterfaceType(ItfType);
 
     return ItfType;
 }
@@ -2521,14 +2542,14 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
             {
                 FieldDesc *pFD = &GetClass()->GetFieldDescList()[i];
 #ifdef DEBUG_LAYOUT
-                printf("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset_NoLogging(), pFD->GetName());
+                printf("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset(), pFD->GetName());
 #endif
                 if(debug) {
-                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
+                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset(), pFD->GetName());
                     OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else {
-                    LOG((LF_CLASSLOADER, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName()));
+                    LOG((LF_CLASSLOADER, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset(), pFD->GetName()));
                 }
             }
         }
@@ -2600,13 +2621,13 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
             {
                 FieldDesc *pFD = GetClass()->GetFieldDescList() + ((GetNumInstanceFields()-cParentInstanceFields) + i);
                 if(debug) {
-                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
+                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset(), pFD->GetName());
                     OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
                     //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
-                    LOG((LF_ALWAYS, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName()));
+                    LOG((LF_ALWAYS, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset(), pFD->GetName()));
                 }
             }
         }

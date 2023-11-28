@@ -289,6 +289,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate(ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
+        private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            return InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
+        }
+
         private unsafe nint GetFlattenedIndex(int rawIndex)
         {
             // Checked by the caller
@@ -390,7 +395,9 @@ namespace System
         }
 
         [Intrinsic]
+#pragma warning disable CA1822 // Mark members as static
         internal int GetElementSize() => GetElementSize();
+#pragma warning restore
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern CorElementType GetCorElementTypeOfElementTypeInternal(ObjectHandleOnStack arr);
@@ -466,7 +473,8 @@ namespace System
 
         internal IEnumerator<T> InternalArray__IEnumerable_GetEnumerator<T>()
         {
-            return Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(Unsafe.As<T[]>(this));
+            int length = Length;
+            return length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(Unsafe.As<T[]>(this), length);
         }
 
         internal void InternalArray__ICollection_Clear()

@@ -1,0 +1,913 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArraySizeMustBeSpecified" xml:space="preserve">
+    <value>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</value>
+  </data>
+  <data name="CollectionSizeParamTypeMustBeIntegral" xml:space="preserve">
+    <value>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</value>
+  </data>
+  <data name="GraphHasCycles" xml:space="preserve">
+    <value>The provided graph has cycles and cannot be topologically sorted.</value>
+  </data>
+  <data name="InAttributeOnlyIsDefault" xml:space="preserve">
+    <value>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</value>
+  </data>
+  <data name="InOutAttributeByRefNotSupported" xml:space="preserve">
+    <value>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</value>
+  </data>
+  <data name="InOutAttributeMarshalerNotSupported" xml:space="preserve">
+    <value>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</value>
+  </data>
+  <data name="MarshallingBoolAsUndefinedNotSupported" xml:space="preserve">
+    <value>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</value>
+  </data>
+  <data name="MarshallingCharAsSpecifiedStringMarshallingNotSupported" xml:space="preserve">
+    <value>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
+  </data>
+  <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
+    <value>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</value>
+  </data>
+  <data name="CyclicalCountInfo" xml:space="preserve">
+    <value>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</value>
+  </data>
+  <data name="DuplicateCountInfo" xml:space="preserve">
+    <value>Count information for a given element at a given indirection level can only be specified once</value>
+  </data>
+  <data name="DuplicateMarshallingInfo" xml:space="preserve">
+    <value>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</value>
+  </data>
+  <data name="ExtraneousMarshallingInfo" xml:space="preserve">
+    <value>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</value>
+  </data>
+  <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
+    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</value>
+  </data>
+  <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
+    <value>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</value>
+  </data>
+  <data name="MarshallingCharAsStringMarshallingCustomNotSupported" xml:space="preserve">
+    <value>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</value>
+  </data>
+  <data name="BidirectionalMissingRequiredMarshaller" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</value>
+  </data>
+  <data name="ManagedToUnmanagedMissingRequiredMarshaller" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</value>
+  </data>
+  <data name="UnmanagedToManagedMissingRequiredMarshaller" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</value>
+  </data>
+  <data name="MarshallerTypeMustBeStaticClassOrStruct" xml:space="preserve">
+    <value>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</value>
+  </data>
+  <data name="MarshallerEntryPointTypeMustMatchArity" xml:space="preserve">
+    <value>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</value>
+  </data>
+  <data name="MarshallerInNativeReturnPositionMustMatchNativeReturnType" xml:space="preserve">
+    <value>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</value>
+  </data>
+  <data name="ContainingTypeAccessibilityDetails" xml:space="preserve">
+    <value>Containing type '{0}' has accessibility '{1}'.</value>
+  </data>
+  <data name="TypeAccessibilityDetails" xml:space="preserve">
+    <value>'{0}' has accessibility '{1}'.</value>
+  </data>
+  <data name="InAttributeNotSupportedWithoutOutBlittableArray" xml:space="preserve">
+    <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</value>
+  </data>
+  <data name="AddGeneratedComClassAddUnsafe" xml:space="preserve">
+    <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeDescription" xml:space="preserve">
+    <value>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeMessage" xml:space="preserve">
+    <value>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeTitle" xml:space="preserve">
+    <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</value>
+  </data>
+  <data name="AddMissingCustomTypeMarshallerMembers" xml:space="preserve">
+    <value>Add missing custom type marshaller members</value>
+  </data>
+  <data name="AnalysisFailedDescription" xml:space="preserve">
+    <value>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</value>
+  </data>
+  <data name="AnalysisFailedInterfaceMessage" xml:space="preserve">
+    <value>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</value>
+  </data>
+  <data name="AnalysisFailedMethodMessage" xml:space="preserve">
+    <value>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</value>
+  </data>
+  <data name="AnalysisFailedTitle" xml:space="preserve">
+    <value>Analysis for COM interface generation has failed.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedDescription" xml:space="preserve">
+    <value>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedMessage" xml:space="preserve">
+    <value>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedTitle" xml:space="preserve">
+    <value>The base COM interface failed to generate source. Code will not be generated for this interface.</value>
+  </data>
+  <data name="BaseInterfaceMustGenerateAtLeastSameWrappers" xml:space="preserve">
+    <value>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</value>
+  </data>
+  <data name="CallerAllocFromManagedMustHaveBufferSizeDescription" xml:space="preserve">
+    <value>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</value>
+  </data>
+  <data name="CallerAllocFromManagedMustHaveBufferSizeMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</value>
+  </data>
+  <data name="CannotForwardToDllImportDescription" xml:space="preserve">
+    <value>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</value>
+  </data>
+  <data name="CannotForwardToDllImportMessage" xml:space="preserve">
+    <value>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</value>
+  </data>
+  <data name="CannotForwardToDllImportTitle" xml:space="preserve">
+    <value>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>
+  </data>
+  <data name="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription" xml:space="preserve">
+    <value>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</value>
+  </data>
+  <data name="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedMessage" xml:space="preserve">
+    <value>Casting between a 'ComImport' type and a source-generated COM type is not supported</value>
+  </data>
+  <data name="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle" xml:space="preserve">
+    <value>Casting between a 'ComImport' type and a source-generated COM type is not supported</value>
+  </data>
+  <data name="ClassDoesNotImplementAnyGeneratedComInterfacesDescription" xml:space="preserve">
+    <value>A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</value>
+  </data>
+  <data name="ClassDoesNotImplementAnyGeneratedComInterfacesMessage" xml:space="preserve">
+    <value>Class '{0}' with 'GeneratedComClassAttribute' does not implement any interfaces with 'GeneratedComInterfaceAttribute'. Source will not be generated for '{0}'.</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceDescription" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceMessage" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceTitle" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</value>
+  </data>
+  <data name="ConfigurationNotSupportedDescriptionLibraryImport" xml:space="preserve">
+    <value>Source-generated P/Invokes will ignore any configuration that is not supported.</value>
+  </data>
+  <data name="ConfigurationNotSupportedDescriptionCom" xml:space="preserve">
+    <value>Source-generated COM will ignore any configuration that is not supported.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageLibraryImport" xml:space="preserve">
+    <value>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageCom" xml:space="preserve">
+    <value>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageMarshallingInfoLibraryImport" xml:space="preserve">
+    <value>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageMarshallingInfoCom" xml:space="preserve">
+    <value>The specified marshalling configuration is not supported by source-generated COM. {0}.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageParameterLibraryImport" xml:space="preserve">
+    <value>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageParameterCom" xml:space="preserve">
+    <value>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageReturnLibraryImport" xml:space="preserve">
+    <value>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageReturnCom" xml:space="preserve">
+    <value>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageValueLibraryImport" xml:space="preserve">
+    <value>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedMessageValueCom" xml:space="preserve">
+    <value>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
+  <data name="ConfigurationNotSupportedTitleLibraryImport" xml:space="preserve">
+    <value>Specified configuration is not supported by source-generated P/Invokes.</value>
+  </data>
+  <data name="ConfigurationNotSupportedTitleCom" xml:space="preserve">
+    <value>Specified configuration is not supported by source-generated COM.</value>
+  </data>
+  <data name="ConvertComInterfaceMayProduceInvalidCode" xml:space="preserve">
+    <value>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</value>
+  </data>
+  <data name="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode" xml:space="preserve">
+    <value>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceAddUnsafe" xml:space="preserve">
+    <value>Convert to 'GeneratedComInterface' and allow unsafe code</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceDescription" xml:space="preserve">
+    <value>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling" xml:space="preserve">
+    <value>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceMessage" xml:space="preserve">
+    <value>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceTitle" xml:space="preserve">
+    <value>Convert to 'GeneratedComInterface'</value>
+  </data>
+  <data name="ConvertToLibraryImport" xml:space="preserve">
+    <value>Convert to 'LibraryImport'</value>
+  </data>
+  <data name="ConvertToLibraryImportAddUnsafe" xml:space="preserve">
+    <value>Convert to 'LibraryImport' and enable unsafe code</value>
+  </data>
+  <data name="ConvertToLibraryImportDescription" xml:space="preserve">
+    <value>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToLibraryImportMayRequireCustomMarshalling" xml:space="preserve">
+    <value>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</value>
+  </data>
+  <data name="ConvertToLibraryImportMessage" xml:space="preserve">
+    <value>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToLibraryImportTitle" xml:space="preserve">
+    <value>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToLibraryImportWithSuffix" xml:space="preserve">
+    <value>Convert to 'LibraryImport' with '{0}' suffix</value>
+  </data>
+  <data name="ConvertToLibraryImportWithSuffixAddUnsafe" xml:space="preserve">
+    <value>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</value>
+  </data>
+  <data name="CustomMarshallerTypeMustHaveRequiredShapeTitle" xml:space="preserve">
+    <value>Marshaller type does not have the required shape</value>
+  </data>
+  <data name="ElementMarshallerCannotBeStatefulDescription" xml:space="preserve">
+    <value>A marshaller for an element scenario cannot be stateful.</value>
+  </data>
+  <data name="ElementMarshallerCannotBeStatefulMessage" xml:space="preserve">
+    <value>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</value>
+  </data>
+  <data name="ElementTypesOfReturnTypesMustMatchDescription" xml:space="preserve">
+    <value>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</value>
+  </data>
+  <data name="ElementTypesOfReturnTypesMustMatchMessage" xml:space="preserve">
+    <value>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</value>
+  </data>
+  <data name="EntryPointTypeMustBeNonNullDescription" xml:space="preserve">
+    <value>An entry-point type for marshalling a given type must not be 'null'.</value>
+  </data>
+  <data name="EntryPointTypeMustBeNonNullMessage" xml:space="preserve">
+    <value>The entry-point marshaller type for the type '{0}' must be not 'null'</value>
+  </data>
+  <data name="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription" xml:space="preserve">
+    <value>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</value>
+  </data>
+  <data name="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage" xml:space="preserve">
+    <value>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</value>
+  </data>
+  <data name="FirstParameterMustMatchReturnTypeDescription" xml:space="preserve">
+    <value>The first parameter of the first method must be the same type as the return types of the second method.</value>
+  </data>
+  <data name="FirstParameterMustMatchReturnTypeMessage" xml:space="preserve">
+    <value>The first parameter of '{0}' must be the same type as the return type of '{1}'</value>
+  </data>
+  <data name="FirstParametersMustMatchDescription" xml:space="preserve">
+    <value>The first parameters of the two methods must be the same type.</value>
+  </data>
+  <data name="FirstParametersMustMatchMessage" xml:space="preserve">
+    <value>The first parameter of '{0}' and '{1}' must be the same type</value>
+  </data>
+  <data name="FromUnmanagedOverloadsNotSupportedDescription" xml:space="preserve">
+    <value>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</value>
+  </data>
+  <data name="FromUnmanagedOverloadsNotSupportedMessage" xml:space="preserve">
+    <value>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</value>
+  </data>
+  <data name="GeneratedComInterfaceStringMarshallingMustMatchBase" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</value>
+  </data>
+  <data name="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
+  </data>
+  <data name="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</value>
+  </data>
+  <data name="GetPinnableReferenceReturnTypeBlittableDescription" xml:space="preserve">
+    <value>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</value>
+  </data>
+  <data name="GetPinnableReferenceReturnTypeBlittableMessage" xml:space="preserve">
+    <value>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</value>
+  </data>
+  <data name="InstanceEventDeclaredInInterfaceDescription" xml:space="preserve">
+    <value>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</value>
+  </data>
+  <data name="InstanceEventDeclaredInInterfaceMessage" xml:space="preserve">
+    <value>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</value>
+  </data>
+  <data name="InstanceEventDeclaredInInterfaceTitle" xml:space="preserve">
+    <value>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
+  </data>
+  <data name="InstancePropertyDeclaredInInterfaceDescription" xml:space="preserve">
+    <value>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</value>
+  </data>
+  <data name="InstancePropertyDeclaredInInterfaceMessage" xml:space="preserve">
+    <value>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</value>
+  </data>
+  <data name="InstancePropertyDeclaredInInterfaceTitle" xml:space="preserve">
+    <value>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
+  </data>
+  <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
+    <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
+  </data>
+  <data name="InterfaceTypeNotSupportedTitle" xml:space="preserve">
+    <value>'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</value>
+  </data>
+  <data name="InvalidAttributedMethodContainingTypeMissingModifiersMessageLibraryImport" xml:space="preserve">
+    <value>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</value>
+  </data>
+  <data name="InvalidAttributedMethodContainingTypeMissingModifiersMessageCom" xml:space="preserve">
+    <value>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</value>
+  </data>
+  <data name="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage" xml:space="preserve">
+    <value>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </value>
+  </data>
+  <data name="InvalidAttributedMethodDescriptionLibraryImport" xml:space="preserve">
+    <value>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</value>
+  </data>
+  <data name="InvalidAttributedMethodDescriptionCom" xml:space="preserve">
+    <value>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</value>
+  </data>
+  <data name="InvalidAttributedMethodSignatureMessageLibraryImport" xml:space="preserve">
+    <value>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</value>
+  </data>
+  <data name="InvalidAttributedMethodSignatureMessageCom" xml:space="preserve">
+    <value>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</value>
+  </data>
+  <data name="InvalidCustomMarshallerAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'CustomMarshallerAttribute' usage</value>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationDescription" xml:space="preserve">
+    <value>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</value>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationMessage" xml:space="preserve">
+    <value>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</value>
+    <comment>{1} is a message containing additional details about what is not valid</comment>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationMissingCustomType" xml:space="preserve">
+    <value>'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</value>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationNotCustom" xml:space="preserve">
+    <value>'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</value>
+  </data>
+  <data name="InvalidExceptionMarshallingValue" xml:space="preserve">
+    <value>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</value>
+  </data>
+  <data name="InvalidGeneratedComClassAttributeUsageDescription" xml:space="preserve">
+    <value>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</value>
+  </data>
+  <data name="InvalidGeneratedComClassAttributeUsageMissingPartialModifier" xml:space="preserve">
+    <value>Class '{0}' with 'GeneratedComClassAttribute' or one of its containing types is not marked 'partial'.</value>
+  </data>
+  <data name="InvalidGeneratedComClassAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'GeneratedComClassAttribute' usage</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageDescription" xml:space="preserve">
+    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</value>
+    <comment>{1} is details about which type/containing type is not accessible</comment>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'GeneratedComInterfaceAttribute' usage.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceUsageMissingPartialModifier" xml:space="preserve">
+    <value>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</value>
+  </data>
+  <data name="InvalidLibraryImportAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'LibraryImportAttribute' usage</value>
+  </data>
+  <data name="InvalidManagedTypeTitle" xml:space="preserve">
+    <value>Specified managed type is invalid</value>
+  </data>
+  <data name="InvalidMarshallerTypeTitle" xml:space="preserve">
+    <value>Specified marshaller type is invalid</value>
+  </data>
+  <data name="InvalidMarshalModeTitle" xml:space="preserve">
+    <value>Invalid 'MarshalMode' value.</value>
+  </data>
+  <data name="InvalidNativeMarshallingAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'NativeMarshallingAttribute' usage</value>
+  </data>
+  <data name="InvalidOptionsOnInterfaceDescription" xml:space="preserve">
+    <value>The specified 'ComInterfaceOptions' are invalid.</value>
+  </data>
+  <data name="InvalidOptionsOnInterfaceMessage" xml:space="preserve">
+    <value>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</value>
+  </data>
+  <data name="InvalidSignaturesInMarshallerShapeTitle" xml:space="preserve">
+    <value>Marshaller type has incompatible method signatures</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationDescription" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationMessageLibraryImport" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</value>
+    <comment>{1} is a message containing additional details about what is not valid</comment>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationMissingCustomType" xml:space="preserve">
+    <value>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationNotCustom" xml:space="preserve">
+    <value>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationOnInterfaceMessage" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationOnMethodMessage" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</value>
+    <comment>{1} is a message containing additional details about what is not valid</comment>
+  </data>
+  <data name="InvalidVirtualMethodIndexAttributeUsage" xml:space="preserve">
+    <value>Invalid 'VirtualMethodIndexAttribute' usage</value>
+  </data>
+  <data name="LinearCollectionElementTypesMustMatchDescription" xml:space="preserve">
+    <value>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</value>
+  </data>
+  <data name="LinearCollectionElementTypesMustMatchMessage" xml:space="preserve">
+    <value>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</value>
+  </data>
+  <data name="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription" xml:space="preserve">
+    <value>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</value>
+  </data>
+  <data name="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</value>
+  </data>
+  <data name="LinearCollectionInRequiresCollectionMethodsDescription" xml:space="preserve">
+    <value>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</value>
+  </data>
+  <data name="LinearCollectionInRequiresCollectionMethodsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</value>
+  </data>
+  <data name="LinearCollectionOutRequiresCollectionMethodsDescription" xml:space="preserve">
+    <value>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</value>
+  </data>
+  <data name="LinearCollectionOutRequiresCollectionMethodsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</value>
+  </data>
+  <data name="ManagedTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</value>
+  </data>
+  <data name="ManagedTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</value>
+  </data>
+  <data name="ManagedTypeMustBeNonNullDescription" xml:space="preserve">
+    <value>The managed type for a custom marshaller must be non-null.</value>
+  </data>
+  <data name="ManagedTypeMustBeNonNullMessage" xml:space="preserve">
+    <value>The managed type for the entry-point marshaller type '{0}' must not be 'null'</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageParameterLibraryImport" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageParameterCom" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageReturnLibraryImport" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageReturnCom" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
+  <data name="MarshallerTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
+  </data>
+  <data name="MarshallerTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</value>
+  </data>
+  <data name="MarshallerTypeMustBeNonNullDescription" xml:space="preserve">
+    <value>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</value>
+  </data>
+  <data name="MarshallerTypeMustBeNonNullMessage" xml:space="preserve">
+    <value>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</value>
+  </data>
+  <data name="MarshallerTypeMustBeStaticClassOrStructDescription" xml:space="preserve">
+    <value>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</value>
+  </data>
+  <data name="MarshallerTypeMustBeStaticClassOrStructMessage" xml:space="preserve">
+    <value>The type '{0}' must be a static class or a value type</value>
+  </data>
+  <data name="MarshallerTypeMustSpecifyManagedTypeDescription" xml:space="preserve">
+    <value>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</value>
+  </data>
+  <data name="MarshallerTypeMustSpecifyManagedTypeMessage" xml:space="preserve">
+    <value>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</value>
+  </data>
+  <data name="MarshalModeMustBeValidEnumValue" xml:space="preserve">
+    <value>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceDescription" xml:space="preserve">
+    <value>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceMessage" xml:space="preserve">
+    <value>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceTitle" xml:space="preserve">
+    <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesDescription" xml:space="preserve">
+    <value>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesMessage" xml:space="preserve">
+    <value>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesTitle" xml:space="preserve">
+    <value>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</value>
+  </data>
+  <data name="OneWrapperMustBeGenerated" xml:space="preserve">
+    <value>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</value>
+  </data>
+  <data name="OutRequiresToManagedDescription" xml:space="preserve">
+    <value>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</value>
+  </data>
+  <data name="OutRequiresToManagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksDescriptionLibraryImport" xml:space="preserve">
+    <value>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksDescriptionCom" xml:space="preserve">
+    <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksMessageLibraryImport" xml:space="preserve">
+    <value>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksMessageCom" xml:space="preserve">
+    <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksTitleLibraryImport" xml:space="preserve">
+    <value>LibraryImportAttribute requires unsafe code.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksTitleCom" xml:space="preserve">
+    <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</value>
+  </data>
+  <data name="ReturnTypeMustBeExpectedTypeDescription" xml:space="preserve">
+    <value>The return type the two method must be the expected type.</value>
+  </data>
+  <data name="ReturnTypeMustBeExpectedTypeMessage" xml:space="preserve">
+    <value>The return type of '{0}' must be '{1}'</value>
+  </data>
+  <data name="ReturnTypesMustMatchDescription" xml:space="preserve">
+    <value>The return types of the two methods must be the same type.</value>
+  </data>
+  <data name="ReturnTypesMustMatchMessage" xml:space="preserve">
+    <value>The return type of '{0}' must be the same type as the return type of '{1}'</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComDescription" xml:space="preserve">
+    <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComMessage" xml:space="preserve">
+    <value>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComTitle" xml:space="preserve">
+    <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</value>
+  </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeTitle" xml:space="preserve">
+    <value>The size of a collection that is marshalled to the callee must be defined when the method is called.</value>
+  </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam" xml:space="preserve">
+    <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</value>
+  </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue" xml:space="preserve">
+    <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFreeDescription" xml:space="preserve">
+    <value>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFreeMessage" xml:space="preserve">
+    <value>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromManagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromManagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromUnmanagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromUnmanagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToManagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToManagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToUnmanagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToUnmanagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</value>
+  </data>
+  <data name="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription" xml:space="preserve">
+    <value>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</value>
+  </data>
+  <data name="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</value>
+  </data>
+  <data name="StatelessLinearCollectionInRequiresCollectionMethodsDescription" xml:space="preserve">
+    <value>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</value>
+  </data>
+  <data name="StatelessLinearCollectionInRequiresCollectionMethodsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</value>
+  </data>
+  <data name="StatelessLinearCollectionOutRequiresCollectionMethodsDescription" xml:space="preserve">
+    <value>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</value>
+  </data>
+  <data name="StatelessLinearCollectionOutRequiresCollectionMethodsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</value>
+  </data>
+  <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription" xml:space="preserve">
+    <value>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</value>
+  </data>
+  <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</value>
+  </data>
+  <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription" xml:space="preserve">
+    <value>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</value>
+  </data>
+  <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</value>
+  </data>
+  <data name="StatelessRequiresConvertToManagedDescription" xml:space="preserve">
+    <value>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</value>
+  </data>
+  <data name="StatelessRequiresConvertToManagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</value>
+  </data>
+  <data name="StatelessValueInRequiresConvertToUnmanagedDescription" xml:space="preserve">
+    <value>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</value>
+  </data>
+  <data name="StatelessValueInRequiresConvertToUnmanagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</value>
+  </data>
+  <data name="StringMarshallingCustomTypeNotAccessibleByGeneratedCode" xml:space="preserve">
+    <value>The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</value>
+    <comment>{1} is details about which type/containing type is not accessible</comment>
+  </data>
+  <data name="ToFromUnmanagedTypesMustMatchDescription" xml:space="preserve">
+    <value>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</value>
+  </data>
+  <data name="ToFromUnmanagedTypesMustMatchMessage" xml:space="preserve">
+    <value>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</value>
+  </data>
+  <data name="ToUnmanagedFromManagedTypesMustMatchDescription" xml:space="preserve">
+    <value>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</value>
+  </data>
+  <data name="ToUnmanagedFromManagedTypesMustMatchMessage" xml:space="preserve">
+    <value>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</value>
+  </data>
+  <data name="TypeMustBeUnmanagedDescription" xml:space="preserve">
+    <value>The unmanaged type for a custom marshaller must be a C# unmanaged type.</value>
+  </data>
+  <data name="TypeMustBeUnmanagedMessage" xml:space="preserve">
+    <value>The return type of '{0}' must be unmanaged</value>
+  </data>
+  <data name="TypeMustHaveExplicitCastFromVoidPointerDescription" xml:space="preserve">
+    <value>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</value>
+  </data>
+  <data name="TypeMustHaveExplicitCastFromVoidPointerMessage" xml:space="preserve">
+    <value>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</value>
+  </data>
+  <data name="TypeNotSupportedDescriptionLibraryImport" xml:space="preserve">
+    <value>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</value>
+  </data>
+  <data name="TypeNotSupportedDescriptionCom" xml:space="preserve">
+    <value>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</value>
+  </data>
+  <data name="TypeNotSupportedMessageParameterLibraryImport" xml:space="preserve">
+    <value>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</value>
+  </data>
+  <data name="TypeNotSupportedMessageParameterCom" xml:space="preserve">
+    <value>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</value>
+  </data>
+  <data name="TypeNotSupportedMessageParameterWithDetails" xml:space="preserve">
+    <value>{0} The generated source will not handle marshalling of parameter '{1}'.</value>
+    <comment>{0} is a message containing additional details about what is not supported
+{1} is the name of the parameter</comment>
+  </data>
+  <data name="TypeNotSupportedMessageReturnLibraryImport" xml:space="preserve">
+    <value>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</value>
+  </data>
+  <data name="TypeNotSupportedMessageReturnCom" xml:space="preserve">
+    <value>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</value>
+  </data>
+  <data name="TypeNotSupportedMessageReturnWithDetails" xml:space="preserve">
+    <value>{0} The generated source will not handle marshalling of the return value of method '{1}'.</value>
+    <comment>{0} is a message containing additional details about what is not supported
+{1} is the name of the method</comment>
+  </data>
+  <data name="TypeNotSupportedTitle" xml:space="preserve">
+    <value>Specified type is not supported by source-generated P/Invokes</value>
+  </data>
+  <data name="TypeNotSupportedTitleCom" xml:space="preserve">
+    <value>Specified type is not supported by source-generated COM</value>
+  </data>
+  <data name="UnnecessaryMarshallingInfoDescription" xml:space="preserve">
+    <value>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</value>
+  </data>
+  <data name="UnnecessaryMarshallingInfoTitle" xml:space="preserve">
+    <value>Unnecessary marshalling info was provided and can be removed.</value>
+  </data>
+  <data name="UnnecessaryParameterMarshallingInfoMessage" xml:space="preserve">
+    <value>Unnecessary marshalling info '{0}' was provided for parameter '{1}'. {2}</value>
+  </data>
+  <data name="UnnecessaryReturnMarshallingInfoMessage" xml:space="preserve">
+    <value>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'. {2}</value>
+  </data>
+  <data name="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription" xml:space="preserve">
+    <value>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</value>
+  </data>
+  <data name="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</value>
+  </data>
+  <data name="ValueInRequiresOneParameterConstructorDescription" xml:space="preserve">
+    <value>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</value>
+  </data>
+  <data name="ValueInRequiresOneParameterConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationMessageCom" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
+    <comment>{1} is a message containing additional details about what is not valid</comment>
+  </data>
+  <data name="InOutAttributes" xml:space="preserve">
+    <value>[In] and [Out] attributes</value>
+  </data>
+  <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
+    <value>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</value>
+  </data>
+  <data name="InAttributeNotSupportedOnByValueParameters" xml:space="preserve">
+    <value>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</value>
+  </data>
+  <data name="InOutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
+    <value>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</value>
+  </data>
+  <data name="ComMethodReturningIntWillBeOutParameterMessage" xml:space="preserve">
+    <value>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</value>
+  </data>
+  <data name="ComMethodReturningIntWillBeOutParameterTitle" xml:space="preserve">
+    <value>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</value>
+  </data>
+  <data name="HResultTypeWillBeTreatedAsStructMessage" xml:space="preserve">
+    <value>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</value>
+  </data>
+  <data name="HResultTypeWillBeTreatedAsStructTitle" xml:space="preserve">
+    <value>This type will be treated as a struct in the native signature, not as a native HRESULT</value>
+  </data>
+  <data name="PreferExplicitInOutAttributesOnArrays" xml:space="preserve">
+    <value>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</value>
+  </data>
+  <data name="ComInterfaceUsageDoesNotFollowBestPracticesTitle" xml:space="preserve">
+    <value>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</value>
+  </data>
+  <data name="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails" xml:space="preserve">
+    <value>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</value>
+  </data>
+  <data name="LibraryImportUsageDoesNotFollowBestPracticesTitle" xml:space="preserve">
+    <value>The usage of 'LibraryImportAttribute' does not follow recommendations.</value>
+  </data>
+  <data name="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails" xml:space="preserve">
+    <value>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</value>
+  </data>
+  <data name="InVariantShouldBeRef" xml:space="preserve">
+    <value>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</value>
+  </data>
+</root>

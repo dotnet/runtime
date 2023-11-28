@@ -720,14 +720,8 @@ FCIMPLEND
 
 
 // Check we're allowed to create an array with the given element type.
-void ArrayNative::CheckElementType(TypeHandle elementType)
+static void CheckElementType(TypeHandle elementType)
 {
-    // Checks apply recursively for arrays of arrays etc.
-    while (elementType.IsArray())
-    {
-        elementType = elementType.GetArrayElementTypeHandle();
-    }
-
     // Check for simple types first.
     if (!elementType.IsTypeDesc())
     {
@@ -738,7 +732,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
             COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLikeArray"));
 
         // Check for open generic types.
-        if (pMT->IsGenericTypeDefinition() || pMT->ContainsGenericVariables())
+        if (pMT->ContainsGenericVariables())
             COMPlusThrow(kNotSupportedException, W("NotSupported_OpenType"));
 
         // Check for Void.
@@ -753,63 +747,68 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
     }
 }
 
-FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTypeUNSAFE, INT32 rank, INT32* pLengths, INT32* pLowerBounds)
+void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray)
 {
     CONTRACTL {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(rank > 0);
         PRECONDITION(CheckPointer(pLengths));
         PRECONDITION(CheckPointer(pLowerBounds, NULL_OK));
     } CONTRACTL_END;
 
-    OBJECTREF pRet = NULL;
+    BEGIN_QCALL;
 
-    REFLECTCLASSBASEREF pElementType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pElementTypeUNSAFE);
+    TypeHandle typeHnd = pTypeHnd.AsTypeHandle();
 
-    // pLengths and pLowerBounds are pinned buffers. No need to protect them.
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(pElementType);
-
-    TypeHandle elementType(pElementType->GetType());
-
-    CheckElementType(elementType);
-
-    CorElementType CorType = elementType.GetSignatureCorElementType();
-
-    CorElementType kind = ELEMENT_TYPE_ARRAY;
-
-    // Is it ELEMENT_TYPE_SZARRAY array?
-    if (rank == 1 && (pLowerBounds == NULL || pLowerBounds[0] == 0)
-#ifdef FEATURE_64BIT_ALIGNMENT
-        // On platforms where 64-bit types require 64-bit alignment and don't obtain it naturally force us
-        // through the slow path where this will be handled.
-        && (CorType != ELEMENT_TYPE_I8)
-        && (CorType != ELEMENT_TYPE_U8)
-        && (CorType != ELEMENT_TYPE_R8)
-#endif
-        )
+    if (createFromArrayType)
     {
-        // Shortcut for common cases
-        if (CorTypeInfo::IsPrimitiveType(CorType))
+        _ASSERTE((INT32)typeHnd.GetRank() == rank);
+        _ASSERTE(typeHnd.IsArray());
+
+        if (typeHnd.GetArrayElementTypeHandle().ContainsGenericVariables())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_OpenType"));
+
+        if (!typeHnd.AsMethodTable()->IsMultiDimArray())
         {
-            pRet = AllocatePrimitiveArray(CorType,pLengths[0]);
+            _ASSERTE(pLowerBounds == NULL || pLowerBounds[0] == 0);
+
+            GCX_COOP();
+            retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
             goto Done;
         }
-        else
-        if (CorTypeInfo::IsObjRef(CorType))
+    }
+    else
+    {
+        CheckElementType(typeHnd);
+
+        // Is it ELEMENT_TYPE_SZARRAY array?
+        if (rank == 1 && (pLowerBounds == NULL || pLowerBounds[0] == 0))
         {
-            pRet = AllocateObjectArray(pLengths[0],elementType);
-            goto Done;
+            CorElementType corType = typeHnd.GetSignatureCorElementType();
+
+            // Shortcut for common cases
+            if (CorTypeInfo::IsPrimitiveType(corType))
+            {
+                GCX_COOP();
+                retArray.Set(AllocatePrimitiveArray(corType, pLengths[0]));
+                goto Done;
+            }
+
+            typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd);
+
+            {
+                GCX_COOP();
+                retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
+                goto Done;
+            }
         }
 
-        kind = ELEMENT_TYPE_SZARRAY;
-        pLowerBounds = NULL;
+        // Find the Array class...
+        typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd, ELEMENT_TYPE_ARRAY, rank);
     }
 
     {
-        // Find the Array class...
-        TypeHandle typeHnd = ClassLoader::LoadArrayTypeThrowing(elementType, kind, rank);
-
-        _ASSERTE(rank < MAX_RANK); // Ensures that the stack buffer size allocations below won't overlow
+        _ASSERTE(rank <= MAX_RANK); // Ensures that the stack buffer size allocations below won't overflow
 
         DWORD boundsSize = 0;
         INT32* bounds;
@@ -834,15 +833,15 @@ FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTy
                 bounds[i] = pLengths[i];
         }
 
-        pRet = AllocateArrayEx(typeHnd, bounds, boundsSize);
+        {
+            GCX_COOP();
+            retArray.Set(AllocateArrayEx(typeHnd, bounds, boundsSize));
+        }
     }
 
 Done: ;
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
 {

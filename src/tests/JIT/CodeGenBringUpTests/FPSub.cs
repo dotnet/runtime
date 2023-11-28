@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPSub
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_FPSub
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPSub(float x, float y) { return x-y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPSub(17f, 9f);
         Console.WriteLine(y);

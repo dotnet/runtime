@@ -49,6 +49,19 @@ enum instruction : uint32_t
     #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) INS_##id,
     #include "instrs.h"
 
+    #define INST1(id, nm, info, fmt, e1                                                     ) INS_sve_##id,
+    #define INST2(id, nm, info, fmt, e1, e2                                                 ) INS_sve_##id,
+    #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) INS_sve_##id,
+    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) INS_sve_##id,
+    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) INS_sve_##id,
+    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) INS_sve_##id,
+    #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) INS_sve_##id,
+    #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) INS_sve_##id,
+    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) INS_sve_##id,
+    #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) INS_sve_##id,
+    #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) INS_sve_##id,
+    #include "instrsarm64sve.h"
+
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(TARGET_LOONGARCH64)
@@ -146,8 +159,7 @@ enum insFlags : uint64_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 26,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
-    INS_Flags_IsMskSrcSrcEvexInstruction = 1ULL << 28,
-    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction | INS_Flags_IsMskSrcSrcEvexInstruction),
+    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
 
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,
@@ -180,8 +192,18 @@ enum insFlags : uint64_t
 
     KInstruction = 1ULL << 41,
 
+    // EVEX feature: embedded broadcast
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
+};
+
+enum insOpts: unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_EVEX_b
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -245,6 +267,11 @@ enum insOpts : unsigned
     INS_OPTS_4S,
     INS_OPTS_1D,
     INS_OPTS_2D,
+
+    INS_OPTS_SCALABLE_B,
+    INS_OPTS_SCALABLE_H,
+    INS_OPTS_SCALABLE_S,
+    INS_OPTS_SCALABLE_D,
 
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 
@@ -350,7 +377,7 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
-    INS_OPTS_I,      // see ::emitIns_I_la().
+    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };
@@ -396,8 +423,10 @@ enum emitAttr : unsigned
                 EA_4BYTE         = 0x004,
                 EA_8BYTE         = 0x008,
                 EA_16BYTE        = 0x010,
-
-#if defined(TARGET_XARCH)
+#if defined(TARGET_ARM64)
+                EA_SCALABLE      = 0x020,
+                EA_SIZE_MASK     = 0x03F,
+#elif defined(TARGET_XARCH)
                 EA_32BYTE        = 0x020,
                 EA_64BYTE        = 0x040,
                 EA_SIZE_MASK     = 0x07F,

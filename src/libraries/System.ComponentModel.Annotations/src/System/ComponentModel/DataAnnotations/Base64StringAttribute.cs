@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
+using System.Buffers.Text;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -45,20 +45,7 @@ namespace System.ComponentModel.DataAnnotations
                 return false;
             }
 
-            byte[]? rentedBuffer = null;
-            Span<byte> destinationBuffer = valueAsString.Length < 256
-                ? stackalloc byte[256]
-                : rentedBuffer = ArrayPool<byte>.Shared.Rent(valueAsString.Length);
-
-            bool result = Convert.TryFromBase64String(valueAsString, destinationBuffer, out int bytesWritten);
-
-            if (rentedBuffer != null)
-            {
-                destinationBuffer.Slice(0, bytesWritten).Clear();
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
-            }
-
-            return result;
+            return Base64.IsValid(valueAsString);
         }
     }
 }

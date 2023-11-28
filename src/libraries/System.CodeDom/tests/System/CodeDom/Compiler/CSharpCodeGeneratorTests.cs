@@ -2589,7 +2589,7 @@ public class name<, name, [attribute()]  name, name, name, [()] [name1()] [name2
             {
                 Assert.Equal(normalizedExpected, actual);
             }
-            catch (Xunit.Sdk.AssertActualExpectedException)
+            catch (Xunit.Sdk.XunitException)
             {
                 string Normalize(string s)
                 {

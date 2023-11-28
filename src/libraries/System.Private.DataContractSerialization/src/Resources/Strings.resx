@@ -640,13 +640,13 @@
     <value>The value '{0}' cannot be represented with the type '{1}'.</value>
   </data>
   <data name="XmlDeclarationRequired" xml:space="preserve">
-    <value>An XML declaration with an encoding is required for all non-UTF8 documents.</value>
+    <value>An XML declaration with an encoding is required for all non UTF-8 documents.</value>
   </data>
   <data name="XmlDeclMissingVersion" xml:space="preserve">
     <value>Version not found in XML declaration.</value>
   </data>
   <data name="XmlDeclMissing" xml:space="preserve">
-    <value>An XML declaration is required for all non-UTF8 documents.</value>
+    <value>An XML declaration is required for all non UTF-8 documents.</value>
   </data>
   <data name="XmlDeclNotFirst" xml:space="preserve">
     <value>No characters can appear before the XML declaration.</value>
@@ -766,7 +766,7 @@
     <value>UniqueId cannot be zero length.</value>
   </data>
   <data name="XmlInvalidUTF8Bytes" xml:space="preserve">
-    <value>'{0}' contains invalid UTF8 bytes.</value>
+    <value>'{0}' contains invalid UTF-8 bytes.</value>
   </data>
   <data name="XmlInvalidVersion" xml:space="preserve">
     <value>XML version must be '1.0'.</value>

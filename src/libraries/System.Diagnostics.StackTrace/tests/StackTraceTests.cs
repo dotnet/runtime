@@ -244,6 +244,12 @@ namespace System.Diagnostics.Tests
             AssertExtensions.Throws<ArgumentNullException>("e", () => new StackTrace(null, 1));
         }
 
+        [Fact]
+        public void Ctor_NullMultiFrame_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("frames", () => new StackTrace((IEnumerable<StackFrame>)null));
+        }
+
         public static IEnumerable<object[]> Ctor_Frame_TestData()
         {
             yield return new object[] { new StackFrame() };
@@ -257,6 +263,19 @@ namespace System.Diagnostics.Tests
             var stackTrace = new StackTrace(stackFrame);
             Assert.Equal(1, stackTrace.FrameCount);
             Assert.Equal(new StackFrame[] { stackFrame }, stackTrace.GetFrames());
+        }
+
+        [Fact]
+        public void Ctor_MultiFrame()
+        {
+            var stackFrames = new[] { new StackFrame(), new StackFrame() };
+            var stackTrace = new StackTrace(stackFrames);
+            Assert.Equal(stackFrames.Length, stackTrace.FrameCount);
+
+            for (var i = 0; i < stackFrames.Length; ++i)
+            {
+                Assert.Equal(stackFrames[i], stackTrace.GetFrame(i));
+            }
         }
 
         public static IEnumerable<object[]> ToString_TestData()

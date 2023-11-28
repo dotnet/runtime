@@ -12,20 +12,19 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of delegate marshalling stub types generated into the image.
     /// </summary>
-    internal sealed class DelegateMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class DelegateMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private readonly ExternalReferencesTableNode _externalReferences;
         private readonly InteropStateManager _interopStateManager;
 
         public DelegateMarshallingStubMapNode(ExternalReferencesTableNode externalReferences, InteropStateManager interopStateManager)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__delegate_marshalling_stub_map_End", true);
             _externalReferences = externalReferences;
             _interopStateManager = interopStateManager;
         }
 
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -71,9 +70,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+            _size = hashTableBytes.Length;
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

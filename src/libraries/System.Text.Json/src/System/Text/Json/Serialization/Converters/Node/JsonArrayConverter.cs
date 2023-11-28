@@ -6,9 +6,9 @@ using System.Text.Json.Nodes;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonArrayConverter : JsonConverter<JsonArray>
+    internal sealed class JsonArrayConverter : JsonConverter<JsonArray?>
     {
-        public override void Write(Utf8JsonWriter writer, JsonArray value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, JsonArray? value, JsonSerializerOptions options)
         {
             if (value is null)
             {

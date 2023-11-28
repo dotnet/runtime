@@ -3,14 +3,14 @@
 
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 
-using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
+using Debug = System.Diagnostics.Debug;
 
 namespace System.Reflection.Runtime.General
 {

@@ -38,7 +38,7 @@ namespace ILCompiler.Dataflow
             Operation = operation;
             Offset = offset;
             CalledMethod = calledMethod;
-            Instance = instance.Clone();
+            Instance = instance.DeepCopy();
             if (arguments.IsEmpty)
             {
                 Arguments = ImmutableArray<MultiValue>.Empty;
@@ -47,7 +47,7 @@ namespace ILCompiler.Dataflow
             {
                 var builder = ImmutableArray.CreateBuilder<MultiValue>();
                 foreach (var argument in arguments)
-                    builder.Add(argument.Clone());
+                    builder.Add(argument.DeepCopy());
                 Arguments = builder.ToImmutableArray();
             }
             Origin = origin;

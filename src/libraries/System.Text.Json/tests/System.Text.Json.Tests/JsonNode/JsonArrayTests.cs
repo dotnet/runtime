@@ -486,5 +486,268 @@ namespace System.Text.Json.Nodes.Tests
                 Assert.Equal("elem1", (string)node[1]);
             });
         }
+
+        [Fact]
+        public static void DeepClone()
+        {
+            var nestedArray = new JsonArray("elem0", "elem1");
+            var nestedJsonObj = new JsonObject()
+            {
+                { "Nine", 9 },
+                { "Name", "def"}
+            };
+
+            var array = new JsonArray();
+            array.Add(10);
+            array.Add("abcd");
+            array.Add(null);
+            array.Add(true);
+            array.Add(false);
+            array.Add(JsonValue.Create(30));
+            array.Add(nestedJsonObj);
+            array.Add(nestedArray);
+
+            JsonArray clonedArray = array.DeepClone().AsArray();
+
+            JsonNodeTests.AssertDeepEqual(array, clonedArray);
+            Assert.Equal(array.Count, clonedArray.Count);
+            Assert.Equal(10, array[0].GetValue<int>());
+            Assert.Equal("abcd", array[1].GetValue<string>());
+            Assert.Null(array[2]);
+            Assert.True(array[3].GetValue<bool>());
+            Assert.False(array[4].GetValue<bool>());
+            Assert.Equal(30, array[5].GetValue<int>());
+
+            JsonObject clonedNestedJObject = array[6].AsObject();
+            Assert.Equal(nestedJsonObj.Count, clonedNestedJObject.Count);
+            Assert.Equal(9, clonedNestedJObject["Nine"].GetValue<int>());
+            Assert.Equal("def", clonedNestedJObject["Name"].GetValue<string>());
+
+            JsonArray clonedNestedArray = clonedArray[7].AsArray();
+            Assert.Equal(nestedArray.Count, clonedNestedArray.Count);
+            Assert.Equal("elem0", clonedNestedArray[0].GetValue<string>());
+            Assert.Equal("elem1", clonedNestedArray[1].GetValue<string>());
+
+            string originalJson = array.ToJsonString();
+            string clonedJson = clonedArray.ToJsonString();
+
+            Assert.Equal(originalJson, clonedJson);
+        }
+
+        [Fact]
+        public static void DeepCloneFromElement()
+        {
+            JsonDocument document = JsonDocument.Parse("[\"abc\", 10]");
+            JsonArray jArray = JsonArray.Create(document.RootElement);
+            var clone = jArray.DeepClone().AsArray();
+
+            JsonNodeTests.AssertDeepEqual(jArray, clone);
+            Assert.Equal(10, clone[1].GetValue<int>());
+            Assert.Equal("abc", clone[0].GetValue<string>());
+        }
+
+        [Fact]
+        public static void DeepEquals()
+        {
+            var array = new JsonArray() { null, 10, "str" };
+            var sameArray = new JsonArray() { null, 10, "str" };
+
+            JsonNodeTests.AssertDeepEqual(array, sameArray);
+            JsonNodeTests.AssertNotDeepEqual(array, null);
+
+            var diffArray = new JsonArray() { null, 10, "s" };
+            JsonNodeTests.AssertNotDeepEqual(array, diffArray);
+
+            diffArray = new JsonArray() { null, 10 };
+            JsonNodeTests.AssertNotDeepEqual(array, diffArray);
+        }
+
+        [Fact]
+        public static void DeepEqualsWithJsonValueArrayType()
+        {
+            var array = new JsonArray();
+            array.Add(JsonValue.Create(2));
+            array.Add(JsonValue.Create(3));
+            array.Add(JsonValue.Create(4));
+            var value = JsonValue.Create(new long[] { 2, 3, 4 });
+
+            JsonNodeTests.AssertDeepEqual(array, value);
+        }
+
+        [Fact]
+        public static void DeepEqualsFromElement()
+        {
+            using JsonDocument document = JsonDocument.Parse("[1, 2, 4]");
+            JsonArray array = JsonArray.Create(document.RootElement);
+
+            using JsonDocument document2 = JsonDocument.Parse("[1, 2,    4]");
+            JsonArray array2 = JsonArray.Create(document2.RootElement);
+            JsonNodeTests.AssertDeepEqual(array, array2);
+
+            using JsonDocument document3 = JsonDocument.Parse("[2, 1, 4]");
+            JsonArray array3 = JsonArray.Create(document3.RootElement);
+            JsonNodeTests.AssertNotDeepEqual(array, array3);
+        }
+
+        [Fact]
+        public static void UpdateClonedObjectNotAffectOriginal()
+        {
+            var jArray = new JsonArray(10, 20);
+
+            var clone = jArray.DeepClone().AsArray();
+            clone[1] = 3;
+
+            Assert.Equal(20, jArray[1].GetValue<int>());
+        }
+
+        [Fact]
+        public static void GetValueKind()
+        {
+            Assert.Equal(JsonValueKind.Array, new JsonArray().GetValueKind());
+        }
+
+        [Fact]
+        public static void GetElementIndex()
+        {
+            var trueValue = JsonValue.Create(true);
+            var falseValue = JsonValue.Create(false);
+            var numberValue = JsonValue.Create(15);
+            var stringValue = JsonValue.Create("ssss");
+            var nestedObject = new JsonObject();
+            var nestedArray = new JsonArray();
+
+            var array = new JsonArray();
+            array.Add(trueValue);
+            array.Add(falseValue);
+            array.Add(numberValue);
+            array.Add(stringValue);
+            array.Add(nestedObject);
+            array.Add(nestedArray);
+
+            Assert.Equal(0, trueValue.GetElementIndex());
+            Assert.Equal(1, falseValue.GetElementIndex());
+            Assert.Equal(2, numberValue.GetElementIndex());
+            Assert.Equal(3, stringValue.GetElementIndex());
+            Assert.Equal(4, nestedObject.GetElementIndex());
+            Assert.Equal(5, nestedArray.GetElementIndex());
+        }
+
+        [Fact]
+        public static void GetValues_ValueType()
+        {
+            JsonArray jsonArray = new JsonArray(1, 2, 3, 2);
+
+            IEnumerable<int> values = jsonArray.GetValues<int>();
+
+            Assert.Equal(jsonArray.Count, values.Count());
+            Assert.Equal(1, values.ElementAt(0));
+            Assert.Equal(2, values.ElementAt(1));
+            Assert.Equal(3, values.ElementAt(2));
+            Assert.Equal(2, values.ElementAt(3));
+
+            jsonArray = new JsonArray(1, null);
+            Assert.Throws<NullReferenceException>(() => jsonArray.GetValues<int>().Count());
+        }
+
+        [Fact]
+        public static void GetValues_ReferenceType()
+        {
+            var student1 = new Student();
+            var student2 = new Student();
+            JsonArray jsonArray = new JsonArray(JsonValue.Create(student1), null, JsonValue.Create(student2));
+
+            IEnumerable<Student> values = jsonArray.GetValues<Student>();
+
+            Assert.Equal(jsonArray.Count, values.Count());
+            Assert.Equal(student1, values.ElementAt(0));
+            Assert.Null(values.ElementAt(1));
+            Assert.Equal(student2, values.ElementAt(2));
+        }
+
+        private class Student
+        {
+            public string Name { get; set; }
+        }
+
+        [Fact]
+        public static void ReplaceWith()
+        {
+            var jArray = new JsonArray();
+            var jValue = JsonValue.Create(10);
+            jArray.Add(jValue);
+            jArray[0].ReplaceWith(5);
+
+            Assert.Null(jValue.Parent);
+            Assert.Equal("[5]", jArray.ToJsonString());
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("1")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("""{"test":"hello world"}""")]
+        [InlineData("[1,2,3]")]
+        public static void AddJsonElement(string json)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/94842
+            using var jdoc = JsonDocument.Parse(json);
+            var array = new JsonArray();
+
+            array.Add(jdoc.RootElement);
+
+            JsonNode arrayElement = Assert.Single(array);
+            switch (jdoc.RootElement.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    Assert.IsAssignableFrom<JsonObject>(arrayElement);
+                    break;
+                case JsonValueKind.Array:
+                    Assert.IsAssignableFrom<JsonArray>(arrayElement);
+                    break;
+                case JsonValueKind.Null:
+                    Assert.Null(arrayElement);
+                    break;
+                default:
+                    Assert.IsAssignableFrom<JsonValue>(arrayElement);
+                    break;
+            }
+            Assert.Equal($"[{json}]", array.ToJsonString());
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("1")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("""{"test":"hello world"}""")]
+        [InlineData("[1,2,3]")]
+        public static void ReplaceWithJsonElement(string json)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/94842
+            using var jdoc = JsonDocument.Parse(json);
+            var array = new JsonArray { 1 };
+
+            array[0].ReplaceWith(jdoc.RootElement);
+
+            JsonNode arrayElement = Assert.Single(array);
+            switch (jdoc.RootElement.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    Assert.IsAssignableFrom<JsonObject>(arrayElement);
+                    break;
+                case JsonValueKind.Array:
+                    Assert.IsAssignableFrom<JsonArray>(arrayElement);
+                    break;
+                case JsonValueKind.Null:
+                    Assert.Null(arrayElement);
+                    break;
+                default:
+                    Assert.IsAssignableFrom<JsonValue>(arrayElement);
+                    break;
+            }
+
+            Assert.Equal($"[{json}]", array.ToJsonString());
+        }
     }
 }

@@ -6,9 +6,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -633,16 +634,16 @@ namespace System.Linq.Expressions.Interpreter
             Emit(SetArrayItemInstruction.Instance);
         }
 
-        public void EmitNewArray(Type elementType)
-        {
-            Emit(new NewArrayInstruction(elementType));
-        }
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
+        public void EmitNewArray(Type elementType) => Emit(new NewArrayInstruction(elementType));
 
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public void EmitNewArrayBounds(Type elementType, int rank)
         {
             Emit(new NewArrayBoundsInstruction(elementType, rank));
         }
 
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public void EmitNewArrayInit(Type elementType, int elementCount)
         {
             Emit(new NewArrayInitInstruction(elementType, elementCount));

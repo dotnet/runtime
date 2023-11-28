@@ -12,6 +12,7 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests.Net70
 {
     //[JsonSerializable(typeof(WeatherForecastWithPOCOs))]
     //[JsonSerializable(typeof(ClassWithCustomConverter))]
+    //[JsonSerializable(typeof(MyLinkedList))]
     public partial class Net70GeneratedContext : JsonSerializerContext { }
 
     public class WeatherForecastWithPOCOs
@@ -29,6 +30,18 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests.Net70
     {
         public int High { get; set; }
         public int Low { get; set; }
+    }
+
+    public class MyLinkedList
+    {
+        public MyLinkedList(int value, MyLinkedList? nested)
+        {
+            Value = value;
+            Nested = nested;
+        }
+
+        public int Value { get; set; }
+        public MyLinkedList? Nested { get; set; }
     }
 
     [JsonConverter(typeof(CustomConverter))]

@@ -310,6 +310,15 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     _ASSERTE (!pThread->PreemptiveGCDisabled());
 
+    if (g_EntryAssemblyPath == NULL)
+    {
+        // Store the entry assembly path for diagnostic purposes (for example, dumps)
+        size_t len = u16_strlen(pwzAssemblyPath) + 1;
+        NewArrayHolder<WCHAR> path { new WCHAR[len] };
+        wcscpy_s(path, len, pwzAssemblyPath);
+        g_EntryAssemblyPath = path.Extract();
+    }
+
     Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
 
 #if defined(FEATURE_MULTICOREJIT)
@@ -582,33 +591,33 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     for (int i = 0; i < nProperties; i++)
     {
-        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES)) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES)) == 0)
         {
             pwzNativeDllSearchDirectories = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
         {
             pwzTrustedPlatformAssemblies = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS)) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS)) == 0)
         {
             pwzPlatformResourceRoots = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_APP_PATHS)) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_APP_PATHS)) == 0)
         {
             pwzAppPaths = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
+        if (u16_strcmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
         {
             extern void ParseDefaultStackSize(LPCWSTR value);
             ParseDefaultStackSize(pPropertyValues[i]);
         }
         else
-        if (wcscmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)
+        if (u16_strcmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)
         {
             extern void ParseUseEntryPointFilter(LPCWSTR value);
             ParseUseEntryPointFilter(pPropertyValues[i]);

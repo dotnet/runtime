@@ -2,23 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
+using Internal.Runtime;
 using Internal.Text;
+using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// BlobIdStackTraceMethodRvaToTokenMapping - list of 8-byte pairs (method RVA-method token)
     /// </summary>
-    public sealed class StackTraceMethodMappingNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class StackTraceMethodMappingNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        public StackTraceMethodMappingNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "_stacktrace_methodRVA_to_token_mapping_End", true);
-        }
+        private int? _size;
 
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -50,15 +51,87 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
-            objData.AddSymbol(_endSymbol);
 
-            foreach (var mappingEntry in factory.MetadataManager.GetStackTraceMapping(factory))
+            var mapping = new List<StackTraceMapping>(factory.MetadataManager.GetStackTraceMapping(factory));
+
+            // The information is encoded as a set of commands: set current owning type, set current method name, etc.
+            // Sort things so that we don't thrash the current entity too much.
+            mapping.Sort((x, y) =>
             {
-                objData.EmitReloc(factory.MethodEntrypoint(mappingEntry.Entity), RelocType.IMAGE_REL_BASED_RELPTR32);
-                objData.EmitInt(mappingEntry.MetadataHandle);
+                // Group methods on the same generic type definition together
+                int result = x.OwningTypeHandle.CompareTo(y.OwningTypeHandle);
+                if (result != 0)
+                    return result;
+
+                // Overloads get grouped together too
+                result = x.MethodNameHandle.CompareTo(y.MethodNameHandle);
+                if (result != 0)
+                    return result;
+
+                // Methods that only differ in something generic get grouped too
+                result = x.MethodSignatureHandle.CompareTo(y.MethodSignatureHandle);
+                if (result != 0)
+                    return result;
+
+                // At this point the genericness should be the same
+                Debug.Assert(x.MethodInstantiationArgumentCollectionHandle == y.MethodInstantiationArgumentCollectionHandle);
+
+                // Compare by the method as a tie breaker to get stable sort
+                return TypeSystemComparer.Instance.Compare(x.Method, y.Method);
+            });
+
+            int currentOwningType = 0;
+            int currentSignature = 0;
+            int currentName = 0;
+
+            // The first int contains the number of entries
+            objData.EmitInt(mapping.Count);
+
+            foreach (var entry in mapping)
+            {
+                var commandReservation = objData.ReserveByte();
+
+                byte command = 0;
+                if (currentOwningType != entry.OwningTypeHandle)
+                {
+                    currentOwningType = entry.OwningTypeHandle;
+                    command |= StackTraceDataCommand.UpdateOwningType;
+                    objData.EmitInt(currentOwningType);
+                }
+
+                if (currentName != entry.MethodNameHandle)
+                {
+                    currentName = entry.MethodNameHandle;
+                    command |= StackTraceDataCommand.UpdateName;
+                    objData.EmitCompressedUInt((uint)(currentName & MetadataManager.MetadataOffsetMask));
+                }
+
+                if (currentSignature != entry.MethodSignatureHandle)
+                {
+                    currentSignature = entry.MethodSignatureHandle;
+                    objData.EmitCompressedUInt((uint)(currentSignature & MetadataManager.MetadataOffsetMask));
+
+                    if (entry.MethodInstantiationArgumentCollectionHandle != 0)
+                    {
+                        command |= StackTraceDataCommand.UpdateGenericSignature;
+                        objData.EmitCompressedUInt((uint)(entry.MethodInstantiationArgumentCollectionHandle & MetadataManager.MetadataOffsetMask));
+                    }
+                    else
+                    {
+                        command |= StackTraceDataCommand.UpdateSignature;
+                    }
+                }
+
+                if (entry.IsHidden)
+                {
+                    command |= StackTraceDataCommand.IsStackTraceHidden;
+                }
+
+                objData.EmitByte(commandReservation, command);
+                objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.IMAGE_REL_BASED_RELPTR32);
             }
 
-            _endSymbol.SetSymbolOffset(objData.CountBytes);
+            _size = objData.CountBytes;
             return objData.ToObjectData();
         }
     }

@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
 using Internal.LowLevelLinq;
 using Internal.Reflection.Extensions.NonPortable;
 
@@ -121,7 +122,7 @@ namespace System
                 return null;
             CustomAttributeData result = enumerator.Current;
             if (enumerator.MoveNext())
-                throw new AmbiguousMatchException();
+                throw ThrowHelper.GetAmbiguousMatchException(result);
             return result.Instantiate();
         }
 

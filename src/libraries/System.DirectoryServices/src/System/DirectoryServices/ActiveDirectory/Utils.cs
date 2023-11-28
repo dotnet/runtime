@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Net;
 using System.Collections;
-using System.Security.Principal;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -896,7 +895,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 ADSearcher adSearcher = new ADSearcher(de,
                                                            "(&(objectClass=nTDSDSA)(invocationID=" + stringGuid + "))",
-                                                           new string[] { "distinguishedName" },
+                                                           ActiveDirectorySite.s_distinguishedName,
                                                            SearchScope.Subtree,
                                                            false, /* don't need paged search */
                                                            false /* don't need to cache result */);

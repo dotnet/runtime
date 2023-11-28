@@ -52,6 +52,7 @@
 //#define STRICT_JITLOCK_ENTRY_LEAK_DETECTION
 //#define STRICT_CLSINITLOCK_ENTRY_LEAK_DETECTION
 
+LPCWSTR s_wszDiagnosticStartupHookPaths = nullptr;
 
 #ifndef DACCESS_COMPILE
 
@@ -395,14 +396,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
     if (pAssemblyNameParts->_pName == NULL || pAssemblyNameParts->_pName[0] == '\0')
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
-
-    if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0])
-        || wcschr(pAssemblyNameParts->_pName, '\\') != NULL
-        || wcschr(pAssemblyNameParts->_pName, ':') != NULL
-        || wcschr(pAssemblyNameParts->_pName, '/') != NULL)
-    {
-        COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
-    }
 
     // Set up the assembly manifest metadata
     // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
@@ -961,19 +954,7 @@ Module * Assembly::FindModuleByTypeRef(
 
 void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
 {
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    // Prejitted assemblies are expected to have their table prebuilt.
-    // If not, we do it here at load time (as if we would jit the assembly).
-
-    if (m_pModule->IsPersistedObject(m_pModule->m_pAvailableClasses))
-        RETURN;
+    STANDARD_VM_CONTRACT;
 
     mdToken mdExportedType;
 
@@ -987,24 +968,13 @@ void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
         m_pClassLoader->AddExportedTypeHaveLock(GetModule(),
                                                 mdExportedType,
                                                 pamTracker);
-
-    RETURN;
 }
 
-//<TODO>@TODO: if module is not signed it needs to acquire the
-//permissions from the assembly.</TODO>
 void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(module));
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
-    if (module->m_pAvailableClasses != NULL && !module->IsPersistedObject(module->m_pAvailableClasses))
+    if (module->m_pAvailableClasses != NULL)
     {
         // ! We intentionally do not take the AvailableClass lock here. It creates problems at
         // startup and we haven't yet published the module yet so nobody should be searching it.
@@ -1145,7 +1115,47 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
     return GetFriendAssemblyInfo()->IgnoresAccessChecksTo(pAccessedAssembly);
 }
 
+void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
+{
+    LPCWSTR wszDiagnosticStartupHookPathsLocal = s_wszDiagnosticStartupHookPaths;
 
+    size_t cchPath = u16_strlen(wszPath);
+    size_t cchDiagnosticStartupHookPathsNew = cchPath;
+    size_t cchDiagnosticStartupHookPathsLocal = 0;
+    if (nullptr != wszDiagnosticStartupHookPathsLocal)
+    {
+        cchDiagnosticStartupHookPathsLocal = u16_strlen(wszDiagnosticStartupHookPathsLocal);
+        // Add 1 for the path separator
+        cchDiagnosticStartupHookPathsNew += cchDiagnosticStartupHookPathsLocal + 1;
+    }
+
+    size_t currentSize = cchDiagnosticStartupHookPathsNew + 1;
+    LPWSTR wszDiagnosticStartupHookPathsNew = new WCHAR[currentSize];
+    LPWSTR wszCurrent = wszDiagnosticStartupHookPathsNew;
+
+    u16_strcpy_s(wszCurrent, currentSize, wszPath);
+    wszCurrent += cchPath;
+    currentSize -= cchPath;
+
+    if (cchDiagnosticStartupHookPathsLocal > 0)
+    {
+        u16_strcpy_s(wszCurrent, currentSize, PATH_SEPARATOR_STR_W);
+        wszCurrent += 1;
+        currentSize -= 1;
+
+        u16_strcpy_s(wszCurrent, currentSize, wszDiagnosticStartupHookPathsLocal);
+        wszCurrent += cchDiagnosticStartupHookPathsLocal;
+        currentSize -= cchDiagnosticStartupHookPathsLocal;
+    }
+
+    // Expect null terminating character
+    _ASSERTE(currentSize == 1);
+    _ASSERTE(wszCurrent[0] == W('\0'));
+
+    s_wszDiagnosticStartupHookPaths = wszDiagnosticStartupHookPathsNew;
+
+    delete [] wszDiagnosticStartupHookPathsLocal;
+}
 
 enum CorEntryPointType
 {
@@ -1399,7 +1409,7 @@ static void RunMainPost()
     }
 }
 
-static void RunManagedStartup()
+void RunManagedStartup()
 {
     CONTRACTL
     {
@@ -1411,7 +1421,11 @@ static void RunManagedStartup()
     CONTRACTL_END;
 
     MethodDescCallSite managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
-    managedStartup.Call(NULL);
+
+    ARG_SLOT args[1];
+    args[0] = PtrToArgSlot(s_wszDiagnosticStartupHookPaths);
+
+    managedStartup.Call(args);
 }
 
 INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
@@ -1612,11 +1626,14 @@ OBJECTREF Assembly::GetExposedObject()
 BOOL Assembly::FileNotFound(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
-    return IsHRESULTForExceptionKind(hr, kFileNotFoundException) ||
+    if (IsHRESULTForExceptionKind(hr, kFileNotFoundException))
+        return TRUE;
+
 #ifdef FEATURE_COMINTEROP
-           (hr == RO_E_METADATA_NAME_NOT_FOUND) ||
+    return hr == RO_E_METADATA_NAME_NOT_FOUND;
+#else
+    return FALSE;
 #endif //FEATURE_COMINTEROP
-           (hr == CLR_E_BIND_TYPE_NOT_FOUND);
 }
 
 
@@ -1725,7 +1742,7 @@ BOOL Assembly::IsInstrumentedHelper()
     do
     {
         _ASSERTE(pCur[0] != W('\0'));
-        const WCHAR * pNextSpace = wcschr(pCur, W(' '));
+        const WCHAR * pNextSpace = u16_strchr(pCur, W(' '));
         _ASSERTE(pNextSpace == NULL || pNextSpace[0] == W(' '));
 
         if (pCur != pNextSpace)

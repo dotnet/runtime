@@ -29,14 +29,12 @@ namespace DefaultNamespace
 
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int i = 0;
             X x = new X();
 
-
             i = x.Blah(1);
-            return 100;
         }
     }
 }

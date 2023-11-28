@@ -6,6 +6,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace NetCoreServer
 {
@@ -13,6 +14,8 @@ namespace NetCoreServer
     {
         public static async Task InvokeAsync(HttpContext context)
         {
+            context.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize = null;
+
             // Report back original request method verb.
             context.Response.Headers["X-HttpRequest-Method"] = context.Request.Method;
 
@@ -29,12 +32,15 @@ namespace NetCoreServer
                 context.Response.Headers["X-HttpRequest-Headers-TransferEncoding"] = transferEncoding;
             }
 
-            // Get request body.
-            byte[] requestBodyBytes = await ReadAllRequestBytesAsync(context);
+            // Compute MD5 hash of received request body.
+            (byte[] md5Bytes, int bodyLength) = await ComputeMD5HashRequestBodyAsync(context);
 
-            // Skip MD5 checksum for empty request body 
+            // Report back the actual body length.
+            context.Response.Headers["X-HttpRequest-Body-Length"] = bodyLength.ToString();
+
+            // Skip MD5 checksum for empty request body
             // or for requests which opt to skip it due to [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-            if (requestBodyBytes.Length == 0 || !string.IsNullOrEmpty(context.Request.Headers["Content-MD5-Skip"]))
+            if (bodyLength == 0 || !string.IsNullOrEmpty(context.Request.Headers["Content-MD5-Skip"]))
             {
                 context.Response.StatusCode = 200;
                 return;
@@ -49,13 +55,7 @@ namespace NetCoreServer
                 return;
             }
 
-            // Compute MD5 hash of received request body.
-            string actualHash;
-            using (MD5 md5 = MD5.Create())
-            {
-                byte[] hash = md5.ComputeHash(requestBodyBytes);
-                actualHash = Convert.ToBase64String(hash);
-            }
+            string actualHash = Convert.ToBase64String(md5Bytes);
 
             if (expectedHash == actualHash)
             {
@@ -66,21 +66,22 @@ namespace NetCoreServer
                 context.Response.StatusCode = 400;
                 context.Response.SetStatusDescription("Received request body fails MD5 checksum");
             }
-
         }
 
-        private static async Task<byte[]> ReadAllRequestBytesAsync(HttpContext context)
+        private static async Task<(byte[] MD5Hash, int BodyLength)> ComputeMD5HashRequestBodyAsync(HttpContext context)
         {
             Stream requestStream = context.Request.Body;
             byte[] buffer = new byte[16 * 1024];
-            using (MemoryStream ms = new MemoryStream())
+            using (MD5 md5 = MD5.Create())
             {
-                int read;
+                int read, size = 0;
                 while ((read = await requestStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
-                    ms.Write(buffer, 0, read);
+                    size += read;
+                    md5.TransformBlock(buffer, 0, read, buffer, 0);
                 }
-                return ms.ToArray();
+                md5.TransformFinalBlock(buffer, 0, read);
+                return (md5.Hash, size);
             }
         }
     }

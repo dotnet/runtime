@@ -39,24 +39,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // Load the generic dictionary cell
             encoder.EmitLDR(result, context, dictionarySlot * factory.Target.PointerSize);
-
-            switch (lookup.LookupResultReferenceType(factory))
-            {
-                case GenericLookupResultReferenceType.Indirect:
-                    // Do another indirection
-                    encoder.EmitLDR(result, result);
-                    break;
-
-                case GenericLookupResultReferenceType.ConditionalIndirect:
-                    // Test result, 0x1
-                    // JEQ L1
-                    // mov result, [result-1]
-                    // L1:
-                    throw new NotImplementedException();
-
-                default:
-                    break;
-            }
         }
 
         protected sealed override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)

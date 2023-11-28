@@ -14,6 +14,8 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// Represents zero/null, one, or many strings in an efficient way.
     /// </summary>
+    [DebuggerDisplay("{ToString()}")]
+    [DebuggerTypeProxy(typeof(StringValuesDebugView))]
     public readonly struct StringValues : IList<string?>, IReadOnlyList<string?>, IEquatable<StringValues>, IEquatable<string?>, IEquatable<string?[]?>
     {
         /// <summary>
@@ -786,6 +788,10 @@ namespace Microsoft.Extensions.Primitives
             public Enumerator(ref StringValues values) : this(values._values)
             { }
 
+            /// <summary>
+            /// Advances the enumerator to the next element of the <see cref="StringValues"/>.
+            /// </summary>
+            /// <returns><see langword="true"/> if the enumerator was successfully advanced to the next element; <see langword="false"/> if the enumerator has passed the end of the <see cref="StringValues"/>.</returns>
             public bool MoveNext()
             {
                 int index = _index;
@@ -812,6 +818,9 @@ namespace Microsoft.Extensions.Primitives
                 return _current != null;
             }
 
+            /// <summary>
+            /// Gets the element at the current position of the enumerator.
+            /// </summary>
             public string? Current => _current;
 
             object? IEnumerator.Current => _current;
@@ -821,9 +830,18 @@ namespace Microsoft.Extensions.Primitives
                 throw new NotSupportedException();
             }
 
+            /// <summary>
+            /// Releases all resources used by the <see cref="Enumerator" />.
+            /// </summary>
             public void Dispose()
             {
             }
+        }
+
+        private sealed class StringValuesDebugView(StringValues values)
+        {
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public string?[] Items => values.ToArray();
         }
     }
 }

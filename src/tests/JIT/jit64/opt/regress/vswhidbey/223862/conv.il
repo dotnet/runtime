@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 
-.assembly 'conv_223862' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern mscorlib{auto}
 .class public Class_test {
 .method public static int32 Main() {

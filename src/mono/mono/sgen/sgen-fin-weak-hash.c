@@ -23,7 +23,7 @@
 #include "mono/sgen/sgen-pointer-queue.h"
 #include "mono/sgen/sgen-client.h"
 #include "mono/sgen/gc-internal-agnostic.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/utils/atomic.h"
 #include "mono/utils/unlocked.h"
 
@@ -602,7 +602,7 @@ finalize_all (SgenHashTable *hash_table)
  * objects are still alive.
  */
 void
-sgen_finalize_all ()
+sgen_finalize_all (void)
 {
 	LOCK_GC;
 	sgen_process_fin_stage_entries ();

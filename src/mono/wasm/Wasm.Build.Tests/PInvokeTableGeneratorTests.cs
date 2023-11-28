@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class PInvokeTableGeneratorTests : BuildTestBase
+    public class PInvokeTableGeneratorTests : TestMainJsTestBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -375,7 +375,43 @@ namespace Wasm.Build.Tests
             Assert.Matches("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void UnmanagedCallback_InFileType(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public class Test
+                {
+                    public static int Main()
+                    {
+                        Console.WriteLine("Main running");
+                        return 42;
+                    }
+                }
+
+                file class Foo
+                {
+                    [UnmanagedCallersOnly]
+                    public unsafe static extern void SomeFunction1(int i);
+                }
+                """;
+
+            (buildArgs, string output) = BuildForVariadicFunctionTests(
+                code,
+                buildArgs with { ProjectName = $"cb_filetype_{buildArgs.Config}" },
+                id
+            );
+
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+    
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running", output);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
         {
@@ -467,7 +503,7 @@ namespace Wasm.Build.Tests
                                                               "Microsoft.NET.Runtime.WebAssembly.Sdk",
                                                               s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
                                                               "tasks",
-                                                              BuildTestBase.DefaultTargetFramework); // not net472!
+                                                              BuildTestBase.TargetFrameworkForTasks); // not net472!
             if (!Directory.Exists(tasksDir)) {
                 string? tasksDirParent = Path.GetDirectoryName (tasksDir);
                 if (!string.IsNullOrEmpty (tasksDirParent)) {

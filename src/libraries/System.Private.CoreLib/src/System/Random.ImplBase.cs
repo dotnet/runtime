@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -57,8 +58,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal static ulong NextUInt64(ulong maxValue, XoshiroImpl xoshiro)
             {
-                UInt128 randomProduct = (UInt128)maxValue * xoshiro.NextUInt64();
-                ulong lowPart = (ulong)randomProduct;
+                ulong randomProduct = Math.BigMul(maxValue, xoshiro.NextUInt64(), out ulong lowPart);
 
                 if (lowPart < maxValue)
                 {
@@ -66,12 +66,11 @@ namespace System
 
                     while (lowPart < remainder)
                     {
-                        randomProduct = (UInt128)maxValue * xoshiro.NextUInt64();
-                        lowPart = (ulong)randomProduct;
+                        randomProduct = Math.BigMul(maxValue, xoshiro.NextUInt64(), out lowPart);
                     }
                 }
 
-                return (ulong)(randomProduct >> 64);
+                return randomProduct;
             }
         }
     }

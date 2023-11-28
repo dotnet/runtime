@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.NETCore.Client
 {
-    internal class IpcEndpointConfig
+    public class IpcEndpointConfig
     {
         public enum PortType
         {

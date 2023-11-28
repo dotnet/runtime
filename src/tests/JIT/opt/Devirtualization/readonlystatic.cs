@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class B
 {
@@ -14,7 +15,7 @@ class D : B
     public override int F() => 100;
 }
 
-class X 
+public class X 
 {
     static readonly B S;
     static int R;
@@ -40,7 +41,8 @@ class X
         return S.F();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var p = S;
         int a = After();

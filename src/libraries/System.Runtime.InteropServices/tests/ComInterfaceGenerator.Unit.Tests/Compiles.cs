@@ -4,16 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-
-using VerifyVTableGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator>;
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
-using Microsoft.CodeAnalysis.Testing;
+using VerifyVTableGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -28,6 +24,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             => generator switch
             {
                 GeneratorKind.VTableIndexStubGenerator => new VirtualMethodIndexAttributeProvider(),
+                GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ManagedObjectWrapper),
+                GeneratorKind.ComInterfaceGeneratorComObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ComObjectWrapper),
                 GeneratorKind.ComInterfaceGenerator => new GeneratedComInterfaceAttributeProvider(),
                 _ => throw new UnreachableException(),
             };
@@ -327,7 +325,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         [MemberData(nameof(UnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.VTableIndexStubGenerator)]
         [MemberData(nameof(CustomCollectionsManagedToUnmanaged), GeneratorKind.VTableIndexStubGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.VTableIndexStubGenerator)]
-        [MemberData(nameof(CustomCollections), GeneratorKind.VTableIndexStubGenerator)]
         public async Task ValidateVTableIndexSnippets(string id, string source)
         {
             _ = id;
@@ -338,12 +335,26 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
+            yield return new object[] { ID(), codeSnippets.DerivedWithParametersDeclaredInOtherNamespace };
+            yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
+        }
+
+        public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(GeneratorKind.ComInterfaceGeneratorComObjectWrapper);
+
+            // MarshalAs
+            yield return new[] { ID(), codeSnippets.MarshalAsParameterAndModifiers("object", System.Runtime.InteropServices.UnmanagedType.Struct) };
         }
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.ComInterfaceGenerator)]
+        [MemberData(nameof(ManagedToUnmanagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGeneratorComObjectWrapper)]
+        [MemberData(nameof(UnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper)]
+        [MemberData(nameof(CustomCollectionsManagedToUnmanaged), GeneratorKind.ComInterfaceGeneratorComObjectWrapper)]
         [MemberData(nameof(ComInterfaceSnippetsToCompile))]
+        [MemberData(nameof(ManagedToUnmanagedComInterfaceSnippetsToCompile))]
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;

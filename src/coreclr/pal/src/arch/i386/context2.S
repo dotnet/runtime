@@ -94,7 +94,7 @@ LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY RtlRestoreContext, _TEXT
 
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
     call    EXTERNAL_C_FUNC(__asan_handle_no_return)
 #endif
     mov     eax, [esp + 4]

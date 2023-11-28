@@ -219,7 +219,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    if (value.AsSpan().IndexOfAny('<', '>') >= 0) // invalid chars
+                    if (value.AsSpan().ContainsAny('<', '>')) // invalid chars
                     {
                         throw new ArgumentException(SR.MailHeaderInvalidCID, nameof(value));
                     }

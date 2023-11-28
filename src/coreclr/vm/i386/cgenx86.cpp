@@ -962,7 +962,7 @@ extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)
 //////////////////////////////////////////////////////////////////////////////
 
 /*********************************************************************/
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 #pragma warning (disable : 4731)
 void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 {
@@ -1017,7 +1017,7 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
     }
 }
 #pragma warning (default : 4731)
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_METADATA_UPDATER
 
 
 #ifndef TARGET_UNIX

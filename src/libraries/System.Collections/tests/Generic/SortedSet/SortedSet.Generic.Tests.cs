@@ -372,7 +372,9 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)value, (object)actualValue);
+#pragma warning restore xUnit2005
             }
         }
 
@@ -387,7 +389,9 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)value, (object)actualValue);
+#pragma warning restore xUnit2005
             }
         }
 

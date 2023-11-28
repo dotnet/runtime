@@ -503,7 +503,7 @@ mono_wasm_gc_lock(void)
 	MONO_ENTER_GC_UNSAFE;
 #ifndef DISABLE_THREADS
 	/* only the browser thread is allowed to take the GC lock */
-	g_assert (mono_threads_wasm_is_browser_thread ());
+	g_assert (mono_threads_wasm_is_ui_thread ());
 	LOCK_GC;
 	acquire_gc_locks();
 #else

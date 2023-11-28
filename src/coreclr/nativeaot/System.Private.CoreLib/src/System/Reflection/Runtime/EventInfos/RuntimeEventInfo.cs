@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.ParameterInfos;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -18,7 +18,6 @@ namespace System.Reflection.Runtime.EventInfos
     //
     // The runtime's implementation of EventInfo's
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeEventInfo : EventInfo
     {
         protected RuntimeEventInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
@@ -48,7 +47,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ContextTypeInfo;
+                return ContextTypeInfo.ToType();
             }
         }
 
@@ -79,7 +78,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ReflectedTypeInfo;
+                return ReflectedTypeInfo.ToType();
             }
         }
 
@@ -111,7 +110,7 @@ namespace System.Reflection.Runtime.EventInfos
         public sealed override string ToString()
         {
             MethodInfo addMethod = this.AddMethod;
-            ParameterInfo[] parameters = addMethod.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = addMethod.GetParametersAsSpan();
             if (parameters.Length == 0)
                 throw new InvalidOperationException(); // Legacy: Why is a ToString() intentionally throwing an exception?
             RuntimeParameterInfo runtimeParameterInfo = (RuntimeParameterInfo)(parameters[0]);
@@ -120,18 +119,13 @@ namespace System.Reflection.Runtime.EventInfos
 
         protected RuntimeEventInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = MetadataName;
             }
+#endif
             return this;
         }
 
@@ -174,6 +168,8 @@ namespace System.Reflection.Runtime.EventInfos
         private volatile MethodInfo _lazyAdder;
         private volatile MethodInfo _lazyRemover;
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

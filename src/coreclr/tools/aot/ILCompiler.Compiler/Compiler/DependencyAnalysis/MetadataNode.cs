@@ -11,16 +11,11 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a blob of native metadata describing assemblies, the types in them, and their members.
     /// The data is used at runtime to e.g. support reflection.
     /// </summary>
-    public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
 
-        public MetadataNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_metadata_End", true);
-        }
-
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -42,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             byte[] blob = factory.MetadataManager.GetMetadataBlob(factory);
-            _endSymbol.SetSymbolOffset(blob.Length);
+            _size = blob.Length;
 
             return new ObjectData(
                 blob,
@@ -50,8 +45,7 @@ namespace ILCompiler.DependencyAnalysis
                 1,
                 new ISymbolDefinitionNode[]
                 {
-                    this,
-                    _endSymbol
+                    this
                 });
         }
 

@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection.Runtime.General;
+
+using global::Internal.Metadata.NativeFormat;
+using global::Internal.Reflection.Core.Execution;
+using global::Internal.Runtime.Augments;
 using global::System;
 using global::System.Reflection;
 
-using global::Internal.Runtime.Augments;
-using global::Internal.Reflection.Core.Execution;
-
-using global::Internal.Metadata.NativeFormat;
-using System.Reflection.Runtime.General;
-
 namespace Internal.Reflection.Execution.MethodInvokers
 {
-    internal abstract class MethodInvokerWithMethodInvokeInfo : MethodInvoker
+    internal abstract class MethodInvokerWithMethodInvokeInfo : MethodBaseInvoker
     {
         public MethodInvokerWithMethodInvokeInfo(MethodInvokeInfo methodInvokeInfo)
         {
@@ -32,7 +31,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         //
         // Creates the appropriate flavor of Invoker depending on the calling convention "shape" (static, instance or virtual.)
         //
-        internal static MethodInvoker CreateMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, MethodInvokeInfo methodInvokeInfo)
+        internal static MethodBaseInvoker CreateMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, MethodInvokeInfo methodInvokeInfo)
         {
             bool isStatic = false;
 

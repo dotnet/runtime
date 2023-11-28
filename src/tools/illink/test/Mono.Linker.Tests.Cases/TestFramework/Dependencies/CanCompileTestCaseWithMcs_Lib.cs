@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Mono.Linker.Tests.Cases.TestFramework.Dependencies
+﻿namespace Mono.Linker.Tests.Cases.TestFramework.Dependencies
 {
 	public class CanCompileTestCaseWithMcs_Lib
 	{

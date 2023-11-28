@@ -1259,7 +1259,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void ImportGenericInfo(XmlSchemaType type, DataContract dataContract)
+        private static void ImportGenericInfo(XmlSchemaType type, DataContract dataContract)
         {
             if (type.Annotation == null || type.Annotation.Items == null)
                 return;
@@ -1280,7 +1280,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private GenericInfo ImportGenericInfo(XmlElement typeElement, XmlSchemaType type)
+        private static GenericInfo ImportGenericInfo(XmlElement typeElement, XmlSchemaType type)
         {
             string? name = typeElement.Attributes.GetNamedItem(Globals.GenericNameAttribute)?.Value;
             if (name == null)

@@ -3,10 +3,11 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector<int>;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         static int[] GenerateArray(int size, int value)
         {
@@ -18,7 +19,8 @@ namespace VectorMathTests
             return arr;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int v = 2;
             int[] arr = GenerateArray(20, v);

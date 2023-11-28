@@ -370,7 +370,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 	}
 	case OP_IDIV_UN_IMM:
 	case OP_IDIV_IMM: {
-		if ((!COMPILE_LLVM (cfg)) && (!cfg->backend->optimized_div))
+		if (!COMPILE_LLVM (cfg))
 			allocated_vregs = mono_strength_reduction_division (cfg, ins);
 		break;
 	}
@@ -384,7 +384,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 			MONO_INST_NULLIFY_SREGS (ins);
 			ins->inst_c0 = 0;
 		} else if ((ins->inst_imm > 0) && (ins->inst_imm < (1LL << 32)) &&
-			   (power != -1) && (!cfg->backend->optimized_div)) {
+			   (power != -1)) {
 			gboolean is_long = ins->opcode == OP_LREM_IMM;
 			int compensator_reg = alloc_ireg (cfg);
 			int intermediate_reg;
@@ -741,7 +741,8 @@ mono_local_cprop (MonoCompile *cfg)
 				} else if (srcindex == 0 && ins->opcode == OP_COMPARE && defs [ins->sreg1]->opcode == OP_PCONST && defs [ins->sreg2] && defs [ins->sreg2]->opcode == OP_PCONST) {
 					/* typeof(T) == typeof(..) */
 					mono_constant_fold_ins (cfg, ins, defs [ins->sreg1], defs [ins->sreg2], TRUE);
-				} else if (ins->opcode == OP_MOVE && def->opcode == OP_LDADDR) {
+				} else if (ins->opcode == OP_MOVE && def->opcode == OP_LDADDR && !(G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_klass (def->klass))) {
+					/* Can't copyprop ldaddr for gsharedvt vars because the copy is missing the uses added by handle_gsharedvt_ldaddr () */
 					ins->opcode = OP_LDADDR;
 					ins->sreg1 = -1;
 					ins->inst_p0 = def->inst_p0;

@@ -45,6 +45,10 @@
     <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export DEBUGGER_TEST_PATH=$PWD/debugger-test" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUGGER_TEST_PATH=%25cd%25/debugger-test" />
+
+      <!-- See https://github.com/dotnet/runtime/issues/89409 and https://github.com/microsoft/vstest/issues/2952 -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export VSTEST_TESTHOST_SHUTDOWN_TIMEOUT=2000" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set VSTEST_TESTHOST_SHUTDOWN_TIMEOUT=2000" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DebuggerHost)' == 'chrome'">

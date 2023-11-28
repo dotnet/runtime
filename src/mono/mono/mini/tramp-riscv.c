@@ -105,7 +105,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Setup stack frame */
 	imm = frame_size;
-	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_SP, 0);
 
 	g_assert (RISCV_VALID_I_IMM (-imm));
 
@@ -113,11 +112,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, frame_size);
 
 	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, imm - sizeof (host_mgreg_t), 0);
-	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_RA, sizeof (host_mgreg_t));
-	code = mono_riscv_emit_store (code, RISCV_S0, RISCV_SP, imm - sizeof (host_mgreg_t) * 2, 0);
-	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_S0, sizeof (host_mgreg_t) * 2);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_RA, -(int)sizeof (host_mgreg_t));
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, imm - sizeof (host_mgreg_t) * 2, 0);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_FP, -(int)sizeof (host_mgreg_t) * 2);
 
-	riscv_addi (code, RISCV_S0, RISCV_SP, imm);
+	riscv_addi (code, RISCV_FP, RISCV_SP, imm);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_FP, 0);
 
 	/* Save gregs */
 	gregs_regset = ~((1 << RISCV_ZERO) | (1 << RISCV_FP) | (1 << RISCV_SP));
@@ -166,17 +166,16 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	riscv_jalr (code, RISCV_RA, RISCV_T1, 0);
 
-	/* a0 contains the address of the tls slot holding the current lmf */
+	/* a0 contains the address of the tls slot holding the current (MonoLMF **)lmf */
 	/* T0 = lmf */
-	riscv_addi (code, RISCV_T0, RISCV_FP, -lmf_offset);
+	riscv_addi(code, RISCV_T0, RISCV_FP, -lmf_offset);
 
 	/* lmf->lmf_addr = lmf_addr */
-	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
+	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
 
 	/* lmf->previous_lmf = *lmf_addr */
 	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_A0, 0, 0);
-	code =
-	    mono_riscv_emit_store (code, RISCV_T1, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
+	code = mono_riscv_emit_store (code, RISCV_T1, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
 
 	/* *lmf_addr = lmf */
 	code = mono_riscv_emit_store (code, RISCV_T0, RISCV_A0, 0, 0);
@@ -216,9 +215,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* T0 = lmf */
 	riscv_addi (code, RISCV_T0, RISCV_FP, -lmf_offset);
 	/* T1 = lmf->previous_lmf */
-	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
+	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
 	/* T0 = lmf->lmf_addr */
-	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
 	/* *lmf_addr = previous_lmf */
 	code = mono_riscv_emit_store (code, RISCV_T1, RISCV_T0, 0, 0);
 
@@ -364,7 +363,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 			if (item->check_target_idx || fail_case) {
 				buf_len += 5 * 4;
 				if (item->has_target_code) {
-					NOT_IMPLEMENTED;
 					buf_len += 5 * 4;
 				} else {
 					buf_len += 6 * 4;
@@ -373,11 +371,9 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 					buf_len += 5 * 4;
 				}
 			} else {
-				NOT_IMPLEMENTED;
 				buf_len += 6 * 4;
 			}
 		} else {
-			NOT_IMPLEMENTED;
 			buf_len += 5 * 4;
 		}
 	}
@@ -443,7 +439,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 				riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
 			}
 		} else {
-			NOT_IMPLEMENTED;
 			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)item->key);
 			item->jmp_code = code;
 			riscv_bgeu (code, imt_reg, RISCV_T0, 0);
@@ -603,7 +598,7 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
-	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_SP, 0);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_FP, 0);
 
 	/*
 	 * The RGCTX register holds a pointer to a <slot, trampoline address> pair.

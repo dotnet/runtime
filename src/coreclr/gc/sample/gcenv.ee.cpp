@@ -257,7 +257,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
 }
 
-void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
     // Signal to finalizer thread that there are objects to finalize
     // TODO: Implement for finalization

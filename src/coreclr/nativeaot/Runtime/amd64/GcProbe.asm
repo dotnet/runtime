@@ -288,7 +288,6 @@ RuntimeInstance__ShouldHijackLoopForGcStress equ ?ShouldHijackLoopForGcStress@Ru
 EXTERN RuntimeInstance__ShouldHijackLoopForGcStress : PROC
 
 EXTERN g_fGcStressStarted : DWORD
-EXTERN g_fHasFastFxsave : BYTE
 
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.

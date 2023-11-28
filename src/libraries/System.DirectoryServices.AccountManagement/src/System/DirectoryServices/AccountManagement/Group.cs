@@ -348,6 +348,8 @@ namespace System.DirectoryServices.AccountManagement
         /// </summary>
         internal SearchResult SmallGroupMemberSearchResult { get; private set; }
 
+        private static readonly string[] s_member = new string[] { "member" };
+
         /// <summary>
         ///  Finds if the group is "small", meaning that it has less than MaxValRange values (usually 1500)
         ///  The property list for the searcher of a group has "member" attribute. if there are more results than MaxValRange, there will also be a "member;range=..." attribute
@@ -366,7 +368,7 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(de != null);
             if (de != null)
             {
-                using (DirectorySearcher ds = new DirectorySearcher(de, "(objectClass=*)", new string[] { "member" }, SearchScope.Base))
+                using (DirectorySearcher ds = new DirectorySearcher(de, "(objectClass=*)", s_member, SearchScope.Base))
                 {
                     SearchResult sr = ds.FindOne();
                     if (sr != null)

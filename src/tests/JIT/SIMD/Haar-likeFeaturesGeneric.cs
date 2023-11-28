@@ -3,10 +3,11 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector<double>;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
 		const float EPS = Single.Epsilon * 5;
         public const int DefaultSeed = 20010415;
@@ -140,7 +141,8 @@ namespace VectorMathTests
             return true;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Random random = new Random(Seed);
             int count = Point.Count;

@@ -22,7 +22,7 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
-            => DefineDynamicAssembly(name, access, null, Assembly.GetCallingAssembly());
+            => DefineDynamicAssembly(name, access, null, GetCallingAssembly());
 
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
@@ -30,7 +30,7 @@ namespace System.Reflection.Emit
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-                => DefineDynamicAssembly(name, access, assemblyAttributes, Assembly.GetCallingAssembly());
+                => DefineDynamicAssembly(name, access, assemblyAttributes, GetCallingAssembly());
 
         private static RuntimeAssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
@@ -236,7 +236,7 @@ namespace System.Reflection.Emit
 
         public override string? FullName => InternalAssembly.FullName;
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase) =>
             InternalAssembly.GetType(name, throwOnError, ignoreCase);
 

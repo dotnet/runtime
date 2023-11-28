@@ -7,6 +7,8 @@
 #include "pal.h"
 #include "trace.h"
 #include <type_traits>
+#include <runtime_version.h>
+#include <minipal/utils.h>
 
 #if defined(_WIN32)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=798306")
@@ -44,6 +46,13 @@
     _X("%s&apphost_version=%s")
 
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
+
+#define SDK_DOTNET_DLL _X("dotnet.dll")
+
+#define _TEXT(x) #x
+#define _QUOTE(x) _TEXT(x)
+
+#define HOST_VERSION _QUOTE(RuntimeProductVersion)
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
@@ -88,7 +97,9 @@ pal::architecture get_current_arch();
 const pal::char_t* get_arch_name(pal::architecture arch);
 const pal::char_t* get_current_arch_name();
 
-pal::string_t get_current_runtime_id(bool use_fallback);
+pal::string_t get_runtime_id();
+bool try_get_runtime_id_from_env(pal::string_t& out_rid);
+
 bool multilevel_lookup_enabled();
 void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
@@ -107,6 +118,8 @@ pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t& fxr_path);
 // Get a download URL for a specific framework and version
 // If no framework is specified, a download URL for the runtime is returned
 pal::string_t get_download_url(const pal::char_t* framework_name = nullptr, const pal::char_t* framework_version = nullptr);
+
+pal::string_t get_host_version_description();
 
 pal::string_t to_lower(const pal::char_t* in);
 pal::string_t to_upper(const pal::char_t* in);

@@ -5,14 +5,14 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class UriConverter : JsonPrimitiveConverter<Uri>
+    internal sealed class UriConverter : JsonPrimitiveConverter<Uri?>
     {
         public override Uri? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.TokenType is JsonTokenType.Null ? null : ReadCore(ref reader);
         }
 
-        public override void Write(Utf8JsonWriter writer, Uri value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, Uri? value, JsonSerializerOptions options)
         {
             if (value is null)
             {
@@ -43,6 +43,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Uri value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
             writer.WritePropertyName(value.OriginalString);
         }
     }

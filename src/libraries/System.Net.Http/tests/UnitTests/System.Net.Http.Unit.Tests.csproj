@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-android</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -192,6 +191,8 @@
              Link="ProductionCode\System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpContent.cs"
              Link="ProductionCode\System\Net\Http\HttpContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpIOException.cs"
+                 Link="ProductionCode\System\Net\Http\HttpIOException.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpMessageHandler.cs"
              Link="ProductionCode\System\Net\Http\HttpMessageHandler.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpMessageInvoker.cs"
@@ -200,6 +201,8 @@
              Link="ProductionCode\System\Net\Http\HttpMethod.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpParseResult.cs"
              Link="ProductionCode\System\Net\Http\HttpParseResult.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpRequestError.cs"
+                 Link="ProductionCode\System\Net\Http\HttpRequestError.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRequestException.cs"
              Link="ProductionCode\System\Net\Http\HttpRequestException.cs" />
     <Compile Include="..\..\src\System\Net\Http\RequestRetryType.cs"
@@ -285,6 +288,7 @@
     <Compile Include="Headers\HttpHeadersTest.cs" />
     <Compile Include="Headers\HttpHeaderValueCollectionTest.cs" />
     <Compile Include="Headers\HttpRequestHeadersTest.cs" />
+    <Compile Include="Headers\HttpRequestOptionsTest.cs" />
     <Compile Include="Headers\HttpResponseHeadersTest.cs" />
     <Compile Include="Headers\Int32NumberHeaderParserTest.cs" />
     <Compile Include="Headers\Int64NumberHeaderParserTest.cs" />

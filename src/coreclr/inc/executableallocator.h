@@ -11,7 +11,7 @@
 #include "utilcode.h"
 #include "ex.h"
 
-#include "minipal.h"
+#include <minipal.h>
 
 #ifndef DACCESS_COMPILE
 
@@ -350,10 +350,10 @@ public:
 #undef ExecutableWriterHolder
 #ifdef HOST_UNIX
 #define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); ExecutableWriterHolderNoLog
-#define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); 
+#define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
 #else
 #define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__); ExecutableWriterHolderNoLog
-#define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__); 
+#define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__);
 #endif
 #else
 #define ExecutableWriterHolder ExecutableWriterHolderNoLog

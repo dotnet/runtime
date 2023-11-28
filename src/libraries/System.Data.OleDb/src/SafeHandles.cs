@@ -9,6 +9,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using static System.Data.Common.UnsafeNativeMethods;
 
+// We need to target netstandard2.0, so keep using ref for MemoryMarshal.Write
+// CS9191: The 'ref' modifier for argument 2 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+#pragma warning disable CS9191
+
 namespace System.Data.OleDb
 {
     internal sealed class DualCoTaskMem : SafeHandle

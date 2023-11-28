@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tracing
     /// Holds property values of any type.  For common value types, we have inline storage so that we don't need
     /// to box the values.  For all other types, we store the value in a single object reference field.
     ///
-    /// To get the value of a property quickly, use a delegate produced by <see cref="PropertyValue.GetPropertyGetter(PropertyInfo)"/>.
+    /// To get the value of a property quickly, use a delegate produced by <see cref="GetPropertyGetter(PropertyInfo)"/>.
     /// </summary>
     internal readonly unsafe struct PropertyValue
     {

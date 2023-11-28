@@ -208,7 +208,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        protected int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
+        protected static int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
         {
             int memberCount = (classContract.BaseClassContract == null) ? 0 : ReflectionGetMembers(classContract.BaseClassContract, members);
             int childElementIndex = memberCount;
@@ -395,7 +395,7 @@ namespace System.Runtime.Serialization
             return context.InternalDeserialize(xmlReader, DataContract.GetId(type.TypeHandle), type.TypeHandle, name, ns);
         }
 
-        private void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
+        private static void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnDeserializing(context, classContract.BaseClassContract, obj);
@@ -406,7 +406,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
+        private static void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnDeserialized(context, classContract.BaseClassContract, obj);

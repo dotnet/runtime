@@ -4,8 +4,8 @@
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -225,8 +225,12 @@ namespace System.Diagnostics
                     // Convert flags to binary.
                     Span<char> flagsChars = stackalloc char[2];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
-                    string id = "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
-
+                    string id =
+#if NET6_0_OR_GREATER
+                        string.Create(null, stackalloc char[128], $"00-{_traceId}-{_spanId}-{flagsChars}");
+#else
+                        "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
+#endif
                     Interlocked.CompareExchange(ref _id, id, null);
 
                 }
@@ -253,7 +257,12 @@ namespace System.Diagnostics
                     {
                         Span<char> flagsChars = stackalloc char[2];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
+                        string parentId =
+#if NET6_0_OR_GREATER
+                            string.Create(null, stackalloc char[128], $"00-{_traceId}-{_parentSpanId}-{flagsChars}");
+#else
+                            "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
+#endif
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -1773,7 +1782,11 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
+#if NET9_0_OR_GREATER
+            return new ActivityTraceId(Convert.ToHexStringLower(idData));
+#else
             return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
+#endif
         }
         public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
 
@@ -1852,7 +1865,11 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
+#if NET9_0_OR_GREATER
+            _hexString = Convert.ToHexStringLower(MemoryMarshal.AsBytes(span));
+#else
             _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
+#endif
         }
 
         /// <summary>
@@ -1947,14 +1964,22 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
+#if NET9_0_OR_GREATER
+            return new ActivitySpanId(Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
+#else
             return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
+#endif
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
+#if NET9_0_OR_GREATER
+            return new ActivitySpanId(Convert.ToHexStringLower(idData));
+#else
             return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
+#endif
         }
         public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
 
@@ -2022,7 +2047,11 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
+#if NET9_0_OR_GREATER
+            _hexString = Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
+#else
             _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
+#endif
         }
 
         /// <summary>

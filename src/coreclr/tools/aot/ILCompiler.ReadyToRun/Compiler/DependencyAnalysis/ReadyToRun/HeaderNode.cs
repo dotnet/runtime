@@ -7,8 +7,10 @@ using System.Diagnostics;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
 using ILCompiler.DependencyAnalysisFramework;
+using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -33,6 +35,50 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
     }
 
+    public abstract class ModuleSpecificHeaderTableNode : HeaderTableNode
+    {
+        protected readonly EcmaModule _module;
+
+        public ModuleSpecificHeaderTableNode(EcmaModule module)
+        {
+            _module = module;
+        }
+
+        public sealed override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            ModuleSpecificHeaderTableNode otherModuleSpecificHeaderTableNode = (ModuleSpecificHeaderTableNode)other;
+
+            if (_module == null)
+            {
+                Debug.Assert(otherModuleSpecificHeaderTableNode._module != null);
+                return -1;
+            }
+            else if (otherModuleSpecificHeaderTableNode._module == null)
+            {
+                return 1;
+            }
+
+            return _module.Assembly.GetName().Name.CompareTo(otherModuleSpecificHeaderTableNode._module.Assembly.GetName().Name);
+        }
+
+        protected abstract string ModuleSpecificName { get; }
+
+        public sealed override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            if (_module != null)
+            {
+                sb.Append(ModuleSpecificName);
+                sb.Append(_module.Assembly.GetName().Name);
+            }
+            else
+            {
+                sb.Append(ModuleSpecificName);
+            }
+
+        }
+    }
+
     public abstract class HeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
@@ -51,9 +97,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly List<HeaderItem> _items = new List<HeaderItem>();
         private readonly ReadyToRunFlags _flags;
+        private readonly Task<(bool canSkipValidation, string[] reasons)> _shouldAddSkipTypeValidationFlag;
 
-        public HeaderNode(ReadyToRunFlags flags)
+        public HeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
         {
+
+            if (moduleToCheckForSkipTypeValidation != null)
+            {
+                _shouldAddSkipTypeValidationFlag = TypeValidationChecker.CanSkipValidation(moduleToCheckForSkipTypeValidation);
+            }
+            else
+            {
+                _shouldAddSkipTypeValidationFlag = Task.FromResult((false, new string[0]));
+            }
             _flags = flags;
         }
 
@@ -94,7 +150,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _items.MergeSort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
 
             // ReadyToRunHeader.Flags
-            builder.EmitInt((int)_flags);
+            int flagsInt = (int)_flags;
+            if (!relocsOnly)
+            {
+                if (_shouldAddSkipTypeValidationFlag.Result.canSkipValidation)
+                {
+                    flagsInt |= (int)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+                }
+                else
+                {
+                    if (factory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging)
+                    {
+                        // If we are in automatic with logging mode, we reach here when we are unable to enable
+                        // skip validation. When logging is enabled, write out the reasons we found for
+                        // not doing so.
+                        foreach (string reason in _shouldAddSkipTypeValidationFlag.Result.reasons)
+                            System.Console.WriteLine(reason);
+                    }
+                }
+            }
+            builder.EmitInt(flagsInt);
 
             // ReadyToRunHeader.NumberOfSections
             ObjectDataBuilder.Reservation sectionCountReservation = builder.ReserveInt();
@@ -137,8 +212,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public class GlobalHeaderNode : HeaderNode
     {
-        public GlobalHeaderNode(ReadyToRunFlags flags)
-            : base(flags)
+        public GlobalHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipValidation)
+            : base(flags, moduleToCheckForSkipValidation)
         {
         }
 
@@ -166,7 +241,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly int _index;
 
         public AssemblyHeaderNode(ReadyToRunFlags flags, int index)
-            : base(flags)
+            : base(flags, null)
         {
             _index = index;
         }

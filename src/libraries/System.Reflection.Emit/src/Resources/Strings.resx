@@ -168,4 +168,64 @@
   <data name="Argument_SizeConstMustBeSpecified" xml:space="preserve">
     <value>SizeConst parameter must be specified for UnmanagedType.ByValTStr type.</value>
   </data>
+  <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
+    <value>The generic parameters are already defined on this MethodBuilder.</value>
+  </data>
+  <data name="Argument_ShouldOnlySetVisibilityFlags" xml:space="preserve">
+    <value>Should only set visibility flags when creating EnumBuilder.</value>
+  </data>
+  <data name="Argument_ConstantDoesntMatch" xml:space="preserve">
+    <value>Constant does not match the defined type.</value>
+  </data>
+  <data name="Argument_ConstantNull" xml:space="preserve">
+    <value>Null is not a valid constant value for this type.</value>
+  </data>
+  <data name="InvalidOperation_NoUnderlyingTypeOnEnum" xml:space="preserve">
+    <value>Underlying type information on enumeration is not specified.</value>
+  </data>
+  <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
+    <value>Method body should not exist.</value>
+  </data>
+  <data name="InvalidOperation_ConstructorNotAllowedOnInterface" xml:space="preserve">
+    <value>Interface cannot have constructors.</value>
+  </data>
+  <data name="Argument_UnmatchedMethodForLocal" xml:space="preserve">
+    <value>Local passed in does not belong to this ILGenerator.</value>
+  </data>
+  <data name="Argument_InvalidLabel" xml:space="preserve">
+    <value>Invalid Label.</value>
+  </data>
+  <data name="Argument_MustBeSwitchOpCode" xml:space="preserve">
+    <value>Only 'OpCode.Switch' can be used.</value>
+  </data>
+  <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
+    <value>The specified opcode cannot be passed to EmitCall.</value>
+  </data>
+  <data name="InvalidOperation_DefaultConstructorILGen" xml:space="preserve">
+    <value>Unable to access ILGenerator on a constructor created with DefineDefaultConstructor.</value>
+  </data>
+  <data name="NotSupported_NoParentDefaultConstructor" xml:space="preserve">
+    <value>Parent does not have a default constructor. The default constructor must be explicitly defined.</value>
+  </data>
+  <data name="InvalidOperation_TypeHasBeenCreated" xml:space="preserve">
+    <value>Unable to change after type has been created.</value>
+  </data>
+  <data name="NotSupported_TypeNotYetCreated" xml:space="preserve">
+    <value>The invoked member is not supported before the type is created.</value>
+  </data>
+  <data name="Argument_NoStaticVirtual" xml:space="preserve">
+    <value>Method cannot be both static and virtual.</value>
+  </data>
+  <data name="Argument_BadExceptionCodeGen" xml:space="preserve">
+    <value>Incorrect code generation for exception block.</value>
+  </data>
+  <data name="Argument_NotInExceptionBlock" xml:space="preserve">
+    <value>Not currently in an exception block.</value>
+  </data>
+  <data name="Argument_ShouldNotSpecifyExceptionType" xml:space="preserve">
+    <value>Should not specify exception type for catch clause for filter block.</value>
+  </data>
+  <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
+    <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
+  </data>
 </root>

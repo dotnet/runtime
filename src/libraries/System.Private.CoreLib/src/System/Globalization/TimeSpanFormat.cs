@@ -12,8 +12,8 @@ namespace System.Globalization
 {
     internal static class TimeSpanFormat
     {
-        internal static readonly FormatLiterals PositiveInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: false);
-        internal static readonly FormatLiterals NegativeInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: true);
+        internal static readonly FormatLiterals PositiveInvariantFormatLiterals = FormatLiterals.InitInvariant(isNegative: false);
+        internal static readonly FormatLiterals NegativeInvariantFormatLiterals = FormatLiterals.InitInvariant(isNegative: true);
 
         /// <summary>Main method called from TimeSpan.ToString.</summary>
         internal static string Format(TimeSpan value, string? format, IFormatProvider? formatProvider)
@@ -99,7 +99,12 @@ namespace System.Globalization
             return new string(destination.Slice(0, charsWritten));
         }
 
-        internal enum StandardFormat { C, G, g }
+        internal enum StandardFormat
+        {
+            C,
+            G,
+            g
+        }
 
         internal static unsafe bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
         {

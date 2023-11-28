@@ -6,10 +6,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
 {
+    [CollectionBuilder(typeof(ImmutableArray), nameof(ImmutableArray.Create))]
     public readonly partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable, IImmutableList<T>
     {
         /// <summary>
@@ -90,8 +92,16 @@ namespace System.Collections.Immutable
             }
         }
 
+        /// <summary>
+        /// Creates a new read-only span over this immutable array.
+        /// </summary>
+        /// <returns>The read-only span representation of this immutable array.</returns>
         public ReadOnlySpan<T> AsSpan() => new ReadOnlySpan<T>(array);
 
+        /// <summary>
+        /// Creates a new read-only memory region over this immutable array.
+        /// </summary>
+        /// <returns>The read-only memory representation of this immutable array.</returns>
         public ReadOnlyMemory<T> AsMemory() => new ReadOnlyMemory<T>(array);
 
         /// <summary>
@@ -278,6 +288,20 @@ namespace System.Collections.Immutable
         public bool Contains(T item)
         {
             return this.IndexOf(item) >= 0;
+        }
+
+        /// <summary>
+        /// Determines whether the specified item exists in the array.
+        /// </summary>
+        /// <param name="item">The item to search for.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+        /// </param>
+        /// <returns><c>true</c> if an equal value was found in the array; <c>false</c> otherwise.</returns>
+        public bool Contains(T item, IEqualityComparer<T>? equalityComparer)
+        {
+            return this.IndexOf(item, equalityComparer) >= 0;
         }
 
         /// <summary>

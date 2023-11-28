@@ -539,7 +539,6 @@ namespace System.Xml
         public abstract string? Get(char[] array, int offset, int length);
         public abstract string? Get(string array);
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
     public abstract partial class XmlNode : System.Collections.IEnumerable, System.ICloneable, System.Xml.XPath.IXPathNavigable
     {
         internal XmlNode() { }
@@ -773,8 +772,6 @@ namespace System.Xml
         public override string ToString() { throw null; }
         public static string ToString(string name, string? ns) { throw null; }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
-    [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
     public abstract partial class XmlReader : System.IDisposable
     {
         protected XmlReader() { }
@@ -955,6 +952,7 @@ namespace System.Xml
         protected XmlResolver() { }
         public virtual System.Net.ICredentials Credentials { set { } }
         public static System.Xml.XmlResolver ThrowingResolver { get { throw null; } }
+        public static System.Xml.XmlResolver FileSystemResolver { get { throw null; } }
         public abstract object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn);
         public virtual System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public virtual System.Uri ResolveUri(System.Uri? baseUri, string? relativeUri) { throw null; }
@@ -2755,7 +2753,6 @@ namespace System.Xml.XPath
         public override object ValueAs(System.Type returnType, System.Xml.IXmlNamespaceResolver? nsResolver) { throw null; }
         public virtual void WriteSubtree(System.Xml.XmlWriter writer) { }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("Position={CurrentPosition}, Current={debuggerDisplayProxy}")]
     public abstract partial class XPathNodeIterator : System.Collections.IEnumerable, System.ICloneable
     {
         protected XPathNodeIterator() { }

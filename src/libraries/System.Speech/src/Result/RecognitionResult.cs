@@ -500,24 +500,24 @@ namespace System.Speech.Recognition
 
         internal string DebuggerDisplayString()
         {
-            StringBuilder sb = new("Recognized text: '");
+            StringBuilder sb = new("Recognized text = '");
             sb.Append(Text);
             sb.Append('\'');
             if (Semantics.Value != null)
             {
-                sb.Append(" - Semantic Value  = ");
+                sb.Append(", Semantic Value  = ");
                 sb.Append(Semantics.Value.ToString());
             }
 
             if (Semantics.Count > 0)
             {
-                sb.Append(" - Semantic children count = ");
+                sb.Append(", Semantic children count = ");
                 sb.Append(Semantics.Count.ToString(CultureInfo.InvariantCulture));
             }
 
             if (Alternates.Count > 1)
             {
-                sb.Append(" - Alternate word count = ");
+                sb.Append(", Alternate word count = ");
                 sb.Append(Alternates.Count.ToString(CultureInfo.InvariantCulture));
             }
 

@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs</NativeBuildPartitionPropertiesToRemove>
+    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs</NativeBuildPartitionPropertiesToRemove>
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+
+    <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
+    <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,8 +22,9 @@
           DependsOnTargets="GetPgoDataPackagePath"
           BeforeTargets="Build">
     <ItemGroup>
+      <_CMakeArgs Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Include="@(_CMakeArgs->'-cmakeargs &quot;%(Identity)&quot;')" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Condition="'$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ConfigureOnly)' == 'true'" Include="-configureonly" />
@@ -28,7 +32,8 @@
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
       <_CoreClrBuildArg Condition="'$(KeepNativeSymbols)' != 'false'" Include="-keepnativesymbols" />
-      <_CoreClrBuildArg Include="-os $(TargetOS)" />
+      <_CoreClrBuildArg Include="-os $(_BuildNativeTargetOS)" />
+      <_CoreClrBuildArg Condition="'$(CoreclrVerbose)' == 'true'" Include="-verbose" />
 
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
@@ -42,7 +47,10 @@
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
       <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
+      <_CoreClrBuildArg Condition="'$(EnableNativeSanitizers)' != ''" Include="-fsanitize $(EnableNativeSanitizers)" />
+      <_CoreClrBuildArg Condition="'$(HostCrossOS)' != ''" Include="-hostos $(HostCrossOS)" />
       <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
+      <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">
@@ -55,10 +63,26 @@
       <_CoreClrBuildArg Condition="'$(ClrNativeAotSubset)' == 'true'" Include="-component nativeaot" />
       <_CoreClrBuildArg Condition="'$(ClrSpmiSubset)' == 'true'" Include="-component spmi" />
       <_CoreClrBuildArg Condition="'$(ClrCrossComponentsSubset)' == 'true'" Include="-component crosscomponents" />
+      <_CoreClrBuildArg Condition="'$(ClrDebugSubset)' == 'true'" Include="-component debug" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <_CoreClrBuildArg Include="-cmakeargs -DCMAKE_ICU_DIR=&quot;$(_IcuDir)&quot;" />
+    </ItemGroup>
+
+    <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(ANDROID_NDK_ROOT)' != ''">
+      <_CoreClrBuildArg Include="-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_ROOT)/build/cmake/android.toolchain.cmake"/>
+      <_CoreClrBuildArg Include="-DANDROID_NDK=$(ANDROID_NDK_ROOT)"/>
+      <_CoreClrBuildArg Include="-DANDROID_STL=none"/>
+      <_CoreClrBuildArg Include="-DANDROID_CPP_FEATURES=&quot;no-rtti no-exceptions&quot;"/>
+      <_CoreClrBuildArg Include="-DANDROID_PLATFORM=android-$(AndroidApiLevelMin)"/>
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'arm64'" Include="-DANDROID_ABI=arm64-v8a" />
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'arm'" Include="-DANDROID_ABI=armeabi-v7a" />
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'x86'" Include="-DANDROID_ABI=x86" />
+      <_CoreClrBuildArg Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
+
+      <!-- No LTTNG on Android -->
+      <_CoreClrBuildArg Include="-cmakeargs -DFEATURE_EVENT_TRACE=0"/>
     </ItemGroup>
 
     <PropertyGroup>
@@ -71,4 +95,6 @@
     <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 </Project>

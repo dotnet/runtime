@@ -686,7 +686,7 @@ namespace System.IO
                 {
                     _callback = callback;
                     _context = ExecutionContext.Capture();
-                    base.AddCompletionAction(this);
+                    AddCompletionAction(this);
                 }
             }
 

@@ -10,7 +10,7 @@
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
 .assembly extern System.Console {}
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly 'mismatch32' {}
 
 .class public sealed F extends System.ValueType
@@ -22,7 +22,6 @@
 }
 
 .field public string A
-}
 
 .method private static int32 B(int32 X, int32 Y)
 {
@@ -35,7 +34,7 @@
    .locals init (valuetype F v_0)
    newobj instance void F::.ctor()
    ldc.i4 33
-   call  int32 B(int32, int32)
+   call  int32 F::B(int32, int32)
    pop
 }
 
@@ -51,7 +50,7 @@
       IL_0000:  nop
       .try
       {
-        IL_0005:  call void Test()
+        IL_0005:  call void F::Test()
         IL_000c:  leave.s    IL_0015
       }  // end .try
       catch [System.Runtime]System.InvalidProgramException 
@@ -67,4 +66,5 @@
       IL_0018:  br.s       IL_001a
       IL_001a:  ldloc.0
       IL_001b:  ret
+}
 }

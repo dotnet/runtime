@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/LocalsWithoutStore.il" })]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
-	[SkipPeVerify]
+	[ExpectILFailure ("Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_2() - ReturnEmpty: Stack must contain only the return value. -  Offset IL_0005")]
 	public class UninitializedLocals
 	{
 		[ExpectedInstructionSequence (new[] {

@@ -4,10 +4,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
-class Program
+public class Program
 {
-    static async Task<int> Main()
+    static async Task TestTask()
     {
         for (int i = 0; i < 10; i++)
         {
@@ -17,7 +18,8 @@ class Program
             // extra context argument.
             await new ValueTask<string>(Task.Delay(1).ContinueWith(_ => default(string))).ConfigureAwait(false);
         }
-
-        return 100;
     }
+
+    [Fact]
+    public static void TestEntryPoint() => Task.Run(TestTask).Wait();
 }

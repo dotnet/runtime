@@ -4,11 +4,16 @@
     Add basic project properties for NuGet restore, needed to import the SourceLink MSBuild tool
     package's targets into the build.
   -->
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+
   <PropertyGroup>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
-    <BuildCoreHostDependsOn>GetProductVersions;GenerateNativeVersionFile</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn>GetProductVersions;GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRID).$(Configuration)\</IntermediateOutputRootPath>
+    <!-- Global location for version files -->
+    <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -71,7 +76,7 @@
 
       <_CoreHostUnixTargetOS>$(TargetOS)</_CoreHostUnixTargetOS>
       <_CoreHostUnixTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_CoreHostUnixTargetOS>
-      <BuildArgs>$(Configuration) $(TargetArchitecture) -apphostver "$(AppHostVersion)" -hostver "$(HostVersion)" -fxrver "$(HostResolverVersion)" -policyver "$(HostPolicyVersion)" -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) -configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
@@ -81,6 +86,7 @@
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) -cmakeargs "$(CMakeArgs)"</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
+      <BuildArgs Condition="'$(EnableNativeSanitizers)' != ''">$(BuildArgs) -fsanitize=$(EnableNativeSanitizers)</BuildArgs>
       <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
       <BuildArgs>$(BuildArgs) -outputrid $(OutputRID)</BuildArgs>
     </PropertyGroup>
@@ -133,7 +139,7 @@
     <PropertyGroup>
       <BuildScript>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'build.cmd'))</BuildScript>
 
-      <BuildArgs>$(Configuration) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) outputrid $(OutputRID)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) outputrid $(OutputRID)</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
@@ -141,6 +147,7 @@
       <BuildArgs Condition="'$(Ninja)' == 'false'">$(BuildArgs) msbuild</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeconfiguration $(RuntimeConfiguration)</BuildArgs>
+      <BuildArgs Condition="'$(EnableNativeSanitizers)' != ''">$(BuildArgs) -fsanitize=$(EnableNativeSanitizers)</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -166,4 +173,5 @@
       Overwrite="true" />
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 </Project>

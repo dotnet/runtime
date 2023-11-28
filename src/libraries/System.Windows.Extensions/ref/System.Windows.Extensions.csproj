@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum)</TargetFrameworks>
+    <SkipValidateReferenceAssemblyProjectReferences>true</SkipValidateReferenceAssemblyProjectReferences>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,6 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <!-- Avoid a product dependency to System.Drawing.Common, this reference is only needed for TypeForwards -->
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Drawing.Common.csproj" PrivateAssets="all" />
   </ItemGroup>
+
 </Project>

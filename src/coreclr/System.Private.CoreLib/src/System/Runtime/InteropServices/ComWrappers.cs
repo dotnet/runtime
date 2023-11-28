@@ -4,9 +4,9 @@
 using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices
         /// <param name="wrapper">The <see cref="object"/> to be used as the wrapper for the external object</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
-        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
+        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="NotSupportedException"/> will be thrown.
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
         {
@@ -256,7 +256,7 @@ namespace System.Runtime.InteropServices
         /// in an unknown apartment state. If the supplied inner is not known to be a free-threaded instance then
         /// it is advised to not supply the inner.
         ///
-        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
+        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="NotSupportedException"/> will be thrown.
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
         {
@@ -315,7 +315,7 @@ namespace System.Runtime.InteropServices
         /// <param name="instance">Instance to register</param>
         /// <remarks>
         /// This function can only be called a single time. Subsequent calls to this function will result
-        /// in a <see cref="System.InvalidOperationException"/> being thrown.
+        /// in a <see cref="InvalidOperationException"/> being thrown.
         ///
         /// Scenarios where this global instance may be used are:
         ///  * Object tracking via the <see cref="CreateComInterfaceFlags.TrackerSupport" /> and <see cref="CreateObjectFlags.TrackerObject" /> flags.
@@ -343,7 +343,7 @@ namespace System.Runtime.InteropServices
         /// <param name="instance">Instance to register</param>
         /// <remarks>
         /// This function can only be called a single time. Subsequent calls to this function will result
-        /// in a <see cref="System.InvalidOperationException"/> being thrown.
+        /// in a <see cref="InvalidOperationException"/> being thrown.
         ///
         /// Scenarios where this global instance may be used are:
         ///  * Usage of COM-related Marshal APIs

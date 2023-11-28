@@ -104,7 +104,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 //    for impExpandHalfConstEquals
 //
 GenTree* Compiler::impExpandHalfConstEqualsSIMD(
-    GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
+    GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
 {
     assert(len >= 8 && len <= MaxPossibleUnrollSize);
 
@@ -200,7 +200,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     // Optimization: use a single load when byteLen equals simdSize.
     // For code simplicity we always create nodes for two vectors case.
     const bool useSingleVector = simdSize == byteLen;
-    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_BOOL, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
+    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_INT, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
                                  simdSize);
 
     // Codegen example for byteLen=40 and OrdinalIgnoreCase mode with AVX:
@@ -253,7 +253,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
 //    A tree with indirect load and comparison
 //    nullptr in case of 'ignoreCase' mode and non-ASCII value
 //
-GenTree* Compiler::impCreateCompareInd(GenTreeLclVar*        obj,
+GenTree* Compiler::impCreateCompareInd(GenTreeLclVarCommon*  obj,
                                        var_types             type,
                                        ssize_t               offset,
                                        ssize_t               value,
@@ -308,7 +308,7 @@ GenTree* Compiler::impCreateCompareInd(GenTreeLclVar*        obj,
 //    for impExpandHalfConstEquals
 //
 GenTree* Compiler::impExpandHalfConstEqualsSWAR(
-    GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
+    GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
 {
     assert(len >= 1 && len <= 8);
 
@@ -342,11 +342,11 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //
         // where offset for value2 is 2 bytes (1 char)
         //
-        UINT32   value1     = MAKEINT32(cns[0], cns[1]);
-        UINT32   value2     = MAKEINT32(cns[1], cns[2]);
-        GenTree* firstIndir = impCreateCompareInd(data, TYP_INT, dataOffset, value1, cmpMode, Xor);
-        GenTree* secondIndir =
-            impCreateCompareInd(gtClone(data)->AsLclVar(), TYP_INT, dataOffset + sizeof(USHORT), value2, cmpMode, Xor);
+        UINT32   value1      = MAKEINT32(cns[0], cns[1]);
+        UINT32   value2      = MAKEINT32(cns[1], cns[2]);
+        GenTree* firstIndir  = impCreateCompareInd(data, TYP_INT, dataOffset, value1, cmpMode, Xor);
+        GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT,
+                                                   dataOffset + sizeof(USHORT), value2, cmpMode, Xor);
 
         if ((firstIndir == nullptr) || (secondIndir == nullptr))
         {
@@ -380,8 +380,9 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         UINT32   value2     = MAKEINT32(cns[len - 2], cns[len - 1]);
         GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, Xor);
 
-        ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT32);
-        GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVar(), TYP_INT, offset, value2, cmpMode, Xor);
+        ssize_t  offset = dataOffset + len * sizeof(WCHAR) - sizeof(UINT32);
+        GenTree* secondIndir =
+            impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT, offset, value2, cmpMode, Xor);
 
         if ((firstIndir == nullptr) || (secondIndir == nullptr))
         {
@@ -400,7 +401,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, Xor);
 
     ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
-    GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVar(), TYP_LONG, offset, value2, cmpMode, Xor);
+    GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_LONG, offset, value2, cmpMode, Xor);
 
     if ((firstIndir == nullptr) || (secondIndir == nullptr))
     {
@@ -435,14 +436,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
 //    A pointer to the newly created SWAR/SIMD node or nullptr if unrolling is not
 //    possible, not profitable or constant data contains non-ASCII char(s) in 'ignoreCase' mode
 //
-GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
-                                            GenTree*         lengthFld,
-                                            bool             checkForNull,
-                                            bool             startsWith,
-                                            WCHAR*           cnsData,
-                                            int              len,
-                                            int              dataOffset,
-                                            StringComparison cmpMode)
+GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
+                                            GenTree*             lengthFld,
+                                            bool                 checkForNull,
+                                            bool                 startsWith,
+                                            WCHAR*               cnsData,
+                                            int                  len,
+                                            int                  dataOffset,
+                                            StringComparison     cmpMode)
 {
     assert(len >= 0);
 
@@ -471,12 +472,12 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
         GenTree* indirCmp = nullptr;
         if (len < 8) // SWAR impl supports len == 8 but we'd better give it to SIMD
         {
-            indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
+            indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVarCommon(), cnsData, len, dataOffset, cmpMode);
         }
 #if defined(FEATURE_HW_INTRINSICS)
         else if (IsBaselineSimdIsaSupported())
         {
-            indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
+            indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVarCommon(), cnsData, len, dataOffset, cmpMode);
         }
 #endif
 
@@ -485,7 +486,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
             JITDUMP("unable to compose indirCmp\n");
             return nullptr;
         }
-        assert(indirCmp->TypeIs(TYP_INT, TYP_BOOL));
+        assert(indirCmp->TypeIs(TYP_INT, TYP_UBYTE));
 
         GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
 
@@ -585,6 +586,13 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
     const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
 
+    // This optimization spawns several temps so make sure we have a room
+    if (lvaHaveManyLocals(0.75))
+    {
+        JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
+        return nullptr;
+    }
+
     StringComparison cmpMode = Ordinal;
     GenTree*         op1;
     GenTree*         op2;
@@ -608,10 +616,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         op2 = impStackTop(0).val;
     }
 
-    if (!(op1->OperIs(GT_CNS_STR) ^ op2->OperIs(GT_CNS_STR)))
+    if (!op1->OperIs(GT_CNS_STR) && !op2->OperIs(GT_CNS_STR))
     {
-        // either op1 or op2 has to be CNS_STR, but not both - that case is optimized
-        // just fine as is.
         return nullptr;
     }
 
@@ -680,12 +686,12 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
-        impAssignTempGen(varStrTmp, varStr, CHECK_SPILL_NONE);
+        impStoreTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
@@ -723,6 +729,13 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
 {
     const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
     const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
+
+    // This optimization spawns several temps so make sure we have a room
+    if (lvaHaveManyLocals(0.75))
+    {
+        JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
+        return nullptr;
+    }
 
     StringComparison cmpMode = Ordinal;
     GenTree*         op1;
@@ -763,9 +776,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     GenTreeStrCon* op1Str = impGetStrConFromSpan(op1);
     GenTreeStrCon* op2Str = impGetStrConFromSpan(op2);
 
-    if (!((op1Str != nullptr) ^ (op2Str != nullptr)))
+    if ((op1Str == nullptr) && (op2Str == nullptr))
     {
-        // either op1 or op2 has to be '(ReadOnlySpan)"cns"'
         return nullptr;
     }
 
@@ -806,39 +818,38 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
     }
 
-    CORINFO_CLASS_HANDLE spanCls;
-    info.compCompHnd->getArgType(sig, sig->args, &spanCls);
-    CORINFO_FIELD_HANDLE pointerHnd   = info.compCompHnd->getFieldInClass(spanCls, 0);
-    CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanCls, 1);
-    const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
+    unsigned spanLclNum;
+    if (spanObj->OperIs(GT_LCL_VAR))
+    {
+        // Argument is already a local
+        spanLclNum = spanObj->AsLclVarCommon()->GetLclNum();
+    }
+    else
+    {
+        // Access a local that will be set if we successfully unroll it
+        spanLclNum = lvaGrabTemp(true DEBUGARG("spilling spanObj"));
+        CORINFO_CLASS_HANDLE spanCls;
+        info.compCompHnd->getArgType(sig, sig->args, &spanCls);
+        lvaSetStruct(spanLclNum, spanCls, false);
+    }
 
-    // Create a placeholder for Span object - we're not going to Append it to statements
-    // in advance to avoid redundant spills in case if we fail to vectorize
-    unsigned spanObjRef          = lvaGrabTemp(true DEBUGARG("spanObj tmp"));
-    unsigned spanDataTmp         = lvaGrabTemp(true DEBUGARG("spanData tmp"));
-    lvaTable[spanObjRef].lvType  = TYP_BYREF;
-    lvaTable[spanDataTmp].lvType = TYP_BYREF;
+    GenTreeLclFld* spanReferenceFld = gtNewLclFldNode(spanLclNum, TYP_BYREF, OFFSETOF__CORINFO_Span__reference);
+    GenTreeLclFld* spanLengthFld    = gtNewLclFldNode(spanLclNum, TYP_INT, OFFSETOF__CORINFO_Span__length);
+    GenTree*       unrolled = impExpandHalfConstEquals(spanReferenceFld, spanLengthFld, false, startsWith, (WCHAR*)str,
+                                                 cnsLength, 0, cmpMode);
 
-    GenTreeLclVar* spanObjRefLcl  = gtNewLclvNode(spanObjRef, TYP_BYREF);
-    GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, TYP_BYREF);
-
-    GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
-    GenTree*          spanLength     = gtNewIndir(TYP_INT, spanLengthAddr);
-    GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(pointerHnd, spanObjRefLcl, 0);
-    GenTree*          spanData       = gtNewIndir(TYP_BYREF, spanDataAddr);
-
-    GenTree* unrolled =
-        impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, cmpMode);
     if (unrolled != nullptr)
     {
-        // We succeeded, fill the placeholders:
-        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, CHECK_SPILL_NONE, true), CHECK_SPILL_NONE);
-        impAssignTempGen(spanDataTmp, spanData, CHECK_SPILL_NONE);
+        if (!spanObj->OperIs(GT_LCL_VAR))
+        {
+            impStoreTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+        }
+
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 interface IMyInterface<T>
 {
@@ -13,9 +14,10 @@ sealed class MyInterfaceImpl<T> : IMyInterface<string>
     public int MyMethod() => 100;
 }
 
-class Program
+public class Program
 {
-    static int Main() => Test<string>();
+    [Fact]
+    public static int TestEntryPoint() => Test<string>();
 
     [MethodImpl(MethodImplOptions.NoInlining | 
                 MethodImplOptions.AggressiveOptimization)]

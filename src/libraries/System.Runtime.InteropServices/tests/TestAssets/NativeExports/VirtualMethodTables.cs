@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NativeExports
@@ -48,6 +49,10 @@ namespace NativeExports
             {
                 public delegate* unmanaged<NativeObjectInterface*, int> getData;
                 public delegate* unmanaged<NativeObjectInterface*, int, void> setData;
+                public delegate* unmanaged<NativeObjectInterface*, int*, void> exchangeData;
+                public delegate* unmanaged<NativeObjectInterface*, int*, int, int*, void> sumAndSetData;
+                public delegate* unmanaged<NativeObjectInterface*, int**, int, int*, void> sumAndSetDataWithRef;
+                public delegate* unmanaged<NativeObjectInterface*, int*, int, void> multiplyWithData;
             }
 
             public readonly VirtualFunctionTable* VTable;
@@ -66,12 +71,20 @@ namespace NativeExports
                 // The order of functions here should match NativeObjectInterface.VirtualFunctionTable's members.
                 public delegate* unmanaged<NativeObject*, int> getData;
                 public delegate* unmanaged<NativeObject*, int, void> setData;
+                public delegate* unmanaged<NativeObject*, int*, void> exchangeData;
+                public delegate* unmanaged<NativeObject*, int*, int, int*, void> sumAndSetData;
+                public delegate* unmanaged<NativeObject*, int**, int, int*, void> sumAndSetDataWithRef;
+                public delegate* unmanaged<NativeObject*, int*, int, void> multiplyWithData;
             }
             static NativeObject()
             {
                 VTablePointer = (VirtualFunctionTable*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NativeObject), sizeof(VirtualFunctionTable));
                 VTablePointer->getData = &GetData;
                 VTablePointer->setData = &SetData;
+                VTablePointer->exchangeData = &ExchangeData;
+                VTablePointer->sumAndSetData = &SumAndSetData;
+                VTablePointer->sumAndSetDataWithRef = &SumAndSetData;
+                VTablePointer->multiplyWithData = &MultiplyWithData;
             }
 
             private static readonly VirtualFunctionTable* VTablePointer;
@@ -94,6 +107,52 @@ namespace NativeExports
             private static void SetData(NativeObject* obj, int value)
             {
                 obj->Data = value;
+            }
+
+            [UnmanagedCallersOnly]
+            private static void ExchangeData(NativeObject* obj, int* value)
+            {
+                var temp = obj->Data;
+                obj->Data = *value;
+                *value = temp;
+            }
+
+            [UnmanagedCallersOnly]
+            private static void SumAndSetData(NativeObject* obj, int** values, int numValues, int* oldValue)
+            {
+                *oldValue = obj->Data;
+
+                Span<int> arr = new(*values, numValues);
+                int sum = 0;
+                foreach (int value in arr)
+                {
+                    sum += value;
+                }
+                obj->Data = sum;
+            }
+
+            [UnmanagedCallersOnly]
+            private static void SumAndSetData(NativeObject* obj, int* values, int numValues, int* oldValue)
+            {
+                *oldValue = obj->Data;
+
+                Span<int> arr = new(values, numValues);
+                int sum = 0;
+                foreach (int value in arr)
+                {
+                    sum += value;
+                }
+                obj->Data = sum;
+            }
+
+            [UnmanagedCallersOnly]
+            private static void MultiplyWithData(NativeObject* obj, int* values, int numValues)
+            {
+                Span<int> arr = new(values, numValues);
+                foreach (ref int value in arr)
+                {
+                    value *= obj->Data;
+                }
             }
         }
 
@@ -126,6 +185,34 @@ namespace NativeExports
         public static int GetNativeObjectData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj)
         {
             return obj->VTable->getData(obj);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "exchange_native_object_data")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void ExchangeNativeObjectData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* x)
+        {
+            obj->VTable->exchangeData(obj, x);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "sum_and_set_native_object_data")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void SumAndSetData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* values, int numValues, int* oldValue)
+        {
+            obj->VTable->sumAndSetData(obj, values, numValues, oldValue);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "sum_and_set_native_object_data_with_ref")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void SumAndSetDataWithRef([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int** values, int numValues, int* oldValue)
+        {
+            obj->VTable->sumAndSetDataWithRef(obj, values, numValues, oldValue);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "multiply_with_native_object_data")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void MultiplyWithData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* values, int numValues)
+        {
+            obj->VTable->multiplyWithData(obj, values, numValues);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace HostApiInvokerApp
             public nint size;
             public void* context;
             public delegate* unmanaged[Stdcall]<byte*, byte*, nint, void*, nint> get_runtime_property;
-            public IntPtr bundle_probe;
+            public delegate* unmanaged[Stdcall]<byte*, nint, nint, nint, byte> bundle_probe;
             public IntPtr pinvoke_override;
         }
 
@@ -68,12 +68,52 @@ namespace HostApiInvokerApp
             }
         }
 
+        public static void Test_bundle_probe(string[] args)
+        {
+            host_runtime_contract contract = GetContract();
+            if (contract.bundle_probe == null)
+            {
+                Console.WriteLine("host_runtime_contract.bundle_probe is not set");
+                return;
+            }
+
+            bool success = true;
+            foreach (string path in args)
+            {
+                Probe(contract, path);
+            }
+
+            unsafe static void Probe(host_runtime_contract contract, string path)
+            {
+                Span<byte> pathSpan = stackalloc byte[Encoding.UTF8.GetMaxByteCount(path.Length)];
+                byte* pathPtr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pathSpan));
+                int pathLen = Encoding.UTF8.GetBytes(path, pathSpan);
+                pathSpan[pathLen] = 0;
+
+                Int64 size, offset, compressedSize;
+                bool exists = contract.bundle_probe(pathPtr, (IntPtr)(&offset), (IntPtr)(&size), (IntPtr)(&compressedSize)) != 0;
+
+                Console.WriteLine($"{nameof(host_runtime_contract.get_runtime_property)}: {path} - found = {exists}");
+                if (exists)
+                {
+                    if (compressedSize < 0 || compressedSize > size)
+                        throw new Exception($"Invalid compressedSize obtained for {path} within bundle.");
+
+                    if (size <= 0 || offset <= 0)
+                        throw new Exception($"Invalid location obtained for {path} within bundle.");
+                }
+            }
+        }
+
         public static bool RunTest(string apiToTest, string[] args)
         {
             switch (apiToTest)
             {
                 case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.get_runtime_property)}":
-                    Test_get_runtime_property(args);
+                    Test_get_runtime_property(args[1..]);
+                    break;
+                case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.bundle_probe)}":
+                    Test_bundle_probe(args[1..]);
                     break;
                 default:
                     return false;

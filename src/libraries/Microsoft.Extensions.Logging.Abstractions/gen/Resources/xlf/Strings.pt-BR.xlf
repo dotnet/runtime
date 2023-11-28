@@ -67,6 +67,16 @@
         <target state="translated">Os métodos de registro em log devem ser estáticos</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">O gerador de fonte de log não está disponível em C# {0}. Use a versão do idioma {1} ou superior.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Versão da linguagem C# não suportada pelo gerador de origem.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
         <target state="translated">O método de registro '{0}' contém strings de formato malformado</target>

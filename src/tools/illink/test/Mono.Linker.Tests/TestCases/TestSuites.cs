@@ -142,6 +142,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InlineArrayTests))]
+		public void InlineArrayTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InteropTests))]
 		public void InteropTests (TestCase testCase)
 		{
@@ -234,6 +240,12 @@ namespace Mono.Linker.Tests.TestCases
 
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.TestFrameworkTests))]
 		public void TestFrameworkTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.TopLevelStatementsTests))]
+		public void TopLevelStatementsTests (TestCase testCase)
 		{
 			Run (testCase);
 		}

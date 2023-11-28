@@ -12,7 +12,7 @@
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
@@ -24,36 +24,19 @@
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference
+      Include="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_publish.csproj"
+      OutputItemType="_RawCrossgenPublishFiles"
+      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
-
-    <!-- Copy System.Private.CoreLib from the coreclr bin directory to the runtime pack directory,
-         as we always need the copy of System.Private.CoreLib that matches exactly with the runtime. -->
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-          SkipUnchangedFiles="true" />
-
-    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Targets="Restore"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
-              ;_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;NativeAotSupported=$(NativeAotSupported)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets" />
-
-    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Targets="Publish;PublishItemsOutputGroup"
-             Properties="_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;NativeAotSupported=$(NativeAotSupported)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;ObjCopyName=$(ObjCopyName)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="_RawCrossgenPublishFiles" />
-    </MSBuild>
-
     <ItemGroup>
       <_CrossgenPublishFiles Include="@(_RawCrossgenPublishFiles->'%(OutputPath)')"
                              KeepMetadata="REMOVE_ALL" />
@@ -85,9 +68,9 @@
     <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
   </PropertyGroup>
 
-  <Target Name="AddCrossgen2SymbolFilesToPackage" BeforeTargets="GetFilesToPackage">
+  <Target Name="AddCrossgen2SymbolFilesToPackage" BeforeTargets="GetFilesToPackage" DependsOnTargets="PublishCrossgen">
     <ItemGroup>
-      <_Crossgen2SymbolFilesToPackage Include="@(Reference->'$(CoreCLRArtifactsPath)PDB\%(FileName).pdb')" />
+      <_Crossgen2SymbolFilesToPackage Include="@(_CrossgenPublishFiles)" Condition="'%(Extension)' == '.pdb'" />
       <!-- Symbol files for JIT libraries are placed in a different location for Windows builds -->
       <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPdbDir)%(FileName).pdb')" Condition="'$(TargetOS)' == 'windows' and '%(FileName)' != 'crossgen2'" />
       <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPath)%(FileName)%(Extension)$(SymbolsSuffix)')" Condition="'$(TargetOS)' != 'windows' and '%(FileName)' != 'crossgen2'" />

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 interface Ix<T> where T : class
 {
@@ -30,7 +31,8 @@ public class Z
         return b.F();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Would like to be able to late devirtualize the call to F
         // here after inlining Get exposes the exact type of the

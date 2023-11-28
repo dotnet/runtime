@@ -5,19 +5,25 @@
 // New refCnts for V00: refCnt = 8000
 // OPTIONS: opts.MinOpts() == false
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 .assembly LVRefCnt0 {}
+.class public auto ansi LVRefCnt0 {
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 call int32 f()
 ldc.i4 100
 sub
 ret
+}
 }
 .method public static int32 f()
 {

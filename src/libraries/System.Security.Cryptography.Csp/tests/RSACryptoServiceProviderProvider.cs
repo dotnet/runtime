@@ -23,6 +23,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsPss => false;
 
         public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
+
+        public bool SupportsSha3 => false;
     }
 
     public partial class RSAFactory

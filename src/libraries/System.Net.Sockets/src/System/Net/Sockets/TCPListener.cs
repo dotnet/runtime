@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
-using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
     // The System.Net.Sockets.TcpListener class provide TCP services at a higher level of abstraction
     // than the System.Net.Sockets.Socket class. System.Net.Sockets.TcpListener is used to create a
     // host process that listens for connections from TCP clients.
-    public class TcpListener
+    public class TcpListener : IDisposable
     {
         private readonly IPEndPoint _serverSocketEP;
         private Socket? _serverSocket;
@@ -166,6 +166,11 @@ namespace System.Net.Sockets
             _active = false;
             _serverSocket = null;
         }
+
+        /// <summary>
+        /// Releases all resources used by the current <see cref="TcpListener"/> instance.
+        /// </summary>
+        public void Dispose() => Stop();
 
         // Determine if there are pending connection requests.
         public bool Pending()

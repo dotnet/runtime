@@ -131,7 +131,7 @@ namespace System
             // method ptrs don't match, go down long path
             //
             if (_methodBase == null || d._methodBase == null || !(_methodBase is MethodInfo) || !(d._methodBase is MethodInfo))
-                return Delegate.InternalEqualMethodHandles(this, d);
+                return InternalEqualMethodHandles(this, d);
             else
                 return _methodBase.Equals(d._methodBase);
         }
@@ -200,7 +200,7 @@ namespace System
                         {
                             // it's an open one, need to fetch the first arg of the instantiation
                             MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
-                            declaringType = (RuntimeType)invoke.GetParameters()[0].ParameterType;
+                            declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
                         }
                     }
                 }

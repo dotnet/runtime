@@ -12,7 +12,7 @@ namespace DefaultNamespace
     public class repro
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             char b = 'B';
 
@@ -20,8 +20,6 @@ namespace DefaultNamespace
 
             //Console.Write( "Y"+    "Y" );  // This line causes no bug.
             Console.Write("Y" + b + "Y");  // This line causes the bug!  JIT InLiner problem.
-
-            return 100;
         }
     }
 }

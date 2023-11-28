@@ -122,7 +122,7 @@ namespace System.Drawing
                 expectedStringBuilder.AppendLine();
             }
 
-            return new AssertActualExpectedException(expectedStringBuilder.ToString(), actualStringBuilder.ToString(), $"Bitmaps were different at {firstFailureX}, {firstFailureY}.");
+            return EqualException.ForMismatchedValues(expectedStringBuilder.ToString(), actualStringBuilder.ToString(), $"Bitmaps were different at {firstFailureX}, {firstFailureY}.");
         }
 
         private static void PrintColor(StringBuilder stringBuilder, Color color)

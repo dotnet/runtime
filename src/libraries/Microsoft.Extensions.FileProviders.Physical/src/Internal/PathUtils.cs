@@ -20,23 +20,25 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> _invalidFileNameChars = SearchValues.Create(GetInvalidFileNameChars());
         private static readonly SearchValues<char> _invalidFilterChars = SearchValues.Create(GetInvalidFilterChars());
+
+        internal static bool HasInvalidPathChars(string path) =>
+            path.AsSpan().ContainsAny(_invalidFileNameChars);
+
+        internal static bool HasInvalidFilterChars(string path) =>
+            path.AsSpan().ContainsAny(_invalidFilterChars);
 #else
         private static readonly char[] _invalidFileNameChars = GetInvalidFileNameChars();
         private static readonly char[] _invalidFilterChars = GetInvalidFilterChars();
+
+        internal static bool HasInvalidPathChars(string path) =>
+            path.IndexOfAny(_invalidFileNameChars) >= 0;
+
+        internal static bool HasInvalidFilterChars(string path) =>
+            path.IndexOfAny(_invalidFilterChars) >= 0;
 #endif
 
         private static readonly char[] _pathSeparators = new[]
             {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar};
-
-        internal static bool HasInvalidPathChars(string path)
-        {
-            return path.AsSpan().IndexOfAny(_invalidFileNameChars) >= 0;
-        }
-
-        internal static bool HasInvalidFilterChars(string path)
-        {
-            return path.AsSpan().IndexOfAny(_invalidFilterChars) >= 0;
-        }
 
         internal static string EnsureTrailingSlash(string path)
         {

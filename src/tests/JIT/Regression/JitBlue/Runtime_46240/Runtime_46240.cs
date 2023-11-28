@@ -31,7 +31,7 @@ public class Tester<T>
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int TestS()
+    public static void TestS()
     {
         // Use all available registers to push some locals on stack
         // and force multi-reg->stack copies with small types
@@ -58,56 +58,23 @@ public class Tester<T>
         TestS(s3);
         TestS(s2);
         TestS(s1);
-
-        return 100;
     }
 }
 
 public class Runtime_46240
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
-        if (Tester<byte>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<sbyte>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<ushort>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<short>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<uint>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<int>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<ulong>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<long>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<float>.TestS() != 100)
-        {
-            return 101;
-        }
-        if (Tester<double>.TestS() != 100)
-        {
-            return 101;
-        }
-        return 100;
+        Tester<byte>.TestS();
+        Tester<sbyte>.TestS();
+        Tester<ushort>.TestS();
+        Tester<short>.TestS();
+        Tester<uint>.TestS();
+        Tester<int>.TestS();
+        Tester<ulong>.TestS();
+        Tester<long>.TestS();
+        Tester<float>.TestS();
+        Tester<double>.TestS();
     }
 }

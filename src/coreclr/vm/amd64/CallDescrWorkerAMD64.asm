@@ -94,7 +94,7 @@ Arg4:
         movsd   xmm3, real8 ptr 18h[rsp];
 DoCall:
         call    qword ptr [rbx+CallDescrData__pTarget]     ; call target function
-
+CallDescrWorkerInternalReturnAddress:
         ; Save FP return value
 
         mov     ecx, dword ptr [rbx+CallDescrData__fpReturnSize]
@@ -125,6 +125,9 @@ ReturnsFloat:
 ReturnsDouble:
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
         jmp     Epilog
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+        dq CallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
 
         NESTED_END CallDescrWorkerInternal, _TEXT
 

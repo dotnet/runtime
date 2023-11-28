@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -279,6 +278,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal DirectoryContext Context => context;
 
+        private static readonly string[] s_name = new string[] { "name" };
+        private static readonly string[] s_cn = new string[] { "cn" };
+        private static readonly string[] s_objectClassCn = new string[] { "objectClass", "cn" };
+
         internal unsafe void CheckConsistencyHelper(IntPtr dsHandle, SafeLibraryHandle libHandle)
         {
             // call DsReplicaConsistencyCheck
@@ -356,7 +359,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         DirectoryEntry verifyEntry = DirectoryEntryManager.GetDirectoryEntry(this.context, partition);
                         try
                         {
-                            verifyEntry.RefreshCache(new string[] { "name" });
+                            verifyEntry.RefreshCache(s_name);
                         }
                         catch (COMException e)
                         {
@@ -769,7 +772,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=nTDSConnection)(objectCategory=nTDSConnection))",
-                                                      new string[] { "cn" },
+                                                      s_cn,
                                                       SearchScope.OneLevel);
                 SearchResultCollection? srchResults = null;
 
@@ -808,7 +811,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string serverName = (this is DomainController) ? ((DomainController)this).ServerObjectName : ((AdamInstance)this).ServerObjectName;
                 ADSearcher adSearcher = new ADSearcher(de,
                                                                "(&(objectClass=nTDSConnection)(objectCategory=nTDSConnection)(fromServer=CN=NTDS Settings," + serverName + "))",
-                                                               new string[] { "objectClass", "cn" },
+                                                               s_objectClassCn,
                                                                SearchScope.Subtree);
 
                 SearchResultCollection? results = null;

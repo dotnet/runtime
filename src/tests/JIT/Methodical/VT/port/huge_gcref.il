@@ -17,7 +17,7 @@
            
   
 }
-.assembly 'huge_gcref' // as "test"
+.assembly ASSEMBLY_NAME // as "test"
 {
 
 

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -57,7 +57,7 @@ namespace System.Globalization
             var destination = new Span<char>(ref result.GetRawStringData(), result.Length);
             ReadOnlySpan<char> src = s;
             src.Slice(0, i).CopyTo(destination);
-            InvariantModeCasing.ToLower(src.Slice(i), destination.Slice(i));
+            ToLower(src.Slice(i), destination.Slice(i));
 
             return result;
         }
@@ -103,7 +103,7 @@ namespace System.Globalization
             var destination = new Span<char>(ref result.GetRawStringData(), result.Length);
             ReadOnlySpan<char> src = s;
             src.Slice(0, i).CopyTo(destination);
-            InvariantModeCasing.ToUpper(src.Slice(i), destination.Slice(i));
+            ToUpper(src.Slice(i), destination.Slice(i));
 
             return result;
         }

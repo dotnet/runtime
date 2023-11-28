@@ -1,23 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Pins a byte[], exposing it as an unmanaged memory
-**          stream.  Used in ResourceReader for corner cases.
-**
-**
-===========================================================*/
-
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO
 {
+    /// <summary>
+    /// Pins a <see langword="byte[]"/>, exposing it as an unmanaged memory stream.  Used in <see cref="System.Resources.ResourceReader"/> for corner cases.
+    /// </summary>
     internal sealed unsafe class PinnedBufferMemoryStream : UnmanagedMemoryStream
     {
         private readonly byte[] _array;

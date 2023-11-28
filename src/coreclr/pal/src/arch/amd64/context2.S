@@ -89,7 +89,7 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     push_nonvol_reg rbp
     alloc_stack (IRetFrameLengthAligned)
 
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
     je      LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
 

@@ -8,7 +8,7 @@
 
 enum genTreeOps : BYTE
 {
-#define GTNODE(en, st, cm, ok) GT_##en,
+#define GTNODE(en, st, cm, ivn, ok) GT_##en,
 #include "gtlist.h"
 
     GT_COUNT,

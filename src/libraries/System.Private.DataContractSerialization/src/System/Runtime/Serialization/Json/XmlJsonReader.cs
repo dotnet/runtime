@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Runtime.Serialization;
-using System.Collections.Generic;
+using System.Text;
 using System.Xml;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -16,8 +16,8 @@ namespace System.Runtime.Serialization.Json
     {
         private const int MaxTextChunk = 2048;
 
-        private static ReadOnlySpan<byte> CharTypes => new byte[256] // rely on C# compiler optimization to eliminate allocation
-            {
+        private static ReadOnlySpan<byte> CharTypes =>
+            [
                 CharType.None, //   0 (.)
                 CharType.None, //   1 (.)
                 CharType.None, //   2 (.)
@@ -274,7 +274,7 @@ namespace System.Runtime.Serialization.Json
                 CharType.None | CharType.FirstName | CharType.Name, //  FD (?)
                 CharType.None | CharType.FirstName | CharType.Name, //  FE (?)
                 CharType.None | CharType.FirstName | CharType.Name, //  FF (?)
-            };
+            ];
         private bool _buffered;
         private byte[]? _charactersToSkipOnNextRead;
         private JsonComplexTextMode _complexTextMode = JsonComplexTextMode.None;
@@ -688,15 +688,7 @@ namespace System.Runtime.Serialization.Json
             {
                 return decimal.Parse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo);
             }
-            catch (ArgumentException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(value, "decimal", exception);
-            }
-            catch (FormatException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(value, "decimal", exception);
-            }
-            catch (OverflowException exception)
+            catch (Exception exception) when (exception is ArgumentException or FormatException or OverflowException)
             {
                 throw XmlExceptionHelper.CreateConversionException(value, "decimal", exception);
             }
@@ -714,15 +706,7 @@ namespace System.Runtime.Serialization.Json
             {
                 return long.Parse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo);
             }
-            catch (ArgumentException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(value, "Int64", exception);
-            }
-            catch (FormatException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(value, "Int64", exception);
-            }
-            catch (OverflowException exception)
+            catch (Exception exception) when (exception is ArgumentException or FormatException or OverflowException)
             {
                 throw XmlExceptionHelper.CreateConversionException(value, "Int64", exception);
             }
@@ -942,7 +926,7 @@ namespace System.Runtime.Serialization.Json
             return ((ch == 0x20) || (ch == 0x09) || (ch == 0x0A) || (ch == 0x0D));
         }
 
-        private static char ParseChar(string value, NumberStyles style)
+        private static char ParseChar(ReadOnlySpan<char> value, NumberStyles style)
         {
             int intValue = ParseInt(value, style);
             try
@@ -951,27 +935,19 @@ namespace System.Runtime.Serialization.Json
             }
             catch (OverflowException exception)
             {
-                throw XmlExceptionHelper.CreateConversionException(value, "char", exception);
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(), "char", exception);
             }
         }
 
-        private static int ParseInt(string value, NumberStyles style)
+        private static int ParseInt(ReadOnlySpan<char> value, NumberStyles style)
         {
             try
             {
                 return int.Parse(value, style, NumberFormatInfo.InvariantInfo);
             }
-            catch (ArgumentException exception)
+            catch (Exception exception) when (exception is ArgumentException or FormatException or OverflowException)
             {
-                throw XmlExceptionHelper.CreateConversionException(value, "Int32", exception);
-            }
-            catch (FormatException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(value, "Int32", exception);
-            }
-            catch (OverflowException exception)
-            {
-                throw XmlExceptionHelper.CreateConversionException(value, "Int32", exception);
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(), "Int32", exception);
             }
         }
 
@@ -1625,7 +1601,7 @@ namespace System.Runtime.Serialization.Json
                                 XmlExceptionHelper.ThrowXmlException(this,
                                     new XmlException(SR.Format(SR.JsonEncounteredUnexpectedCharacter, val[i])));
                             }
-                            sb.Append(ParseChar(val.Substring(i + 1, 4), NumberStyles.HexNumber));
+                            sb.Append(ParseChar(val.AsSpan(i + 1, 4), NumberStyles.HexNumber));
                             i += 4;
                             break;
                     }

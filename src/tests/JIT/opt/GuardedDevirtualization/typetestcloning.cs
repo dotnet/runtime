@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 interface I
 {
@@ -25,10 +26,10 @@ class Mul : I
     int I.F(int x, int y) => x * y;
 }
 
-class CloningForTypeTests
+public class CloningForTypeTests
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int BothTypeAndArray(I m, int[] xs, int[] ys, int from, int to)
+    internal static int BothTypeAndArray(I m, int[] xs, int[] ys, int from, int to)
     {
         int r = 0;
 
@@ -42,7 +43,7 @@ class CloningForTypeTests
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int JustType(I m, int from, int to)
+    internal static int JustType(I m, int from, int to)
     {
         int r = 0;
 
@@ -55,7 +56,8 @@ class CloningForTypeTests
         return r;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] xs = new int[] { 1, 2, 3, 4 };
         int[] ys = new int[] { 4, 3, 2, 1 };

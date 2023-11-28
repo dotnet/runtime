@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -268,7 +267,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
-            Debug.Assert(declaringTypeInfo is null || declaringTypeInfo.Type == declaringType);
+            Debug.Assert(declaringTypeInfo is null || declaringType.IsAssignableFrom(declaringTypeInfo.Type));
 
             DeclaringType = declaringType;
             PropertyType = propertyType;
@@ -356,7 +355,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal abstract void  DetermineReflectionPropertyAccessors(MemberInfo memberInfo);
+        internal abstract void DetermineReflectionPropertyAccessors(MemberInfo memberInfo, bool useNonPublicAccessors);
 
         private void CacheNameAsUtf8BytesAndEscapedNameSection()
         {
@@ -496,9 +495,17 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
 
+            JsonObjectCreationHandling effectiveObjectCreationHandling = JsonObjectCreationHandling.Replace;
             if (ObjectCreationHandling == null)
             {
-                JsonObjectCreationHandling preferredCreationHandling = ParentTypeInfo.PreferredPropertyObjectCreationHandling ?? Options.PreferredObjectCreationHandling;
+                // Consult type-level configuration, then global configuration.
+                // Ignore global configuration if we're using a parameterized constructor.
+                JsonObjectCreationHandling preferredCreationHandling =
+                    ParentTypeInfo.PreferredPropertyObjectCreationHandling
+                    ?? (ParentTypeInfo.DetermineUsesParameterizedConstructor()
+                        ? JsonObjectCreationHandling.Replace
+                        : Options.PreferredObjectCreationHandling);
+
                 bool canPopulate =
                     preferredCreationHandling == JsonObjectCreationHandling.Populate &&
                     EffectiveConverter.CanPopulate &&
@@ -507,7 +514,7 @@ namespace System.Text.Json.Serialization.Metadata
                     !ParentTypeInfo.SupportsPolymorphicDeserialization &&
                     !(Set == null && IgnoreReadOnlyMember);
 
-                EffectiveObjectCreationHandling = canPopulate ? JsonObjectCreationHandling.Populate : JsonObjectCreationHandling.Replace;
+                effectiveObjectCreationHandling = canPopulate ? JsonObjectCreationHandling.Populate : JsonObjectCreationHandling.Replace;
             }
             else if (ObjectCreationHandling == JsonObjectCreationHandling.Populate)
             {
@@ -538,18 +545,24 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReadOnlyMember(this);
                 }
 
-                EffectiveObjectCreationHandling = JsonObjectCreationHandling.Populate;
-            }
-            else
-            {
-                Debug.Assert(EffectiveObjectCreationHandling == JsonObjectCreationHandling.Replace);
+                effectiveObjectCreationHandling = JsonObjectCreationHandling.Populate;
             }
 
-            if (EffectiveObjectCreationHandling == JsonObjectCreationHandling.Populate &&
-                Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+            if (effectiveObjectCreationHandling is JsonObjectCreationHandling.Populate)
             {
-                ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
+                if (ParentTypeInfo.DetermineUsesParameterizedConstructor())
+                {
+                    ThrowHelper.ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors();
+                }
+
+                if (Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
+                }
             }
+
+            // Validation complete, commit configuration.
+            EffectiveObjectCreationHandling = effectiveObjectCreationHandling;
         }
 
         private bool NumberHandingIsApplicable()
@@ -584,6 +597,13 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == typeof(ushort) ||
                 potentialNumberType == typeof(uint) ||
                 potentialNumberType == typeof(ulong) ||
+#if NETCOREAPP
+                potentialNumberType == typeof(Half) ||
+#endif
+#if NET7_0_OR_GREATER
+                potentialNumberType == typeof(Int128) ||
+                potentialNumberType == typeof(UInt128) ||
+#endif
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
@@ -924,6 +944,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// It is set just before property is configured and does not change afterward.
         /// It is not equivalent to index on the properties list
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal int RequiredPropertyIndex
         {
             get
@@ -941,7 +962,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         private int _index;
 
+        internal bool IsOverriddenOrShadowedBy(JsonPropertyInfo other)
+            => MemberName == other.MemberName && DeclaringType.IsAssignableFrom(other.DeclaringType);
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";
+        private string DebuggerDisplay => $"Name = {Name}, PropertyType = {PropertyType}";
     }
 }

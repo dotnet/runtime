@@ -30,12 +30,7 @@ void GCHeap::UpdatePreGCCounters()
     // Publish perf stats
     g_TotalTimeInGC = GCToOSInterface::QueryPerformanceCounter();
 
-#ifdef MULTIPLE_HEAPS
-        //take the first heap....
-    gc_mechanisms *pSettings = &gc_heap::g_heaps[0]->settings;
-#else
     gc_mechanisms *pSettings = &gc_heap::settings;
-#endif //MULTIPLE_HEAPS
 
     uint32_t count = (uint32_t)pSettings->gc_index;
     uint32_t depth = (uint32_t)pSettings->condemned_generation;
@@ -62,6 +57,7 @@ void GCHeap::ReportGenerationBounds()
     {
         g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
         {
+            ASSERT((0 <= generation) && (generation <= poh_generation));
             uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
             uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
             FIRE_EVENT(GCGenerationRange, (uint8_t)generation, rangeStart, range, rangeReserved);
@@ -95,13 +91,6 @@ void GCHeap::UpdatePostGCCounters()
     size_t total_num_gc_handles = g_dwHandles;
     uint32_t total_num_sync_blocks = GCToEEInterface::GetActiveSyncBlockCount();
 
-    // Note this is however for perf counter only, for legacy reasons. What we showed
-    // in perf counters for "gen0 size" was really the gen0 budget which made
-    // sense (somewhat) at the time. For backward compatibility we are keeping
-    // this calculated the same way. For ETW we use the true gen0 size (and
-    // gen0 budget is also reported in an event).
-    size_t youngest_budget = 0;
-
     size_t promoted_finalization_mem = 0;
     size_t total_num_pinned_objects = gc_heap::get_total_pinned_objects();
 
@@ -119,37 +108,28 @@ void GCHeap::UpdatePostGCCounters()
         {
             gc_heap* hp = gc_heap::g_heaps[hn];
 #else
+        {
             gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            dynamic_data* dd = hp->dynamic_data_of (gen_index);
+
+            g_GenerationSizes[gen_index] += hp->generation_size (gen_index);
+
+            if (gen_index <= condemned_gen)
             {
-#endif //MULTIPLE_HEAPS
-                dynamic_data* dd = hp->dynamic_data_of (gen_index);
-
-                if (gen_index == 0)
-                {
-                    youngest_budget += dd_desired_allocation (hp->dynamic_data_of (gen_index));
-                }
-
-                g_GenerationSizes[gen_index] += hp->generation_size (gen_index);
-
-                if (gen_index <= condemned_gen)
-                {
-                    g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
-                }
-
-                if ((gen_index == loh_generation) && (condemned_gen == max_generation))
-                {
-                    g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
-                }
-
-                if (gen_index == 0)
-                {
-                    promoted_finalization_mem +=  dd_freach_previous_promotion (dd);
-                }
-#ifdef MULTIPLE_HEAPS
+                g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
             }
-#else
+
+            if ((gen_index == loh_generation) && (condemned_gen == max_generation))
+            {
+                g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
+            }
+
+            if (gen_index == 0)
+            {
+                promoted_finalization_mem +=  dd_freach_previous_promotion (dd);
+            }
         }
-#endif //MULTIPLE_HEAPS
     }
 
     ReportGenerationBounds();
@@ -509,9 +489,12 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
 {
 #ifdef FEATURE_BASICFREEZE
-    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
-    heap_segment_committed(heap_seg) = committed;
-    heap_segment_allocated(heap_seg) = allocated;
+#ifdef MULTIPLE_HEAPS
+    gc_heap* heap = gc_heap::g_heaps[0];
+#else
+    gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+    heap->update_ro_segment (reinterpret_cast<heap_segment*>(seg), allocated, committed);
 #endif // FEATURE_BASICFREEZE
 }
 
@@ -540,6 +523,23 @@ void GCHeap::ControlEvents(GCEventKeyword keyword, GCEventLevel level)
 void GCHeap::ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level)
 {
     GCEventStatus::Set(GCEventProvider_Private, keyword, level);
+}
+
+uint64_t GCHeap::GetGenerationBudget(int generation)
+{
+    uint64_t budget = 0;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [i];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif
+        dynamic_data* dd = hp->dynamic_data_of (generation);
+        budget += dd_desired_allocation (dd);
+    }
+    return budget;
 }
 
 #endif // !DACCESS_COMPILE

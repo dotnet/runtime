@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -35,8 +34,6 @@ namespace System.Reflection.Emit
         #region Constructor
         internal FieldOnTypeBuilderInstantiation(FieldInfo field, TypeBuilderInstantiation type)
         {
-            Debug.Assert(field is FieldBuilder || field is RuntimeFieldInfo);
-
             _field = field;
             _type = type;
         }
@@ -45,30 +42,14 @@ namespace System.Reflection.Emit
         internal FieldInfo FieldInfo => _field;
 
         #region MemberInfo Overrides
-        public override MemberTypes MemberType => System.Reflection.MemberTypes.Field;
+        public override MemberTypes MemberType => MemberTypes.Field;
         public override string Name => _field.Name;
         public override Type? DeclaringType => _type;
         public override Type? ReflectedType => _type;
         public override object[] GetCustomAttributes(bool inherit) { return _field.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return _field.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return _field.IsDefined(attributeType, inherit); }
-        public override int MetadataToken
-        {
-            get
-            {
-                FieldBuilder? fb = _field as FieldBuilder;
-
-                if (fb != null)
-                {
-                    return fb.MetadataToken;
-                }
-                else
-                {
-                    Debug.Assert(_field is RuntimeFieldInfo);
-                    return _field.MetadataToken;
-                }
-            }
-        }
+        public override int MetadataToken => _field.MetadataToken;
         public override Module Module => _field.Module;
         #endregion
 
@@ -84,7 +65,7 @@ namespace System.Reflection.Emit
             throw new NotImplementedException();
         }
         public override RuntimeFieldHandle FieldHandle => throw new NotImplementedException();
-        public override Type FieldType => throw new NotImplementedException();
+        public override Type FieldType => _field.FieldType;
         public override object GetValue(object? obj) { throw new InvalidOperationException(); }
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture) { throw new InvalidOperationException(); }
         public override FieldAttributes Attributes => _field.Attributes;

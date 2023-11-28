@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.ParameterInfos;
-using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
@@ -22,7 +22,6 @@ namespace System.Reflection.Runtime.PropertyInfos
     //
     // The runtime's implementation of PropertyInfo's
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimePropertyInfo : PropertyInfo
     {
         //
@@ -70,7 +69,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                return ContextTypeInfo;
+                return ContextTypeInfo.ToType();
             }
         }
 
@@ -162,7 +161,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 if (propertyType == null)
                 {
                     TypeContext typeContext = ContextTypeInfo.TypeContext;
-                    _lazyPropertyType = propertyType = PropertyTypeHandle.Resolve(typeContext);
+                    _lazyPropertyType = propertyType = PropertyTypeHandle.Resolve(typeContext).ToType();
                 }
 
                 return propertyType;
@@ -173,7 +172,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                return _reflectedType;
+                return _reflectedType.ToType();
             }
         }
 
@@ -272,18 +271,13 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         protected RuntimePropertyInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = MetadataName;
             }
+#endif
             return this;
         }
 
@@ -340,8 +334,8 @@ namespace System.Reflection.Runtime.PropertyInfos
             return defaultValue;
         }
 
-        private volatile MethodInvoker _lazyGetterInvoker;
-        private volatile MethodInvoker _lazySetterInvoker;
+        private volatile MethodBaseInvoker _lazyGetterInvoker;
+        private volatile MethodBaseInvoker _lazySetterInvoker;
 
         private volatile RuntimeNamedMethodInfo _lazyGetter;
         private volatile RuntimeNamedMethodInfo _lazySetter;
@@ -350,6 +344,8 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         private volatile Type _lazyPropertyType;
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

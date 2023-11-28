@@ -4,28 +4,37 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 
 namespace System.Reflection.Emit
 {
     internal sealed class GenericTypeParameterBuilderImpl : GenericTypeParameterBuilder
     {
         private readonly string _name;
-        private readonly TypeBuilderImpl _type;
+        private readonly TypeBuilder _type;
         private readonly int _genParamPosition;
         private GenericParameterAttributes _genParamAttributes;
-        private bool _isGenericMethodParameter;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _parent;
 
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal List<Type>? _interfaces;
+        private MethodBuilderImpl? _methodBuilder;
+        internal EntityHandle _parentHandle;
 
         internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _type = typeBuilder;
-            _isGenericMethodParameter = false;
+        }
+
+        public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder)
+        {
+            _name = name;
+            _genParamPosition = genParamPosition;
+            _methodBuilder = methodBuilder;
+            _type = methodBuilder.DeclaringType;
         }
 
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
@@ -59,8 +68,8 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericParameterConstraints() =>
             _interfaces == null ? EmptyTypes : _interfaces.ToArray();
-        public override bool IsGenericTypeParameter => !_isGenericMethodParameter;
-        public override bool IsGenericMethodParameter => _isGenericMethodParameter;
+        public override bool IsGenericTypeParameter => _methodBuilder is null;
+        public override bool IsGenericMethodParameter => _methodBuilder is not null;
         public override int GenericParameterPosition => _genParamPosition;
         public override GenericParameterAttributes GenericParameterAttributes => _genParamAttributes;
         public override string Name => _name;
@@ -75,7 +84,7 @@ namespace System.Reflection.Emit
         public override bool IsGenericParameter => true;
         public override bool IsConstructedGenericType => false;
         public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
-        public override MethodBase? DeclaringMethod => throw new NotImplementedException();
+        public override MethodBase? DeclaringMethod => _type.DeclaringMethod;
         public override Type? BaseType => _parent;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public override Guid GUID => throw new NotSupportedException();

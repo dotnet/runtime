@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Diagnostics.Runtime.Interop;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -139,6 +138,41 @@ namespace System.Reflection.Emit.Tests
             Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("TestMethod");
             Assert.Equal("TestType&", createdMethod.Invoke(null, null));
+        }
+
+        [Fact]
+        public void HasDefaultValueShouldBeFalseWhenParameterDoNotDefineDefaultValue()
+        {
+            var builder = Helpers.DynamicModule();
+            var type = builder.DefineType("MyProxy", TypeAttributes.Public);
+
+            var methodBuilder = type.DefineMethod("DoSomething", MethodAttributes.Public, CallingConventions.Standard, typeof(void), new[] { typeof(Version) });
+            var il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+
+            var typeInfo = type.CreateTypeInfo();
+            var method = typeInfo.GetMethod("DoSomething", new[] { typeof(Version) });
+            var parameters = method.GetParameters();
+            Assert.False(parameters[0].HasDefaultValue);
+        }
+
+        [Fact]
+        public void HasDefaultValueShouldBeTrueWhenParameterDoDefineDefaultValue()
+        {
+            var builder = Helpers.DynamicModule();
+            var type = builder.DefineType("MyProxy", TypeAttributes.Public);
+
+            var methodBuilder = type.DefineMethod("DoSomething", MethodAttributes.Public, CallingConventions.Standard, typeof(void), new[] { typeof(Version) });
+            ParameterBuilder parameter = methodBuilder.DefineParameter(1, ParameterAttributes.Optional | ParameterAttributes.HasDefault, "param1");
+            parameter.SetConstant(default(Version));
+            var il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+
+            var typeInfo = type.CreateTypeInfo();
+            var method = typeInfo.GetMethod("DoSomething", new[] { typeof(Version) });
+            var parameters = method.GetParameters();
+            Assert.True(parameters[0].HasDefaultValue);
+            Assert.Null(parameters[0].DefaultValue);
         }
     }
 }

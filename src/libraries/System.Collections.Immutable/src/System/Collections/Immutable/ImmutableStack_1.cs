@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -12,7 +13,8 @@ namespace System.Collections.Immutable
     /// An immutable stack.
     /// </summary>
     /// <typeparam name="T">The type of element stored by the stack.</typeparam>
-    [DebuggerDisplay("IsEmpty = {IsEmpty}; Top = {_head}")]
+    [CollectionBuilder(typeof(ImmutableStack), nameof(ImmutableStack.Create))]
+    [DebuggerDisplay("IsEmpty = {IsEmpty}, Top = {_head}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     public sealed partial class ImmutableStack<T> : IImmutableStack<T>
     {

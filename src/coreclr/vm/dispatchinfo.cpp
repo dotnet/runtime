@@ -61,7 +61,7 @@ inline UPTR DispID2HashKey(DISPID DispID)
 }
 
 // Typedef for string comparison functions.
-typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *);
+typedef int (*UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *);
 
 //--------------------------------------------------------------------------------
 // The DispatchMemberInfo class implementation.
@@ -225,7 +225,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         aDispIds[cNames] = DISPID_UNKNOWN;
 
     // Retrieve the appropriate string comparation function.
-    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? wcscmp : SString::_wcsicmp;
+    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? u16_strcmp : SString::_wcsicmp;
 
     GCPROTECT_BEGIN(ParamArray)
     {
@@ -525,7 +525,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
         // If we managed to get the member's properties then extract the name.
         if (pMemberProps)
         {
-            int MemberNameLen = (INT)wcslen(pMemberProps->pName);
+            int MemberNameLen = (INT)u16_strlen(pMemberProps->pName);
             strMemberName = new WCHAR[MemberNameLen + 1];
 
             memcpy(strMemberName, pMemberProps->pName, (MemberNameLen + 1) * sizeof(WCHAR));

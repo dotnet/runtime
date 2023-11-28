@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (!_isDeserializable)
             {
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
 
             state.Current.ReturnValue = new List<TElement>();

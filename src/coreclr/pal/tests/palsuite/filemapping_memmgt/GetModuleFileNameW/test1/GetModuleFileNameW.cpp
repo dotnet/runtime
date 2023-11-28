@@ -50,7 +50,7 @@ PALTEST(filemapping_memmgt_GetModuleFileNameW_test1_paltest_getmodulefilenamew_t
     lpModuleName = convert(ModuleName);
 
     //load a module
-        ModuleHandle = LoadLibrary(lpModuleName);
+        ModuleHandle = LoadLibraryExW(lpModuleName, NULL, 0);
 
     //free the memory
     free(lpModuleName);

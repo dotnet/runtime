@@ -14,7 +14,6 @@ parameters:
   dependsOn: []
   dependOnEvaluatePaths: false
   crossBuild: false
-  pgoType: ''
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -69,7 +68,7 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
-        value: 'libs.sfx+libs.oob+clr.iltools /p:RefOnly=true -c Release -ci'
+        value: 'libs+clr.iltools -c Release -ci'
       - name: compilerArg
         value: ''
 
@@ -79,6 +78,10 @@ jobs:
       - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
         - name: runtimeFlavorArgs
           value: '-mono'
+
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+        - name: runtimeFlavorArgs
+          value: '-nativeaot'
 
       - name: testTreeFilterArg
         value: ''
@@ -145,6 +148,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

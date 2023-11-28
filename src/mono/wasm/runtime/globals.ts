@@ -3,68 +3,105 @@
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
+/// <reference path="./types/sidecar.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
-import { RuntimeAPI } from "./types-api";
-import type { DotnetModule, GlobalObjects, EmscriptenInternals, EmscriptenModuleInternal, RuntimeHelpers } from "./types";
-import type { EmscriptenModule } from "./types/emscripten";
+import gitHash from "consts:gitHash";
+
+import { RuntimeAPI } from "./types/index";
+import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & DotnetModule & EmscriptenModuleInternal;
+export let Module: DotnetModuleInternal;
 export let INTERNAL: any;
 
-// these are imported and re-exported from emscripten internals
+// keep in sync with src\mono\wasm\runtime\loader\globals.ts and src\mono\wasm\test-main.js
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
-export const ENVIRONMENT_IS_WEB = typeof window == "object";
-export let ENVIRONMENT_IS_SHELL: boolean;
-export let ENVIRONMENT_IS_WORKER: boolean;
+export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
+export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
+export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
+export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
+export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
+
+// these are imported and re-exported from emscripten internals
 export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
-// this is when we link with workload tools. The consts:WasmEnableLegacyJsInterop is when we compile with rollup.
-export let disableLegacyJsInterop = false;
-export let earlyExports: GlobalObjects;
+export let loaderHelpers: LoaderHelpers = null as any;
+// this is when we link with workload tools. The consts:wasmEnableLegacyJsInterop is when we compile with rollup.
+export let linkerDisableLegacyJsInterop = false;
+export let linkerWasmEnableSIMD = true;
+export let linkerWasmEnableEH = true;
+export let linkerEnableAotProfiler = false;
+export let linkerEnableBrowserProfiler = false;
+export let linkerRunAOTCompilation = false;
+export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function passEmscriptenInternals(
-    internals: EmscriptenInternals,
-): void {
-    ENVIRONMENT_IS_SHELL = internals.isShell;
-    ENVIRONMENT_IS_WORKER = internals.isWorker;
+export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
-    disableLegacyJsInterop = internals.disableLegacyJsInterop;
+    linkerDisableLegacyJsInterop = internals.linkerDisableLegacyJsInterop;
+    linkerWasmEnableSIMD = internals.linkerWasmEnableSIMD;
+    linkerWasmEnableEH = internals.linkerWasmEnableEH;
+    linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
+    linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
+    linkerRunAOTCompilation = internals.linkerRunAOTCompilation;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
+    runtimeHelpers.moduleGitHash = internals.gitHash;
 }
 
-export function setGlobalObjects(
-    globalObjects: GlobalObjects,
-) {
-    earlyExports = globalObjects;
+// NOTE: this is called AFTER the config is loaded
+export function setRuntimeGlobals(globalObjects: GlobalObjects) {
+    if (_runtimeModuleLoaded) {
+        throw new Error("Runtime module already loaded");
+    }
+    _runtimeModuleLoaded = true;
     Module = globalObjects.module;
     INTERNAL = globalObjects.internal;
-    runtimeHelpers = globalObjects.helpers;
+    runtimeHelpers = globalObjects.runtimeHelpers;
+    loaderHelpers = globalObjects.loaderHelpers;
     exportedRuntimeAPI = globalObjects.api;
 
-    Object.assign(globalObjects.module, {
-        disableDotnet6Compatibility: true,
-        config: { environmentVariables: {} }
+    Object.assign(runtimeHelpers, {
+        gitHash,
+        allAssetsInMemory: createPromiseController<void>(),
+        dotnetReady: createPromiseController<any>(),
+        afterInstantiateWasm: createPromiseController<void>(),
+        beforePreInit: createPromiseController<void>(),
+        afterPreInit: createPromiseController<void>(),
+        afterPreRun: createPromiseController<void>(),
+        beforeOnRuntimeInitialized: createPromiseController<void>(),
+        afterOnRuntimeInitialized: createPromiseController<void>(),
+        afterPostRun: createPromiseController<void>(),
+        mono_wasm_exit: () => {
+            throw new Error("Mono shutdown");
+        },
+        abort: (reason: any) => {
+            throw reason;
+        }
     });
+
     Object.assign(globalObjects.module.config!, {}) as any;
-    Object.assign(earlyExports.api, {
+    Object.assign(globalObjects.api, {
         Module: globalObjects.module, ...globalObjects.module
     });
-    Object.assign(earlyExports.api, {
-        INTERNAL: earlyExports.internal,
+    Object.assign(globalObjects.api, {
+        INTERNAL: globalObjects.internal,
     });
-    Object.assign(runtimeHelpers, {
-        javaScriptExports: {} as any,
-        mono_wasm_bindings_is_ready: false,
-        maxParallelDownloads: 16,
-        enableDownloadRetry: true,
-        config: globalObjects.module.config,
-        diagnosticTracing: false,
-        enablePerfMeasure: true,
-        loadedFiles: []
-    } as Partial<RuntimeHelpers>);
+}
+
+export function createPromiseController<T>(afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
+    return loaderHelpers.createPromiseController<T>(afterResolve, afterReject);
+}
+
+// this will abort the program if the condition is false
+// see src\mono\wasm\runtime\rollup.config.js
+// we inline the condition, because the lambda could allocate closure on hot path otherwise
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+    if (condition) return;
+    const message = "Assert failed: " + (typeof messageFactory === "function"
+        ? messageFactory()
+        : messageFactory);
+    const error = new Error(message);
+    runtimeHelpers.abort(error);
 }

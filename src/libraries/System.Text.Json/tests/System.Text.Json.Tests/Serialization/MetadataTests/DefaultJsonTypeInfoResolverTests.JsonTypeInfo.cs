@@ -1440,11 +1440,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, new());
 
-            // Invalid kinds default to null and can be set to null.
-            Assert.Null(jsonTypeInfo.PreferredPropertyObjectCreationHandling);
-            jsonTypeInfo.PreferredPropertyObjectCreationHandling = null;
+            // Invalid kinds default to null.
             Assert.Null(jsonTypeInfo.PreferredPropertyObjectCreationHandling);
 
+            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.PreferredPropertyObjectCreationHandling = null);
             Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Populate);
             Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Replace);
             Assert.Null(jsonTypeInfo.PreferredPropertyObjectCreationHandling);

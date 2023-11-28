@@ -1,40 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./globals";
-import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types";
-import { CharPtr, TypedArray, VoidPtr } from "./types/emscripten";
+import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
+import { TypedArray, VoidPtr } from "./types/emscripten";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
 export const bound_cs_function_symbol = Symbol.for("wasm bound_cs_function");
 export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
 export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
-
-/**
- * JSFunctionSignature is pointer to [
- *      Version: number,
- *      ArgumentCount: number,
- *      exc:  { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      res:  { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      arg1: { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      arg2: { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      ...
- *      ] 
- * 
- * Layout of the call stack frame buffers is array of JSMarshalerArgument
- * JSMarshalerArguments is pointer to [
- *      exc:  {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      res:  {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      arg1: {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      arg2: {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      ...
- *      ]
- */
-
+export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 
 export const JavaScriptMarshalerArgSize = 16;
 export const JSMarshalerTypeSize = 32;
@@ -68,37 +49,27 @@ export function get_sig(signature: JSFunctionSignature, index: number): JSMarsha
 
 export function get_signature_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(sig);
+    return <any>getU8(sig);
 }
 
 export function get_signature_res_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 16);
-}
-
-export function get_signature_custom_code(sig: JSMarshalerType): CharPtr {
-    mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 8);
-}
-
-export function get_signature_custom_code_len(sig: JSMarshalerType): number {
-    mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 12);
+    return <any>getU8(<any>sig + 16);
 }
 
 export function get_signature_arg1_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 20);
+    return <any>getU8(<any>sig + 20);
 }
 
 export function get_signature_arg2_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 24);
+    return <any>getU8(<any>sig + 24);
 }
 
 export function get_signature_arg3_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 28);
+    return <any>getU8(<any>sig + 28);
 }
 
 export function get_signature_argument_count(signature: JSFunctionSignature): number {
@@ -113,29 +84,29 @@ export function get_signature_version(signature: JSFunctionSignature): number {
 
 export function get_sig_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null signatures");
-    return <any>getU32(sig);
+    return <any>getU8(sig);
 }
 
 export function get_arg_type(arg: JSMarshalerArgument): MarshalerType {
     mono_assert(arg, "Null arg");
-    const type = getU32(<any>arg + 12);
+    const type = getU8(<any>arg + 12);
     return <any>type;
 }
 
 export function get_arg_element_type(arg: JSMarshalerArgument): MarshalerType {
     mono_assert(arg, "Null arg");
-    const type = getU32(<any>arg + 4);
+    const type = getU8(<any>arg + 13);
     return <any>type;
 }
 
 export function set_arg_type(arg: JSMarshalerArgument, type: MarshalerType): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 12, type);
+    setU8(<any>arg + 12, type);
 }
 
 export function set_arg_element_type(arg: JSMarshalerArgument, type: MarshalerType): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 4, type);
+    setU8(<any>arg + 13, type);
 }
 
 export function get_arg_b8(arg: JSMarshalerArgument): boolean {
@@ -165,7 +136,7 @@ export function get_arg_i32(arg: JSMarshalerArgument): number {
 
 export function get_arg_intptr(arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
-    return getU32(<any>arg);
+    return getI32(<any>arg);
 }
 
 export function get_arg_i52(arg: JSMarshalerArgument): number {
@@ -198,7 +169,7 @@ export function get_arg_f64(arg: JSMarshalerArgument): number {
 
 export function set_arg_b8(arg: JSMarshalerArgument, value: boolean): void {
     mono_assert(arg, "Null arg");
-    mono_assert(typeof value === "boolean", () => `Value is not a Boolean: ${value} (${typeof (value)})`);
+    mono_check(typeof value === "boolean", () => `Value is not a Boolean: ${value} (${typeof (value)})`);
     setU8(<any>arg, value ? 1 : 0);
 }
 
@@ -224,12 +195,12 @@ export function set_arg_i32(arg: JSMarshalerArgument, value: number): void {
 
 export function set_arg_intptr(arg: JSMarshalerArgument, value: VoidPtr): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg, <any>value);
+    setI32(<any>arg, <any>value);
 }
 
 export function set_arg_i52(arg: JSMarshalerArgument, value: number): void {
     mono_assert(arg, "Null arg");
-    mono_assert(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
+    mono_check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
     // we know that conversion to Int64 would be done on C# side
     setF64(<any>arg, value);
 }
@@ -258,22 +229,22 @@ export function set_arg_f32(arg: JSMarshalerArgument, value: number): void {
 
 export function get_arg_js_handle(arg: JSMarshalerArgument): JSHandle {
     mono_assert(arg, "Null arg");
-    return <any>getU32(<any>arg + 4);
+    return <any>getI32(<any>arg + 4);
 }
 
 export function set_js_handle(arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 4, <any>jsHandle);
+    setI32(<any>arg + 4, <any>jsHandle);
 }
 
 export function get_arg_gc_handle(arg: JSMarshalerArgument): GCHandle {
     mono_assert(arg, "Null arg");
-    return <any>getU32(<any>arg + 4);
+    return <any>getI32(<any>arg + 4);
 }
 
 export function set_gc_handle(arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 4, <any>gcHandle);
+    setI32(<any>arg + 4, <any>gcHandle);
 }
 
 export function get_string_root(arg: JSMarshalerArgument): WasmRoot<MonoString> {
@@ -317,6 +288,7 @@ export class ManagedObject implements IDisposable {
 
 export class ManagedError extends Error implements IDisposable {
     private superStack: any;
+    private managed_stack: any;
     constructor(message: string) {
         super(message);
         this.superStack = Object.getOwnPropertyDescriptor(this, "stack"); // this works on Chrome
@@ -327,17 +299,26 @@ export class ManagedError extends Error implements IDisposable {
 
     getSuperStack() {
         if (this.superStack) {
-            return this.superStack.value;
+            if (this.superStack.value !== undefined)
+                return this.superStack.value;
+            if (this.superStack.get !== undefined)
+                return this.superStack.get.call(this);
         }
         return super.stack; // this works on FF
     }
 
     getManageStack() {
-        const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
-        if (gc_handle) {
-            const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
-            if (managed_stack) {
-                return managed_stack + "\n" + this.getSuperStack();
+        if (this.managed_stack) {
+            return this.managed_stack;
+        }
+        if (loaderHelpers.is_runtime_running() && (!MonoWasmThreads || runtimeHelpers.jsSynchronizationContextInstalled)) {
+            const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
+            if (gc_handle !== GCHandleNull) {
+                const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
+                if (managed_stack) {
+                    this.managed_stack = managed_stack + "\n" + this.getSuperStack();
+                    return this.managed_stack;
+                }
             }
         }
         return this.getSuperStack();
@@ -386,45 +367,45 @@ abstract class MemoryView implements IMemoryView {
     _unsafe_create_view(): TypedArray {
         // this view must be short lived so that it doesn't fail after wasm memory growth
         // for that reason we also don't give the view out to end user and provide set/slice/copyTo API instead
-        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(Module.HEAPU8.buffer, <any>this._pointer, this._length)
-            : this._viewType == MemoryViewType.Int32 ? new Int32Array(Module.HEAP32.buffer, <any>this._pointer, this._length)
-                : this._viewType == MemoryViewType.Double ? new Float64Array(Module.HEAPF64.buffer, <any>this._pointer, this._length)
+        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(localHeapViewU8().buffer, <any>this._pointer, this._length)
+            : this._viewType == MemoryViewType.Int32 ? new Int32Array(localHeapViewI32().buffer, <any>this._pointer, this._length)
+                : this._viewType == MemoryViewType.Double ? new Float64Array(localHeapViewF64().buffer, <any>this._pointer, this._length)
                     : null;
         if (!view) throw new Error("NotImplementedException");
         return view;
     }
 
     set(source: TypedArray, targetOffset?: number): void {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         const targetView = this._unsafe_create_view();
-        mono_assert(source && targetView && source.constructor === targetView.constructor, () => `Expected ${targetView.constructor}`);
+        mono_check(source && targetView && source.constructor === targetView.constructor, () => `Expected ${targetView.constructor}`);
         targetView.set(source, targetOffset);
         // TODO consider memory write barrier
     }
 
     copyTo(target: TypedArray, sourceOffset?: number): void {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         const sourceView = this._unsafe_create_view();
-        mono_assert(target && sourceView && target.constructor === sourceView.constructor, () => `Expected ${sourceView.constructor}`);
+        mono_check(target && sourceView && target.constructor === sourceView.constructor, () => `Expected ${sourceView.constructor}`);
         const trimmedSource = sourceView.subarray(sourceOffset);
         // TODO consider memory read barrier
         target.set(trimmedSource);
     }
 
     slice(start?: number, end?: number): TypedArray {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         const sourceView = this._unsafe_create_view();
         // TODO consider memory read barrier
         return sourceView.slice(start, end);
     }
 
     get length(): number {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         return this._length;
     }
 
     get byteLength(): number {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         return this._viewType == MemoryViewType.Byte ? this._length
             : this._viewType == MemoryViewType.Int32 ? this._length << 2
                 : this._viewType == MemoryViewType.Double ? this._length << 3

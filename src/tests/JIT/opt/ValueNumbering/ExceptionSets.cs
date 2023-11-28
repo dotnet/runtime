@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 #pragma warning disable CS0253 // Possible unintended reference comparison
 
-class ExceptionSets
+public class ExceptionSets
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

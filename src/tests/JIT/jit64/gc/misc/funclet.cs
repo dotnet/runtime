@@ -9,7 +9,7 @@ using Xunit;
 public class test
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -33,7 +33,6 @@ public class test
 
             System.Console.WriteLine("just after call");
         }
-        return 100;
     }
 
     internal static void VarArgFunction(__arglist)

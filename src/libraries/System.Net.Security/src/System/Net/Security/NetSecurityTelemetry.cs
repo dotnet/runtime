@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Security.Authentication;
 using System.Threading;
 
@@ -209,7 +209,7 @@ namespace System.Net.Security
 
             double duration = Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds;
             handshakeDurationCounter?.WriteMetric(duration);
-            _handshakeDurationCounter!.WriteMetric(duration);
+            _handshakeDurationCounter?.WriteMetric(duration);
 
             HandshakeStop(protocol);
         }

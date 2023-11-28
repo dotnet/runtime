@@ -10,12 +10,7 @@ namespace System.Text.Json.Serialization
     /// a property or field is ignored during serialization and deserialization. This option
     /// overrides the setting on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>.
     /// </summary>
-#if BUILDING_SOURCE_GENERATOR
-    internal
-#else
-    public
-#endif
-    enum JsonIgnoreCondition
+    public enum JsonIgnoreCondition
     {
         /// <summary>
         /// Property is never ignored during serialization or deserialization.

@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 #pragma warning disable CA1844 // Memory-based Read/WriteAsync
 
@@ -141,7 +141,7 @@ namespace System.Net.WebSockets
 
                 if (!_inOpaqueMode)
                 {
-                    bytesRead = await _inputStream.ReadAsync(buffer, offset, count, cancellationToken).SuppressContextFlow<int>();
+                    bytesRead = await _inputStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -165,7 +165,7 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
-                        bytesRead = await _readTaskCompletionSource.Task.SuppressContextFlow<int>();
+                        bytesRead = await _readTaskCompletionSource.Task.ConfigureAwait(false);
                     }
                 }
             }
@@ -355,7 +355,7 @@ namespace System.Net.WebSockets
                 _writeEventArgs.BufferList = sendBuffers;
                 if (WriteAsyncFast(_writeEventArgs))
                 {
-                    await _writeTaskCompletionSource.Task.SuppressContextFlow();
+                    await _writeTaskCompletionSource.Task.ConfigureAwait(false);
                 }
             }
             catch (Exception error)
@@ -398,7 +398,7 @@ namespace System.Net.WebSockets
 
                 if (!_inOpaqueMode)
                 {
-                    await _outputStream.WriteAsync(buffer, offset, count, cancellationToken).SuppressContextFlow();
+                    await _outputStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -414,7 +414,7 @@ namespace System.Net.WebSockets
                     _writeEventArgs.SetBuffer(buffer, offset, count);
                     if (WriteAsyncFast(_writeEventArgs))
                     {
-                        await _writeTaskCompletionSource.Task.SuppressContextFlow();
+                        await _writeTaskCompletionSource.Task.ConfigureAwait(false);
                     }
                 }
             }
@@ -573,7 +573,7 @@ namespace System.Net.WebSockets
                 _writeEventArgs!.SetShouldCloseOutput();
                 if (WriteAsyncFast(_writeEventArgs))
                 {
-                    await _writeTaskCompletionSource.Task.SuppressContextFlow();
+                    await _writeTaskCompletionSource.Task.ConfigureAwait(false);
                 }
             }
             catch (Exception error)

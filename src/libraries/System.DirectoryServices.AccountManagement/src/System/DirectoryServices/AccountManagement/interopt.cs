@@ -19,15 +19,23 @@ namespace System.DirectoryServices.AccountManagement
     {
         public static int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject)
         {
+            IntPtr ppObjPtr = IntPtr.Zero;
             try
             {
-                int hr = Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out IntPtr ppObjPtr);
+                int hr = Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out ppObjPtr);
                 ppObject = Marshal.GetObjectForIUnknown(ppObjPtr);
                 return hr;
             }
             catch (EntryPointNotFoundException)
             {
                 throw new InvalidOperationException(SR.AdsiNotInstalled);
+            }
+            finally
+            {
+                if (ppObjPtr != IntPtr.Zero)
+                {
+                    Marshal.Release(ppObjPtr);
+                }
             }
         }
 

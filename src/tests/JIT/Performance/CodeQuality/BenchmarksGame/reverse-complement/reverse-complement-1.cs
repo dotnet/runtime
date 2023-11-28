@@ -16,6 +16,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -44,7 +45,8 @@ namespace BenchmarksGame
         const byte Gt = (byte)'>';
         const byte Lf = (byte)'\n';
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
             var outBytes = new byte[helpers.FileLength];

@@ -8,12 +8,16 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class Sha256Tests : HashAlgorithmTestDriver
+    public class Sha256Tests : HashAlgorithmTestDriver<Sha256Tests.Traits>
     {
-        protected override HashAlgorithm Create()
+        public sealed class Traits : IHashTrait
         {
-            return SHA256.Create();
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => SHA256.HashSizeInBytes;
         }
+
+        protected override HashAlgorithm Create() => SHA256.Create();
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA256;
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
@@ -145,6 +149,13 @@ namespace System.Security.Cryptography.Tests
                 "a",
                 1000000,
                 "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
+        }
+
+        [Fact]
+        public void Sha256_HashSizes()
+        {
+            Assert.Equal(256, SHA256.HashSizeInBits);
+            Assert.Equal(32, SHA256.HashSizeInBytes);
         }
     }
 }

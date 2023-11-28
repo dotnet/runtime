@@ -8,7 +8,7 @@ To use a local build of the analyzer in another project, modify the `Analyzer` I
 <Target Name="UseLocalILLinkAnalyzer" BeforeTargets="CoreCompile">
   <ItemGroup>
     <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'ILLink.RoslynAnalyzer'" />
-    <Analyzer Include="/path/to/linker/repo/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll" />
+    <Analyzer Include="path/to/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll" />
   </ItemGroup>
 </Target>
 ```

@@ -159,6 +159,7 @@ End
 Crst DebuggerMutex
     AcquiredBefore AvailableParamTypes
                    DynamicIL LoaderHeap ModuleLookupTable
+                   MethodDescBackpatchInfoTracker JitInlineTrackingMap CodeVersioning
 
     // Disabled per bug 581892
     // AcquiredBefore DebuggerController
@@ -393,16 +394,13 @@ End
 Crst RCWCleanupList
 End
 
-Crst ExternalObjectContextCache
-End
-
 Crst Reflection
     AcquiredBefore LoaderHeap UnresolvedClassLock
 End
 
 // Used to synchronize all rejit information stored in a given AppDomain.
 Crst CodeVersioning
-    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs
+    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs PerfMap
     AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex MethodDescBackpatchInfoTracker
                 ReadyToRunEntryPointToMethodDescMap ClassInit AppDomainCache TypeIDMap FusionAppCtx COMWrapperCache InteropData
 End
@@ -489,6 +487,7 @@ Crst ThreadStore
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
                    JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
+                   JitInlineTrackingMap
 End
 
 Crst TypeIDMap
@@ -540,7 +539,7 @@ Crst InlineTrackingMap
 End
 
 Crst JitInlineTrackingMap
-    AcquiredBefore CodeVersioning ThreadStore MethodDescBackpatchInfoTracker
+    AcquiredBefore CodeVersioning MethodDescBackpatchInfoTracker
 End
 
 Crst EventPipe
@@ -580,4 +579,8 @@ End
 
 Crst StaticBoxInit
     AcquiredBefore LoaderHeap FrozenObjectHeap AssemblyLoader
+End
+
+Crst PerfMap
+    AcquiredAfter CodeVersioning AssemblyList
 End

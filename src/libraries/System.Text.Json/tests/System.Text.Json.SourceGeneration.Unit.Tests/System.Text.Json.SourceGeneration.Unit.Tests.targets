@@ -12,10 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)..\tests\SourceGenerators\GeneratorTestHelpers.cs" Link="SourceGenerators\GeneratorTestHelpers.cs" />
     <Compile Include="CompilationHelper.cs" />
     <Compile Include="JsonSourceGeneratorDiagnosticsTests.cs" />
+    <Compile Include="JsonSourceGeneratorIncrementalTests.cs" />
     <Compile Include="JsonSourceGeneratorTests.cs" />
-    <Compile Include="TypeWrapperTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

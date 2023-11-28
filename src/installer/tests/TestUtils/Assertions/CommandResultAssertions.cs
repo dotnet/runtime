@@ -74,6 +74,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
+        public AndConstraint<CommandResultAssertions> NotHaveStdOutMatching(string pattern, RegexOptions options = RegexOptions.None)
+        {
+            Execute.Assertion.ForCondition(!Regex.IsMatch(Result.StdOut, pattern, options))
+                .FailWith($"The command output matched a pattern is should not have matched. Pattern: '{pattern}'{GetDiagnosticsInfo()}");
+            return new AndConstraint<CommandResultAssertions>(this);
+        }
+
         public AndConstraint<CommandResultAssertions> HaveStdErr()
         {
             Execute.Assertion.ForCondition(!string.IsNullOrEmpty(Result.StdErr))

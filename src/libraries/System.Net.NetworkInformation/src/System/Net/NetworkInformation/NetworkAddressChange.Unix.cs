@@ -166,10 +166,10 @@ namespace System.Net.NetworkInformation
             Marshal.InitHandle(sh, newSocket);
             Socket = new Socket(sh);
 
-            // Don't capture ExecutionContext.
-            ThreadPool.UnsafeQueueUserWorkItem(
-                static socket => ReadEventsAsync(socket),
-                Socket, preferLocal: false);
+            using (ExecutionContext.SuppressFlow())
+            {
+                _ = ReadEventsAsync(Socket);
+            }
         }
 
         private static void CloseSocket()
@@ -180,8 +180,9 @@ namespace System.Net.NetworkInformation
             Socket = null;
         }
 
-        private static async void ReadEventsAsync(Socket socket)
+        private static async Task ReadEventsAsync(Socket socket)
         {
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
             try
             {
                 while (true)
@@ -199,9 +200,13 @@ namespace System.Net.NetworkInformation
                 }
             }
             catch (ObjectDisposedException)
-            { } // Socket disposed.
+            {
+                // Socket disposed.
+            }
             catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
-            { } // ReceiveAsync aborted by disposing Socket.
+            {
+                // ReceiveAsync aborted by disposing Socket.
+            }
             catch (Exception ex)
             {
                 // Unexpected error.

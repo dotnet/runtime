@@ -187,6 +187,7 @@ namespace System.Net
         ExpectationFailed = 417,
         MisdirectedRequest = 421,
         UnprocessableEntity = 422,
+        UnprocessableContent = 422,
         Locked = 423,
         FailedDependency = 424,
         UpgradeRequired = 426,
@@ -348,14 +349,17 @@ namespace System.Net
         public System.Net.NetworkCredential GetCredential(string? host, int port, string? authenticationType) { throw null; }
         public System.Net.NetworkCredential GetCredential(System.Uri? uri, string? authenticationType) { throw null; }
     }
-    public partial class SocketAddress
+    public partial class SocketAddress : System.IEquatable<System.Net.SocketAddress>
     {
         public SocketAddress(System.Net.Sockets.AddressFamily family) { }
         public SocketAddress(System.Net.Sockets.AddressFamily family, int size) { }
         public System.Net.Sockets.AddressFamily Family { get { throw null; } }
         public byte this[int offset] { get { throw null; } set { } }
-        public int Size { get { throw null; } }
+        public int Size { get { throw null; } set { } }
+        public static int GetMaximumAddressSize(System.Net.Sockets.AddressFamily addressFamily) { throw null; }
+        public System.Memory<byte> Buffer { get { throw null; } }
         public override bool Equals(object? comparand) { throw null; }
+        public bool Equals(System.Net.SocketAddress? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }

@@ -670,5 +670,102 @@ namespace DebuggerTests
             CheckNumber(int_arr_3, "1, 2, 1", 121);
             CheckNumber(int_arr_3, "1, 2, 2", 122);
         }
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("s")]
+        [InlineData("classWithInlineArrayField.myInlineArray")]
+        [InlineData("classWithInlineArrayField.InlineArrayProp")]
+        [InlineData("classWithInlineArrayField.myStructWithInlineArray.myInlineArray")]
+        public async Task InspectInlineArray(string varName)
+        {
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
+
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'[debugger-test] DebuggerTests.InlineArray:run'" +
+                "); }, 1);";
+
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 442, 12, "DebuggerTests.InlineArray.run");
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            await EvaluateOnCallFrameAndCheck(id,
+                   ($"{varName}[0]", TObject("DebuggerTests.InlineArray.E")),
+                   ($"{varName}[a]", TObject("DebuggerTests.InlineArray.E")),
+                   ($"{varName}[b]", TObject("DebuggerTests.InlineArray.E")),
+                   ($"{varName}[1]", TObject("DebuggerTests.InlineArray.E")));
+            var (_, res) = await EvaluateOnCallFrame(id,$"{varName}[43]", expect_ok: false);
+            Assert.Equal($"Unable to evaluate element access '{varName}[43]': Index is outside the bounds of the inline array", res.Error["result"]?["description"]?.Value<string>());
+
+            var (s_zero, _) = await EvaluateOnCallFrame(id, $"{varName}[0]");
+            await CheckValue(s_zero, TObject("DebuggerTests.InlineArray.E"), nameof(s_zero));
+            var s_zero_props = await GetProperties(s_zero["objectId"]?.Value<string>());
+            await CheckProps(s_zero_props, new
+            {
+                x = TNumber(1),
+                y = TNumber(2),
+                o = TObject("DebuggerTests.InlineArray.One")
+            }, "s_zero_props#1");
+
+            var (s_one, _) = await EvaluateOnCallFrame(id, $"{varName}[1]");
+            await CheckValue(s_one, TObject("DebuggerTests.InlineArray.E"), nameof(s_one));
+            var ss_one_props = await GetProperties(s_one["objectId"]?.Value<string>());
+            await CheckProps(ss_one_props, new
+            {
+                x = TNumber(3),
+                y = TNumber(4),
+                o = TObject("DebuggerTests.InlineArray.Two")
+            }, "s_one_props#1");
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task InspectInlineArray2()
+        {
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
+
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'[debugger-test] DebuggerTests.InlineArray:run2'" +
+                "); }, 1);";
+
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 460, 12, "DebuggerTests.InlineArray.run2");
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            await EvaluateOnCallFrameAndCheck(id,
+                   ($"a2[0]", TNumber(1)),
+                   ($"a3[0]", TNumber(2)),
+                   ($"a4[0]", TObject("DebuggerTests.InlineArray.E")),
+                   ($"Arr4.myStaticField", TNumber(50)),
+                   ($"a2.InlineMethod(1)", TNumber(101))
+                   );
+
+            var (_, res) = await EvaluateOnCallFrame(id,$"a3[1]", expect_ok: false);
+            Assert.Equal($"Unable to evaluate element access 'a3[1]': Index is outside the bounds of the inline array", res.Error["result"]?["description"]?.Value<string>());
+
+            var (s_zero, _) = await EvaluateOnCallFrame(id, $"a4[0]");
+            await CheckValue(s_zero, TObject("DebuggerTests.InlineArray.E"), nameof(s_zero));
+            var s_zero_props = await GetProperties(s_zero["objectId"]?.Value<string>());
+            await CheckProps(s_zero_props, new
+            {
+                x = TNumber(1),
+                y = TNumber(2),
+                o = TObject("DebuggerTests.InlineArray.One")
+            }, "s_zero_props#1");
+
+            var (s_one, _) = await EvaluateOnCallFrame(id, $"a4[1]");
+            await CheckValue(s_one, TObject("DebuggerTests.InlineArray.E"), nameof(s_one));
+            var ss_one_props = await GetProperties(s_one["objectId"]?.Value<string>());
+            await CheckProps(ss_one_props, new
+            {
+                x = TNumber(3),
+                y = TNumber(4),
+                o = TObject("DebuggerTests.InlineArray.Two")
+            }, "s_one_props#1");
+
+            var (s_two, _) = await EvaluateOnCallFrame(id, $"a4");
+            await CheckValue(s_two, TObject("DebuggerTests.InlineArray.Arr4"), nameof(s_two));
+            var s_two_props = await GetProperties(s_two["objectId"]?.Value<string>());
+            await CheckProps(s_two_props, new
+            {
+                myStaticField = TNumber(50),
+                e = TObject("DebuggerTests.InlineArray.E"),
+                Length = TNumber(42)
+            }, "s_two_props#1");
+        }
     }
 }

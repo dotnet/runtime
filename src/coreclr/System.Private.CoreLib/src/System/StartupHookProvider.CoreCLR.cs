@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -12,7 +12,7 @@ namespace System
 {
     internal static partial class StartupHookProvider
     {
-        private static void ManagedStartup()
+        private static unsafe void ManagedStartup(char* pDiagnosticStartupHooks)
         {
 #if FEATURE_PERFTRACING
             if (EventSource.IsSupported)
@@ -20,7 +20,7 @@ namespace System
 #endif
 
             if (IsSupported)
-                ProcessStartupHooks();
+                ProcessStartupHooks(new string(pDiagnosticStartupHooks));
         }
     }
 }

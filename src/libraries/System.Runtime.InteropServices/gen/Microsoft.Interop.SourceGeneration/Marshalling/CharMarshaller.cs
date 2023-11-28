@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -16,24 +15,22 @@ namespace Microsoft.Interop
     {
         private static readonly ManagedTypeInfo s_nativeType = new SpecialTypeInfo("ushort", "ushort", SpecialType.System_UInt16);
 
-        public Utf16CharMarshaller()
-        {
-        }
-
-        public bool IsSupported(TargetFramework target, Version version) => true;
-
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            if (!info.IsByRef)
-            {
-                return ValueBoundaryBehavior.ManagedIdentifier;
-            }
-            else if (IsPinningPathSupported(info, context))
+            if (IsPinningPathSupported(info, context))
             {
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
+            else if (!UsesNativeIdentifier(info, context))
+            {
+                return ValueBoundaryBehavior.ManagedIdentifier;
+            }
+            else if (info.IsByRef)
+            {
+                return ValueBoundaryBehavior.AddressOfNativeIdentifier;
+            }
 
-            return ValueBoundaryBehavior.AddressOfNativeIdentifier;
+            return ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
@@ -125,10 +122,9 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return context.IsInStubReturnPosition(info) || (info.IsByRef && !context.SingleFrameSpansNativeContext);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
+            return !IsPinningPathSupported(info, context) && (elementMarshalDirection != MarshalDirection.ManagedToUnmanaged || info.IsByRef);
         }
-
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
@@ -138,5 +134,10 @@ namespace Microsoft.Interop
         }
 
         private static string PinnedIdentifier(string identifier) => $"{identifier}__pinned";
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        {
+            return ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
+        }
+
     }
 }

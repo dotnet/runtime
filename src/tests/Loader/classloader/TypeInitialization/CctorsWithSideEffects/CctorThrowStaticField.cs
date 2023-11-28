@@ -13,6 +13,7 @@ Expected: Should return the same exception.
 */
 
 using System;
+using Xunit;
 
 
 public class A 
@@ -47,7 +48,8 @@ public struct B
 
 public class Test_CctorThrowStaticField
 {	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{ 
 		bool result = true;
 		

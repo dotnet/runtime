@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Exception class for invalid arguments to a method.
-**
-**
-=============================================================================*/
-
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -17,11 +8,11 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    // The ArgumentException is thrown when an argument does not meet
-    // the contract of the method.  Ideally it should give a meaningful error
-    // message describing what was wrong and which parameter is incorrect.
+    /// <summary>
+    /// The exception that is thrown when one of the arguments provided to a method is not valid.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentException : SystemException
     {
         private readonly string? _paramName;
@@ -97,7 +88,7 @@ namespace System
 
         private void SetMessageField()
         {
-            if (_message == null && HResult == System.HResults.COR_E_ARGUMENT)
+            if (_message == null && HResult == HResults.COR_E_ARGUMENT)
             {
                 _message = SR.Arg_ArgumentException;
             }

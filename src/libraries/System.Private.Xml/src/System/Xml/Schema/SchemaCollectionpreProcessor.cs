@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.Versioning;
 
 namespace System.Xml.Schema
@@ -51,7 +51,7 @@ namespace System.Xml.Schema
             _schema = schema;
             _xmlns = NameTable.Add("xmlns");
 
-            Cleanup(schema);
+            SchemaCollectionPreprocessor.Cleanup(schema);
             if (loadExternals && _xmlResolver != null)
             {
                 _schemaLocations = new Hashtable(); //new Dictionary<Uri, Uri>();
@@ -80,7 +80,7 @@ namespace System.Xml.Schema
             return !HasErrors;
         }
 
-        private void Cleanup(XmlSchema schema)
+        private static void Cleanup(XmlSchema schema)
         {
             if (schema.IsProcessing)
             {

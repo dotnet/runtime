@@ -51,7 +51,7 @@ namespace ILCompiler.Dataflow
         public override int GetHashCode() => base.GetHashCode();
 
         public InterproceduralState Clone()
-            => new(_ilProvider, MethodBodies.Clone(), HoistedLocals.Clone(), lattice);
+            => new(_ilProvider, MethodBodies.DeepCopy(), HoistedLocals.Clone(), lattice);
 
         public void TrackMethod(MethodDesc method)
         {

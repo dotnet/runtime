@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -83,7 +85,7 @@ namespace System.Collections.Generic
         public Dictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
 
         public Dictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) :
-            this(dictionary != null ? dictionary.Count : 0, comparer)
+            this(dictionary?.Count ?? 0, comparer)
         {
             if (dictionary == null)
             {
@@ -106,15 +108,15 @@ namespace System.Collections.Generic
             AddRange(collection);
         }
 
-        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> enumerable)
         {
-            // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
+            // It is likely that the passed-in enumerable is Dictionary<TKey,TValue>. When this is the case,
             // avoid the enumerator allocation and overhead by looping through the entries array directly.
             // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
             // back-compat with subclasses that may have overridden the enumerator behavior.
-            if (collection.GetType() == typeof(Dictionary<TKey, TValue>))
+            if (enumerable.GetType() == typeof(Dictionary<TKey, TValue>))
             {
-                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)collection;
+                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)enumerable;
 
                 if (source.Count == 0)
                 {
@@ -150,8 +152,29 @@ namespace System.Collections.Generic
                 return;
             }
 
-            // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
-            foreach (KeyValuePair<TKey, TValue> pair in collection)
+            // We similarly special-case KVP<>[] and List<KVP<>>, as they're commonly used to seed dictionaries, and
+            // we want to avoid the enumerator costs (e.g. allocation) for them as well. Extract a span if possible.
+            ReadOnlySpan<KeyValuePair<TKey, TValue>> span;
+            if (enumerable is KeyValuePair<TKey, TValue>[] array)
+            {
+                span = array;
+            }
+            else if (enumerable.GetType() == typeof(List<KeyValuePair<TKey, TValue>>))
+            {
+                span = CollectionsMarshal.AsSpan((List<KeyValuePair<TKey, TValue>>)enumerable);
+            }
+            else
+            {
+                // Fallback path for all other enumerables
+                foreach (KeyValuePair<TKey, TValue> pair in enumerable)
+                {
+                    Add(pair.Key, pair.Value);
+                }
+                return;
+            }
+
+            // We got a span. Add the elements to the dictionary.
+            foreach (KeyValuePair<TKey, TValue> pair in span)
             {
                 Add(pair.Key, pair.Value);
             }
@@ -184,6 +207,11 @@ namespace System.Collections.Generic
         }
 
         public int Count => _count - _freeCount;
+
+        /// <summary>
+        /// Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _entries?.Length ?? 0;
 
         public KeyCollection Keys => _keys ??= new KeyCollection(this);
 
@@ -624,13 +652,13 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// A helper class containing APIs exposed through <see cref="Runtime.InteropServices.CollectionsMarshal"/>.
+        /// A helper class containing APIs exposed through <see cref="CollectionsMarshal"/>.
         /// These methods are relatively niche and only used in specific scenarios, so adding them in a separate type avoids
         /// the additional overhead on each <see cref="Dictionary{TKey, TValue}"/> instantiation, especially in AOT scenarios.
         /// </summary>
         internal static class CollectionsMarshalHelper
         {
-            /// <inheritdoc cref="Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
+            /// <inheritdoc cref="CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
             public static ref TValue? GetValueRefOrAddDefault(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists)
             {
                 // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
@@ -1157,6 +1185,7 @@ namespace System.Collections.Generic
         /// This method can be used to minimize the memory overhead
         /// once it is known that no new elements will be added.
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
         public void TrimExcess(int capacity)
         {
             if (capacity < Count)

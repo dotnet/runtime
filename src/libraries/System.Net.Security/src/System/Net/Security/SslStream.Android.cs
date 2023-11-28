@@ -4,9 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Net.Security;
-using System.Threading;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace System.Net.Security
 {
@@ -14,7 +14,7 @@ namespace System.Net.Security
     {
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate()
         {
-            ProtocolToken? alertToken = null;
+            ProtocolToken alertToken = default;
             var isValid = VerifyRemoteCertificate(
                 _sslAuthenticationOptions.CertValidationDelegate,
                 _sslAuthenticationOptions.CertificateContext?.Trust,
@@ -31,13 +31,13 @@ namespace System.Net.Security
             };
         }
 
-        private bool TryGetRemoteCertificateValidationResult(out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus, out ProtocolToken? alertToken, out bool isValid)
+        private bool TryGetRemoteCertificateValidationResult(out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus, ref ProtocolToken alertToken, out bool isValid)
         {
             JavaProxy.RemoteCertificateValidationResult? validationResult = _securityContext?.SslStreamProxy.ValidationResult;
             sslPolicyErrors = validationResult?.SslPolicyErrors ?? default;
             chainStatus = validationResult?.ChainStatus ?? default;
             isValid = validationResult?.IsValid ?? default;
-            alertToken = validationResult?.AlertToken;
+            alertToken = validationResult?.AlertToken ?? default;
             return validationResult is not null;
         }
 

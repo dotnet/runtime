@@ -145,7 +145,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     {
                         foreach (var includedFramework in includedFrameworks)
                         {
-                            runtimeConfig.WithFramework(Framework.FromJson((JsonObject)includedFramework));
+                            runtimeConfig.WithIncludedFramework(Framework.FromJson((JsonObject)includedFramework));
                         }
                     }
 
@@ -172,6 +172,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return new RuntimeConfig(path);
         }
 
+        public string Tfm => _tfm;
+
         public Framework GetFramework(string name)
         {
             return _frameworks.FirstOrDefault(f => f.Name == name);
@@ -197,6 +199,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             return this;
+        }
+
+        public Framework GetIncludedFramework(string name)
+        {
+            return _includedFrameworks.FirstOrDefault(f => f.Name == name);
         }
 
         public RuntimeConfig WithIncludedFramework(Framework framework)

@@ -18,21 +18,17 @@ namespace ILCompiler.DependencyAnalysis
     /// Resources are simply copied from the inputs and concatenated into this blob.
     /// All format information is provided by <see cref="ResourceIndexNode"/>
     /// </summary>
-    internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
+        private int? _size;
+
         /// <summary>
         /// Resource index information generated while extracting resources into the data blob
         /// </summary>
         private List<ResourceIndexData> _indexData;
         private int _totalLength;
 
-        public ResourceDataNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_resourcedata_End", true);
-        }
-
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -62,8 +58,7 @@ namespace ILCompiler.DependencyAnalysis
                 1,
                 new ISymbolDefinitionNode[]
                 {
-                    this,
-                    EndSymbol
+                    this
                 });
         }
 
@@ -101,10 +96,9 @@ namespace ILCompiler.DependencyAnalysis
                             if (factory.MetadataManager.IsManifestResourceBlocked(factory, module, resourceName))
                                 continue;
 
-                            string assemblyName = module.GetName().FullName;
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             int length = (int)reader.ReadUInt32();
-                            ResourceIndexData indexData = new ResourceIndexData(assemblyName, resourceName, _totalLength, (int)resource.Offset + sizeof(int), module, length);
+                            ResourceIndexData indexData = new ResourceIndexData(module, resourceName, _totalLength, (int)resource.Offset + sizeof(int), module, length);
                             _indexData.Add(indexData);
                             _totalLength += length;
                         }
@@ -141,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis
                 currentPos += resourceData.Length;
             }
 
-            _endSymbol.SetSymbolOffset(resourceBlob.Length);
+            _size = resourceBlob.Length;
             return resourceBlob;
         }
 
@@ -154,9 +148,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class ResourceIndexData
     {
-        public ResourceIndexData(string assemblyName, string resourceName, int nativeOffset, int ecmaOffset, EcmaModule ecmaModule, int length)
+        public ResourceIndexData(EcmaAssembly assembly, string resourceName, int nativeOffset, int ecmaOffset, EcmaModule ecmaModule, int length)
         {
-            AssemblyName = assemblyName;
+            Assembly = assembly;
             ResourceName = resourceName;
             NativeOffset = nativeOffset;
             EcmaOffset = ecmaOffset;
@@ -165,9 +159,9 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         /// <summary>
-        /// Full name of the assembly that contains the resource
+        /// Assembly that contains the resource
         /// </summary>
-        public string AssemblyName { get; }
+        public EcmaAssembly Assembly { get; }
 
         /// <summary>
         /// Name of the resource

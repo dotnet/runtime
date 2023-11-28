@@ -162,8 +162,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_IND:
         case GT_BLK:
         case GT_ARR_ELEM:
-        case GT_ARR_INDEX:
-        case GT_ARR_OFFSET:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
             newState.isUnderIndir = true;
@@ -531,7 +529,7 @@ void Compiler::gsParamsToShadows()
         // We would have to insert assignments in all such blocks, just before GT_JMP stmnt.
         for (BasicBlock* const block : Blocks())
         {
-            if (block->bbJumpKind != BBJ_RETURN)
+            if (!block->KindIs(BBJ_RETURN))
             {
                 continue;
             }

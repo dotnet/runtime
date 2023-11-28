@@ -1,19 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-** Purpose: Used by a compiler for generating value types
-**   in-place within other value types containing a certain
-**   number of elements of the given (primitive) type.  Somewhat
-**   similar to P/Invoke's ByValTStr attribute.
-**   Used by C# with this syntax: "fixed int buffer[10];"
-**
-===========================================================*/
-
 namespace System.Runtime.CompilerServices
 {
+    /// <summary>
+    /// Indicates that a field should be treated as containing a fixed number of elements of the specified primitive type.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public sealed class FixedBufferAttribute : Attribute
     {

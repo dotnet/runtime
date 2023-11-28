@@ -42,12 +42,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Token.Module, factory.SignatureContext);
 
+                bool needsInstantiatingStub = _targetMethod.Method.HasInstantiation;
+                if (_targetMethod.Method.IsVirtual && _targetMethod.Method.Signature.IsStatic)
+                {
+                    // For static virtual methods, we always require an instantiating stub as the method may resolve to a canonical representation
+                    // at runtime without us being able to detect that at compile time.
+                    needsInstantiatingStub |= (_targetMethod.Method.OwningType.HasInstantiation || _methodToken.ConstrainedType != null);
+                }
+
                 builder.EmitMethodSignature(
                     _methodToken,
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     innerContext,
-                    isInstantiatingStub: _targetMethod.Method.HasInstantiation);
+                    isInstantiatingStub: needsInstantiatingStub);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);
             }

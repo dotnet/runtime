@@ -13,7 +13,7 @@
   .ver 0:0:0:0
 }
 .assembly extern eh_common {}
-.assembly 'faultbeforetrybody'
+.assembly ASSEMBLY_NAME
 {
   .ver 0:0:0:0
 }

@@ -1,14 +1,18 @@
-define(pkg_major, 1)
-define(pkg_minor, 6)
-define(pkg_extra, 2)
-define(pkg_maintainer, libunwind-devel@nongnu.org)
-define(mkvers, $1.$2.$3)
 dnl Process this file with autoconf to produce a configure script.
+
+define(pkg_major, 1)
+define(pkg_minor, 7)
+define(pkg_extra, 0)
+define(pkg_maintainer, libunwind-devel@nongnu.org)
+define(mkvers, $1.$2$3)
+
 AC_INIT([libunwind],[mkvers(pkg_major, pkg_minor, pkg_extra)],[pkg_maintainer])
 AC_CONFIG_SRCDIR(src/mi/backtrace.c)
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_MACRO_DIRS([m4])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([1.6 subdir-objects])
+AM_INIT_AUTOMAKE([1.7 subdir-objects -Wall])
+AM_SILENT_RULES([yes])
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([include/config.h])
 
@@ -34,10 +38,10 @@ esac
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(asm/ptrace_offsets.h asm/ptrace.h endian.h sys/endian.h sys/param.h \
-		execinfo.h ia64intrin.h sys/uc_access.h unistd.h signal.h sys/types.h \
-		sys/procfs.h sys/ptrace.h sys/syscall.h byteswap.h elf.h sys/elf.h \
-		link.h sys/link.h)
+AC_CHECK_HEADERS(asm/ptrace_offsets.h asm/ptrace.h asm/vsyscall.h endian.h sys/endian.h \
+		sys/param.h execinfo.h ia64intrin.h sys/uc_access.h unistd.h signal.h \
+		sys/types.h sys/procfs.h sys/ptrace.h sys/syscall.h byteswap.h elf.h \
+		sys/elf.h link.h sys/link.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -48,7 +52,7 @@ AC_CHECK_SIZEOF(off_t)
 CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
 
 AC_CHECK_MEMBERS([struct dl_phdr_info.dlpi_subs],,,[#include <link.h>])
-AC_CHECK_TYPES([struct elf_prstatus, struct prstatus], [], [],
+AC_CHECK_TYPES([struct elf_prstatus, struct prstatus, procfs_status, elf_fpregset_t], [], [],
 [$ac_includes_default
 #if HAVE_SYS_PROCFS_H
 # include <sys/procfs.h>
@@ -69,7 +73,7 @@ PT_STEP, PT_SYSCALL], [], [],
 
 dnl Checks for library functions.
 AC_CHECK_FUNCS(dl_iterate_phdr dl_phdr_removals_counter dlmodinfo getunwind \
-		ttrace mincore pipe2)
+		ttrace mincore pipe2 sigaltstack)
 
 AC_MSG_CHECKING([if building with AltiVec])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
@@ -335,7 +339,7 @@ AM_CONDITIONAL(HAVE_ZLIB, test x$enable_zlibdebuginfo = xyes)
 
 AC_MSG_CHECKING([whether to support UNW_CACHE_PER_THREAD])
 AC_ARG_ENABLE([per-thread-cache],
-AS_HELP_STRING([--enable-per-thread-cache], [build with support for UNW_CACHE_PER_THREAD (which imposes a hight TLS memory usage) (default: disabled)]))
+AS_HELP_STRING([--enable-per-thread-cache], [build with support for UNW_CACHE_PER_THREAD (which imposes a high TLS memory usage) (default: disabled)]))
 AC_MSG_RESULT([$enable_per_thread_cache])
 AS_IF([test x$enable_per_thread_cache = xyes], [
   AC_DEFINE(HAVE___CACHE_PER_THREAD, 1,
@@ -428,6 +432,12 @@ case "$ac_cv_search_backtrace" in
   *) BACKTRACELIB="";;
 esac
 
+AC_ARG_WITH([testdriver],
+            [AS_HELP_STRING([--with-testdriver],
+                            [use designated test driver instead of default LOG_DRIVER])],
+                            [],
+                            [with_testdriver=\$\(top_srcdir\)/config/test-driver])
+AC_SUBST([UNW_TESTDRIVER], $with_testdriver)
 
 AC_SUBST(build_arch)
 AC_SUBST(target_os)
@@ -446,7 +456,7 @@ AC_SUBST(DLLIB)
 AC_SUBST(BACKTRACELIB)
 
 AC_PATH_PROG([LATEX2MAN],[latex2man])
-if test "x$LATEX2MAN" = "x"; then
+if test "x$LATEX2MAN" = "x" && test "x$enable_documentation" = "xyes"; then
   AC_MSG_WARN([latex2man not found. Install latex2man. Disabling docs.])
   enable_documentation="no";
 fi

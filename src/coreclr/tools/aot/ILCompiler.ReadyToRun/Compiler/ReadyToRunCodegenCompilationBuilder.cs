@@ -42,6 +42,8 @@ namespace ILCompiler
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
+        private int _genericCycleDetectionDepthCutoff = -1;
+        private int _genericCycleDetectionBreadthCutoff = -1;
 
         private string _jitPath;
         private string _outputFile;
@@ -210,6 +212,13 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseGenericCycleDetection(int depthCutoff, int breadthCutoff)
+        {
+            _genericCycleDetectionDepthCutoff = depthCutoff;
+            _genericCycleDetectionBreadthCutoff = breadthCutoff;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -242,6 +251,11 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            bool automaticTypeValidation = _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -254,7 +268,10 @@ namespace ILCompiler
                 win32Resources,
                 flags,
                 _nodeFactoryOptimizationFlags,
-                _imageBase
+                _imageBase,
+                automaticTypeValidation ? singleModule : null,
+                genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
+                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
                 );
 
             factory.CompositeImageSettings = _compositeImageSettings;

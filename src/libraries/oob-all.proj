@@ -23,7 +23,8 @@
 
     <!-- Build these packages in the allconfigurations leg only. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
-                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj"
+                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj;
+                              Microsoft.Internal.Runtime.DotNetApiDocs.Transport\src\Microsoft.Internal.Runtime.DotNetApiDocs.Transport.proj"
                       Condition="'$(BuildAllConfigurations)' != 'true'" />
 
     <!-- Skip these projects during source-build as they rely on external prebuilts. -->

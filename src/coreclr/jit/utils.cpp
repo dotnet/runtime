@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "opcode.h"
+#include "jitstd/algorithm.h"
 
 /*****************************************************************************/
 
@@ -79,13 +80,13 @@ const signed char       opcodeSizes[] =
 // clang-format on
 
 const BYTE varTypeClassification[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) tf,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) tf,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE varTypeRegister[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) regTyp,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) regTyp,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -111,7 +112,7 @@ extern const BYTE opcodeArgKinds[] = {
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) nm,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) nm,
 #include "typelist.h"
 #undef DEF_TP
     };
@@ -578,7 +579,7 @@ DECODE_OPCODE:
                     break;
 
                 case ShortInlineR:
-                    dOp = getR4LittleEndian(opcodePtr);
+                    dOp = FloatingPointUtils::convertToDouble(getR4LittleEndian(opcodePtr));
                     goto FLT_OP;
                 case InlineR:
                     dOp = getR8LittleEndian(opcodePtr);
@@ -729,7 +730,7 @@ const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // Contains: check if the range includes a particular hash
@@ -923,7 +924,7 @@ void ConfigMethodRange::Dump()
     }
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
@@ -979,9 +980,9 @@ void Histogram::dump(FILE* output)
             fprintf(output, "%7u", m_sizeTable[i]);
         }
 
-        c += m_counts[i];
+        c += static_cast<unsigned>(m_counts[i]);
 
-        fprintf(output, " ===> %7u count (%3u%% of total)\n", m_counts[i], (int)(100.0 * c / t));
+        fprintf(output, " ===> %7u count (%3u%% of total)\n", static_cast<unsigned>(m_counts[i]), (int)(100.0 * c / t));
     }
 }
 
@@ -996,7 +997,93 @@ void Histogram::record(unsigned size)
         }
     }
 
-    m_counts[i]++;
+    InterlockedAdd(&m_counts[i], 1);
+}
+
+void NodeCounts::dump(FILE* output)
+{
+    struct Entry
+    {
+        genTreeOps oper;
+        unsigned   count;
+    };
+
+    Entry sorted[GT_COUNT];
+    for (int i = 0; i < GT_COUNT; i++)
+    {
+        sorted[i].oper  = static_cast<genTreeOps>(i);
+        sorted[i].count = static_cast<unsigned>(m_counts[i]);
+    }
+
+    jitstd::sort(sorted, sorted + ArrLen(sorted), [](const Entry& lhs, const Entry& rhs) {
+        if (lhs.count > rhs.count)
+        {
+            return true;
+        }
+
+        if (lhs.count < rhs.count)
+        {
+            return false;
+        }
+
+        return static_cast<unsigned>(lhs.oper) < static_cast<unsigned>(rhs.oper);
+    });
+
+    for (const Entry& entry : sorted)
+    {
+        if (entry.count == 0)
+        {
+            break;
+        }
+
+        fprintf(output, "%-20s : %7u\n", GenTree::OpName(entry.oper), entry.count);
+    }
+}
+
+void NodeCounts::record(genTreeOps oper)
+{
+    assert(oper < GT_COUNT);
+    InterlockedAdd(&m_counts[oper], 1);
+}
+
+struct DumpOnShutdownEntry
+{
+    const char* Name;
+    Dumpable*   Dumpable;
+};
+
+static DumpOnShutdownEntry s_dumpOnShutdown[16];
+
+DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
+{
+    for (DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if ((entry.Name == nullptr) && (entry.Dumpable == nullptr))
+        {
+            entry.Name     = name;
+            entry.Dumpable = dumpable;
+            return;
+        }
+    }
+
+    assert(!"No space left in table");
+}
+
+void DumpOnShutdown::DumpAll()
+{
+    for (const DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if (entry.Name != nullptr)
+        {
+            jitprintf("%s\n", entry.Name);
+        }
+
+        if (entry.Dumpable != nullptr)
+        {
+            entry.Dumpable->dump(jitstdout());
+            jitprintf("\n");
+        }
+    }
 }
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
@@ -1232,7 +1319,7 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
 
 #ifdef DEBUG
 
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size)
+void hexDump(FILE* dmpf, BYTE* addr, size_t size)
 {
     if (!size)
     {
@@ -1241,19 +1328,10 @@ void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size)
 
     assert(addr);
 
-    fprintf(dmpf, "Hex dump of %s:\n", name);
-
     for (unsigned i = 0; i < size; i++)
     {
-        if ((i % 16) == 0)
-        {
-            fprintf(dmpf, "\n    %04X: ", i);
-        }
-
-        fprintf(dmpf, "%02X ", *addr++);
+        fprintf(dmpf, "%02X", *addr++);
     }
-
-    fprintf(dmpf, "\n\n");
 }
 
 #endif // DEBUG
@@ -1476,6 +1554,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
 
@@ -2050,6 +2129,70 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
     return u64;
 }
 
+//------------------------------------------------------------------------
+// convertToDouble: Convert a single to a double with platform independent
+// preservation of payload bits.
+//
+// Arguments:
+//   f - the single
+//
+// Return Value:
+//   A double.
+//
+// Remarks:
+//   All our host platforms except for RISCV-64 will preserve payload bits of
+//   NaNs. This function implements the conversion in software for RISCV-64 to
+//   mimic other platforms.
+//
+double FloatingPointUtils::convertToDouble(float f)
+{
+#ifdef HOST_RISCV64
+    if (f == f)
+    {
+        return f;
+    }
+
+    uint32_t bits    = BitOperations::SingleToUInt32Bits(f);
+    uint32_t payload = bits & ((1u << 23) - 1);
+    uint64_t newBits = ((uint64_t)(bits >> 31) << 63) | 0x7FF8000000000000ul | ((uint64_t)payload << 29);
+    return BitOperations::UInt64BitsToDouble(newBits);
+#else
+    return f;
+#endif
+}
+
+//------------------------------------------------------------------------
+// convertToSingle: Convert a double to a single with platform independent
+// preservation of payload bits.
+//
+// Arguments:
+//   d - the double
+//
+// Return Value:
+//   A float.
+//
+// Remarks:
+//   All our host platforms except for RISCV-64 will preserve payload bits of
+//   NaNs. This function implements the conversion in software for RISCV-64 to
+//   mimic other platforms.
+//
+float FloatingPointUtils::convertToSingle(double d)
+{
+#ifdef HOST_RISCV64
+    if (d == d)
+    {
+        return (float)d;
+    }
+
+    uint64_t bits       = BitOperations::DoubleToUInt64Bits(d);
+    uint32_t newPayload = (uint32_t)((bits >> 29) & ((1u << 23) - 1));
+    uint32_t newBits    = ((uint32_t)(bits >> 63) << 31) | 0x7F800000u | newPayload;
+    return BitOperations::UInt32BitsToSingle(newBits);
+#else
+    return (float)d;
+#endif
+}
+
 // Rounds a double-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
 double FloatingPointUtils::round(double x)
@@ -2422,9 +2565,10 @@ bool FloatingPointUtils::isPositiveZero(double val)
 
 //------------------------------------------------------------------------
 // maximum: This matches the IEEE 754:2019 `maximum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the greater of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2433,7 +2577,6 @@ bool FloatingPointUtils::isPositiveZero(double val)
 // Return Value:
 //    Either val1 or val2
 //
-
 double FloatingPointUtils::maximum(double val1, double val2)
 {
     if (val1 != val2)
@@ -2442,16 +2585,112 @@ double FloatingPointUtils::maximum(double val1, double val2)
         {
             return val2 < val1 ? val1 : val2;
         }
+
         return val1;
     }
+
     return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a greater magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumMagnitude(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax > ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumMagnitudeNumber: // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumMagnitudeNumber(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax > ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumNumber(double x, double y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return y < x ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(y) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // maximum: This matches the IEEE 754:2019 `maximum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the greater of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2460,7 +2699,6 @@ double FloatingPointUtils::maximum(double val1, double val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 float FloatingPointUtils::maximum(float val1, float val2)
 {
     if (val1 != val2)
@@ -2469,16 +2707,112 @@ float FloatingPointUtils::maximum(float val1, float val2)
         {
             return val2 < val1 ? val1 : val2;
         }
+
         return val1;
     }
+
     return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a greater magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumMagnitude(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax > ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumMagnitudeNumber: This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumMagnitudeNumber(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax > ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumNumber(float x, float y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return y < x ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(y) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // minimum: This matches the IEEE 754:2019 `minimum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the lesser of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2487,21 +2821,120 @@ float FloatingPointUtils::maximum(float val1, float val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 double FloatingPointUtils::minimum(double val1, double val2)
 {
-    if (val1 != val2 && !isNaN(val1))
+    if (val1 != val2)
     {
-        return val1 < val2 ? val1 : val2;
+        if (!isNaN(val1))
+        {
+            return val1 < val2 ? val1 : val2;
+        }
+
+        return val1;
     }
+
     return isNegative(val1) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a lesser magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumMagnitude(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax < ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumMagnitudeNumber(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax < ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumNumber(double x, double y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return x < y ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(x) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // minimum: This matches the IEEE 754:2019 `minimum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the lesser of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2512,11 +2945,110 @@ double FloatingPointUtils::minimum(double val1, double val2)
 //
 float FloatingPointUtils::minimum(float val1, float val2)
 {
-    if (val1 != val2 && !isNaN(val1))
+    if (val1 != val2)
     {
-        return val1 < val2 ? val1 : val2;
+        if (!isNaN(val1))
+        {
+            return val1 < val2 ? val1 : val2;
+        }
+
+        return val1;
     }
+
     return isNegative(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a lesser magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumMagnitude(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax < ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumMagnitudeNumber(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax < ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumNumber(float x, float y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return x < y ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(x) ? x : y;
 }
 
 //------------------------------------------------------------------------
@@ -2552,66 +3084,6 @@ double FloatingPointUtils::normalize(double value)
     return value;
 #else
     return value;
-#endif
-}
-
-//------------------------------------------------------------------------
-// BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
-// (MSB) for a set bit (1)
-//
-// Arguments:
-//    value - the value
-//
-// Return Value:
-//    0 if the mask is zero; nonzero otherwise.
-//
-uint32_t BitOperations::BitScanForward(uint32_t value)
-{
-    assert(value != 0);
-
-#if defined(_MSC_VER)
-    unsigned long result;
-    ::_BitScanForward(&result, value);
-    return static_cast<uint32_t>(result);
-#else
-    int32_t result = __builtin_ctz(value);
-    return static_cast<uint32_t>(result);
-#endif
-}
-
-//------------------------------------------------------------------------
-// BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
-// (MSB) for a set bit (1)
-//
-// Arguments:
-//    value - the value
-//
-// Return Value:
-//    0 if the mask is zero; nonzero otherwise.
-//
-uint32_t BitOperations::BitScanForward(uint64_t value)
-{
-    assert(value != 0);
-
-#if defined(_MSC_VER)
-#if defined(HOST_64BIT)
-    unsigned long result;
-    ::_BitScanForward64(&result, value);
-    return static_cast<uint32_t>(result);
-#else
-    uint32_t lower = static_cast<uint32_t>(value);
-
-    if (lower == 0)
-    {
-        uint32_t upper = static_cast<uint32_t>(value >> 32);
-        return 32 + BitScanForward(upper);
-    }
-
-    return BitScanForward(lower);
-#endif // HOST_64BIT
-#else
-    int32_t result = __builtin_ctzll(value);
-    return static_cast<uint32_t>(result);
 #endif
 }
 
@@ -3461,7 +3933,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3485,7 +3956,6 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3600,7 +4070,6 @@ bool CastFromFloatOverflows(float fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0f < fromValue && fromValue < 128.0f);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0f < fromValue && fromValue < 256.0f);
         case TYP_SHORT:
@@ -3629,7 +4098,6 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0 < fromValue && fromValue < 128.0);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0 < fromValue && fromValue < 256.0);
         case TYP_SHORT:

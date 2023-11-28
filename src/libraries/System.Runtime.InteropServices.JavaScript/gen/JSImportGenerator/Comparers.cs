@@ -15,11 +15,11 @@ namespace Microsoft.Interop
         /// <summary>
         /// Comparer for an individual generated stub source as a syntax tree and the generated diagnostics for the stub.
         /// </summary>
-        public static readonly IEqualityComparer<(MemberDeclarationSyntax Syntax, ImmutableArray<Diagnostic> Diagnostics)> GeneratedSyntax = new CustomValueTupleElementComparer<MemberDeclarationSyntax, ImmutableArray<Diagnostic>>(SyntaxEquivalentComparer.Instance, new ImmutableArraySequenceEqualComparer<Diagnostic>(EqualityComparer<Diagnostic>.Default));
-        public static readonly IEqualityComparer<(MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<Diagnostic>)> GeneratedSyntax4 =
-            new CustomValueTupleElementComparer<MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<Diagnostic>>(
+        public static readonly IEqualityComparer<(MemberDeclarationSyntax Syntax, ImmutableArray<DiagnosticInfo> Diagnostics)> GeneratedSyntax = new CustomValueTupleElementComparer<MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>>(SyntaxEquivalentComparer.Instance, new ImmutableArraySequenceEqualComparer<DiagnosticInfo>(EqualityComparer<DiagnosticInfo>.Default));
+        public static readonly IEqualityComparer<(MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>)> GeneratedSyntax4 =
+            new CustomValueTupleElementComparer<MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>>(
                 SyntaxEquivalentComparer.Instance, SyntaxEquivalentComparer.Instance, SyntaxEquivalentComparer.Instance,
-                new ImmutableArraySequenceEqualComparer<Diagnostic>(EqualityComparer<Diagnostic>.Default));
+                new ImmutableArraySequenceEqualComparer<DiagnosticInfo>(EqualityComparer<DiagnosticInfo>.Default));
     }
 
     /// <summary>

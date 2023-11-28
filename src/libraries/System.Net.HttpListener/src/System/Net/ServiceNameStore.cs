@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Security.Authentication.ExtendedProtection;
 using System.Diagnostics;
 using System.Globalization;
+using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
@@ -35,7 +35,7 @@ namespace System.Net
             {
                 return inputServiceName;
             }
-            string prefix = inputServiceName.Substring(0, shashIndex + 1); // Includes slash
+            ReadOnlySpan<char> prefix = inputServiceName.AsSpan(0, shashIndex + 1); // Includes slash
             string hostPortAndDistinguisher = inputServiceName.Substring(shashIndex + 1); // Excludes slash
 
             if (string.IsNullOrWhiteSpace(hostPortAndDistinguisher))
@@ -44,8 +44,8 @@ namespace System.Net
             }
 
             string host = hostPortAndDistinguisher;
-            string port = string.Empty;
-            string distinguisher = string.Empty;
+            ReadOnlySpan<char> port = default;
+            ReadOnlySpan<char> distinguisher = default;
 
             // Check for the absence of a port or distinguisher.
             UriHostNameType hostType = Uri.CheckHostName(hostPortAndDistinguisher);
@@ -59,7 +59,7 @@ namespace System.Net
                 {
                     // host:port/distinguisher or host/distinguisher
                     hostAndPort = hostPortAndDistinguisher.Substring(0, nextSlashIndex); // Excludes Slash
-                    distinguisher = hostPortAndDistinguisher.Substring(nextSlashIndex); // Includes Slash
+                    distinguisher = hostPortAndDistinguisher.AsSpan(nextSlashIndex); // Includes Slash
                     host = hostAndPort; // We don't know if there is a port yet.
 
                     // No need to validate the distinguisher
@@ -71,7 +71,7 @@ namespace System.Net
                 {
                     // host:port
                     host = hostAndPort.Substring(0, colonIndex); // Excludes colon
-                    port = hostAndPort.Substring(colonIndex + 1); // Excludes colon
+                    port = hostAndPort.AsSpan(colonIndex + 1); // Excludes colon
 
                     // Loosely validate the port just to make sure it was a port and not something else
                     if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
@@ -80,7 +80,7 @@ namespace System.Net
                     }
 
                     // Re-include the colon for the final output.  Do not change the port format.
-                    port = hostAndPort.Substring(colonIndex);
+                    port = hostAndPort.AsSpan(colonIndex);
                 }
 
                 hostType = Uri.CheckHostName(host); // Revalidate the host
@@ -107,7 +107,7 @@ namespace System.Net
             string normalizedHost = constructedUri.GetComponents(
                 UriComponents.NormalizedHost, UriFormat.SafeUnescaped);
 
-            string normalizedServiceName = prefix + normalizedHost + port + distinguisher;
+            string normalizedServiceName = string.Concat(prefix, normalizedHost, port, distinguisher);
 
             // Don't return the new one unless we absolutely have to.  It may have only changed casing.
             if (inputServiceName.Equals(normalizedServiceName, StringComparison.OrdinalIgnoreCase))

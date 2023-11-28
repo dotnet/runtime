@@ -532,6 +532,16 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 return next;
             }
         }
+
+        if (binOp->OperIs(GT_SUB))
+        {
+            // Attempt to optimize for umsubl/smsubl.
+            GenTree* next = TryLowerAddSubToMulLongOp(binOp);
+            if (next != nullptr)
+            {
+                return next;
+            }
+        }
 #endif
     }
 
@@ -551,8 +561,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
-
-    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -617,12 +625,22 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
-        bool     doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && blkNode->GetLayout()->HasGCPtr();
-        unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-        if (doCpObj && isDstAddrLocal && (size <= copyBlockUnrollLimit))
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+
+        if (doCpObj && (size <= copyBlockUnrollLimit))
         {
-            doCpObj                  = false;
-            blkNode->gtBlkOpGcUnsafe = true;
+            // No write barriers are needed on the stack.
+            // If the layout contains a byref, then we know it must live on the stack.
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying.
+                doCpObj                  = false;
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
         }
 
         if (doCpObj)
@@ -874,8 +892,11 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cnsZero, cmp);
         LowerNode(cmp);
 
-        mod->ChangeOper(GT_CNEG_LT);
-        mod->gtOp1 = trueExpr;
+        mod->ChangeOper(GT_SELECT_NEGCC);
+        GenTreeOpCC* node = mod->AsOpCC();
+        node->gtOp1       = trueExpr;
+        node->gtOp2       = nullptr;
+        node->gtCondition = GenCondition::SLT;
     }
     else
     {
@@ -900,9 +921,11 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cns2, falseExpr);
         LowerNode(falseExpr);
 
-        mod->ChangeOper(GT_CSNEG_MI);
-        mod->gtOp1 = trueExpr;
-        mod->gtOp2 = falseExpr;
+        mod->SetOper(GT_SELECT_NEGCC);
+        GenTreeOpCC* node = mod->AsOpCC();
+        node->gtOp1       = trueExpr;
+        node->gtOp2       = falseExpr;
+        node->gtCondition = GenCondition::S;
     }
 
     ContainCheckNode(mod);
@@ -1175,6 +1198,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
+           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
+           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalar) ||
            (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
            (node->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector64) ||
@@ -1248,7 +1273,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-    assert(node->gtType == TYP_BOOL);
+    assert(node->TypeIs(TYP_INT));
     assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
 
     // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
@@ -1585,11 +1610,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     for (N = 1; N < argCnt - 1; N++)
     {
         opN = node->Op(N + 1);
-        idx = comp->gtNewIconNode(N);
-        BlockRange().InsertBefore(opN, idx);
 
+        // Place the insert as early as possible to avoid creating a lot of long lifetimes.
+        GenTree* insertionPoint = LIR::LastNode(tmp1, opN);
+        idx                     = comp->gtNewIconNode(N);
         tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
-        BlockRange().InsertAfter(opN, tmp1);
+        BlockRange().InsertAfter(insertionPoint, idx, tmp1);
         LowerNode(tmp1);
     }
 
@@ -1623,9 +1649,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-
-    // We support the return type being a SIMD for floating-point as a special optimization
-    assert(varTypeIsArithmetic(node) || (varTypeIsSIMD(node) && varTypeIsFloating(simdBaseType)));
+    assert(varTypeIsSIMD(node));
 
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
@@ -1642,7 +1666,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
         // For 12 byte SIMD, we need to clear the upper 4 bytes:
         //   idx  =    CNS_INT       int    0x03
-        //   tmp1 = *  CNS_DLB       float  0.0
+        //   tmp1 = *  CNS_DBL       float  0.0
         //          /--*  op1  simd16
         //          +--*  idx  int
         //          +--*  tmp1 simd16
@@ -1882,34 +1906,20 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         }
     }
 
-    if (varTypeIsSIMD(node->gtType))
+    // We're producing a vector result, so just return the result directly
+    LIR::Use use;
+
+    if (BlockRange().TryGetUse(node, &use))
     {
-        // We're producing a vector result, so just return the result directly
-
-        LIR::Use use;
-
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            use.ReplaceWith(tmp2);
-        }
-
-        BlockRange().Remove(node);
-        return tmp2->gtNext;
+        use.ReplaceWith(tmp2);
     }
     else
     {
-        // We will be constructing the following parts:
-        //   ...
-        //          /--*  tmp2 simd16
-        //   node = *  HWINTRINSIC   simd16 T ToScalar
-
-        // This is roughly the following managed code:
-        //   ...
-        //   return tmp2.ToScalar();
-
-        node->ResetHWIntrinsicId((simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar, tmp2);
-        return LowerNode(node);
+        tmp2->SetUnusedValue();
     }
+
+    BlockRange().Remove(node);
+    return tmp2->gtNext;
 }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2552,14 +2562,148 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
 }
 
 //----------------------------------------------------------------------------------------------
-// Try converting SELECT/SELECTCC to CINC/CINCCC. Conversion is possible only if
-// both the trueVal and falseVal are integral constants and abs(trueVal - falseVal) = 1.
+// TryLowerCselToCSOp: Try converting SELECT/SELECTCC to SELECT_?/SELECT_?CC. Conversion is possible only if
+// one of the operands of the select node is one of GT_NEG, GT_NOT or GT_ADD.
 //
 // Arguments:
 //     select - The select node that is now SELECT or SELECTCC
 //     cond   - The condition node that SELECT or SELECTCC uses
 //
-void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
+void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    bool     shouldReverseCondition;
+    GenTree* operatedVal;
+    GenTree* nonOperatedVal;
+    GenTree* nodeToRemove;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    // Determine the resulting operation type.
+    genTreeOps resultingOp;
+    if (trueVal->OperIs(GT_NEG) || falseVal->OperIs(GT_NEG))
+    {
+        resultingOp            = GT_SELECT_NEG;
+        shouldReverseCondition = trueVal->OperIs(GT_NEG);
+    }
+    else if (trueVal->OperIs(GT_NOT) || falseVal->OperIs(GT_NOT))
+    {
+        resultingOp            = GT_SELECT_INV;
+        shouldReverseCondition = trueVal->OperIs(GT_NOT);
+    }
+    else
+    {
+        assert(trueVal->OperIs(GT_ADD) || falseVal->OperIs(GT_ADD));
+        resultingOp            = GT_SELECT_INC;
+        shouldReverseCondition = trueVal->OperIs(GT_ADD);
+    }
+
+    // Values to which the operation are applied must come last.
+    if (shouldReverseCondition)
+    {
+        operatedVal    = trueVal->gtGetOp1();
+        nonOperatedVal = falseVal;
+        nodeToRemove   = trueVal;
+    }
+    else
+    {
+        operatedVal    = falseVal->gtGetOp1();
+        nonOperatedVal = trueVal;
+        nodeToRemove   = falseVal;
+    }
+
+    if (shouldReverseCondition && !cond->OperIsCompare() && select->OperIs(GT_SELECT))
+    {
+        // Non-compare nodes add additional GT_NOT node after reversing.
+        // This would remove gains from this optimisation so don't proceed.
+        return;
+    }
+
+    // For Csinc candidates, the second argument of the GT_ADD must be +1 (increment).
+    if (resultingOp == GT_SELECT_INC &&
+        !(nodeToRemove->gtGetOp2()->IsCnsIntOrI() && nodeToRemove->gtGetOp2()->AsIntCon()->IconValue() == 1))
+    {
+        return;
+    }
+
+    // Check that we are safe to move both values.
+    if (!(IsInvariantInRange(operatedVal, select) && IsInvariantInRange(nonOperatedVal, select)))
+    {
+        return;
+    }
+
+    // Passed all checks, move on to block modification.
+    // If this is a Cinc candidate, we must remove the dangling second argument node.
+    if (resultingOp == GT_SELECT_INC)
+    {
+        BlockRange().Remove(nodeToRemove->gtGetOp2());
+        nodeToRemove->AsOp()->gtOp2 = nullptr;
+    }
+
+    // As the select node would handle the operation, the op is not required.
+    // If a value is contained in the negate/invert/increment op, it cannot be contained anymore.
+    BlockRange().Remove(nodeToRemove);
+    operatedVal->ClearContained();
+    select->gtOp1 = nonOperatedVal;
+    select->gtOp2 = operatedVal;
+
+    if (select->OperIs(GT_SELECT))
+    {
+        if (shouldReverseCondition)
+        {
+            GenTree* revCond = comp->gtReverseCond(cond);
+            assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+        }
+        select->SetOper(resultingOp);
+    }
+    else
+    {
+        GenTreeOpCC* selectcc   = select->AsOpCC();
+        GenCondition selectCond = selectcc->gtCondition;
+        if (shouldReverseCondition)
+        {
+            // Reverse the condition so that op2 will be selected
+            selectcc->gtCondition = GenCondition::Reverse(selectCond);
+        }
+
+        // Convert the resulting operation into the equivalent CC form.
+        switch (resultingOp)
+        {
+            case GT_SELECT_NEG:
+                resultingOp = GT_SELECT_NEGCC;
+                break;
+            case GT_SELECT_INV:
+                resultingOp = GT_SELECT_INVCC;
+                break;
+            case GT_SELECT_INC:
+                resultingOp = GT_SELECT_INCCC;
+                break;
+            default:
+                assert(false);
+        }
+        selectcc->SetOper(resultingOp);
+    }
+
+#ifdef DEBUG
+    JITDUMP("Converted to ");
+    if (comp->verbose)
+        comp->gtDispNodeName(select);
+    JITDUMP(":\n");
+    DISPTREERANGE(BlockRange(), select);
+    JITDUMP("\n");
+#endif
+}
+
+//----------------------------------------------------------------------------------------------
+// TryLowerCnsIntCselToCinc: Try converting SELECT/SELECTCC to SELECT_INC/SELECT_INCCC.
+// Conversion is possible only if both the trueVal and falseVal are integer constants and abs(trueVal - falseVal) = 1.
+//
+// Arguments:
+//     select - The select node that is now SELECT or SELECTCC
+//     cond   - The condition node that SELECT or SELECTCC uses
+//
+void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
 {
     assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
@@ -2568,11 +2712,10 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
     size_t   op1Val   = (size_t)trueVal->AsIntCon()->IconValue();
     size_t   op2Val   = (size_t)falseVal->AsIntCon()->IconValue();
 
-    if (op1Val + 1 == op2Val || op2Val + 1 == op1Val)
+    if ((op1Val + 1 == op2Val) || (op2Val + 1 == op1Val))
     {
-        const bool shouldReverseCondition = op1Val + 1 == op2Val;
+        const bool shouldReverseCondition = (op1Val + 1 == op2Val);
 
-        // Create a cinc node, insert it and update the use.
         if (select->OperIs(GT_SELECT))
         {
             if (shouldReverseCondition)
@@ -2584,18 +2727,21 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
                     // This would remove gains from this optimisation so don't proceed.
                     return;
                 }
-                select->gtOp2    = select->gtOp1;
                 GenTree* revCond = comp->gtReverseCond(cond);
                 assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
             }
-            select->gtOp1 = cond->AsOp();
-            select->SetOper(GT_CINC);
+            BlockRange().Remove(select->gtOp2, true);
+            select->gtOp2 = nullptr;
+            select->SetOper(GT_SELECT_INC);
+            JITDUMP("Converted to: GT_SELECT_INC\n");
             DISPTREERANGE(BlockRange(), select);
+            JITDUMP("\n");
         }
         else
         {
             GenTreeOpCC* selectcc   = select->AsOpCC();
             GenCondition selectCond = selectcc->gtCondition;
+
             if (shouldReverseCondition)
             {
                 // Reverse the condition so that op2 will be selected
@@ -2605,11 +2751,197 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
             {
                 std::swap(selectcc->gtOp1, selectcc->gtOp2);
             }
-            BlockRange().Remove(selectcc->gtOp2);
-            selectcc->SetOper(GT_CINCCC);
+
+            BlockRange().Remove(selectcc->gtOp2, true);
+            selectcc->gtOp2 = nullptr;
+            selectcc->SetOper(GT_SELECT_INCCC);
+            JITDUMP("Converted to: GT_SELECT_INCCC\n");
             DISPTREERANGE(BlockRange(), selectcc);
+            JITDUMP("\n");
         }
     }
+}
+
+//----------------------------------------------------------------------------------------------
+// TryLowerAddSubToCombinedMulOp: Attempt to convert ADD and SUB nodes to a combined multiply
+// and add/sub operation. Conversion can only happen if the operands to the
+// operation meet the following criteria:
+// - One op is a MUL_LONG containing two integer operands, and the other is a long.
+//
+// Arguments:
+//     op - The ADD or SUB node to attempt an optimisation on.
+//
+// Returns:
+//     A pointer to the next node to evaluate. On no operation, returns nullptr.
+//
+GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
+{
+    assert(op->OperIs(GT_ADD, GT_SUB));
+
+    if (!comp->opts.OptimizationEnabled())
+        return nullptr;
+
+    if (!JitConfig.EnableHWIntrinsic())
+        return nullptr;
+
+    if (op->isContained())
+        return nullptr;
+
+    if (!varTypeIsIntegral(op))
+        return nullptr;
+
+    if ((op->gtFlags & GTF_SET_FLAGS) != 0)
+        return nullptr;
+
+    if (op->gtOverflow())
+        return nullptr;
+
+    GenTree* op1 = op->gtGetOp1();
+    GenTree* op2 = op->gtGetOp2();
+
+    // Select which operation is the MUL_LONG and which is the add value.
+    GenTreeOp* mul;
+    GenTree*   addVal;
+    if (op1->OperIs(GT_MUL_LONG))
+    {
+        // For subtractions, the multiply must be second, as [u/s]msubl performs:
+        // addValue - (mulValue1 * mulValue2)
+        if (op->OperIs(GT_SUB))
+        {
+            return nullptr;
+        }
+
+        mul    = op1->AsOp();
+        addVal = op2;
+    }
+    else if (op2->OperIs(GT_MUL_LONG))
+    {
+        mul    = op2->AsOp();
+        addVal = op1;
+    }
+    else
+    {
+        // Exit if neither operation are GT_MUL_LONG.
+        return nullptr;
+    }
+
+    // Additional value must be of long size.
+    if (!addVal->TypeIs(TYP_LONG))
+        return nullptr;
+
+    // Mul values must both be integers.
+    if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
+        return nullptr;
+
+    // The multiply must evaluate to the same thing if moved.
+    if (!IsInvariantInRange(mul, op))
+        return nullptr;
+
+    // Create the new node and replace the original.
+    NamedIntrinsic intrinsicId =
+        op->OperIs(GT_ADD) ? NI_ArmBase_Arm64_MultiplyLongAdd : NI_ArmBase_Arm64_MultiplyLongSub;
+    GenTreeHWIntrinsic* outOp = comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
+    outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
+
+    BlockRange().InsertAfter(op, outOp);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(op, &use))
+    {
+        use.ReplaceWith(outOp);
+    }
+    else
+    {
+        outOp->SetUnusedValue();
+    }
+
+    BlockRange().Remove(mul);
+    BlockRange().Remove(op);
+
+#ifdef DEBUG
+    JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLong[Add/Sub]'.\n");
+    JITDUMP(":\n");
+    DISPTREERANGE(BlockRange(), outOp);
+    JITDUMP("\n");
+#endif
+
+    return outOp;
+}
+
+//----------------------------------------------------------------------------------------------
+// TryLowerNegToCombinedMulOp: Attempt to convert NEG nodes to a combined multiply
+// and negate operation. Conversion can only happen if the operands to the
+// operation meet one of the following criteria:
+// - op1 is a MUL_LONG containing two integer operands.
+//
+// Arguments:
+//     op - The NEG node to attempt an optimisation on.
+//
+// Returns:
+//     A pointer to the next node to evaluate. On no operation, returns nullptr.
+//
+GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
+{
+    assert(op->OperIs(GT_NEG));
+
+    if (!comp->opts.OptimizationEnabled())
+        return nullptr;
+
+    if (!JitConfig.EnableHWIntrinsic())
+        return nullptr;
+
+    if (op->isContained())
+        return nullptr;
+
+    if (!varTypeIsIntegral(op))
+        return nullptr;
+
+    if ((op->gtFlags & GTF_SET_FLAGS) != 0)
+        return nullptr;
+
+    GenTree* op1 = op->gtGetOp1();
+
+    // Ensure the negated operand is a MUL_LONG.
+    if (!op1->OperIs(GT_MUL_LONG))
+        return nullptr;
+
+    // Ensure the MUL_LONG contains two integer parameters.
+    GenTreeOp* mul = op1->AsOp();
+    if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
+        return nullptr;
+
+    // The multiply must evaluate to the same thing if evaluated at 'op'.
+    if (!IsInvariantInRange(mul, op))
+        return nullptr;
+
+    // Able to optimise, create the new node and replace the original.
+    GenTreeHWIntrinsic* outOp =
+        comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, NI_ArmBase_Arm64_MultiplyLongNeg);
+    outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
+
+    BlockRange().InsertAfter(op, outOp);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(op, &use))
+    {
+        use.ReplaceWith(outOp);
+    }
+    else
+    {
+        outOp->SetUnusedValue();
+    }
+
+    BlockRange().Remove(mul);
+    BlockRange().Remove(op);
+
+#ifdef DEBUG
+    JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLongNeg'.\n");
+    JITDUMP(":\n");
+    DISPTREERANGE(BlockRange(), outOp);
+    JITDUMP("\n");
+#endif
+
+    return outOp;
 }
 #endif // TARGET_ARM64
 
@@ -2685,6 +3017,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Extract:
             case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op2));
@@ -2697,6 +3035,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_ExtractVector128:
             case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_StoreSelectedScalarVector64x2:
+            case NI_AdvSimd_StoreSelectedScalarVector64x3:
+            case NI_AdvSimd_StoreSelectedScalarVector64x4:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())

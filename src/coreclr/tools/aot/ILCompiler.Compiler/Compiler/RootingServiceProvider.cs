@@ -52,7 +52,7 @@ namespace ILCompiler
             if (!_factory.MetadataManager.IsReflectionBlocked(method))
             {
                 _factory.TypeSystemContext.EnsureLoadableMethod(method);
-                _rootAdder(_factory.ReflectedMethod(method), reason);
+                _rootAdder(_factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)), reason);
             }
         }
 

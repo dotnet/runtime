@@ -288,9 +288,12 @@ C_FUNC(\Name):
         movq    _\Var@TLVP(%rip), %rdi
         callq   *(%rdi)
 #else
-        leaq    \Var@TLSLD(%rip), %rdi
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    \Var@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
         callq   __tls_get_addr@PLT
-        addq    $\Var@DTPOFF, %rax
 #endif
        .intel_syntax noprefix
 .endm

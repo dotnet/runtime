@@ -14,7 +14,7 @@ namespace System.Net.Security
             SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private static bool IsSafeDnsString(ReadOnlySpan<char> name) =>
-            name.IndexOfAnyExcept(s_safeDnsChars) < 0;
+            !name.ContainsAnyExcept(s_safeDnsChars);
 
         internal static string NormalizeHostName(string? targetHost)
         {

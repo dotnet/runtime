@@ -255,7 +255,7 @@ internal static class ObjectHeader
             if (lw.IsInflated) {
                 ref MonoThreadsSync mon = ref lw.GetInflatedLock();
                 hash = SyncBlock.HashCode(ref mon);
-                return false;
+                return true;
             } else {
                 hash = lw.FlatHash;
                 return true;

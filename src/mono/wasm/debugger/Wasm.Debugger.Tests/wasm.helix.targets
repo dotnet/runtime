@@ -18,17 +18,12 @@
     </ReadLinesFromFile>
 
     <ItemGroup>
-      <!-- ActiveIssue: https://github.com/dotnet/runtime/issues/81170 -->
-      <_DebuggerTestsClassName Remove="@(_DebuggerTestsClassName)" Condition="'%(Identity)' == 'DebuggerTests.ExceptionTests'" />
-    </ItemGroup>
-
-    <ItemGroup>
       <HelixWorkItem Include="@(_DebuggerTestsClassName -> '$(DebuggerHost)-%(Identity)')">
         <PayloadArchive>$(TestArchiveTestsDir)Wasm.Debugger.Tests.zip</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_DebuggerTestsWorkItemTimeout)</Timeout>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TEST_ARGS=--filter FullyQualifiedName~%(Identity)&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TEST_ARGS=--filter FullyQualifiedName~%(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TEST_ARGS=--filter category^^!=failing^&amp;FullyQualifiedName~%(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TEST_ARGS=--filter category!=failing&amp;FullyQualifiedName~%(Identity)&quot;</PreCommands>
       </HelixWorkItem>
     </ItemGroup>
   </Target>

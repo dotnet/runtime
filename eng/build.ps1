@@ -22,6 +22,7 @@ Param(
   [switch]$msbuild,
   [string]$cmakeargs,
   [switch]$pgoinstrument,
+  [string[]]$fsanitize,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -29,7 +30,7 @@ function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -arch (-a)                     Target platform: x86, x64, arm, arm64, or wasm."
   Write-Host "                                 Pass a comma-separated list to build for multiple architectures."
-  Write-Host "                                 [Default: Your machine's architecture.]"
+  Write-Host ("                                 [Default: {0} (Depends on your console's architecture.)]" -f [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())
   Write-Host "  -binaryLog (-bl)               Output binary log."
   Write-Host "  -configuration (-c)            Build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR subset. It is the same as Debug, except code is"
@@ -77,17 +78,20 @@ function Get-Help() {
   Write-Host "Libraries settings:"
   Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net8.0 or net48."
-  Write-Host "                          [Default: net8.0]"
+  Write-Host "  -framework (-f)         Build framework: net9.0 or net48."
+  Write-Host "                          [Default: net9.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
 
   Write-Host "Native build settings:"
-  Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
-  Write-Host "  -ninja                  Use Ninja to drive the native build. (default)"
-  Write-Host "  -msbuild                Use MSBuild to drive the native build. This is a no-op for Mono."
-  Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
+  Write-Host "  -cmakeargs                User-settable additional arguments passed to CMake."
+  Write-Host "  -ninja                    Use Ninja to drive the native build. (default)"
+  Write-Host "  -msbuild                  Use MSBuild to drive the native build. This is a no-op for Mono."
+  Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
+  Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
+  Write-Host "                            Sanitizers can be specified with a comma-separated list."
+  Write-Host ""
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -220,7 +224,7 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
-  
+
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
@@ -269,6 +273,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
+    "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }

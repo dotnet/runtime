@@ -12,7 +12,7 @@ public static class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
 
         foo f = new foo();
@@ -22,6 +22,5 @@ public static class Repro
         Console.WriteLine(BitConverter.Int64BitsToDouble(unchecked((long)0x8000000000000000UL)));
 
         Console.WriteLine("PASS!");
-        return 100;
     }
 }

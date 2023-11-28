@@ -301,9 +301,16 @@ namespace ILCompiler
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         var type = (TypeDesc)targetOfLookup;
+
+                        // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+                        // If this cast happens with an object that implements IDynamicIntefaceCastable, user code will
+                        // see a RuntimeTypeHandle representing this interface.
+                        if (type.IsInterface)
+                            return NodeFactory.MaximallyConstructableType(type);
+
                         if (type.IsNullable)
-                            targetOfLookup = type.Instantiation[0];
-                        return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
+                            type = type.Instantiation[0];
+                        return NecessaryTypeSymbolIfPossible(type);
                     }
                 case ReadyToRunHelperId.MethodDictionary:
                     return NodeFactory.MethodGenericDictionary((MethodDesc)targetOfLookup);
@@ -400,17 +407,15 @@ namespace ILCompiler
                     {
                         int dictionaryOffset = dictionarySlot * pointerSize;
 
-                        bool indirectLastOffset = lookup.LookupResultReferenceType(_nodeFactory) == GenericLookupResultReferenceType.Indirect;
-
                         if (contextSource == GenericContextSource.MethodParameter)
                         {
-                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset, indirectLastOffset: indirectLastOffset);
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
                         }
                         else
                         {
                             int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
                             int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
-                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset, indirectLastOffset: indirectLastOffset);
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
                         }
                     }
                     else

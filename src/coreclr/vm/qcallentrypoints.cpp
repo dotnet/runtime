@@ -74,6 +74,8 @@
 
 #include <minipal/entrypoints.h>
 
+#include "exceptionhandlingqcalls.h"
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(Enum_GetValuesAndNames)
@@ -149,6 +151,7 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeBuilder_SetConstantValue)
     DllImportEntry(TypeBuilder_DefineCustomAttribute)
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
+    DllImportEntry(Array_CreateInstance)
     DllImportEntry(Array_GetElementConstructorEntrypoint)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
@@ -202,6 +205,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
+    DllImportEntry(ThreadNative_SpinWait)
 #ifdef TARGET_UNIX
     DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
 #endif
@@ -221,6 +225,8 @@ static const Entry s_QCall[] =
 #endif
     DllImportEntry(GCInterface_EnumerateConfigurationValues)
     DllImportEntry(GCInterface_RefreshMemoryLimit)
+    DllImportEntry(GCInterface_EnableNoGCRegionCallback)
+    DllImportEntry(GCInterface_GetGenerationBudget)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_GetHINSTANCE)
@@ -229,6 +235,24 @@ static const Entry s_QCall[] =
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(MarshalNative_GetTypeFromCLSID)
+    DllImportEntry(MarshalNative_GetIUnknownForObject)
+    DllImportEntry(MarshalNative_GetIDispatchForObject)
+    DllImportEntry(MarshalNative_GetComInterfaceForObject)
+    DllImportEntry(MarshalNative_GetObjectForIUnknown)
+    DllImportEntry(MarshalNative_GetUniqueObjectForIUnknown)
+    DllImportEntry(MarshalNative_GetTypedObjectForIUnknown)
+    DllImportEntry(MarshalNative_CreateAggregatedObject)
+    DllImportEntry(MarshalNative_CleanupUnusedObjectsInCurrentContext)
+    DllImportEntry(MarshalNative_ReleaseComObject)
+    DllImportEntry(MarshalNative_FinalReleaseComObject)
+    DllImportEntry(MarshalNative_InternalCreateWrapperOfType)
+    DllImportEntry(MarshalNative_IsTypeVisibleFromCom)
+    DllImportEntry(MarshalNative_GetNativeVariantForObject)
+    DllImportEntry(MarshalNative_GetObjectForNativeVariant)
+    DllImportEntry(MarshalNative_GetObjectsForNativeVariants)
+    DllImportEntry(MarshalNative_GetStartComSlot)
+    DllImportEntry(MarshalNative_GetEndComSlot)
+    DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
@@ -274,6 +298,9 @@ static const Entry s_QCall[] =
     DllImportEntry(LogThreadPoolIODequeue)
     DllImportEntry(LogThreadPoolIOPack)
     DllImportEntry(LogThreadPoolWorkingThreadCount)
+    DllImportEntry(LogContentionLockCreated)
+    DllImportEntry(LogContentionStart)
+    DllImportEntry(LogContentionStop)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)
@@ -300,6 +327,8 @@ static const Entry s_QCall[] =
     DllImportEntry(OpenMutexW)
     DllImportEntry(OpenSemaphoreW)
     DllImportEntry(OutputDebugStringW)
+    DllImportEntry(PAL_CreateMutexW)
+    DllImportEntry(PAL_OpenMutexW)
     DllImportEntry(ReleaseMutex)
     DllImportEntry(ReleaseSemaphore)
     DllImportEntry(ResetEvent)
@@ -316,6 +345,16 @@ static const Entry s_QCall[] =
     DllImportEntry(ComWeakRefToObject)
     DllImportEntry(ObjectToComWeakRef)
 #endif
+#ifdef FEATURE_EH_FUNCLETS
+    DllImportEntry(SfiInit)
+    DllImportEntry(SfiNext)
+    DllImportEntry(CallCatchFunclet)
+    DllImportEntry(CallFilterFunclet)
+    DllImportEntry(CallFinallyFunclet)
+    DllImportEntry(EHEnumInitFromStackFrameIterator)
+    DllImportEntry(EHEnumNext)
+    DllImportEntry(AppendExceptionStackFrame)
+#endif // FEATURE_EH_FUNCLETS
 };
 
 const void* QCallResolveDllImport(const char* name)

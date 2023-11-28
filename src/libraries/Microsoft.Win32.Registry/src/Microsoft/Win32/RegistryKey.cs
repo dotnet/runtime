@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -12,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.AccessControl;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 /*
   Note on ACL support:
@@ -334,65 +334,36 @@ namespace Microsoft.Win32
 
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
+            // If the key has values, it must be opened with KEY_SET_VALUE,
+            // or RegDeleteTree will fail with ERROR_ACCESS_DENIED.
+
             RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
             if (key != null)
             {
                 using (key)
                 {
-                    if (key.SubKeyCount > 0)
+                    int ret = Interop.Advapi32.RegDeleteTree(key._hkey, string.Empty);
+                    if (ret != 0)
                     {
-                        string[] keys = key.GetSubKeyNames();
+                        Win32Error(ret, null);
+                    }
 
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
+                    // RegDeleteTree doesn't self-delete when lpSubKey is empty.
+                    // Manually delete the key to restore old behavior.
+
+                    ret = Interop.Advapi32.RegDeleteKeyEx(key._hkey, string.Empty, (int)_regView, 0);
+                    if (ret != 0)
+                    {
+                        Win32Error(ret, null);
                     }
                 }
-
-                DeleteSubKeyTreeCore(subkey);
-            }
-            else if (throwOnMissingSubKey)
-            {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        /// <summary>
-        /// An internal version which does no security checks or argument checking.  Skipping the
-        /// security checks should give us a slight perf gain on large trees.
-        /// </summary>
-        private void DeleteSubKeyTreeInternal(string subkey)
-        {
-            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
-            if (key != null)
-            {
-                using (key)
-                {
-                    if (key.SubKeyCount > 0)
-                    {
-                        string[] keys = key.GetSubKeyNames();
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
-                    }
-                }
-
-                DeleteSubKeyTreeCore(subkey);
             }
             else
             {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        private void DeleteSubKeyTreeCore(string subkey)
-        {
-            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
-            if (ret != 0)
-            {
-                Win32Error(ret, null);
+                if (throwOnMissingSubKey)
+                {
+                    throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
+                }
             }
         }
 
@@ -675,58 +646,55 @@ namespace Microsoft.Win32
             get
             {
                 EnsureNotDisposed();
-                return IsSystemKey() ? SystemKeyHandle : _hkey;
+                return IsSystemKey() ? GetSystemKeyHandle() : _hkey;
             }
         }
 
-        private SafeRegistryHandle SystemKeyHandle
+        private SafeRegistryHandle GetSystemKeyHandle()
         {
-            get
+            Debug.Assert(IsSystemKey());
+
+            int ret = Interop.Errors.ERROR_INVALID_HANDLE;
+            IntPtr baseKey = 0;
+            switch (_keyName)
             {
-                Debug.Assert(IsSystemKey());
-
-                int ret = Interop.Errors.ERROR_INVALID_HANDLE;
-                IntPtr baseKey = 0;
-                switch (_keyName)
-                {
-                    case "HKEY_CLASSES_ROOT":
-                        baseKey = HKEY_CLASSES_ROOT;
-                        break;
-                    case "HKEY_CURRENT_USER":
-                        baseKey = HKEY_CURRENT_USER;
-                        break;
-                    case "HKEY_LOCAL_MACHINE":
-                        baseKey = HKEY_LOCAL_MACHINE;
-                        break;
-                    case "HKEY_USERS":
-                        baseKey = HKEY_USERS;
-                        break;
-                    case "HKEY_PERFORMANCE_DATA":
-                        baseKey = HKEY_PERFORMANCE_DATA;
-                        break;
-                    case "HKEY_CURRENT_CONFIG":
-                        baseKey = HKEY_CURRENT_CONFIG;
-                        break;
-                    default:
-                        Win32Error(ret, null);
-                        break;
-                }
-
-                // open the base key so that RegistryKey.Handle will return a valid handle
-                ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
-                    null,
-                    0,
-                    GetRegistryKeyAccess(IsWritable()) | (int)_regView,
-                    out SafeRegistryHandle result);
-
-                if (ret != 0 || result.IsInvalid)
-                {
-                    result.Dispose();
+                case "HKEY_CLASSES_ROOT":
+                    baseKey = HKEY_CLASSES_ROOT;
+                    break;
+                case "HKEY_CURRENT_USER":
+                    baseKey = HKEY_CURRENT_USER;
+                    break;
+                case "HKEY_LOCAL_MACHINE":
+                    baseKey = HKEY_LOCAL_MACHINE;
+                    break;
+                case "HKEY_USERS":
+                    baseKey = HKEY_USERS;
+                    break;
+                case "HKEY_PERFORMANCE_DATA":
+                    baseKey = HKEY_PERFORMANCE_DATA;
+                    break;
+                case "HKEY_CURRENT_CONFIG":
+                    baseKey = HKEY_CURRENT_CONFIG;
+                    break;
+                default:
                     Win32Error(ret, null);
-                }
-
-                return result;
+                    break;
             }
+
+            // open the base key so that RegistryKey.Handle will return a valid handle
+            ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
+                null,
+                0,
+                GetRegistryKeyAccess(IsWritable()) | (int)_regView,
+                out SafeRegistryHandle result);
+
+            if (ret != 0 || result.IsInvalid)
+            {
+                result.Dispose();
+                Win32Error(ret, null);
+            }
+
+            return result;
         }
 
         private static int GetRegistryKeyAccess(RegistryKeyPermissionCheck mode)

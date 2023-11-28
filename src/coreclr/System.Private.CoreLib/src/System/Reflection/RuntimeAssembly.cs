@@ -1,19 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration.Assemblies;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using CultureInfo = System.Globalization.CultureInfo;
 using System.IO;
-using System.Configuration.Assemblies;
-using StackCrawlMark = System.Threading.StackCrawlMark;
-using System.Runtime.Loader;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Runtime.Serialization;
+using System.Security;
 using System.Threading;
+using CultureInfo = System.Globalization.CultureInfo;
+using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System.Reflection
 {
@@ -241,7 +242,7 @@ namespace System.Reflection
             return type;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(
             string name, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
@@ -344,7 +345,7 @@ namespace System.Reflection
         public override Module ManifestModule =>
             // We don't need to return the "external" ModuleBuilder because
             // it is meant to be read-only
-            RuntimeAssembly.GetManifestModule(GetNativeHandle());
+            GetManifestModule(GetNativeHandle());
 
         public override object[] GetCustomAttributes(bool inherit)
         {
@@ -657,7 +658,7 @@ namespace System.Reflection
             return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture,
                                                        Version? version,
                                                        bool throwOnFileNotFound)

@@ -72,16 +72,6 @@ ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
 ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
 #endif
 
-#ifdef FEATURE_DYNAMIC_CODE
-ASM_OFFSET(    0,     0, CallDescrData, pSrc)
-ASM_OFFSET(    4,     8, CallDescrData, numStackSlots)
-ASM_OFFSET(    8,     C, CallDescrData, fpReturnSize)
-ASM_OFFSET(    C,    10, CallDescrData, pArgumentRegisters)
-ASM_OFFSET(   10,    18, CallDescrData, pFloatArgumentRegisters)
-ASM_OFFSET(   14,    20, CallDescrData, pTarget)
-ASM_OFFSET(   18,    28, CallDescrData, pReturnBuffer)
-#endif
-
 // Undefine macros that are only used in this header for convenience.
 #undef ASM_OFFSET
 #undef ASM_SIZEOF

@@ -16,7 +16,7 @@
 #include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"
 #include "shash.h"
-#include "CallDescr.h"
+#include <minipal/cpufeatures.h>
 
 class AsmOffsets
 {

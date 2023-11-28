@@ -136,7 +136,7 @@ namespace System.Net
             throw new NotSupportedException();
         }
 
-        public int ApplyControlToken(ref SafeDeleteContext? refContext, in SecurityBuffer inputBuffer)
+        public int ApplyControlToken(ref SafeDeleteSslContext? refContext, in SecurityBuffer inputBuffer)
         {
             return SafeDeleteContext.ApplyControlToken(ref refContext, in inputBuffer);
         }

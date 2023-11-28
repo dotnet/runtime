@@ -100,6 +100,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceSearchValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", new Type[] { Type.MakeGenericMethodParameter(0).MakeArrayType() })!.MakeGenericMethod(typeof(SearchValues<char>))!;
+        private static readonly MethodInfo s_unsafeAs = typeof(Unsafe).GetMethod("As", new Type[] { typeof(object) })!;
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
@@ -900,23 +901,22 @@ namespace System.Text.RegularExpressions
                         Ldloc(textSpanLocal);
                     }
 
-                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
-
                     if (primarySet.Chars is not null)
                     {
+                        Debug.Assert(primarySet.Chars.Length > 0);
                         switch (primarySet.Chars.Length)
                         {
                             case 1:
                                 // tmp = ...IndexOf(setChars[0]);
                                 Ldc(primarySet.Chars[0]);
-                                Call(s_spanIndexOfChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
                                 break;
 
                             case 2:
                                 // tmp = ...IndexOfAny(setChars[0], setChars[1]);
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
-                                Call(s_spanIndexOfAnyCharChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharChar : s_spanIndexOfAnyCharChar);
                                 break;
 
                             case 3:
@@ -924,21 +924,25 @@ namespace System.Text.RegularExpressions
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
                                 Ldc(primarySet.Chars[2]);
-                                Call(s_spanIndexOfAnyCharCharChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            case 4 or 5:
+                                // tmp = ...IndexOfAny("abcd");
+                                // Note that this case differs slightly from the source generator, where it might choose to use
+                                // SearchValues instead of a literal, but there's extra cost to doing so for RegexCompiler so
+                                // it just always uses IndexOfAny(span).
+                                Ldstr(new string(primarySet.Chars));
+                                Call(s_stringAsSpanMethod);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
                                 break;
 
                             default:
-                                Ldstr(new string(primarySet.Chars));
-                                Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                // tmp = ...IndexOfAny(s_searchValues);
+                                LoadSearchValues(primarySet.Chars);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
                                 break;
                         }
-                    }
-                    else if (primarySet.AsciiSet is not null)
-                    {
-                        Debug.Assert(!primarySet.Negated);
-                        LoadSearchValues(primarySet.AsciiSet);
-                        Call(s_spanIndexOfAnySearchValues);
                     }
                     else if (primarySet.Range is not null)
                     {
@@ -1165,6 +1169,8 @@ namespace System.Text.RegularExpressions
 
                 if (set.Chars is { Length: 1 })
                 {
+                    Debug.Assert(!set.Negated);
+
                     // pos = inputSpan.Slice(0, pos).LastIndexOf(set.Chars[0]);
                     Ldloca(inputSpan);
                     Ldc(0);
@@ -1228,7 +1234,7 @@ namespace System.Text.RegularExpressions
             void EmitLiteralAfterAtomicLoop()
             {
                 Debug.Assert(_regexTree.FindOptimizations.LiteralAfterLoop is not null);
-                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _regexTree.FindOptimizations.LiteralAfterLoop.Value;
+                (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal) target = _regexTree.FindOptimizations.LiteralAfterLoop.Value;
 
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
@@ -1254,7 +1260,16 @@ namespace System.Text.RegularExpressions
                 {
                     Ldstr(literalString);
                     Call(s_stringAsSpanMethod);
-                    Call(s_spanIndexOfSpan);
+                    if (target.Literal.StringComparison is StringComparison.OrdinalIgnoreCase)
+                    {
+                        Ldc((int)target.Literal.StringComparison);
+                        Call(s_spanIndexOfSpanStringComparison);
+                    }
+                    else
+                    {
+                        Debug.Assert(target.Literal.StringComparison is StringComparison.Ordinal);
+                        Call(s_spanIndexOfSpan);
+                    }
                 }
                 else if (target.Literal.Chars is not char[] literalChars)
                 {
@@ -2599,10 +2614,12 @@ namespace System.Text.RegularExpressions
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 // Before we handle general-purpose matching logic for nodes, handle any special-casing.
-                // -
                 if (_regexTree!.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     _regexTree!.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {
+                    // This is the set loop that's part of the literal-after-loop optimization: the end of the loop
+                    // is stored in runtrackpos, so we just need to transfer that to pos. The optimization is only
+                    // selected if the shape of the tree is amenable.
                     Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
 
                     // pos = base.runtrackpos;
@@ -6117,16 +6134,21 @@ namespace System.Text.RegularExpressions
             // Logically do _searchValues[index], but avoid the bounds check on accessing the array,
             // and cast to the known derived sealed type to enable devirtualization.
 
-            // DerivedSearchValues d = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._searchValues), index);
+            // DerivedSearchValues d = Unsafe.As<DerivedSearchValues>(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._searchValues), index));
             // ... = d;
             Ldthisfld(s_searchValuesArrayField);
             Call(s_memoryMarshalGetArrayDataReferenceSearchValues);
             Ldc(index * IntPtr.Size);
             Add();
             _ilg!.Emit(OpCodes.Ldind_Ref);
-            LocalBuilder ioavLocal = _ilg!.DeclareLocal(list[index].GetType());
-            Stloc(ioavLocal);
-            Ldloc(ioavLocal);
+            Call(MakeUnsafeAs(list[index].GetType())); // provide JIT with details necessary to devirtualize calls on this instance
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification =
+                "Calling Unsafe.As<T> is safe since the T doesn't have trimming annotations.")]
+            static MethodInfo MakeUnsafeAs(Type type)
+            {
+                return s_unsafeAs.MakeGenericMethod(type);
+            }
         }
     }
 }

@@ -149,19 +149,19 @@ namespace System.Net.Test.Common
             }
         }
 
-        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int timeout = 60_000)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
-            return CreateClientAndServerAsync(clientFunc, serverFunc, null, timeout);
+            return CreateClientAndServerAsync(clientFunc, serverFunc, null, millisecondsTimeout);
         }
 
-        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, HttpAgnosticOptions httpOptions, int timeout = 60_000)
+        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, HttpAgnosticOptions httpOptions, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
             using (var server = HttpAgnosticLoopbackServer.CreateServer(httpOptions ?? new HttpAgnosticOptions()))
             {
                 Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
 
-                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(timeout).ConfigureAwait(false);
+                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(millisecondsTimeout).ConfigureAwait(false);
             }
         }
     }
@@ -177,7 +177,7 @@ namespace System.Net.Test.Common
     {
         public static readonly HttpAgnosticLoopbackServerFactory Singleton = new HttpAgnosticLoopbackServerFactory();
 
-        public static async Task CreateServerAsync(Func<HttpAgnosticLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000)
+        public static async Task CreateServerAsync(Func<HttpAgnosticLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds)
         {
             using (var server = HttpAgnosticLoopbackServer.CreateServer())
             {
@@ -210,7 +210,7 @@ namespace System.Net.Test.Common
             return httpOptions;
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds, GenericLoopbackOptions options = null)
         {
             using (var server = CreateServer(options))
             {

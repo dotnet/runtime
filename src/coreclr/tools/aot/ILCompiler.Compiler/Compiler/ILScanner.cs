@@ -257,6 +257,11 @@ namespace ILCompiler
             return new ScannedInlinedThreadStatics(_factory, MarkedNodes);
         }
 
+        public ReadOnlyFieldPolicy GetReadOnlyFieldPolicy()
+        {
+            return new ScannedReadOnlyPolicy(MarkedNodes);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
@@ -411,8 +416,8 @@ namespace ILCompiler
             private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
-            private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
-            private HashSet<TypeDesc> _disqualifiedInterfaces = new();
+            private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
+            private HashSet<TypeDesc> _disqualifiedTypes = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -437,8 +442,8 @@ namespace ILCompiler
                                 {
                                     // If the interface is implemented through IDynamicInterfaceCastable, there might be
                                     // no real upper bound on the number of actual classes implementing it.
-                                    if (CanAssumeWholeProgramViewOnInterfaceUse(factory, type, baseInterface))
-                                        _disqualifiedInterfaces.Add(baseInterface);
+                                    if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
+                                        _disqualifiedTypes.Add(baseInterface);
                                 }
                             }
                         }
@@ -457,12 +462,21 @@ namespace ILCompiler
 
                             if (type is not MetadataType { IsAbstract: true })
                             {
-                                // Record all interfaces this class implements to _interfaceImplementators
+                                // Record all interfaces this class implements to _implementators
                                 foreach (DefType baseInterface in type.RuntimeInterfaces)
                                 {
-                                    if (CanAssumeWholeProgramViewOnInterfaceUse(factory, type, baseInterface))
+                                    if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
                                     {
                                         RecordImplementation(baseInterface, type);
+                                    }
+                                }
+
+                                // Record all base types of this class
+                                for (DefType @base = type.BaseType; @base != null; @base = @base.BaseType)
+                                {
+                                    if (CanAssumeWholeProgramViewOnTypeUse(factory, type, @base))
+                                    {
+                                        RecordImplementation(@base, type);
                                     }
                                 }
                             }
@@ -474,7 +488,13 @@ namespace ILCompiler
                                 // due to MakeGenericType.
                                 foreach (DefType baseInterface in type.RuntimeInterfaces)
                                 {
-                                    _disqualifiedInterfaces.Add(baseInterface);
+                                    _disqualifiedTypes.Add(baseInterface);
+                                }
+
+                                // Same for base classes
+                                for (DefType @base = type.BaseType; @base != null; @base = @base.BaseType)
+                                {
+                                    _disqualifiedTypes.Add(@base);
                                 }
                             }
                             else if (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
@@ -490,7 +510,7 @@ namespace ILCompiler
                                     {
                                         // Limit to the generic ones - ICollection<T>, etc.
                                         if (baseInterface.HasInstantiation)
-                                            _disqualifiedInterfaces.Add(baseInterface);
+                                            _disqualifiedTypes.Add(baseInterface);
                                     }
                                 }
                             }
@@ -513,22 +533,23 @@ namespace ILCompiler
                 }
             }
 
-            private static bool CanAssumeWholeProgramViewOnInterfaceUse(NodeFactory factory, TypeDesc implementingType, DefType interfaceType)
+            private static bool CanAssumeWholeProgramViewOnTypeUse(NodeFactory factory, TypeDesc implementingType, DefType baseType)
             {
-                if (!interfaceType.HasInstantiation)
+                if (!baseType.HasInstantiation)
                 {
                     return true;
                 }
 
                 // If there are variance considerations, bail
-                if (VariantInterfaceMethodUseNode.IsVariantInterfaceImplementation(factory, implementingType, interfaceType))
+                if (baseType.IsInterface
+                    && VariantInterfaceMethodUseNode.IsVariantInterfaceImplementation(factory, implementingType, baseType))
                 {
                     return false;
                 }
 
-                if (interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != interfaceType
-                    || interfaceType.Context.SupportsUniversalCanon)
+                if (baseType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType
+                    || baseType.Context.SupportsUniversalCanon)
                 {
                     // If the interface has a canonical form, we might not have a full view of all implementers.
                     // E.g. if we have:
@@ -549,10 +570,10 @@ namespace ILCompiler
                 Debug.Assert(!implType.IsInterface);
 
                 HashSet<TypeDesc> implList;
-                if (!_interfaceImplementators.TryGetValue(type, out implList))
+                if (!_implementators.TryGetValue(type, out implList))
                 {
                     implList = new();
-                    _interfaceImplementators[type] = implList;
+                    _implementators[type] = implList;
                 }
                 implList.Add(implType);
             }
@@ -604,13 +625,23 @@ namespace ILCompiler
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {
-                if (_disqualifiedInterfaces.Contains(type))
+                if (_disqualifiedTypes.Contains(type))
                     return null;
 
-                if (type.IsInterface && _interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
+                if (_implementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
                 {
-                    var types = new TypeDesc[implementations.Count];
+                    TypeDesc[] types;
                     int index = 0;
+                    if (!type.IsInterface && type is not MetadataType { IsAbstract: true })
+                    {
+                        types = new TypeDesc[implementations.Count + 1];
+                        types[index++] = type;
+                    }
+                    else
+                    {
+                        types = new TypeDesc[implementations.Count];
+                    }
+
                     foreach (TypeDesc implementation in implementations)
                     {
                         types[index++] = implementation;
@@ -636,6 +667,11 @@ namespace ILCompiler
                     {
                         TypeDesc type = eetypeNode.Type;
                         _constructedTypes.Add(type);
+
+                        // It's convenient to also see Array<T> as constructed for each T[]
+                        DefType closestDefType = type.GetClosestDefType();
+                        if (closestDefType != type)
+                            _constructedTypes.Add(closestDefType);
                     }
                 }
             }
@@ -719,12 +755,6 @@ namespace ILCompiler
                         if (t.ConvertToCanonForm(CanonicalFormKind.Specific) != t)
                             continue;
 
-#if DEBUG
-                        // do not inline storage for some types in debug - for test coverage
-                        if (i % 8 == 0)
-                            continue;
-#endif
-
                         types.Add(t);
 
                         // N.B. for ARM32, we would need to deal with > PointerSize alignments.
@@ -796,6 +826,36 @@ namespace ILCompiler
                 // The form we're asking about should be canonical, but may not be normalized
                 Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
                 return !_canonFormsWithCctorChecks.Contains(type.NormalizeInstantiation());
+            }
+        }
+
+        private sealed class ScannedReadOnlyPolicy : ReadOnlyFieldPolicy
+        {
+            private HashSet<FieldDesc> _writtenFields = new();
+
+            public ScannedReadOnlyPolicy(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                foreach (var node in markedNodes)
+                {
+                    if (node is NotReadOnlyFieldNode writtenField)
+                    {
+                        _writtenFields.Add(writtenField.Field);
+                    }
+                }
+            }
+
+            public override bool IsReadOnly(FieldDesc field)
+            {
+                FieldDesc typicalField = field.GetTypicalFieldDefinition();
+                if (field != typicalField)
+                {
+                    DefType owningType = field.OwningType;
+                    var canonOwningType = (InstantiatedType)owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (owningType != canonOwningType)
+                        field = field.Context.GetFieldForInstantiatedType(typicalField, canonOwningType);
+                }
+
+                return !_writtenFields.Contains(field);
             }
         }
     }

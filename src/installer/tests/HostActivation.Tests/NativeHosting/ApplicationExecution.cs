@@ -43,12 +43,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void RunApp_UnhandledException()
         {
-            var project = sharedState.PortableAppWithExceptionFixture.TestProject;
+            var project = sharedState.PortableAppFixture.TestProject;
             string[] args =
             {
                 ApplicationExecutionArg,
                 sharedState.HostFxrPath,
-                project.AppDll
+                project.AppDll,
+                "throw_exception"
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
@@ -64,7 +65,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string DotNetRoot { get; }
 
             public TestProjectFixture PortableAppFixture { get; }
-            public TestProjectFixture PortableAppWithExceptionFixture { get; }
 
             public SharedTestState()
             {
@@ -75,16 +75,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored()
                     .PublishProject();
-
-                PortableAppWithExceptionFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
             }
 
             protected override void Dispose(bool disposing)
             {
                 PortableAppFixture.Dispose();
-                PortableAppWithExceptionFixture.Dispose();
 
                 base.Dispose(disposing);
             }

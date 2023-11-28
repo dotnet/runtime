@@ -7,7 +7,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
-        internal const string INTEROP_CLASS = "[System.Runtime.InteropServices.JavaScript.Legacy.UnitTests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
+        internal const string INTEROP_CLASS = "[System.Runtime.InteropServices.JavaScript.Legacy.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {
@@ -448,38 +448,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         public static async Task FailedAsynchronousTask() 
-        {
-            await Task.Yield();
-            throw new Exception();
-        }
-
-        public static async ValueTask AsynchronousValueTask() 
-        {
-            await Task.Yield();
-        }
-
-        public static ValueTask SynchronousValueTask() 
-        {
-            return ValueTask.CompletedTask;
-        }
-
-        public static ValueTask<int> SynchronousValueTaskInt(int i) 
-        {
-            return ValueTask.FromResult(i);
-        }
-
-        public static async ValueTask<int> AsynchronousValueTaskInt(int i) 
-        {
-            await Task.Yield();
-            return i;
-        }
-
-        public static ValueTask FailedSynchronousValueTask() 
-        {
-            return ValueTask.FromException(new Exception());
-        }
-
-        public static async ValueTask FailedAsynchronousValueTask() 
         {
             await Task.Yield();
             throw new Exception();

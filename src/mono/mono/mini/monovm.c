@@ -8,11 +8,14 @@
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/native-library.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/webcil-loader.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
 
 #include <mono/metadata/components.h>
+
+#include <corehost/host_runtime_contract.h>
 
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
@@ -140,12 +143,22 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 				n -= strlen(".dll");
 				char *fullpath2 = g_malloc (n + strlen(".webcil") + 1);
 				g_strlcpy (fullpath2, fullpath, n + 1);
-				g_strlcpy (fullpath2 + n, ".webcil", 8);
+				g_strlcpy (fullpath2 + n, ".webcil", strlen(".webcil") + 1);
 				if (g_file_test (fullpath2, G_FILE_TEST_IS_REGULAR)) {
 					MonoImageOpenStatus status;
 					result = mono_assembly_request_open (fullpath2, &req, &status);
 				}
 				g_free (fullpath2);
+				if (result)
+					break;
+				char *fullpath3 = g_malloc (n + strlen(MONO_WEBCIL_IN_WASM_EXTENSION) + 1);
+				g_strlcpy (fullpath3, fullpath, n + 1);
+				g_strlcpy (fullpath3 + n, MONO_WEBCIL_IN_WASM_EXTENSION, strlen(MONO_WEBCIL_IN_WASM_EXTENSION) + 1);
+				if (g_file_test (fullpath3, G_FILE_TEST_IS_REGULAR)) {
+					MonoImageOpenStatus status;
+					result = mono_assembly_request_open (fullpath3, &req, &status);
+				}
+				g_free (fullpath3);
 				if (result)
 					break;
 			}
@@ -176,19 +189,28 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 	// A partial list of relevant properties is at:
 	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
 
+	PInvokeOverrideFn override_fn = NULL;
 	for (int i = 0; i < propertyCount; ++i) {
 		size_t prop_len = strlen (propertyKeys [i]);
-		if (prop_len == 27 && !strncmp (propertyKeys [i], "TRUSTED_PLATFORM_ASSEMBLIES", 27)) {
+		if (prop_len == 27 && !strncmp (propertyKeys [i], HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, 27)) {
 			parse_trusted_platform_assemblies (propertyValues[i]);
-		} else if (prop_len == 9 && !strncmp (propertyKeys [i], "APP_PATHS", 9)) {
+		} else if (prop_len == 9 && !strncmp (propertyKeys [i], HOST_PROPERTY_APP_PATHS, 9)) {
 			app_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (prop_len == 23 && !strncmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS", 23)) {
+		} else if (prop_len == 23 && !strncmp (propertyKeys [i], HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS, 23)) {
 			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
-		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
+		} else if (prop_len == 29 && !strncmp (propertyKeys [i], HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, 29)) {
 			native_lib_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (prop_len == 16 && !strncmp (propertyKeys [i], "PINVOKE_OVERRIDE", 16)) {
-			PInvokeOverrideFn override_fn = (PInvokeOverrideFn)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
-			mono_loader_install_pinvoke_override (override_fn);
+		} else if (prop_len == 16 && !strncmp (propertyKeys [i], HOST_PROPERTY_PINVOKE_OVERRIDE, 16)) {
+			if (override_fn == NULL) {
+				override_fn = (PInvokeOverrideFn)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
+			}
+		} else if (prop_len == STRING_LENGTH(HOST_PROPERTY_RUNTIME_CONTRACT) && !strncmp (propertyKeys [i], HOST_PROPERTY_RUNTIME_CONTRACT, STRING_LENGTH(HOST_PROPERTY_RUNTIME_CONTRACT))) {
+			// Functions in HOST_RUNTIME_CONTRACT have priority over the individual properties
+			// for callbacks, so we set them as long as the contract has a non-null function.
+			struct host_runtime_contract* contract = (struct host_runtime_contract*)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
+			if (contract->pinvoke_override != NULL) {
+				override_fn = (PInvokeOverrideFn)contract->pinvoke_override;
+			}
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
@@ -196,6 +218,10 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 #endif
 		}
 	}
+
+	if (override_fn != NULL)
+		mono_loader_install_pinvoke_override (override_fn);
+
 	return TRUE;
 }
 

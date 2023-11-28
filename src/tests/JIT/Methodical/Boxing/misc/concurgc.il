@@ -6,7 +6,7 @@
 .assembly extern System.Threading.Thread { auto }
 .assembly extern mscorlib { auto }
 
-.assembly 'concurgc'// as "concur"
+.assembly ASSEMBLY_NAME// as "concur"
 {
 }
 .assembly extern xunit.core {}

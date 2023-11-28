@@ -30,10 +30,11 @@ namespace Microsoft.Interop
         {
             unsafe
             {
-                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), &IsConsideredBlittableWorker);
+                // We can pass a null Compilation here since our blittability check does not depend on the compilation.
+                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), compilation: null!, &IsConsideredBlittableWorker);
             }
 
-            static bool IsConsideredBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes)
+            static bool IsConsideredBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation)
             {
                 return t.IsUnmanagedType;
             }
@@ -50,14 +51,15 @@ namespace Microsoft.Interop
         /// </remarks>
         /// <param name="type">The type to check.</param>
         /// <returns>Returns true if strictly blittable, otherwise false.</returns>
-        public static bool IsStrictlyBlittable(this ITypeSymbol type)
+        /// <param name="compilation">The compilation context of the source being compiled.</param>
+        public static bool IsStrictlyBlittableInContext(this ITypeSymbol type, Compilation compilation)
         {
             unsafe
             {
-                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), &IsStrictlyBlittableWorker);
+                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), compilation, &IsStrictlyBlittableWorker);
             }
 
-            static unsafe bool IsStrictlyBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes)
+            static unsafe bool IsStrictlyBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation)
             {
                 if (t.SpecialType is not SpecialType.None)
                 {
@@ -65,23 +67,37 @@ namespace Microsoft.Interop
                 }
                 else if (t.IsValueType)
                 {
-                    // If the containing assembly for the type is backed by metadata (non-null),
-                    // then the type is not internal and therefore coming from a reference assembly
-                    // that we can not confirm is strictly blittable.
-                    if (t.ContainingAssembly is not null
-                        && t.ContainingAssembly.GetMetadata() is not null)
+                    // If the containing assembly for the type is not the same assembly as the assembly defining the interop stub,
+                    // then we can't trust the type definition as it may differ at runtime from the compile-time definition.
+                    if (t.ContainingAssembly is not ISourceAssemblySymbol sourceAssembly
+                        || sourceAssembly.Compilation != compilation)
                     {
+                        // We have a few exceptions to this rule. We allow a select number of types that we know are unmanaged and will always be unmanaged.
+                        if (t.ToDisplayString() is TypeNames.System_Runtime_InteropServices_CLong // CLong is an interop intrinsic type for the C long type
+                                or TypeNames.System_Runtime_InteropServices_CULong // CULong is an interop intrinsic type for the C ulong type
+                                or TypeNames.System_Runtime_InteropServices_NFloat) // NFloat is an interop intrinsic type for a pointer-sized floating point type
+                        {
+                            return true;
+                        }
+
+                        if (t.ContainingAssembly.Equals(compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly, SymbolEqualityComparer.Default))
+                        {
+                            if (t.ToDisplayString() == TypeNames.System_Guid) // .NET has established that Guid is blittable and matches the shape of the Win32 GUID type exactly and always will.
+                            {
+                                return true;
+                            }
+                        }
                         return false;
                     }
 
-                    return t.HasOnlyBlittableFields(seenTypes, &IsStrictlyBlittableWorker);
+                    return t.HasOnlyBlittableFields(seenTypes, compilation, &IsStrictlyBlittableWorker);
                 }
 
                 return false;
             }
         }
 
-        private static unsafe bool IsBlittableWorker(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, bool> isBlittable)
+        private static unsafe bool IsBlittableWorker(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, Compilation, bool> isBlittable)
         {
             // Assume that type parameters that can be blittable are blittable.
             // We'll re-evaluate blittability for generic fields of generic types at instantiation time.
@@ -89,7 +105,14 @@ namespace Microsoft.Interop
             {
                 return true;
             }
-            if (type.IsAutoLayout() || !isBlittable(type, seenTypes))
+
+            // Treat pointers as always blittable.
+            if (type.TypeKind is TypeKind.Pointer or TypeKind.FunctionPointer)
+            {
+                return true;
+            }
+
+            if (type.IsAutoLayout() || !isBlittable(type, seenTypes, compilation))
             {
                 return false;
             }
@@ -121,7 +144,7 @@ namespace Microsoft.Interop
             return type.IsReferenceType;
         }
 
-        private static unsafe bool HasOnlyBlittableFields(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, bool> isBlittable)
+        private static unsafe bool HasOnlyBlittableFields(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, Compilation, bool> isBlittable)
         {
             if (seenTypes.Contains(type))
             {
@@ -134,7 +157,7 @@ namespace Microsoft.Interop
             {
                 if (!field.IsStatic)
                 {
-                    if (!IsBlittableWorker(field.Type, seenTypes.Add(type), isBlittable))
+                    if (!IsBlittableWorker(field.Type, seenTypes.Add(type), compilation, isBlittable))
                     {
                         return false;
                     }

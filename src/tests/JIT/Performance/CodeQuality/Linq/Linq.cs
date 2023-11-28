@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Linq;
+using Xunit;
 
 public class Product
 {
@@ -401,7 +402,8 @@ public class LinqBenchmarks
     }
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var tests = new LinqBenchmarks();
         bool result = tests.Bench();

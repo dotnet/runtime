@@ -29,7 +29,7 @@ namespace Microsoft.Interop.JavaScript
         public static JSSignatureContext Create(
             IMethodSymbol method,
             StubEnvironment env,
-            GeneratorDiagnostics diagnostics,
+            GeneratorDiagnosticsBag diagnostics,
             CancellationToken token)
         {
             // Cancel early if requested
@@ -42,7 +42,7 @@ namespace Microsoft.Interop.JavaScript
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(new JSMarshalAsAttributeParser(env.Compilation)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(new FallbackJSMarshallingInfoProvider()));
-            SignatureContext sigContext = SignatureContext.Create(method, jsMarshallingAttributeParser, env, typeof(JSImportGenerator).Assembly);
+            SignatureContext sigContext = SignatureContext.Create(method, jsMarshallingAttributeParser, env, new CodeEmitOptions(SkipInit: true), typeof(JSImportGenerator).Assembly);
 
             string stubTypeFullName = method.ContainingType.ToDisplayString(TypeContainingTypesAndNamespacesStyle);
 

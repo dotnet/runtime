@@ -1,5 +1,5 @@
 # Linked javascript files
-They are emcc way how to extend the dotnet.js script during linking, by appending the scripts.
+They are emcc way how to extend the dotnet.native.js script during linking, by appending the scripts.
 See https://emscripten.org/docs/tools_reference/emcc.html#emcc-pre-js
 
 There are `-extern-pre-js`,`-pre-js`, `-post-js`, `-extern-post-js`.

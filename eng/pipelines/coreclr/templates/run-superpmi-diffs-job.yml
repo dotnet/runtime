@@ -11,7 +11,7 @@ parameters:
   osSubgroup: ''                  # optional -- operating system subgroup
   continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
   dependsOn: ''                   # optional -- dependencies of the job
-  timeoutInMinutes: 120           # optional -- timeout for the job
+  timeoutInMinutes: 180           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
@@ -119,7 +119,7 @@ jobs:
         helixType: 'build/tests/'
         helixQueues: ${{ join(',', parameters.helixQueues) }}
         creator: dotnet-bot
-        WorkItemTimeout: 2:00 # 2 hours
+        WorkItemTimeout: 3:00 # 3 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-diffs.proj'

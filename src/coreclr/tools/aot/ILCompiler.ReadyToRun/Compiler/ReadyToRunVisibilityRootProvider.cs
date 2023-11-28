@@ -16,10 +16,12 @@ namespace ILCompiler
     public class ReadyToRunVisibilityRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
+        private InstructionSetSupport _instructionSetSupport;
 
         public ReadyToRunVisibilityRootProvider(EcmaModule module)
         {
             _module = module;
+            _instructionSetSupport = ((ReadyToRunCompilerContext)module.Context).InstructionSetSupport;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -102,7 +104,7 @@ namespace ILCompiler
 
                 try
                 {
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(_instructionSetSupport, method))
                     {
                         ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(methodToRoot);
                         rootProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: reason);

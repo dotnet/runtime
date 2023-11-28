@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
-using System.Runtime.Serialization;
 using System.IO;
+using System.Runtime.Serialization;
 
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.NonPortable;
@@ -33,6 +33,16 @@ namespace System.Reflection
 
             AssemblyName name = new AssemblyName(assemblyString);
             return Load(name);
+        }
+
+        // Performance metric to count the number of assemblies
+        // Caching since in NativeAOT, the number will be the same
+        private static uint s_assemblyCount;
+        internal static uint GetAssemblyCount()
+        {
+            if (s_assemblyCount == 0)
+                s_assemblyCount = (uint)Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder.GetLoadedAssemblies().Count;
+            return s_assemblyCount;
         }
 
         [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]

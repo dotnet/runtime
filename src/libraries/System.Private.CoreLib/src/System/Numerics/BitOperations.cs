@@ -7,8 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
 
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
@@ -25,21 +25,21 @@ namespace System.Numerics
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
         // https://github.com/dotnet/roslyn/pull/24621
 
-        private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn => new byte[32]
-        {
+        private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn => // 32
+        [
             00, 01, 28, 02, 29, 14, 24, 03,
             30, 22, 20, 15, 25, 17, 04, 08,
             31, 27, 13, 23, 21, 19, 16, 07,
             26, 12, 18, 06, 11, 05, 10, 09
-        };
+        ];
 
-        private static ReadOnlySpan<byte> Log2DeBruijn => new byte[32]
-        {
+        private static ReadOnlySpan<byte> Log2DeBruijn => // 32
+        [
             00, 09, 01, 10, 13, 21, 02, 29,
             11, 14, 16, 18, 22, 25, 03, 30,
             08, 12, 20, 28, 15, 17, 24, 07,
             19, 27, 23, 06, 26, 05, 04, 31
-        };
+        ];
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -164,18 +164,6 @@ namespace System.Numerics
 #endif
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LeadingZeroCount(Int128 value)
-        {
-            ulong upper = value.Upper;
-
-            if (upper == 0)
-            {
-                return 64 + LeadingZeroCount(value.Lower);
-            }
-            return LeadingZeroCount(upper);
-        }
-
         /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
@@ -259,18 +247,6 @@ namespace System.Numerics
             }
 
             return LeadingZeroCount(hi);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LeadingZeroCount(UInt128 value)
-        {
-            ulong upper = value.Upper;
-
-            if (upper == 0)
-            {
-                return 64 + LeadingZeroCount(value.Lower);
-            }
-            return LeadingZeroCount(upper);
         }
 
         /// <summary>
@@ -946,12 +922,41 @@ namespace System.Numerics
 
         /// <summary>
         /// Reset specific bit in the given value
+        /// Reset the lowest significant bit in the given value
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ResetBit(uint value, int bitPos)
+        internal static ulong ResetLowestSetBit(ulong value)
         {
-            // TODO: Recognize BTR on x86 and LSL+BIC on ARM
-            return value & ~(uint)(1 << bitPos);
+            // It's lowered to BLSR on x86
+            return value & (value - 1);
+        }
+
+        /// <summary>
+        /// Flip the bit at a specific position in a given value.
+        /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="index">The zero-based index of the bit to flip.
+        /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
+        /// <returns>The new value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static uint FlipBit(uint value, int index)
+        {
+            return value ^ (1u << index);
+        }
+
+        /// <summary>
+        /// Flip the bit at a specific position in a given value.
+        /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
+        /// /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="index">The zero-based index of the bit to flip.
+        /// Any value outside the range [0..63] is treated as congruent mod 64.</param>
+        /// <returns>The new value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong FlipBit(ulong value, int index)
+        {
+            return value ^ (1ul << index);
         }
     }
 }

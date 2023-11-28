@@ -31,15 +31,6 @@ namespace Microsoft.Interop.JavaScript
 
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
-            var maxArgs = _isAction ? 3 : 4;
-            if (_argumentMarshalerTypes.Length > maxArgs)
-            {
-                throw new MarshallingNotSupportedException(info, context)
-                {
-                    NotSupportedDetails = SR.FuncTooManyArgs
-                };
-            }
-
             string argName = context.GetAdditionalIdentifier(info, "js_arg");
             var target = info.IsManagedReturnPosition
                 ? Constants.ArgumentReturn

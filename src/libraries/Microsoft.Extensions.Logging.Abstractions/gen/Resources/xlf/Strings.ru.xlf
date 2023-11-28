@@ -67,6 +67,16 @@
         <target state="translated">Методы ведения журнала должны быть статическими</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Генератор исходного кода ведения журнала недоступен в C# {0}. Используйте языковую версию {1} или более позднюю.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Версия языка C# не поддерживается генератором исходного кода.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
         <target state="translated">Метод ведения журнала событий "{0}" содержит строки неправильного формата</target>

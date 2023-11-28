@@ -59,3 +59,5 @@ const X509_ALGOR* local_X509_get0_tbs_sigalg(const X509* x509);
 X509_PUBKEY* local_X509_get_X509_PUBKEY(const X509* x509);
 int32_t local_X509_get_version(const X509* x509);
 int32_t local_X509_up_ref(X509* x509);
+typedef void (*SSL_CTX_keylog_cb_func)(const SSL *ssl, const char *line);
+void local_SSL_CTX_set_keylog_callback(SSL_CTX *ctx, SSL_CTX_keylog_cb_func cb);

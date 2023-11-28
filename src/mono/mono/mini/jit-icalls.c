@@ -65,7 +65,7 @@ mono_ldftn (MonoMethod *method)
 	} else {
 		addr = mono_create_jump_trampoline (method, FALSE, error);
 		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-                        addr = mono_create_static_rgctx_trampoline (method, addr);
+			addr = mono_create_static_rgctx_trampoline (method, addr);
 	}
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -544,7 +544,7 @@ mono_imul_ovf (gint32 a, gint32 b)
 		return 0;
 	}
 
-	return res;
+	return GINT64_TO_INT32 (res);
 }
 
 gint32
@@ -559,7 +559,7 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 
 gint32
@@ -574,7 +574,7 @@ mono_imul_ovf_un_oom (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 #endif
 
@@ -990,9 +990,8 @@ mono_rconv_u4 (float v)
 gint64
 mono_fconv_ovf_i8 (double v)
 {
-	const gint64 res = (gint64)v;
-
-	if (mono_isnan (v) || mono_trunc (v) != res) {
+	gint64 res;
+	if (!mono_try_trunc_i64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1005,33 +1004,12 @@ guint64
 mono_fconv_ovf_u8 (double v)
 {
 	guint64 res;
-
-/*
- * The soft-float implementation of some ARM devices have a buggy guin64 to double
- * conversion that it looses precision even when the integer if fully representable
- * as a double.
- *
- * This was found with 4294967295ull, converting to double and back looses one bit of precision.
- *
- * To work around this issue we test for value boundaries instead.
- */
-#if defined(__arm__) && defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
-	if (mono_isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
+	if (!mono_try_trunc_u64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
 		return 0;
 	}
-	res = (guint64)v;
-#else
-	res = (guint64)v;
-	if (mono_isnan (v) || mono_trunc (v) != res) {
-		ERROR_DECL (error);
-		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-#endif
 	return res;
 }
 
@@ -1046,9 +1024,8 @@ mono_rconv_i8 (float v)
 gint64
 mono_rconv_ovf_i8 (float v)
 {
-	const gint64 res = (gint64)v;
-
-	if (mono_isnan (v) || mono_trunc (v) != res) {
+	gint64 res;
+	if (!mono_try_trunc_i64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1061,9 +1038,7 @@ guint64
 mono_rconv_ovf_u8 (float v)
 {
 	guint64 res;
-
-	res = (guint64)v;
-	if (mono_isnan (v) || mono_trunc (v) != res) {
+	if (!mono_try_trunc_u64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1383,7 +1358,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 
 	error_init (error);
 
-	if (mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) {
+	if ((mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) && !m_method_is_static (cmethod)) {
 		MonoObject *this_obj;
 
 		is_iface = mono_class_is_interface (klass);
@@ -1415,7 +1390,12 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		}
 	}
 
-	if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
+	if (m_method_is_static (cmethod)) {
+		/*
+		 * Static calls don't have this arg
+		 */
+		*this_arg = NULL;
+	} else if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
@@ -1597,6 +1577,11 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
+
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -1610,6 +1595,11 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 {
 	ERROR_DECL (error);
 	gpointer res;
+
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
 
 	res = mono_method_fill_runtime_generic_context (mrgctx, index, error);
 	if (!is_ok (error)) {
@@ -1695,6 +1685,22 @@ mono_throw_invalid_program (const char *msg)
 {
 	ERROR_DECL (error);
 	mono_error_set_invalid_program (error, "Invalid IL due to: %s", msg);
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_type_load (MonoClass* klass)
+{
+	ERROR_DECL (error);
+
+	if (G_UNLIKELY(!klass)) {
+		mono_error_set_generic_error (error, "System", "TypeLoadException", "");
+	} else {
+		char* klass_name = mono_type_get_full_name (klass);
+		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
+		g_free (klass_name);
+	}
+	
 	mono_error_set_pending_exception (error);
 }
 

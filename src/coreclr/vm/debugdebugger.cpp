@@ -268,7 +268,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
             if (pwzModule != NULL)
             {
                 // truncate if necessary
-                COUNT_T iLen = (COUNT_T) wcslen(pwzModule);
+                COUNT_T iLen = (COUNT_T) u16_strlen(pwzModule);
                 if (iLen > MAX_LOG_SWITCH_NAME_LEN)
                 {
                     iLen = MAX_LOG_SWITCH_NAME_LEN;
@@ -279,7 +279,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
             SString message;
             if (pwzMessage != NULL)
             {
-                message.Set(pwzMessage, (COUNT_T) wcslen(pwzMessage));
+                message.Set(pwzMessage, (COUNT_T) u16_strlen(pwzMessage));
             }
 
             g_pDebugInterface->SendLogMessage (Level, &switchName, &message);
@@ -525,7 +525,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             // have updated PDBs from EnC, we can at best look at the module's version number as a rough guess
             // to if this file has been updated.
             bool fIsEnc = false;
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
             if (pModule->IsEditAndContinueEnabled())
             {
                 EditAndContinueModule *eacm = (EditAndContinueModule *)pModule;
@@ -785,10 +785,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        SString assemblyPath = pPEAssembly->GetIdentityPath();
+                        const SString& assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
-                            OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
+                            OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath.GetUnicode());
                             pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
                         }
                     }

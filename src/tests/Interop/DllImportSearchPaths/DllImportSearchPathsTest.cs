@@ -19,7 +19,13 @@ public class DllImportSearchPathsTest
     }
 
     public static bool CanLoadAssemblyInSubdirectory =>
-        !TestLibrary.Utilities.IsNativeAot && !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT;
+        !TestLibrary.Utilities.IsNativeAot &&
+        !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT &&
+        !OperatingSystem.IsAndroid() &&
+        !OperatingSystem.IsIOS() &&
+        !OperatingSystem.IsTvOS() &&
+        !OperatingSystem.IsBrowser() &&
+        !OperatingSystem.IsWasi();
 
     [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
     public static void AssemblyDirectory_Found()
@@ -30,6 +36,13 @@ public class DllImportSearchPathsTest
         var method = type.GetMethod(nameof(NativeLibraryPInvoke.Sum));
 
         int sum = (int)method.Invoke(null, new object[] { 1, 2 });
+        Assert.Equal(3, sum);
+    }
+
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void AssemblyDirectoryAot_Found()
+    {
+        int sum = NativeLibraryPInvokeAot.Sum(1, 2);
         Assert.Equal(3, sum);
     }
 
@@ -62,5 +75,20 @@ public class NativeLibraryPInvoke
 
     [DllImport(NativeLibraryToLoad.Name)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+    static extern int NativeSum(int arg1, int arg2);
+}
+
+public class NativeLibraryPInvokeAot
+{
+    public static int Sum(int a, int b)
+    {
+        return NativeSum(a, b);
+    }
+
+    // For NativeAOT, validate the case where the native library is next to the AOT application.
+    // The passing of DllImportSearchPath.System32 is done to ensure on Windows the runtime won't fallback
+    // and try to search the application directory by default.
+    [DllImport(NativeLibraryToLoad.Name + "-in-native")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
 }

@@ -1510,6 +1510,7 @@ namespace MonoTests.System.Runtime.Caching
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheShrink()
         {
             const int HEAP_RESIZE_THRESHOLD = 8192 + 2;
@@ -1569,6 +1570,7 @@ namespace MonoTests.System.Runtime.Caching
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheExpiryOrdering()
         {
             var config = new NameValueCollection();

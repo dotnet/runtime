@@ -3,9 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [module: UnconditionalSuppressMessage ("Test", "IL2071", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.DetectRedundantSuppressionsInMembersAndTypesUsingTarget.RedundantSuppressionOnType")]
 [module: UnconditionalSuppressMessage ("Test", "IL2071", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.DetectRedundantSuppressionsInMembersAndTypesUsingTarget.RedundantSuppressionOnMethod.Test")]

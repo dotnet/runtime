@@ -4,16 +4,13 @@
 
   <!--
       Required public items/properties:
-      - $(WasmMainJSPath)
-
-      - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
       - $(WasmAppDir)        - AppBundle dir (Defaults to `$(OutputPath)\$(Configuration)\AppBundle`)
       - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
-      - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
-      - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
-      - $(WasmLinkIcalls)    - Whenever to link out unused icalls. Defaults to $(WasmBuildNative).
+      - $(WasmBuildNative)   - Whether to build the native executable. Defaults to false.
+      - $(WasmNativeStrip)   - Whether to strip the native executable. Defaults to true.
+      - $(WasmLinkIcalls)    - Whether to link out unused icalls. Defaults to $(WasmBuildNative).
       - $(RunAOTCompilation) - Defaults to false.
 
       - $(WasmDebugLevel)
@@ -24,11 +21,12 @@
       - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
                                     Defaults to true.
       - $(WasmEmitSymbolMap)      - Generates a `dotnet.js.symbols` file with a map of wasm function number to name.
-      - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
+      - $(WasmDedup)         - Whether to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
-      - $(InvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
+      - $(InvariantGlobalization)       - Whether to disable ICU. Defaults to false.
+      - $(InvariantTimezone)            - Whether to disable Timezone database. Defaults to false.
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
       - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
@@ -79,7 +77,7 @@
   -->
 
   <PropertyGroup>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
 
@@ -119,15 +117,13 @@
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantGlobalization)' == 'true'">true</WasmBuildNative>
+    <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantTimezone)' == 'true'">true</WasmBuildNative>
 
     <WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>
     <WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Allow running/debugging from VS -->
-    <ProjectCapability Include="DotNetCoreWeb"/>
-
     <SupportedPlatform Condition="'$(IsWasiProject)' == 'true'"        Remove="@(SupportedPlatform)" />
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Include="browser" />
     <SupportedPlatform Condition="'$(IsWasiProject)' == 'true'"        Include="wasi" />
@@ -146,12 +142,20 @@
 
       The path might not have been created yet, for example when creating a new project in VS, so don't use an Exists() check
     -->
-    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">$([System.IO.Path]::Combine($(OutputPath), $(RuntimeIdentifier), 'AppBundle'))</_AppBundleDirForRunCommand>
+
+    <!-- This is the only case where OutputPath needs an additional part -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and '$(UseArtifactsOutput)' == '' and '$(AppendRuntimeIdentifierToOutputPath)' != 'false'">$([System.IO.Path]::Combine($(OutputPath), 'wasi-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+
+    <!--
+      In case of UseArtifactsOutput==true, the path is like `OutputPath=./bin/wc0/debug_browser-wasm/`. And
+      it remains the same even if `AppendRuntimeIdentifierToOutputPath`==true .
+    -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">$([System.IO.Path]::Combine($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
 
     <!-- Ensure the path is absolute. In case of VS, the cwd might not be the correct one, so explicitly
          use $(MSBuildProjectDirectory). -->
     <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' != '' and !$([System.IO.Path]::IsPathRooted($(_AppBundleDirForRunCommand)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_AppBundleDirForRunCommand)))</_AppBundleDirForRunCommand>
-  </PropertyGroup>
+ </PropertyGroup>
 
   <PropertyGroup Condition="'$(WasmGenerateAppBundle)' == 'true'">
     <RunCommand Condition="'$(DOTNET_HOST_PATH)' != '' and Exists($(DOTNET_HOST_PATH))">$(DOTNET_HOST_PATH)</RunCommand>
@@ -244,6 +248,19 @@
       <_WasmShouldAOT Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
       <_WasmShouldAOT Condition="'$(RunAOTCompilationAfterBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
+           Cannot use System.Private.Corelib since that is in a different directory -->
+      <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
+    </ItemGroup>
+
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) == 0" Text="Could not find System.Runtime.dll in $(MicrosoftNetCoreAppRuntimePackRidDir). This is likely a setup issue." />
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) > 1" Text="Found more than one System.Runtime.dll. This is likely a setup issue." />
+
+    <PropertyGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     </PropertyGroup>
 
     <!-- FIXME: move to a emscripten init target -->
@@ -344,7 +361,7 @@
           Inputs="@(_WasmAssembliesInternal);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript">
+          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript;_WasmGenerateNodeScripts">
   </Target>
 
 
@@ -365,6 +382,7 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
+      RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
       />
   </Target>
 
@@ -386,6 +404,47 @@
     </ItemGroup>
 
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunWasmtimeScriptPath)&quot;" />
+  </Target>
+
+  <Target Name="_WasmGenerateNodeScripts">
+    <PropertyGroup>
+      <_WasmNodeJSPath>$(WasmAppDir)node.mjs</_WasmNodeJSPath>
+      <_WasmNodeJSContents><![CDATA[
+import { readFile } from 'node:fs/promises';
+import { WASI } from 'wasi';
+import { argv, env } from 'node:process';
+
+const wasi = new WASI({
+  version: 'preview1',
+  args: argv.slice(1),
+  env,
+  preopens: {
+    '/': '.',
+    '/managed': './managed',
+  },
+});
+
+const wasm = await WebAssembly.compile(
+  await readFile(new URL('./dotnet.wasm', import.meta.url)),
+);
+const instance = await WebAssembly.instantiate(wasm, wasi.getImportObject());
+
+wasi.start(instance);
+]]></_WasmNodeJSContents>
+      <_WasmNodeScriptPath>$(WasmAppDir)run-node.sh</_WasmNodeScriptPath>
+      <_WasmNodeScriptContents>node --experimental-modules --experimental-wasm-modules node.mjs $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))) $*</_WasmNodeScriptContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(_WasmNodeJSPath)"
+      Lines="$(_WasmNodeJSContents)"
+      Overwrite="true" />
+
+    <WriteLinesToFile
+      File="$(_WasmNodeScriptPath)"
+      Lines="$(_WasmNodeScriptContents)"
+      Overwrite="true" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(_WasmNodeScriptPath)&quot;" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">

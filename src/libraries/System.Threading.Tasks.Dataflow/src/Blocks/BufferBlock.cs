@@ -12,9 +12,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading.Tasks.Dataflow.Internal;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading.Tasks.Dataflow
 {
@@ -428,7 +428,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>The data to display in the debugger display attribute.</summary>
         private object DebuggerDisplayContent =>
-            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, Count={CountForDebugger}";
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, Count = {CountForDebugger}";
 
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }

@@ -9,6 +9,19 @@
 #include <assert.h>
 #include <unistd.h>
 
+/********* exported symbols *********/
+
+void
+Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
+
+int
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time);
+
+/********* imported symbols *********/
+void SayHello ();
+
+/********* implementation *********/
+
 static void
 strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 {
@@ -19,9 +32,8 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
         (*env)->ReleaseStringUTFChars (env, str, copy_buff);
 }
 
-void SayHello ();
-
-int invoke_netlibrary_entrypoints (void)
+static int
+invoke_netlibrary_entrypoints (void)
 {
     SayHello ();
 
@@ -52,6 +64,9 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     setenv ("DOTNET_LIBRARY_ASSEMBLY_PATH", file_dir, true);
     setenv ("TMPDIR", cache_dir, true);
     setenv ("TEST_RESULTS_DIR", testresults_dir, true);
+
+    //setenv ("MONO_LOG_LEVEL", "debug", true);
+    //setenv ("MONO_LOG_MASK", "all", true);
 
     return invoke_netlibrary_entrypoints ();
 }

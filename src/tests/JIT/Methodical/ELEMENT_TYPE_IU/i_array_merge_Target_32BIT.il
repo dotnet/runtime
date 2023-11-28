@@ -10,7 +10,7 @@
 
 .assembly extern mscorlib
 { }
-.assembly 'i_array_merge_Target_32BIT'
+.assembly ASSEMBLY_NAME
 { }
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }

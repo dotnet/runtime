@@ -160,7 +160,7 @@ int signum(T val)
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 // ConfigMethodRange describes a set of methods, specified via their
 // hash codes. This can be used for binary search and/or specifying an
@@ -241,7 +241,7 @@ private:
     Range*   m_ranges;    // ranges of functions to include
 };
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 class Compiler;
 
@@ -321,7 +321,7 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
                     ...);
 
 #ifdef DEBUG
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size);
+void hexDump(FILE* dmpf, BYTE* addr, size_t size);
 #endif // DEBUG
 
 /******************************************************************************
@@ -729,6 +729,10 @@ public:
 
     static unsigned __int64 convertDoubleToUInt64(double d);
 
+    static double convertToDouble(float f);
+
+    static float convertToSingle(double d);
+
     static double round(double x);
 
     static float round(float x);
@@ -763,11 +767,35 @@ public:
 
     static double maximum(double val1, double val2);
 
+    static double maximumMagnitude(double val1, double val2);
+
+    static double maximumMagnitudeNumber(double val1, double val2);
+
+    static double maximumNumber(double val1, double val2);
+
     static float maximum(float val1, float val2);
+
+    static float maximumMagnitude(float val1, float val2);
+
+    static float maximumMagnitudeNumber(float val1, float val2);
+
+    static float maximumNumber(float val1, float val2);
 
     static double minimum(double val1, double val2);
 
+    static double minimumMagnitude(double val1, double val2);
+
+    static double minimumMagnitudeNumber(double val1, double val2);
+
+    static double minimumNumber(double val1, double val2);
+
     static float minimum(float val1, float val2);
+
+    static float minimumMagnitude(float val1, float val2);
+
+    static float minimumMagnitudeNumber(float val1, float val2);
+
+    static float minimumNumber(float val1, float val2);
 
     static double normalize(double x);
 };
@@ -775,9 +803,65 @@ public:
 class BitOperations
 {
 public:
-    static uint32_t BitScanForward(uint32_t value);
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint32_t value)
+    {
+        assert(value != 0);
 
-    static uint32_t BitScanForward(uint64_t value);
+#if defined(_MSC_VER)
+        unsigned long result;
+        ::_BitScanForward(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        int32_t result = __builtin_ctz(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint64_t value)
+    {
+        assert(value != 0);
+
+#if defined(_MSC_VER)
+#if defined(HOST_64BIT)
+        unsigned long result;
+        ::_BitScanForward64(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        uint32_t lower = static_cast<uint32_t>(value);
+
+        if (lower == 0)
+        {
+            uint32_t upper = static_cast<uint32_t>(value >> 32);
+            return 32 + BitScanForward(upper);
+        }
+
+        return BitScanForward(lower);
+#endif // HOST_64BIT
+#else
+        int32_t result = __builtin_ctzll(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
 
     static uint32_t BitScanReverse(uint32_t value);
 
@@ -918,7 +1002,6 @@ bool FitsIn(var_types type, T value)
     {
         case TYP_BYTE:
             return FitsIn<int8_t>(value);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return FitsIn<uint8_t>(value);
         case TYP_SHORT:

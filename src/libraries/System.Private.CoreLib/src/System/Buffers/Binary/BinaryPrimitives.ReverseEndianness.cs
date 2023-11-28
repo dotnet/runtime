@@ -22,42 +22,53 @@ namespace System.Buffers.Binary
     public static partial class BinaryPrimitives
     {
         /// <summary>
-        /// This is a no-op and added only for consistency.
-        /// This allows the caller to read a struct of numeric primitives and reverse each field
-        /// rather than having to skip sbyte fields.
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="sbyte" /> value, which effectively does nothing for an <see cref="sbyte" />.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The passed-in value, unmodified.</returns>
+        /// <remarks>This method effectively does nothing and was added only for consistency.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte ReverseEndianness(sbyte value) => value;
 
         /// <summary>
-        /// Reverses a primitive value - performs an endianness swap
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="short" /> value.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The reversed value.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short ReverseEndianness(short value) => (short)ReverseEndianness((ushort)value);
 
         /// <summary>
-        /// Reverses a primitive value - performs an endianness swap
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="int" /> value.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The reversed value.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReverseEndianness(int value) => (int)ReverseEndianness((uint)value);
 
         /// <summary>
-        /// Reverses a primitive value - performs an endianness swap
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="long" /> value.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The reversed value.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ReverseEndianness(long value) => (long)ReverseEndianness((ulong)value);
 
-        /// <summary>Reverses a primitive value by performing an endianness swap of the specified <see cref="nint"/> value.</summary>
+        /// <summary>
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="nint" /> value.
+        /// </summary>
         /// <param name="value">The value to reverse.</param>
         /// <returns>The reversed value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint ReverseEndianness(nint value) => (nint)ReverseEndianness((nint_t)value);
 
-        /// <summary>Reverses a primitive value by performing an endianness swap of the specified <see cref="Int128"/> value.</summary>
+        /// <summary>
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="Int128" /> value.
+        /// </summary>
         /// <param name="value">The value to reverse.</param>
         /// <returns>The reversed value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,16 +81,19 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// This is a no-op and added only for consistency.
-        /// This allows the caller to read a struct of numeric primitives and reverse each field
-        /// rather than having to skip byte fields.
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="byte" /> value, which effectively does nothing for an <see cref="byte" />.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The passed-in value, unmodified.</returns>
+        /// <remarks>This method effectively does nothing and was added only for consistency.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte ReverseEndianness(byte value) => value;
 
         /// <summary>
-        /// Reverses a primitive value - performs an endianness swap
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="ushort" /> value.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The reversed value.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,14 +110,18 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reverses a 16-bit character value - performs an endianness swap
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="char" /> value.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The reversed value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ReverseEndianness(char value) => (char)ReverseEndianness((ushort)value);
 
         /// <summary>
-        /// Reverses a primitive value - performs an endianness swap
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="uint" /> value.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The reversed value.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -134,8 +152,10 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reverses a primitive value - performs an endianness swap
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="ulong" /> value.
         /// </summary>
+        /// <param name="value">The value to reverse.</param>
+        /// <returns>The reversed value.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -148,14 +168,18 @@ namespace System.Buffers.Binary
                 + ReverseEndianness((uint)(value >> 32));
         }
 
-        /// <summary>Reverses a primitive value by performing an endianness swap of the specified <see cref="nuint"/> value.</summary>
+        /// <summary>
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="nuint" /> value.
+        /// </summary>
         /// <param name="value">The value to reverse.</param>
         /// <returns>The reversed value.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint ReverseEndianness(nuint value) => (nuint)ReverseEndianness((nuint_t)value);
 
-        /// <summary>Reverses a primitive value by performing an endianness swap of the specified <see cref="UInt128"/> value.</summary>
+        /// <summary>
+        /// Reverses a primitive value by performing an endianness swap of the specified <see cref="UInt128" /> value.
+        /// </summary>
         /// <param name="value">The value to reverse.</param>
         /// <returns>The reversed value.</returns>
         [CLSCompliant(false)]

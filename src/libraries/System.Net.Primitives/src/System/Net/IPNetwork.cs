@@ -252,9 +252,9 @@ namespace System.Net
             destination.TryWrite(CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out charsWritten);
 
         /// <summary>
-        /// Attempts to write the <see cref="IPNetwork"/>'s CIDR notation to the given <paramref name="utf8Destination"/> UTF8 span and returns a value indicating whether the operation succeeded.
+        /// Attempts to write the <see cref="IPNetwork"/>'s CIDR notation to the given <paramref name="utf8Destination"/> UTF-8 span and returns a value indicating whether the operation succeeded.
         /// </summary>
-        /// <param name="utf8Destination">The destination span of UTF8 bytes.</param>
+        /// <param name="utf8Destination">The destination span of UTF-8 bytes.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="utf8Destination"/>.</param>
         /// <returns><see langword="true"/> if the formatting was succesful; otherwise <see langword="false"/>.</returns>
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>

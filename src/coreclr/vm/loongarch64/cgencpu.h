@@ -114,14 +114,13 @@ struct CalleeSavedRegisters {
 // will probably have to communicate this back to the PromoteCallerStack
 // routine to avoid a double promotion.
 //--------------------------------------------------------------------
+#define NUM_ARGUMENT_REGISTERS 8
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 a[8]; // a0 ....a7
+    INT64 a[NUM_ARGUMENT_REGISTERS]; // a0 ....a7
 };
-#define NUM_ARGUMENT_REGISTERS 8
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
-
 
 //--------------------------------------------------------------------
 // This represents the floating point argument registers which are saved
@@ -130,13 +129,34 @@ struct ArgumentRegisters {
 // C++ helpers will need to preserve the values in these volatile
 // registers.
 //--------------------------------------------------------------------
+#define NUM_FLOAT_ARGUMENT_REGISTERS 8
 typedef DPTR(struct FloatArgumentRegisters) PTR_FloatArgumentRegisters;
 struct FloatArgumentRegisters {
-    //TODO: not supports LOONGARCH-SIMD.
-    double  f[8];  // f0-f7
+    double f[NUM_FLOAT_ARGUMENT_REGISTERS]; // fa0-fa7
 };
-#define NUM_FLOAT_ARGUMENT_REGISTERS 8
 
+#ifdef PROFILING_SUPPORTED
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    FunctionID             functionId;
+    UINT32                 flags;
+    ArgumentRegisters      argumentRegisters;
+    FloatArgumentRegisters floatArgumentRegisters;
+    // Scratch space to reconstruct struct passed two registers:
+    // one float register and one general register. Including the return args.
+    BYTE buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
@@ -248,7 +268,7 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     pCode[0] = 0x18000095; //pcaddi  $r21,4
     pCode[1] = 0x28c002b5; //ld.d  $r21,$r21,0
     pCode[2] = 0x4c0002a0; //jirl  $r0,$r21,0
-    pCode[3] = 0x03400000; //padding nop. Also used for isJump.
+    pCode[3] = 0x03400000; //padding nop.
 
     // Ensure that the updated instructions get updated in the I-Cache
     ClrFlushInstructionCache(pBufferRX, 16);
@@ -267,24 +287,6 @@ inline PCODE decodeJump(PCODE pCode)
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + 16);
-}
-
-//------------------------------------------------------------------------
-inline BOOL isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    TADDR pInstr = PCODEToPINSTR(pCode);
-
-    return *dac_cast<PTR_DWORD>(pInstr+12) == 0x03400000; //nop
-}
-
-//------------------------------------------------------------------------
-inline BOOL isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
 }
 
 //------------------------------------------------------------------------

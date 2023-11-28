@@ -26,7 +26,8 @@ namespace PInvokeTests
 
     public static class CustomMarshalersTests
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

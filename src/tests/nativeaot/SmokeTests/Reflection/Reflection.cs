@@ -40,6 +40,7 @@ internal static class ReflectionTest
         TestByRefLikeTypeMethod.Run();
 #endif
         TestILScanner.Run();
+        TestTypeGetType.Run();
         TestUnreferencedEnum.Run();
 
         TestAttributeInheritance.Run();
@@ -61,9 +62,13 @@ internal static class ReflectionTest
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
+        TestGenericMethodOnGenericType.Run();
         TestIsValueTypeWithoutTypeHandle.Run();
         TestMdArrayLoad.Run();
         TestByRefTypeLoad.Run();
+        TestGenericLdtoken.Run();
+        TestAbstractGenericLdtoken.Run();
+        TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
 
         //
         // Mostly functionality tests
@@ -72,6 +77,7 @@ internal static class ReflectionTest
         TestGetUninitializedObject.Run();
         TestInstanceFields.Run();
         TestReflectionInvoke.Run();
+        TestConstructors.Run();
         TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
@@ -187,90 +193,214 @@ internal static class ReflectionTest
             }
 
             {
+                object? arg = "world";
                 MethodInfo helloMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHello");
-                string result = (string)helloMethod.Invoke(null, new object[] { "world" });
+
+                string result = (string)helloMethod.Invoke(null, new object[] { arg });
+                if (result != "Hello world")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloMethod).Invoke(null, arg);
+                if (result != "Hello world")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloMethod).Invoke(null, new Span<object?>(ref arg));
                 if (result != "Hello world")
                     throw new Exception();
             }
 
             {
+                object? arg = 12345;
                 MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(int));
-                string result = (string)helloGenericMethod.Invoke(null, new object[] { 12345 });
+                string result = (string)helloGenericMethod.Invoke(null, new object[] { arg });
+                if (result != "Hello 12345")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(null, arg);
+                if (result != "Hello 12345")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(null, new Span<object?>(ref arg));
                 if (result != "Hello 12345")
                     throw new Exception();
             }
 
             {
+                object? arg = "buddy";
                 MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(string));
-                string result = (string)helloGenericMethod.Invoke(null, new object[] { "buddy" });
+                string result = (string)helloGenericMethod.Invoke(null, new object[] { arg });
+                if (result != "Hello buddy")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(null, arg);
+                if (result != "Hello buddy")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(null, new Span<object?>(ref arg));
                 if (result != "Hello buddy")
                     throw new Exception();
             }
 
             {
+                object? arg = typeof(string);
                 MethodInfo helloGenericMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(Type));
-                string result = (string)helloGenericMethod.Invoke(null, new object[] { typeof(string) });
+                string result = (string)helloGenericMethod.Invoke(null, new object[] { arg });
+                if (result != "Hello System.String")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(null, arg);
+                if (result != "Hello System.String")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(null, new Span<object?>(ref arg));
                 if (result != "Hello System.String")
                     throw new Exception();
             }
 
             {
+                object? arg = "world";
                 MethodInfo helloByRefMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloByRef");
-                object[] args = new object[] { "world", null };
+                object[] args = new object[] { arg, null };
+
                 helloByRefMethod.Invoke(null, args);
+                if ((string)args[1] != "Hello world")
+                    throw new Exception();
+
+                args = new object[] { arg, null };
+                MethodInvoker.Create(helloByRefMethod).Invoke(null, new Span<object?>(args));
                 if ((string)args[1] != "Hello world")
                     throw new Exception();
             }
 
             {
                 MethodInfo helloPointerMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloPointer");
+
                 string resultNull = (string)helloPointerMethod.Invoke(null, new object[] { null });
                 if (resultNull != "Hello 0")
                     throw new Exception();
 
-                string resultVal = (string)helloPointerMethod.Invoke(null, new object[] { Pointer.Box((void*)42, typeof(char*)) });
+                resultNull = (string)MethodInvoker.Create(helloPointerMethod).Invoke(null, arg1: null);
+                if (resultNull != "Hello 0")
+                    throw new Exception();
+
+                object? arg = null;
+                resultNull = (string)MethodInvoker.Create(helloPointerMethod).Invoke(null, new Span<object?>(ref arg));
+                if (resultNull != "Hello 0")
+                    throw new Exception();
+
+                arg = Pointer.Box((void*)42, typeof(char*));
+                string resultVal = (string)helloPointerMethod.Invoke(null, new object[] { arg });
+                if (resultVal != "Hello 42")
+                    throw new Exception();
+
+                resultNull = (string)MethodInvoker.Create(helloPointerMethod).Invoke(null, arg);
+                if (resultVal != "Hello 42")
+                    throw new Exception();
+
+                resultNull = (string)MethodInvoker.Create(helloPointerMethod).Invoke(null, new Span<object?>(ref arg));
                 if (resultVal != "Hello 42")
                     throw new Exception();
             }
 
             {
                 MethodInfo helloPointerTooMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloPointerToo");
-                string result = (string)helloPointerTooMethod.Invoke(null, new object[] { Pointer.Box((void*)85, typeof(char**)) });
+                object? arg = Pointer.Box((void*)85, typeof(char**));
+
+                string result = (string)helloPointerTooMethod.Invoke(null, new object[] { arg });
+                if (result != "Hello 85")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloPointerTooMethod).Invoke(null, arg);
+                if (result != "Hello 85")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloPointerTooMethod).Invoke(null, new Span<object?>(ref arg));
                 if (result != "Hello 85")
                     throw new Exception();
             }
 
             {
                 MethodInfo getPointerMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetPointer");
-                object result = getPointerMethod.Invoke(null, new object[] { Pointer.Box((void*)2018, typeof(void*)), null });
+                object? arg = Pointer.Box((void*)2018, typeof(void*));
+                object[] args = new object[] { arg, null };
+
+                object result = getPointerMethod.Invoke(null, args);
+                if (Pointer.Unbox(result) != (void*)2018)
+                    throw new Exception();
+
+                result = MethodInvoker.Create(getPointerMethod).Invoke(null, arg, null);
+                if (Pointer.Unbox(result) != (void*)2018)
+                    throw new Exception();
+
+                result = MethodInvoker.Create(getPointerMethod).Invoke(null, new Span<object?>(args));
                 if (Pointer.Unbox(result) != (void*)2018)
                     throw new Exception();
             }
 
             {
                 MethodInfo helloMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHello");
-                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
+                object? arg = "world";
+
+                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { arg });
+                if (result != "Hello world System.String")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloMethod).Invoke(new InvokeTestsGeneric<string>(), arg);
+                if (result != "Hello world System.String")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloMethod).Invoke(new InvokeTestsGeneric<string>(), new Span<object?>(ref arg));
                 if (result != "Hello world System.String")
                     throw new Exception();
             }
 
             {
                 MethodInfo helloGenericMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(object));
-                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
+                object? arg = "world";
+
+                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { arg });
+                if (result != "Hello world System.Object")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(new InvokeTestsGeneric<string>(), arg);
+                if (result != "Hello world System.Object")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(new InvokeTestsGeneric<string>(), new Span<object?>(ref arg));
                 if (result != "Hello world System.Object")
                     throw new Exception();
             }
 
             {
                 MethodInfo helloMethod = typeof(InvokeTestsGeneric<int>).GetTypeInfo().GetDeclaredMethod("GetHello");
-                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { "world" });
+                object? arg = "world";
+
+                string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { arg });
+                if (result != "Hello world System.Int32")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloMethod).Invoke(new InvokeTestsGeneric<int>(), arg);
+                if (result != "Hello world System.Int32")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloMethod).Invoke(new InvokeTestsGeneric<int>(), new Span<object?>(ref arg));
                 if (result != "Hello world System.Int32")
                     throw new Exception();
             }
 
             {
                 MethodInfo helloGenericMethod = typeof(InvokeTestsGeneric<int>).GetTypeInfo().GetDeclaredMethod("GetHelloGeneric").MakeGenericMethod(typeof(double));
-                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { 1.0 });
+                object? arg = 1.0;
+
+                string result = (string)helloGenericMethod.Invoke(new InvokeTestsGeneric<int>(), new object[] { arg });
+                if (result != "Hello 1 System.Double")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(new InvokeTestsGeneric<int>(), arg);
+                if (result != "Hello 1 System.Double")
+                    throw new Exception();
+
+                result = (string)MethodInvoker.Create(helloGenericMethod).Invoke(new InvokeTestsGeneric<int>(), new Span<object?>(ref arg));
                 if (result != "Hello 1 System.Double")
                     throw new Exception();
             }
@@ -862,6 +992,33 @@ internal static class ReflectionTest
         }
     }
 
+    class TestConstructors
+    {
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestConstructors));
+
+            ConstructorInfo ctor = typeof(ClassToConstruct).GetConstructor(new Type[] { typeof(int) });
+            ClassToConstruct obj = (ClassToConstruct)ctor.Invoke(new object[] { 1 });
+            if (obj._i != 1)
+                throw new Exception();
+
+            obj = (ClassToConstruct)ConstructorInvoker.Create(ctor).Invoke(1);
+            if (obj._i != 1)
+                throw new Exception();
+        }
+
+        public class ClassToConstruct
+        {
+            public int _i;
+
+            public ClassToConstruct(int i)
+            {
+                _i = i;
+            }
+        }
+    }
+
     class TestStringConstructor
     {
         public static void Run()
@@ -870,6 +1027,10 @@ internal static class ReflectionTest
 
             ConstructorInfo ctor = typeof(string).GetConstructor(new Type[] { typeof(char[]), typeof(int), typeof(int) });
             object str = ctor.Invoke(new object[] { new char[] { 'a' }, 0, 1 });
+            if ((string)str != "a")
+                throw new Exception();
+
+            str = ConstructorInvoker.Create(ctor).Invoke(new char[] { 'a' }, 0, 1 );
             if ((string)str != "a")
                 throw new Exception();
         }
@@ -1308,6 +1469,21 @@ internal static class ReflectionTest
             TestRefReturnOfPointer();
             TestNullRefReturnOfPointer();
             TestByRefLikeRefReturn();
+        }
+    }
+
+    class TestTypeGetType
+    {
+        public static void Run()
+        {
+            try
+            {
+                Type.GetType("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime");
+            }
+            catch { }
+
+            if (Type.GetType("MyClassOnlyReferencedFromTypeGetType") == null)
+                throw new Exception();
         }
     }
 
@@ -2115,6 +2291,40 @@ internal static class ReflectionTest
         }
     }
 
+    class TestGenericMethodOnGenericType
+    {
+        class Gen<T, U> { }
+
+        struct Atom1 { }
+        struct Atom2 { }
+
+        class GenericType<T>
+        {
+            public static Gen<T, U> GenericMethod1<U>() => new Gen<T, U>();
+            public static Gen<T, U> GenericMethod2<U>() => new Gen<T, U>();
+        }
+
+        static MethodInfo s_genericMethod2 = typeof(GenericType<>).GetMethod("GenericMethod2");
+
+        static object Make<T>(Type t)
+        {
+            if (t.IsValueType) throw null;
+            // AOT safe because we just checked t is not a valuetype
+            return typeof(GenericType<T>).GetMethod("GenericMethod1").MakeGenericMethod(t).Invoke(null, null);
+        }
+
+        public static void Run()
+        {
+            Make<Atom1>(typeof(object));
+
+            // This is supposed to be all AOT safe because we're instantiating over a reference type
+            // Ideally there would also be no AOT warning.
+            ((MethodInfo)(typeof(GenericType<Atom2>).GetMemberWithSameMetadataDefinitionAs(s_genericMethod2)))
+                .MakeGenericMethod(typeof(object))
+                .Invoke(null, null);
+        }
+    }
+
     class TestIsValueTypeWithoutTypeHandle
     {
         [Nothing(
@@ -2207,6 +2417,88 @@ internal static class ReflectionTest
         {
             var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
+                throw new Exception();
+        }
+    }
+
+    class TestGenericLdtoken
+    {
+        class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Base GetInstance() => new Base();
+            public virtual Type GrabType<T>() => typeof(T);
+        }
+
+        class Derived : Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static new Base GetInstance() => new Derived();
+            public override Type GrabType<T>() => typeof(T);
+        }
+
+        class Generic<T> { }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            Expression<Func<Type>> grabType = () => Base.GetInstance().GrabType<Generic<Atom>>();
+            Console.WriteLine(grabType.Compile()().FullName);
+        }
+    }
+
+    class TestAbstractGenericLdtoken
+    {
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Base GetInstance() => null;
+            public abstract Type GrabType<T>();
+        }
+
+        class Generic<T> { }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            Expression<Func<Type>> grabType = () => Base.GetInstance().GrabType<Generic<Atom>>();
+            try
+            {
+                grabType.Compile()();
+            }
+            catch (NullReferenceException)
+            {
+            }
+        }
+    }
+
+    class TestTypeHandlesVisibleFromIDynamicInterfaceCastable
+    {
+        class MyAttribute : Attribute { }
+
+        [My]
+        interface IUnusedInterface { }
+
+        class Foo : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+            {
+                Type t = Type.GetTypeFromHandle(interfaceType);
+                if (t.GetCustomAttribute<MyAttribute>() == null)
+                    throw new Exception();
+
+                return true;
+            }
+        }
+
+        public static void Run()
+        {
+            object myObject = new Foo();
+            if (myObject is not IUnusedInterface)
                 throw new Exception();
         }
     }
@@ -2335,3 +2627,4 @@ class MyUnusedClass
     public static void TotallyUnreferencedMethod() { }
     public static void GenericMethod<T>() { }
 }
+class MyClassOnlyReferencedFromTypeGetType { }

@@ -225,10 +225,15 @@ namespace System.Text.Json
             }
         }
 
+#if !NET8_0_OR_GREATER
         private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+#endif
 
         public static unsafe bool IsValidUtf8String(ReadOnlySpan<byte> bytes)
         {
+#if NET8_0_OR_GREATER
+            return Utf8.IsValid(bytes);
+#else
             try
             {
 #if NETCOREAPP
@@ -248,6 +253,7 @@ namespace System.Text.Json
             {
                 return false;
             }
+#endif
         }
 
         internal static unsafe OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)

@@ -23,7 +23,7 @@ namespace System
 
     [Serializable]
     [NonVersionable] // This only applies to field layout
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String
         : IComparable,
           IEnumerable,
@@ -69,7 +69,9 @@ namespace System
          */
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char[])")]
+#endif
         public extern String(char[]? value);
 
         private static string Ctor(char[]? value)
@@ -88,7 +90,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
+#endif
         public extern String(char[] value, int startIndex, int length);
 
         private static string Ctor(char[] value, int startIndex, int length)
@@ -113,7 +117,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char*)")]
+#endif
         public extern unsafe String(char* value);
 
         private static unsafe string Ctor(char* ptr)
@@ -137,7 +143,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
+#endif
         public extern unsafe String(char* value, int startIndex, int length);
 
         private static unsafe string Ctor(char* ptr, int startIndex, int length)
@@ -169,7 +177,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.SByte*)")]
+#endif
         public extern unsafe String(sbyte* value);
 
         private static unsafe string Ctor(sbyte* value)
@@ -185,7 +195,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
+#endif
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
         private static unsafe string Ctor(sbyte* value, int startIndex, int length)
@@ -239,7 +251,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
+#endif
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
         private static unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
@@ -268,7 +282,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
+#endif
         public extern String(char c, int count);
 
         private static string Ctor(char c, int count)
@@ -288,7 +304,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
+#endif
         public extern String(ReadOnlySpan<char> value);
 
         private static unsafe string Ctor(ReadOnlySpan<char> value)
@@ -409,7 +427,7 @@ namespace System
 
         /// <summary>Copies the contents of this string into the destination span.</summary>
         /// <param name="destination">The span into which to copy this string's contents.</param>
-        /// <exception cref="System.ArgumentException">The destination span is shorter than the source string.</exception>
+        /// <exception cref="ArgumentException">The destination span is shorter than the source string.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(Span<char> destination)
         {
@@ -498,7 +516,7 @@ namespace System
         /// <summary>
         /// Returns a reference to the first element of the String. If the string is null, an access will throw a NullReferenceException.
         /// </summary>
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [NonVersionable]
         public ref readonly char GetPinnableReference() => ref _firstChar;
 

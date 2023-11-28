@@ -455,7 +455,7 @@ static int subprogram_attr [] = {
 	DW_AT_MIPS_linkage_name, DW_FORM_string,
 	DW_AT_decl_file    , DW_FORM_udata,
 	DW_AT_decl_line    , DW_FORM_udata,
-#ifndef TARGET_IOS
+#if !defined (TARGET_IOS) && !defined(TARGET_TVOS)
 	DW_AT_description  , DW_FORM_string,
 #endif
     DW_AT_low_pc       , DW_FORM_addr,
@@ -1828,7 +1828,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		emit_uleb128 (w, 0);
 		emit_uleb128 (w, 0);
 	}
-#ifndef TARGET_IOS
+#if !defined (TARGET_IOS) && !defined(TARGET_TVOS)
 	emit_string (w, name);
 #endif
 	g_free (name);

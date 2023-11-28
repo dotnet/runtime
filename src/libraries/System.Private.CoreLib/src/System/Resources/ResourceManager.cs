@@ -505,7 +505,7 @@ namespace System.Resources
                 // If another thread added this culture, return that.
                 if (localResourceSets.TryGetValue(cultureName, out ResourceSet? lostRace))
                 {
-                    if (!object.ReferenceEquals(lostRace, rs))
+                    if (!ReferenceEquals(lostRace, rs))
                     {
                         // Note: In certain cases, we can be trying to add a ResourceSet for multiple
                         // cultures on one thread, while a second thread added another ResourceSet for one
@@ -776,7 +776,7 @@ namespace System.Resources
             }
 
             internal static Version? ObtainSatelliteContractVersion(Assembly a) =>
-                ResourceManager.GetSatelliteContractVersion(a);
+                GetSatelliteContractVersion(a);
 
             internal UltimateResourceFallbackLocation FallbackLoc
             {

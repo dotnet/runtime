@@ -666,6 +666,40 @@ TYPED_HANDLE_DECL (MonoDelegate);
 
 typedef void (*InterpJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
 
+#ifdef MONO_SMALL_CONFIG
+#define MONO_IMT_SIZE 9
+#else
+#define MONO_IMT_SIZE 19
+#endif
+
+typedef union {
+	int vtable_slot;
+	gpointer target_code;
+} MonoImtItemValue;
+
+typedef struct _MonoImtBuilderEntry {
+	gpointer key;
+	struct _MonoImtBuilderEntry *next;
+	MonoImtItemValue value;
+	int children;
+	guint8 has_target_code : 1;
+} MonoImtBuilderEntry;
+
+typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
+
+struct _MonoIMTCheckItem {
+	gpointer          key;
+	int               check_target_idx;
+	MonoImtItemValue  value;
+	guint8           *jmp_code;
+	guint8           *code_target;
+	guint8            is_equals;
+	guint8            compare_done;
+	guint8            chunk_size;
+	guint8            short_branch;
+	guint8            has_target_code;
+};
+
 /*
  * Callbacks supplied by the runtime and called by the modules in metadata/
  * This interface is easier to extend than adding a new function type +
@@ -704,6 +738,23 @@ typedef struct {
 	MonoBoolean (*get_frame_info) (gint32 skip, MonoMethod **out_method,
 								   MonoDebugSourceLocation **out_location,
 								   gint32 *iloffset, gint32 *native_offset);
+	gboolean (*get_cached_class_info) (MonoClass *klass, MonoCachedClassInfo *res);
+	gboolean (*get_class_from_name) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
+	gpointer (*build_imt_trampoline) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
+	MonoJitInfo *(*find_jit_info_in_aot) (MonoImage *image, gpointer addr);
+	/**
+	 * mono_class_set_deferred_type_load_failure_callback:
+	 * @param klass: Class in which the failure was detected.
+	 * @param fmt: printf-style error message string.
+	 *
+	 * The callback is responsible for processing the failure information provided by the @klass parameter and the error message format string @fmt.
+	 * If a deferred failure occurs, the callback should return FALSE to let the AOT compiler proceed with the class layout setup.
+	 * Otherwise, if the callback returns TRUE, it indicates that the failure should be reported.
+	 *
+	 * @returns: TRUE if the failure is handled and the runtime should not proceed with class setup, FALSE if the failure should be deferred for runtime class setup.
+	 * 
+	 */
+	gboolean (*mono_class_set_deferred_type_load_failure_callback) (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -1579,45 +1630,6 @@ mono_nullable_box_handle (gpointer buf, MonoClass *klass, MonoError *error);
 MonoObjectHandle
 mono_new_null (void);
 
-#ifdef MONO_SMALL_CONFIG
-#define MONO_IMT_SIZE 9
-#else
-#define MONO_IMT_SIZE 19
-#endif
-
-typedef union {
-	int vtable_slot;
-	gpointer target_code;
-} MonoImtItemValue;
-
-typedef struct _MonoImtBuilderEntry {
-	gpointer key;
-	struct _MonoImtBuilderEntry *next;
-	MonoImtItemValue value;
-	int children;
-	guint8 has_target_code : 1;
-} MonoImtBuilderEntry;
-
-typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
-
-struct _MonoIMTCheckItem {
-	gpointer          key;
-	int               check_target_idx;
-	MonoImtItemValue  value;
-	guint8           *jmp_code;
-	guint8           *code_target;
-	guint8            is_equals;
-	guint8            compare_done;
-	guint8            chunk_size;
-	guint8            short_branch;
-	guint8            has_target_code;
-};
-
-typedef gpointer (*MonoImtTrampolineBuilder) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
-
-void
-mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func);
-
 void
 mono_set_always_build_imt_trampolines (gboolean value);
 
@@ -2148,5 +2160,8 @@ mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean 
 
 void
 mono_runtime_run_startup_hooks (void);
+
+MONO_COMPONENT_API gpointer
+mono_get_span_data_from_field (MonoClassField *field_handle, MonoType *field_type, MonoType *target_type, gint32 *count);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

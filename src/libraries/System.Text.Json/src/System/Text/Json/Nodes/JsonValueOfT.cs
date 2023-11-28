@@ -8,40 +8,32 @@ namespace System.Text.Json.Nodes
 {
     [DebuggerDisplay("{ToJsonString(),nq}")]
     [DebuggerTypeProxy(typeof(JsonValue<>.DebugView))]
-    internal abstract partial class JsonValue<TValue> : JsonValue
+    internal abstract class JsonValue<TValue> : JsonValue
     {
-        public readonly TValue _value; // keep as a field for direct access to avoid copies
+        internal readonly TValue Value; // keep as a field for direct access to avoid copies
 
-        public JsonValue(TValue value, JsonNodeOptions? options = null) : base(options)
+        protected JsonValue(TValue value, JsonNodeOptions? options = null) : base(options)
         {
             Debug.Assert(value != null);
-            Debug.Assert(!(value is JsonElement) || ((JsonElement)(object)value).ValueKind != JsonValueKind.Null);
+            Debug.Assert(value is not JsonElement or JsonElement { ValueKind: not JsonValueKind.Null });
 
             if (value is JsonNode)
             {
                 ThrowHelper.ThrowArgumentException_NodeValueNotAllowed(nameof(value));
             }
 
-            _value = value;
-        }
-
-        public TValue Value
-        {
-            get
-            {
-                return _value;
-            }
+            Value = value;
         }
 
         public override T GetValue<T>()
         {
             // If no conversion is needed, just return the raw value.
-            if (_value is T returnValue)
+            if (Value is T returnValue)
             {
                 return returnValue;
             }
 
-            if (_value is JsonElement)
+            if (Value is JsonElement)
             {
                 return ConvertJsonElement<T>();
             }
@@ -49,19 +41,19 @@ namespace System.Text.Json.Nodes
             // Currently we do not support other conversions.
             // Generics (and also boxing) do not support standard cast operators say from 'long' to 'int',
             //  so attempting to cast here would throw InvalidCastException.
-            throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvert, _value!.GetType(), typeof(T)));
+            throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvert, Value!.GetType(), typeof(T)));
         }
 
         public override bool TryGetValue<T>([NotNullWhen(true)] out T value)
         {
             // If no conversion is needed, just return the raw value.
-            if (_value is T returnValue)
+            if (Value is T returnValue)
             {
                 value = returnValue;
                 return true;
             }
 
-            if (_value is JsonElement)
+            if (Value is JsonElement)
             {
                 return TryConvertJsonElement<T>(out value);
             }
@@ -73,9 +65,77 @@ namespace System.Text.Json.Nodes
             return false;
         }
 
+        internal sealed override JsonValueKind GetValueKindCore()
+        {
+            if (Value is JsonElement element)
+            {
+                return element.ValueKind;
+            }
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(default, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
+            try
+            {
+                WriteTo(writer);
+                writer.Flush();
+                return JsonElement.ParseValue(output.WrittenMemory.Span, options: default).ValueKind;
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
+        }
+
+        internal sealed override bool DeepEqualsCore(JsonNode? otherNode)
+        {
+            if (otherNode is null)
+            {
+                return false;
+            }
+
+            if (Value is JsonElement thisElement && otherNode is JsonValue<JsonElement> { Value: JsonElement otherElement })
+            {
+                if (thisElement.ValueKind != otherElement.ValueKind)
+                {
+                    return false;
+                }
+
+                switch (thisElement.ValueKind)
+                {
+                    case JsonValueKind.Null:
+                    case JsonValueKind.True:
+                    case JsonValueKind.False:
+                        return true;
+
+                    case JsonValueKind.String:
+                        return thisElement.ValueEquals(otherElement.GetString());
+                    case JsonValueKind.Number:
+                        return thisElement.GetRawValue().Span.SequenceEqual(otherElement.GetRawValue().Span);
+                    default:
+                        Debug.Fail("Object and Array JsonElements cannot be contained in JsonValue.");
+                        return false;
+                }
+            }
+
+            using PooledByteBufferWriter thisOutput = WriteToPooledBuffer(this);
+            using PooledByteBufferWriter otherOutput = WriteToPooledBuffer(otherNode);
+            return thisOutput.WrittenMemory.Span.SequenceEqual(otherOutput.WrittenMemory.Span);
+
+            static PooledByteBufferWriter WriteToPooledBuffer(
+                JsonNode node,
+                JsonSerializerOptions? options = null,
+                JsonWriterOptions writerOptions = default,
+                int bufferSize = JsonSerializerOptions.BufferSizeDefault)
+            {
+                var bufferWriter = new PooledByteBufferWriter(bufferSize);
+                using var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
+                node.WriteTo(writer, options);
+                return bufferWriter;
+            }
+        }
+
         internal TypeToConvert ConvertJsonElement<TypeToConvert>()
         {
-            JsonElement element = (JsonElement)(object)_value!;
+            JsonElement element = (JsonElement)(object)Value!;
 
             switch (element.ValueKind)
             {
@@ -186,7 +246,7 @@ namespace System.Text.Json.Nodes
         {
             bool success;
 
-            JsonElement element = (JsonElement)(object)_value!;
+            JsonElement element = (JsonElement)(object)Value!;
 
             switch (element.ValueKind)
             {

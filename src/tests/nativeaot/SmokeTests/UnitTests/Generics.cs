@@ -13,6 +13,7 @@ class Generics
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
+        TestSynchronizedMethods.Run();
         TestDelegateFatFunctionPointers.Run();
         TestDelegateToCanonMethods.Run();
         TestVirtualMethodUseTracking.Run();
@@ -47,6 +48,7 @@ class Generics
         TestRecursionInGenericVirtualMethods.Run();
         TestRecursionInGenericInterfaceMethods.Run();
         TestRecursionThroughGenericLookups.Run();
+        TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
@@ -598,6 +600,54 @@ class Generics
 
             if (NonGeneric.Get<object>(new object[0]) != "Hi there")
                 throw new Exception();
+        }
+    }
+
+    class TestSynchronizedMethods
+    {
+        static class Gen<T>
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize() => 42;
+        }
+
+        static class NonGen
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize<T>() => 42;
+        }
+
+        static class GenReflected<T>
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize() => 42;
+        }
+
+        static class NonGenReflected
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize<T>() => 42;
+        }
+
+        static Type s_genReflectedType = typeof(GenReflected<>);
+        static MethodInfo s_nonGenReflectedSynchronizeMethod = typeof(NonGenReflected).GetMethod("Synchronize");
+
+        public static void Run()
+        {
+            Gen<object>.Synchronize();
+            NonGen.Synchronize<object>();
+            Gen<int>.Synchronize();
+            NonGen.Synchronize<int>();
+
+            {
+                var mi = (MethodInfo)s_genReflectedType.MakeGenericType(typeof(object)).GetMemberWithSameMetadataDefinitionAs(typeof(GenReflected<>).GetMethod("Synchronize"));
+                mi.Invoke(null, Array.Empty<object>());
+            }
+
+            {
+                var mi = s_nonGenReflectedSynchronizeMethod.MakeGenericMethod(typeof(object));
+                mi.Invoke(null, Array.Empty<object>());
+            }
         }
     }
 
@@ -3362,6 +3412,24 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             new ArrayHandler<object>().Write(null);
             new RangeHandler<object>().Write(default);
+        }
+    }
+
+    class TestRecursionInFields
+    {
+        class Chunk<T>
+        {
+            public Chunk<T[]> TheChunk;
+            public Chunk()
+            {
+                if (typeof(T).ToString().Length < 100)
+                    TheChunk = new Chunk<T[]>();
+            }
+        }
+
+        public static void Run()
+        {
+            typeof(Chunk<byte>).GetFields();
         }
     }
 

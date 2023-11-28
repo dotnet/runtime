@@ -12,8 +12,8 @@ namespace System.Collections.Frozen
     internal sealed class DefaultFrozenDictionary<TKey, TValue> : KeysAndValuesFrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
         where TKey : notnull
     {
-        internal DefaultFrozenDictionary(Dictionary<TKey, TValue> source, bool optimizeForReading)
-            : base(source, optimizeForReading)
+        internal DefaultFrozenDictionary(Dictionary<TKey, TValue> source)
+            : base(source)
         {
         }
 

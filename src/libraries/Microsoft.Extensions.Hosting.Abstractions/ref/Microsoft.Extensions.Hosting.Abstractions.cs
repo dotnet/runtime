@@ -97,6 +97,16 @@ namespace Microsoft.Extensions.Hosting
         System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     }
+    public partial interface IHostApplicationBuilder
+    {
+        Microsoft.Extensions.Configuration.IConfigurationManager Configuration { get; }
+        Microsoft.Extensions.Hosting.IHostEnvironment Environment { get; }
+        Microsoft.Extensions.Logging.ILoggingBuilder Logging { get; }
+        Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder Metrics { get; }
+        System.Collections.Generic.IDictionary<object, object> Properties { get; }
+        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+        void ConfigureContainer<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory, System.Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull;
+    }
     public partial interface IHostApplicationLifetime
     {
         System.Threading.CancellationToken ApplicationStarted { get; }
@@ -114,6 +124,13 @@ namespace Microsoft.Extensions.Hosting
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureServices(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceCollection> configureDelegate);
         Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull;
         Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(System.Func<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull;
+    }
+    public partial interface IHostedLifecycleService : Microsoft.Extensions.Hosting.IHostedService
+    {
+        System.Threading.Tasks.Task StartedAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task StartingAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task StoppedAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task StoppingAsync(System.Threading.CancellationToken cancellationToken);
     }
     public partial interface IHostedService
     {

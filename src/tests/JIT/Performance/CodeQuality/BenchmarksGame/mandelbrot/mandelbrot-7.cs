@@ -21,6 +21,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -82,9 +83,16 @@ namespace BenchmarksGame
             return (byte)(res ^ -1);
         }
 
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            var size = (args.Length > 0) ? int.Parse(args[0]) : 80;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int size = arg ?? 80;
             var lineLength = size >> 3;
 
             var data = DoBench(size, lineLength);

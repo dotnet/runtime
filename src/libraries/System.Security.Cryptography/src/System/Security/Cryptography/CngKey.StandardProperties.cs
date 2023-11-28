@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 using Internal.Cryptography;
-
+using Microsoft.Win32.SafeHandles;
 using ErrorCode = Interop.NCrypt.ErrorCode;
 using NCRYPT_UI_POLICY = Interop.NCrypt.NCRYPT_UI_POLICY;
 
@@ -20,6 +19,8 @@ namespace System.Security.Cryptography
         // Key properties
         //
 
+        private const int CachedKeySizeUninitializedSentinel = -1;
+        private int _cachedKeySize = CachedKeySizeUninitializedSentinel;
 
         /// <summary>
         ///     Algorithm group this key can be used with
@@ -170,52 +171,70 @@ namespace System.Security.Cryptography
         {
             get
             {
-                int keySize = 0;
-
-                // Attempt to use PublicKeyLength first as it returns the correct value for ECC keys
-                ErrorCode errorCode = Interop.NCrypt.NCryptGetIntProperty(
-                    _keyHandle,
-                    KeyPropertyName.PublicKeyLength,
-                    ref keySize);
-
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                // Key size lookup is a common operation, and we don't want to incur the
+                // LRPC overhead to query lsass for the information. Since the key size
+                // cannot be changed on an existing key, we'll cache it. For consistency
+                // with other properties, we'll still throw if the underlying handle has
+                // been closed.
+                if (_cachedKeySize == CachedKeySizeUninitializedSentinel || _keyHandle.IsClosed)
                 {
-                    // Fall back to Length (< Windows 10)
-                    errorCode = Interop.NCrypt.NCryptGetIntProperty(
+                    _cachedKeySize = ComputeKeySize();
+                }
+                return _cachedKeySize;
+
+                int ComputeKeySize()
+                {
+                    int keySize = 0;
+
+                    // Attempt to use PublicKeyLength first as it returns the correct value for ECC keys
+                    ErrorCode errorCode = Interop.NCrypt.NCryptGetIntProperty(
                         _keyHandle,
-                        KeyPropertyName.Length,
+                        KeyPropertyName.PublicKeyLength,
                         ref keySize);
-                }
 
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                {
-                    throw errorCode.ToCryptographicException();
-                }
-
-                // The platform crypto provider always returns "0" for EC keys when asked for a key size. This
-                // has been observed in Windows 10 and most recently observed in Windows 11 22H2.
-                // The Algorithm NCrypt Property only returns the Algorithm Group, so that doesn't work either.
-                // What does work is the ECCCurveName.
-                CngAlgorithmGroup? algorithmGroup = AlgorithmGroup;
-
-                if (keySize == 0 && Provider == CngProvider.MicrosoftPlatformCryptoProvider &&
-                    (algorithmGroup == CngAlgorithmGroup.ECDiffieHellman || algorithmGroup == CngAlgorithmGroup.ECDsa))
-                {
-                    string? curve = _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
-
-                    switch (curve)
+                    if (errorCode != ErrorCode.ERROR_SUCCESS)
                     {
-                        // nistP192 and nistP224 don't have named curve accelerators but we can handle them.
-                        // These string values match the names in https://learn.microsoft.com/en-us/windows/win32/seccng/cng-named-elliptic-curves
-                        case "nistP192": return 192;
-                        case "nistP224": return 224;
-                        case nameof(ECCurve.NamedCurves.nistP256): return 256;
-                        case nameof(ECCurve.NamedCurves.nistP384): return 384;
-                        case nameof(ECCurve.NamedCurves.nistP521): return 521;
+                        // Fall back to Length (< Windows 10)
+                        errorCode = Interop.NCrypt.NCryptGetIntProperty(
+                            _keyHandle,
+                            KeyPropertyName.Length,
+                            ref keySize);
                     }
-                }
 
-                return keySize;
+                    if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    {
+                        throw errorCode.ToCryptographicException();
+                    }
+
+                    if (keySize == 0 && Provider == CngProvider.MicrosoftPlatformCryptoProvider)
+                    {
+                        // The platform crypto provider always returns "0" for EC keys when asked for a key size. This
+                        // has been observed in Windows 10 and most recently observed in Windows 11 22H2.
+                        // The Algorithm NCrypt Property only returns the Algorithm Group, so that doesn't work either.
+                        // What does work is the ECCCurveName.
+                        // Accessing the AlgorithmGroup property is expensive which is why this is broken in to a separate
+                        // if block. We don't want to read from it unless we don't know the key size.
+                        CngAlgorithmGroup? algorithmGroup = AlgorithmGroup;
+
+                        if (algorithmGroup == CngAlgorithmGroup.ECDiffieHellman || algorithmGroup == CngAlgorithmGroup.ECDsa)
+                        {
+                            string? curve = _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+
+                            switch (curve)
+                            {
+                                // nistP192 and nistP224 don't have named curve accelerators but we can handle them.
+                                // These string values match the names in https://learn.microsoft.com/en-us/windows/win32/seccng/cng-named-elliptic-curves
+                                case "nistP192": return 192;
+                                case "nistP224": return 224;
+                                case nameof(ECCurve.NamedCurves.nistP256): return 256;
+                                case nameof(ECCurve.NamedCurves.nistP384): return 384;
+                                case nameof(ECCurve.NamedCurves.nistP521): return 521;
+                            }
+                        }
+                    }
+
+                    return keySize;
+                }
             }
         }
 

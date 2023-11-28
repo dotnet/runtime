@@ -121,7 +121,7 @@ namespace System.IO
         /// <summary>
         /// Initializes a new instance of the <see cref="FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
         /// </summary>
-        /// <remarks><see cref="FileStream(string,System.IO.FileStreamOptions)"/> for information about exceptions.</remarks>
+        /// <remarks><see cref="FileStream(string,FileStreamOptions)"/> for information about exceptions.</remarks>
         public static FileStream Open(string path, FileStreamOptions options) => new FileStream(path, options);
 
         public static FileStream Open(string path, FileMode mode)
@@ -134,15 +134,15 @@ namespace System.IO
             => new FileStream(path, mode, access, share);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> class with the specified path, creation mode, read/write and sharing permission, the access other SafeFileHandles can have to the same file, additional file options and the allocation size.
+        /// Initializes a new instance of the <see cref="SafeFileHandle" /> class with the specified path, creation mode, read/write and sharing permission, the access other SafeFileHandles can have to the same file, additional file options and the allocation size.
         /// </summary>
-        /// <param name="path">A relative or absolute path for the file that the current <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> instance will encapsulate.</param>
+        /// <param name="path">A relative or absolute path for the file that the current <see cref="SafeFileHandle" /> instance will encapsulate.</param>
         /// <param name="mode">One of the enumeration values that determines how to open or create the file. The default value is <see cref="FileMode.Open" /></param>
         /// <param name="access">A bitwise combination of the enumeration values that determines how the file can be accessed. The default value is <see cref="FileAccess.Read" /></param>
         /// <param name="share">A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="FileShare.Read" />.</param>
         /// <param name="preallocationSize">The initial allocation size in bytes for the file. A positive value is effective only when a regular file is being created, overwritten, or replaced.
         /// Negative values are not allowed. In other cases (including the default 0 value), it's ignored.</param>
-        /// <param name="options">An object that describes optional <see cref="Microsoft.Win32.SafeHandles.SafeFileHandle" /> parameters to use.</param>
+        /// <param name="options">An object that describes optional <see cref="SafeFileHandle" /> parameters to use.</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
         /// -or-
@@ -687,6 +687,62 @@ namespace System.IO
 
             using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
+        }
+
+        /// <summary>
+        /// Appends the specified byte array to the end of the file at the given path.
+        /// If the file doesn't exist, this method creates a new file.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="bytes">The bytes to append to the file.</param>
+        /// <exception cref="System.ArgumentException">
+        /// <paramref name="path"/> is a zero-length string, contains only white space, or contains one more invalid characters defined by the <see cref="System.IO.Path.GetInvalidPathChars"/> method.
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Either <paramref name="path"/> or <paramref name="bytes"/> is null.
+        /// </exception>
+        public static void AppendAllBytes(string path, byte[] bytes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            long fileOffset = RandomAccess.GetLength(fileHandle);
+            RandomAccess.WriteAtOffset(fileHandle, bytes, fileOffset);
+        }
+
+        /// <summary>
+        /// Asynchronously appends the specified byte array to the end of the file at the given path.
+        /// If the file doesn't exist, this method creates a new file. If the operation is canceled, the task will return in a canceled state.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="bytes">The bytes to append to the file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation.</returns>
+        /// <exception cref="System.ArgumentException">
+        /// <paramref name="path"/> is a zero-length string, contains only white space, or contains one more invalid characters defined by the <see cref="System.IO.Path.GetInvalidPathChars"/> method.
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Either <paramref name="path"/> or <paramref name="bytes"/> is null.
+        /// </exception>
+        /// <exception cref="T:System.OperationCanceledException">
+        /// The cancellation token was canceled. This exception is stored into the returned task.
+        /// </exception>
+        public static Task AppendAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Core(path, bytes, cancellationToken);
+
+            static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
+            {
+                using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
+                long fileOffset = RandomAccess.GetLength(fileHandle);
+                await RandomAccess.WriteAtOffsetAsync(fileHandle, bytes, fileOffset, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public static string[] ReadAllLines(string path)

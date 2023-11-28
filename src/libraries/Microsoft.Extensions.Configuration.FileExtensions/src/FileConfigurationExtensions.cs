@@ -29,6 +29,9 @@ namespace Microsoft.Extensions.Configuration
             return builder;
         }
 
+        internal static IFileProvider? GetUserDefinedFileProvider(this IConfigurationBuilder builder)
+            => builder.Properties.TryGetValue(FileProviderKey, out object? provider) ? (IFileProvider)provider : null;
+
         /// <summary>
         /// Gets the default <see cref="IFileProvider"/> to be used for file-based providers.
         /// </summary>
@@ -38,12 +41,7 @@ namespace Microsoft.Extensions.Configuration
         {
             ThrowHelper.ThrowIfNull(builder);
 
-            if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
-            {
-                return (IFileProvider)provider;
-            }
-
-            return new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
+            return GetUserDefinedFileProvider(builder) ?? new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
         }
 
         /// <summary>

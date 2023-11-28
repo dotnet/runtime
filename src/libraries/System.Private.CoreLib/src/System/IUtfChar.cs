@@ -28,5 +28,8 @@ namespace System
 
         /// <summary>Casts the specified value to this type.</summary>
         public static abstract TSelf CastFrom(ulong value);
+
+        /// <summary>Casts a value of this type to an UInt32.</summary>
+        public static abstract uint CastToUInt32(TSelf value);
     }
 }

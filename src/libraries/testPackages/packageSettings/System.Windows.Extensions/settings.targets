@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <!-- intentional dangling ref -->
+    <IgnoredReference Include="System.Drawing.Common" />
+  </ItemGroup>
+</Project>

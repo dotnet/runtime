@@ -602,15 +602,18 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void VBStyleOperatorOverloadingLifted(bool useInterpreter)
         {
-            var b = Expression.Parameter(typeof(VBStyleExponentiation?));
-            var e = Expression.Parameter(typeof(VBStyleExponentiation?));
-            var func = Expression.Lambda<Func<VBStyleExponentiation?, VBStyleExponentiation?, VBStyleExponentiation?>>(
-                Expression.Power(b, e), b, e).Compile(useInterpreter);
-            Assert.Equal(8.0, func(2.0, 3.0).Value.Value);
-            Assert.Equal(10000.0, func(10.0, 4.0).Value.Value);
-            Assert.Null(func(2.0, null));
-            Assert.Null(func(null, 2.0));
-            Assert.Null(func(null, null));
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
+            {
+                var b = Expression.Parameter(typeof(VBStyleExponentiation?));
+                var e = Expression.Parameter(typeof(VBStyleExponentiation?));
+                var func = Expression.Lambda<Func<VBStyleExponentiation?, VBStyleExponentiation?, VBStyleExponentiation?>>(
+                    Expression.Power(b, e), b, e).Compile(useInterpreter);
+                Assert.Equal(8.0, func(2.0, 3.0).Value.Value);
+                Assert.Equal(10000.0, func(10.0, 4.0).Value.Value);
+                Assert.Null(func(2.0, null));
+                Assert.Null(func(null, 2.0));
+                Assert.Null(func(null, null));
+            });
         }
 
         // Simulate F#-style overloading of exponentiation operation
@@ -642,13 +645,16 @@ namespace System.Linq.Expressions.Tests
         {
             var b = Expression.Parameter(typeof(FSStyleExponentiation?));
             var e = Expression.Parameter(typeof(FSStyleExponentiation?));
-            var func = Expression.Lambda<Func<FSStyleExponentiation?, FSStyleExponentiation?, FSStyleExponentiation?>>(
-                Expression.Power(b, e), b, e).Compile(useInterpreter);
-            Assert.Equal(8.0, func(2.0, 3.0).Value.Value);
-            Assert.Equal(10000.0, func(10.0, 4.0).Value.Value);
-            Assert.Null(func(2.0, null));
-            Assert.Null(func(null, 2.0));
-            Assert.Null(func(null, null));
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
+            {
+                var func = Expression.Lambda<Func<FSStyleExponentiation?, FSStyleExponentiation?, FSStyleExponentiation?>>(
+                    Expression.Power(b, e), b, e).Compile(useInterpreter);
+                Assert.Equal(8.0, func(2.0, 3.0).Value.Value);
+                Assert.Equal(10000.0, func(10.0, 4.0).Value.Value);
+                Assert.Null(func(2.0, null));
+                Assert.Null(func(null, 2.0));
+                Assert.Null(func(null, null));
+            });
         }
 
         [Fact]

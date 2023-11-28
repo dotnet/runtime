@@ -10,7 +10,7 @@ using Xunit;
 
 namespace PInvokeTests
 {
-    class VarargsTest
+    public class VarargsTest
     {
         [DllImport("VarargsNative", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         private static extern void TestVarArgs(StringBuilder builder, IntPtr bufferSize, string formatString, __arglist);
@@ -33,7 +33,8 @@ namespace PInvokeTests
             return true;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var passed = true;
             int arg1 = 10;

@@ -215,7 +215,7 @@ namespace System
         // for meaning of different comparisonType.
         public static int Compare(string? strA, string? strB, StringComparison comparisonType)
         {
-            if (object.ReferenceEquals(strA, strB))
+            if (ReferenceEquals(strA, strB))
             {
                 CheckStringComparison(comparisonType);
                 return 0;
@@ -371,7 +371,7 @@ namespace System
 
             if (strA == null || strB == null)
             {
-                if (object.ReferenceEquals(strA, strB))
+                if (ReferenceEquals(strA, strB))
                 {
                     // They're both null
                     return 0;
@@ -394,7 +394,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
+            if (length == 0 || (ReferenceEquals(strA, strB) && indexA == indexB))
             {
                 return 0;
             }
@@ -425,7 +425,7 @@ namespace System
         //
         public static int CompareOrdinal(string? strA, string? strB)
         {
-            if (object.ReferenceEquals(strA, strB))
+            if (ReferenceEquals(strA, strB))
             {
                 return 0;
             }
@@ -460,7 +460,7 @@ namespace System
         {
             if (strA == null || strB == null)
             {
-                if (object.ReferenceEquals(strA, strB))
+                if (ReferenceEquals(strA, strB))
                 {
                     // They're both null
                     return 0;
@@ -489,7 +489,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
+            if (length == 0 || (ReferenceEquals(strA, strB) && indexA == indexB))
             {
                 return 0;
             }
@@ -520,7 +520,7 @@ namespace System
         //
         public int CompareTo(string? strB)
         {
-            return string.Compare(this, strB, StringComparison.CurrentCulture);
+            return Compare(this, strB, StringComparison.CurrentCulture);
         }
 
         // Determines whether a specified string is a suffix of the current instance.
@@ -610,7 +610,7 @@ namespace System
         // Determines whether two strings match.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (object.ReferenceEquals(this, obj))
+            if (ReferenceEquals(this, obj))
                 return true;
 
             if (!(obj is string str))
@@ -626,7 +626,7 @@ namespace System
         [Intrinsic] // Unrolled and vectorized for half-constant input
         public bool Equals([NotNullWhen(true)] string? value)
         {
-            if (object.ReferenceEquals(this, value))
+            if (ReferenceEquals(this, value))
                 return true;
 
             // NOTE: No need to worry about casting to object here.
@@ -645,7 +645,7 @@ namespace System
         [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public bool Equals([NotNullWhen(true)] string? value, StringComparison comparisonType)
         {
-            if (object.ReferenceEquals(this, value))
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -687,7 +687,7 @@ namespace System
         [Intrinsic] // Unrolled and vectorized for half-constant input
         public static bool Equals(string? a, string? b)
         {
-            if (object.ReferenceEquals(a, b))
+            if (ReferenceEquals(a, b))
             {
                 return true;
             }
@@ -703,7 +703,7 @@ namespace System
         [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public static bool Equals(string? a, string? b, StringComparison comparisonType)
         {
-            if (object.ReferenceEquals(a, b))
+            if (ReferenceEquals(a, b))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -741,9 +741,9 @@ namespace System
             }
         }
 
-        public static bool operator ==(string? a, string? b) => string.Equals(a, b);
+        public static bool operator ==(string? a, string? b) => Equals(a, b);
 
-        public static bool operator !=(string? a, string? b) => !string.Equals(a, b);
+        public static bool operator !=(string? a, string? b) => !Equals(a, b);
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
@@ -904,7 +904,7 @@ namespace System
                 Span<char> scratch = (uint)length < 64 ?
                     stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length + 1));
 
-                int charsWritten = System.Globalization.Ordinal.ToUpperOrdinal(str, scratch);
+                int charsWritten = Ordinal.ToUpperOrdinal(str, scratch);
                 Debug.Assert(charsWritten == length);
                 scratch[length] = '\0';
 

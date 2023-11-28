@@ -1,23 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "eventpipeadapter.h"
-#include "diagnosticserveradapter.h"
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-rt-aot.h>
+#include <eventpipe/ds-server.h>
 
-#include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "SpinLock.h"
+void EventPipe_Initialize() { ep_init(); }
 
-void EventPipeAdapter_Initialize() { EventPipeAdapter::Initialize(); }
-bool EventPipeAdapter_Enabled() { return EventPipeAdapter::Enabled(); }
+bool DiagnosticServer_Initialize() { return ds_server_init(); }
+void DiagnosticServer_PauseForDiagnosticsMonitor() { ds_server_pause_for_diagnostics_monitor(); }
 
-bool DiagnosticServerAdapter_Initialize() { return DiagnosticServerAdapter::Initialize(); }
-void DiagnosticServerAdapter_PauseForDiagnosticsMonitor() { DiagnosticServerAdapter::PauseForDiagnosticsMonitor();}
+void EventPipe_FinishInitialize() { ep_finish_init(); }
 
+void EventPipe_ThreadShutdown() { ep_rt_aot_thread_exited(); }
 
-void EventPipeAdapter_FinishInitialize() { EventPipeAdapter::FinishInitialize(); }
-
-void EventPipeAdapter_Shutdown() { EventPipeAdapter::Shutdown(); }
-bool DiagnosticServerAdapter_Shutdown() { return DiagnosticServerAdapter::Shutdown(); }
+void EventPipe_Shutdown() { ep_shutdown(); }
+bool DiagnosticServer_Shutdown() { return ds_server_shutdown(); }

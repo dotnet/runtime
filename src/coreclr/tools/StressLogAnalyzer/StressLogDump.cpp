@@ -22,10 +22,11 @@ class MapViewHolder
 #endif // STRESS_LOG
 #define STRESS_LOG_READONLY
 #include "../../../inc/stresslog.h"
+#include "StressMsgReader.h"
 
 
 void GcHistClear();
-void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
+void GcHistAddLog(LPCSTR msg, StressMsgReader stressMsg);
 
 
 /*********************************************************************************/
@@ -57,7 +58,7 @@ ThreadStressLog* ThreadStressLog::FindLatestThreadLog() const
     for (const ThreadStressLog* ptr = this; ptr != NULL; ptr = ptr->next)
     {
         if (ptr->readPtr != NULL)
-            if (latestLog == 0 || ptr->readPtr->timeStamp > latestLog->readPtr->timeStamp)
+            if (latestLog == 0 || StressMsgReader(ptr->readPtr).GetTimeStamp() > StressMsgReader(latestLog->readPtr).GetTimeStamp())
                 latestLog = ptr;
     }
     return const_cast<ThreadStressLog*>(latestLog);
@@ -423,9 +424,9 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
 
         // TODO: fix on 64 bit
         inProcPtr->Activate ();
-        if (inProcPtr->readPtr->timeStamp > lastTimeStamp)
+        if (StressMsgReader(inProcPtr->readPtr).GetTimeStamp() > lastTimeStamp)
         {
-            lastTimeStamp = inProcPtr->readPtr->timeStamp;
+            lastTimeStamp = StressMsgReader(inProcPtr->readPtr).GetTimeStamp();
         }
 
         outProcPtr = TO_CDADDR(inProcPtr->next);
@@ -488,20 +489,20 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             break;
         }
 
-        StressMsg* latestMsg = latestLog->readPtr;
-        if (latestMsg->formatOffset != 0 && !latestLog->CompletedDump())
+        StressMsgReader latestMsg = latestLog->readPtr;
+        if (latestMsg.GetFormatOffset() != 0 && !latestLog->CompletedDump())
         {
-            TADDR taFmt = (latestMsg->formatOffset) + TO_TADDR(g_hThisInst);
+            TADDR taFmt = (latestMsg.GetFormatOffset()) + TO_TADDR(g_hThisInst);
             hr = memCallBack->ReadVirtual(TO_CDADDR(taFmt), format, 256, 0);
             if (hr != S_OK)
                 strcpy_s(format, ARRAY_SIZE(format), "Could not read address of format string");
 
-            double deltaTime = ((double) (latestMsg->timeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
+            double deltaTime = ((double) (latestMsg.GetTimeStamp() - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
             if (bDoGcHist)
             {
                 if (strcmp(format, ThreadStressLog::TaskSwitchMsg()) == 0)
                 {
-                    latestLog->threadId = (unsigned)(size_t)latestMsg->args[0];
+                    latestLog->threadId = (unsigned)(size_t)latestMsg.GetArgs()[0];
                 }
                 GcHistAddLog(format, latestMsg);
             }
@@ -509,19 +510,19 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             {
                 if (strcmp(format, ThreadStressLog::TaskSwitchMsg()) == 0)
                 {
-                    fprintf (file, "Task was switched from %x\n", (unsigned)(size_t)latestMsg->args[0]);
-                    latestLog->threadId = (unsigned)(size_t)latestMsg->args[0];
+                    fprintf (file, "Task was switched from %x\n", (unsigned)(size_t)latestMsg.GetArgs()[0]);
+                    latestLog->threadId = (unsigned)(size_t)latestMsg.GetArgs()[0];
                 }
                 else
                 {
-                    args = latestMsg->args;
-                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg->facility, args);
+                    args = latestMsg.GetArgs();
+                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg.GetFacility(), args);
                 }
             }
             msgCtr++;
         }
 
-        latestLog->readPtr = latestLog->AdvanceRead();
+        latestLog->readPtr = latestLog->AdvanceRead(latestMsg.GetNumberOfArgs());
         if (latestLog->CompletedDump())
         {
             latestLog->readPtr = NULL;

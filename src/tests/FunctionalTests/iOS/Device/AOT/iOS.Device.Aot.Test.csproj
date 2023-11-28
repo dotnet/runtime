@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <SelfContained>true</SelfContained>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <MonoEnableLLVM>true</MonoEnableLLVM>
+    <MainLibraryFileName>iOS.Device.Aot.Test.dll</MainLibraryFileName>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Preserves the UnmanagedCallersOnly method -->
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

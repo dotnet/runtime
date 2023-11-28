@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Numerics;
+using Xunit;
 
 namespace SIMDDebugTest
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Vector4Test.RunTests();
             Vector3Test.RunTests();
             Vector2Test.RunTests();
             FuncEvalTest.RunTests();
-            return 100;
         }
 
         class Vector4Test

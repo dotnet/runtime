@@ -15,10 +15,12 @@ namespace System.Net.Quic.Tests
         public static bool IsQuicUnsupported => !IsSupported;
 
         [ConditionalFact(nameof(IsQuicUnsupported))]
-        public void UnsupportedPlatforms_ThrowsPlatformNotSupportedException()
+        public async Task UnsupportedPlatforms_ThrowsPlatformNotSupportedException()
         {
-            Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicListener());
-            Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, 0)));
+            PlatformNotSupportedException listenerEx = await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicListener());
+            PlatformNotSupportedException connectionEx = await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, 0)));
+            Assert.Equal(listenerEx.Message, connectionEx.Message);
+            _output.WriteLine(listenerEx.Message);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73290", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]

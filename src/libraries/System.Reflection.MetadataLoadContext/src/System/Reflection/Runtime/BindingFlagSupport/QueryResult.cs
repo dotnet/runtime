@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
@@ -112,11 +112,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         // declared by the most derived type. Since QueriedMemberLists are sorted in order of decreasing derivation,
                         // that means we let the first match win - unless, of course, they're both the "most derived member".
                         if (match.DeclaringType!.Equals(challenger.DeclaringType))
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(match);
 
                         MemberPolicies<M> policies = MemberPolicies<M>.Default;
                         if (!policies.OkToIgnoreAmbiguity(match, challenger))
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(match);
                     }
                     else
                     {

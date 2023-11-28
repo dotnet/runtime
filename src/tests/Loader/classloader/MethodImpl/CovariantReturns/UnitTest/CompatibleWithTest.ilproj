@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for SynthesizedPgoIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Synthesized PGO may cause the expected TypeLoadExceptions in this test to appear at unexpected places -->
     <SynthesizedPgoIncompatible>true</SynthesizedPgoIncompatible>
   </PropertyGroup>

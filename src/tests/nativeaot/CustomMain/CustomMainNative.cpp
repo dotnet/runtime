@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#ifndef TARGET_WINDOWS
+#define __stdcall
+#endif
+
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 #else
@@ -21,4 +25,11 @@ int main(int argc, char* argv[])
     puts("hello from native main");
     IncrementExitCode(61);
     return __managed__Main(argc, argv);
+}
+
+extern "C" const char* __stdcall __asan_default_options()
+{
+    // NativeAOT is not designed to be unloadable, so we'll leak a few allocations from the shared library.
+    // Disable leak detection as we don't care about these leaks as of now.
+    return "detect_leaks=0 use_sigaltstack=0";
 }

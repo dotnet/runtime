@@ -132,7 +132,7 @@ void ProfileSynthesis::AssignLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->bbJumpKind)
+        switch (block->GetJumpKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -290,7 +290,7 @@ bool ProfileSynthesis::IsLoopExitEdge(FlowEdge* edge)
 //
 void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->bbNext, block);
+    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->Next(), block);
     edge->setLikelihood(1.0);
 }
 
@@ -303,7 +303,7 @@ void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->bbJumpDest, block);
+    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
     edge->setLikelihood(1.0);
 }
 
@@ -316,8 +316,8 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
-    BasicBlock* const jump = block->bbJumpDest;
-    BasicBlock* const next = block->bbNext;
+    BasicBlock* const jump = block->GetJumpDest();
+    BasicBlock* const next = block->Next();
 
     // Watch for degenerate case
     //
@@ -332,8 +332,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // THROW heuristic
     //
-    bool const isJumpThrow = (jump->bbJumpKind == BBJ_THROW);
-    bool const isNextThrow = (next->bbJumpKind == BBJ_THROW);
+    bool const isJumpThrow = jump->KindIs(BBJ_THROW);
+    bool const isNextThrow = next->KindIs(BBJ_THROW);
 
     if (isJumpThrow != isNextThrow)
     {
@@ -402,8 +402,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // RETURN heuristic
     //
-    bool const isJumpReturn = (jump->bbJumpKind == BBJ_RETURN);
-    bool const isNextReturn = (next->bbJumpKind == BBJ_RETURN);
+    bool const isJumpReturn = jump->KindIs(BBJ_RETURN);
+    bool const isNextReturn = next->KindIs(BBJ_RETURN);
 
     if (isJumpReturn != isNextReturn)
     {
@@ -499,7 +499,7 @@ void ProfileSynthesis::RepairLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->bbJumpKind)
+        switch (block->GetJumpKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -551,7 +551,7 @@ void ProfileSynthesis::RepairLikelihoods()
                 }
                 JITDUMP("\n");
 
-                if (block->bbJumpKind == BBJ_COND)
+                if (block->KindIs(BBJ_COND))
                 {
                     AssignLikelihoodCond(block);
                 }
@@ -591,7 +591,7 @@ void ProfileSynthesis::BlendLikelihoods()
     {
         weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
 
-        switch (block->bbJumpKind)
+        switch (block->GetJumpKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -627,7 +627,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 bool const     consistent = Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon);
                 bool const     zero       = Compiler::fgProfileWeightsEqual(block->bbWeight, 0.0, epsilon);
 
-                if (block->bbJumpKind == BBJ_COND)
+                if (block->KindIs(BBJ_COND))
                 {
                     AssignLikelihoodCond(block);
                 }
@@ -790,7 +790,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
 void ProfileSynthesis::BuildReversePostorder()
 {
     m_comp->EnsureBasicBlockEpoch();
-    m_comp->fgComputeEnterBlocksSet();
     m_comp->fgDfsReversePostorder();
 
     // Build map from bbNum to Block*.
@@ -1214,14 +1213,14 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
                 //
                 // Currently we don't know which edges do this.
                 //
-                if ((exitBlock->bbJumpKind == BBJ_COND) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
+                if (exitBlock->KindIs(BBJ_COND) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
                 {
                     JITDUMP("Will adjust likelihood of the exit edge from loop exit block " FMT_BB
                             " to reflect capping; current likelihood is " FMT_WT "\n",
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
-                    BasicBlock* const jump               = exitBlock->bbJumpDest;
-                    BasicBlock* const next               = exitBlock->bbNext;
+                    BasicBlock* const jump               = exitBlock->GetJumpDest();
+                    BasicBlock* const next               = exitBlock->Next();
                     FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
                     FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
                     weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;

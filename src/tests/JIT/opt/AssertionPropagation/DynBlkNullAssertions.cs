@@ -7,10 +7,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class DynBlkNullAssertions
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!TestCpBlk(ref Unsafe.NullRef<byte>(), ref Unsafe.NullRef<byte>(), 0))
         {

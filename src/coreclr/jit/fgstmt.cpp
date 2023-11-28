@@ -82,7 +82,7 @@ void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
     }
     else
     {
-        Statement* insertBeforeStmt = block->FirstNonPhiDefOrCatchArgAsg();
+        Statement* insertBeforeStmt = block->FirstNonPhiDefOrCatchArgStore();
         if (insertBeforeStmt != nullptr)
         {
             fgInsertStmtBefore(block, insertBeforeStmt, stmt);
@@ -182,7 +182,7 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
     // This routine can only be used when in tree order.
     assert(fgOrder == FGOrderTree);
 
-    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
+    if (block->HasTerminator())
     {
         Statement* firstStmt = block->firstStmt();
         noway_assert(firstStmt != nullptr);

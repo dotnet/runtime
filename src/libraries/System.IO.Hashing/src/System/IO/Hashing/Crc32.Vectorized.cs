@@ -2,95 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
-using Aes = System.Runtime.Intrinsics.Arm.Aes;
+using System.Runtime.Intrinsics;
+using static System.IO.Hashing.VectorHelper;
 
 namespace System.IO.Hashing
 {
     public partial class Crc32
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> CarrylessMultiplyLower(Vector128<ulong> left, Vector128<ulong> right)
-        {
-            if (Pclmulqdq.IsSupported)
-            {
-                return Pclmulqdq.CarrylessMultiply(left, right, 0x00);
-            }
-
-            if (Aes.IsSupported)
-            {
-                return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetLower());
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> CarrylessMultiplyUpper(Vector128<ulong> left, Vector128<ulong> right)
-        {
-            if (Pclmulqdq.IsSupported)
-            {
-                return Pclmulqdq.CarrylessMultiply(left, right, 0x11);
-            }
-
-            if (Aes.IsSupported)
-            {
-                return Aes.PolynomialMultiplyWideningUpper(left, right);
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> CarrylessMultiplyLeftLowerRightUpper(Vector128<ulong> left, Vector128<ulong> right)
-        {
-            if (Pclmulqdq.IsSupported)
-            {
-                return Pclmulqdq.CarrylessMultiply(left, right, 0x10);
-            }
-
-            if (Aes.IsSupported)
-            {
-                return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetUpper());
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> ShiftRightBytesInVector(Vector128<ulong> operand,
-            [ConstantExpected(Max = (byte)15)] byte numBytesToShift)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.ShiftRightLogical128BitLane(operand, numBytesToShift);
-            }
-
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.ExtractVector128(operand.AsByte(), Vector128<byte>.Zero, numBytesToShift).AsUInt64();
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
         // We check for little endian byte order here in case we're ever on ARM in big endian mode.
         // All of these checks except the length check are elided by JIT, so the JITted implementation
         // will be either a return false or a length check against a constant. This means this method
         // should be inlined into the caller.
         private static bool CanBeVectorized(ReadOnlySpan<byte> source) =>
             BitConverter.IsLittleEndian
-            && (Pclmulqdq.IsSupported || (Aes.IsSupported && AdvSimd.IsSupported))
-            && source.Length >= Vector128<byte>.Count * 4;
+            && VectorHelper.IsSupported
+            // Vectorization can process spans as short as a single vector (16 bytes), but if ARM intrinsics are supported they
+            // seem to be more performant for spans less than 8 vectors (128 bytes).
+            && source.Length >= Vector128<byte>.Count * (System.Runtime.Intrinsics.Arm.Crc32.IsSupported ? 8 : 1);
 
         // Processes the bytes in source in 64 byte chunks using carryless/polynomial multiplication intrinsics,
         // followed by processing 16 byte chunks, and then processing remaining bytes individually. Requires
@@ -108,102 +38,81 @@ namespace System.IO.Hashing
             ref byte srcRef = ref MemoryMarshal.GetReference(source);
             int length = source.Length;
 
-            Vector128<ulong> x1 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
-            Vector128<ulong> x2 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
-            Vector128<ulong> x3 = Vector128.LoadUnsafe(ref srcRef, 32).AsUInt64();
-            Vector128<ulong> x4 = Vector128.LoadUnsafe(ref srcRef, 48).AsUInt64();
-            Vector128<ulong> x5;
+            Vector128<ulong> kConstants;
+            Vector128<ulong> x1; // Accumulator for the new CRC
+            Vector128<ulong> x2;
 
-            x1 ^= Vector128.CreateScalar(crc).AsUInt64();
-            Vector128<ulong> x0 = Vector128.Create(0x0154442bd4UL, 0x01c6e41596UL); // k1, k2
-
-            srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
-            length -= Vector128<byte>.Count * 4;
-
-            // Parallel fold blocks of 64, if any.
-            while (length >= Vector128<byte>.Count * 4)
+            if (length >= Vector128<byte>.Count * 8)
             {
-                x5 = CarrylessMultiplyLower(x1, x0);
-                Vector128<ulong> x6 = CarrylessMultiplyLower(x2, x0);
-                Vector128<ulong> x7 = CarrylessMultiplyLower(x3, x0);
-                Vector128<ulong> x8 = CarrylessMultiplyLower(x4, x0);
-
-                x1 = CarrylessMultiplyUpper(x1, x0);
-                x2 = CarrylessMultiplyUpper(x2, x0);
-                x3 = CarrylessMultiplyUpper(x3, x0);
-                x4 = CarrylessMultiplyUpper(x4, x0);
-
-                Vector128<ulong> y5 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
-                Vector128<ulong> y6 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
-                Vector128<ulong> y7 = Vector128.LoadUnsafe(ref srcRef, 32).AsUInt64();
-                Vector128<ulong> y8 = Vector128.LoadUnsafe(ref srcRef, 48).AsUInt64();
-
-                x1 ^= x5;
-                x2 ^= x6;
-                x3 ^= x7;
-                x4 ^= x8;
-
-                x1 ^= y5;
-                x2 ^= y6;
-                x3 ^= y7;
-                x4 ^= y8;
+                x1 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
+                x2 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
+                Vector128<ulong> x3 = Vector128.LoadUnsafe(ref srcRef, 32).AsUInt64();
+                Vector128<ulong> x4 = Vector128.LoadUnsafe(ref srcRef, 48).AsUInt64();
 
                 srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
                 length -= Vector128<byte>.Count * 4;
+
+                // Load and XOR the initial CRC value
+                x1 ^= Vector128.CreateScalar(crc).AsUInt64();
+
+                kConstants = Vector128.Create(0x0154442bd4UL, 0x01c6e41596UL); // k1, k2
+
+                // Parallel fold blocks of 64, if any.
+                do
+                {
+                    Vector128<ulong> y5 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
+                    Vector128<ulong> y6 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
+                    Vector128<ulong> y7 = Vector128.LoadUnsafe(ref srcRef, 32).AsUInt64();
+                    Vector128<ulong> y8 = Vector128.LoadUnsafe(ref srcRef, 48).AsUInt64();
+
+                    x1 = FoldPolynomialPair(y5, x1, kConstants);
+                    x2 = FoldPolynomialPair(y6, x2, kConstants);
+                    x3 = FoldPolynomialPair(y7, x3, kConstants);
+                    x4 = FoldPolynomialPair(y8, x4, kConstants);
+
+                    srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
+                    length -= Vector128<byte>.Count * 4;
+                } while (length >= Vector128<byte>.Count * 4);
+
+                // Fold into 128-bits.
+                kConstants = Vector128.Create(0x01751997d0UL, 0x00ccaa009eUL); // k3, k4
+                x1 = FoldPolynomialPair(x2, x1, kConstants);
+                x1 = FoldPolynomialPair(x3, x1, kConstants);
+                x1 = FoldPolynomialPair(x4, x1, kConstants);
             }
+            else
+            {
+                // For shorter sources just load the first vector and XOR with the CRC
+                Debug.Assert(length >= 16);
 
-            // Fold into 128-bits.
-            x0 = Vector128.Create(0x01751997d0UL, 0x00ccaa009eUL); // k3, k4
+                x1 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
+                x1 ^= Vector128.CreateScalar(crc).AsUInt64();
 
-            x5 = CarrylessMultiplyLower(x1, x0);
-            x1 = CarrylessMultiplyUpper(x1, x0);
-            x1 ^= x2;
-            x1 ^= x5;
-
-            x5 = CarrylessMultiplyLower(x1, x0);
-            x1 = CarrylessMultiplyUpper(x1, x0);
-            x1 ^= x3;
-            x1 ^= x5;
-
-            x5 = CarrylessMultiplyLower(x1, x0);
-            x1 = CarrylessMultiplyUpper(x1, x0);
-            x1 ^= x4;
-            x1 ^= x5;
+                srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
+                length -= Vector128<byte>.Count;
+            }
 
             // Single fold blocks of 16, if any.
             while (length >= Vector128<byte>.Count)
             {
-                x2 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
-
-                x5 = CarrylessMultiplyLower(x1, x0);
-                x1 = CarrylessMultiplyUpper(x1, x0);
-                x1 ^= x2;
-                x1 ^= x5;
+                x1 = FoldPolynomialPair(Vector128.LoadUnsafe(ref srcRef).AsUInt64(), x1,
+                    Vector128.Create(0x01751997d0UL, 0x00ccaa009eUL));
 
                 srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
                 length -= Vector128<byte>.Count;
             }
 
             // Fold 128 bits to 64 bits.
-            x2 = CarrylessMultiplyLeftLowerRightUpper(x1, x0);
-            x3 = Vector128.Create(~0, 0, ~0, 0).AsUInt64();
-            x1 = ShiftRightBytesInVector(x1, 8);
-            x1 ^= x2;
-
-            x0 = Vector128.CreateScalar(0x0163cd6124UL); // k5, k0
-
-            x2 = ShiftRightBytesInVector(x1, 4);
-            x1 &= x3;
-            x1 = CarrylessMultiplyLower(x1, x0);
-            x1 ^= x2;
+            Vector128<ulong> bitmask = Vector128.Create(~0, 0, ~0, 0).AsUInt64();
+            x1 = ShiftRightBytesInVector(x1, 8) ^
+                 CarrylessMultiplyLower(x1, Vector128.CreateScalar(0x00ccaa009eUL));
+            x1 = CarrylessMultiplyLower(x1 & bitmask, Vector128.CreateScalar(0x0163cd6124UL)) ^ // k5, k0
+                 ShiftRightBytesInVector(x1, 4);
 
             // Reduce to 32 bits.
-            x0 = Vector128.Create(0x01db710641UL, 0x01f7011641UL); // polynomial
-
-            x2 = x1 & x3;
-            x2 = CarrylessMultiplyLeftLowerRightUpper(x2, x0);
-            x2 &= x3;
-            x2 = CarrylessMultiplyLower(x2, x0);
+            kConstants = Vector128.Create(0x01db710641UL, 0x01f7011641UL); // polynomial
+            x2 = CarrylessMultiplyLeftLowerRightUpper(x1 & bitmask, kConstants) & bitmask;
+            x2 = CarrylessMultiplyLower(x2, kConstants);
             x1 ^= x2;
 
             // Process the remaining bytes, if any

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -41,11 +40,12 @@ namespace System.Globalization
     public sealed class NumberFormatInfo : IFormatProvider, ICloneable
     {
         private static volatile NumberFormatInfo? s_invariantInfo;
-        internal static readonly string[] s_asciiDigits = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        internal static readonly string[] s_asciiDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+        internal static readonly int[] s_intArrayWithElement3 = [3];
 
-        internal int[] _numberGroupSizes = new int[] { 3 };
-        internal int[] _currencyGroupSizes = new int[] { 3 };
-        internal int[] _percentGroupSizes = new int[] { 3 };
+        internal int[] _numberGroupSizes = s_intArrayWithElement3; // default to [3]; only clones of this array are handed out
+        internal int[] _currencyGroupSizes = s_intArrayWithElement3; // default to [3]; only clones of this array are handed out
+        internal int[] _percentGroupSizes = s_intArrayWithElement3; // default to [3]; only clones of this array are handed out
         internal string _positiveSign = "+";
         internal string _negativeSign = "-";
         internal string _numberDecimalSeparator = ".";
@@ -76,7 +76,7 @@ namespace System.Globalization
         internal byte[]? _positiveInfinitySymbolUtf8;
         internal byte[]? _negativeInfinitySymbolUtf8;
 
-        internal string[] _nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        internal string[] _nativeDigits = s_asciiDigits; // default to ASCII digits; only clones of this array are handed out
 
         internal int _numberDecimalDigits = 2;
         internal int _currencyDecimalDigits = 2;
@@ -244,10 +244,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -400,7 +397,7 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
+                CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
                     NumberFormatInfo? info = culture._numInfo;
@@ -441,12 +438,9 @@ namespace System.Globalization
             get => _currencyNegativePattern;
             set
             {
-                if (value < 0 || value > 15)
+                if (value < 0 || value > 16)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 15));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 16);
                 }
 
                 VerifyWritable();
@@ -462,10 +456,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to negNumberFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 4)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 4));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 4);
                 }
 
                 VerifyWritable();
@@ -481,10 +472,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -500,10 +488,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 11)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 11));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 11);
                 }
 
                 VerifyWritable();
@@ -563,10 +548,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -623,10 +605,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -686,10 +665,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();

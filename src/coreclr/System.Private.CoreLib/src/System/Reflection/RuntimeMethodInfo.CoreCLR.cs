@@ -27,7 +27,7 @@ namespace System.Reflection
         private Signature? m_signature;
         private readonly RuntimeType m_declaringType;
         private readonly object? m_keepalive;
-        private MethodInvoker? m_invoker;
+        private MethodBaseInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -35,20 +35,17 @@ namespace System.Reflection
             get
             {
                 InvocationFlags flags = Invoker._invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
-                }
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        private MethodInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new MethodInvoker(this, Signature);
+                m_invoker ??= new MethodBaseInvoker(this);
                 return m_invoker;
             }
         }
@@ -243,7 +240,7 @@ namespace System.Reflection
         #endregion
 
         #region MethodBase Overrides
-        internal override ParameterInfo[] GetParametersNoCopy() =>
+        internal override ReadOnlySpan<ParameterInfo> GetParametersAsSpan() =>
             FetchNonReturnParameters();
 
         public override ParameterInfo[] GetParameters()
@@ -287,7 +284,7 @@ namespace System.Reflection
         #region Invocation Logic
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
+        internal void InvokePropertySetter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
             // ContainsStackPointers means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
@@ -298,7 +295,10 @@ namespace System.Reflection
             }
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
-            ValidateInvokeTarget(obj);
+            if (!IsStatic)
+            {
+                MethodInvokerCommon.ValidateInvokeTarget(obj, this);
+            }
 
             Signature sig = Signature;
             if (sig.Arguments.Length != 1)
@@ -306,38 +306,7 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            object? retValue;
-
-            unsafe
-            {
-                StackAllocedArguments argStorage = default;
-                Span<object?> copyOfParameters = argStorage._args.AsSpan(1);
-                ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<ParameterCopyBackAction> shouldCopyBackParameters = argStorage._copyBacks.AsSpan(1);
-
-                StackAllocatedByRefs byrefStorage = default;
-#pragma warning disable 8500
-                IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
-#pragma warning restore 8500
-
-                CheckArguments(
-                    copyOfParameters,
-                    pByRefStorage,
-                    shouldCopyBackParameters,
-                    parameters,
-                    ArgumentTypes,
-                    binder,
-                    culture,
-                    invokeAttr);
-
-#if MONO // Temporary until Mono is updated.
-                retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
-#else
-                retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
-#endif
-            }
-
-            return retValue;
+            Invoker.InvokePropertySetter(obj, invokeAttr, binder, parameter, culture);
         }
 
         #endregion
@@ -454,7 +423,7 @@ namespace System.Reflection
                     for (int iCopy = 0; iCopy < methodInstantiation.Length; iCopy++)
                         methodInstantiationCopy[iCopy] = methodInstantiation[iCopy];
                     methodInstantiation = methodInstantiationCopy;
-                    return System.Reflection.Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
+                    return Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
                 }
 
                 methodInstantionRuntimeType[i] = rtMethodInstantiationElem;

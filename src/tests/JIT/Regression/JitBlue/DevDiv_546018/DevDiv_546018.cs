@@ -20,11 +20,10 @@ public class Test
     static Random random;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         random = new Random ();
         VectorSingle_op_Division_VectorSingle_VectorSingle (5);
-        return 100;
     }
 
     [MethodImpl (MethodImplOptions.NoInlining)]

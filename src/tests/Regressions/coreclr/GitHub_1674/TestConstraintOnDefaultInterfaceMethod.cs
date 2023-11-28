@@ -4,12 +4,14 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace TestConstraint
 {
-    class TestConstraintOnDefaultInterfaceMethod
+    public class TestConstraintOnDefaultInterfaceMethod
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             IAuditTrail<IRaftLogEntry> auditTrail = new AuditTrail();
             // This should not fail per C# specs here:
@@ -22,9 +24,6 @@ namespace TestConstraint
             ((IBuggy<object>)new Worky2()).Foo<string>();
             // This should not throw since Open meets the constraint of IBuggy<T1>.Foo<T2> where T2: T1
             ((IBuggy<Open>)new Buggy()).Foo<Open>();
-
-            return 100;
-
         }
 
         interface IBuggy<T1>

@@ -64,6 +64,8 @@ public:
         p.Run(option);
     }
 
+    static constexpr weight_t epsilon = 0.001;
+
 private:
     ProfileSynthesis(Compiler* compiler)
         : m_comp(compiler)
@@ -74,10 +76,8 @@ private:
     {
     }
 
-    static constexpr weight_t exceptionScale = 0.001;
-    static constexpr weight_t blendFactor    = 0.99;
-    static constexpr weight_t epsilon        = 0.001;
-
+    static constexpr weight_t exceptionScale     = 0.001;
+    static constexpr weight_t blendFactor        = 0.99;
     static constexpr weight_t cappedLikelihood   = 0.999;
     static constexpr weight_t returnLikelihood   = 0.2;
     static constexpr weight_t ilNextLikelihood   = 0.52;

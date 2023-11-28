@@ -648,7 +648,7 @@ g_direct_equal (gconstpointer v1, gconstpointer v2)
 guint
 g_direct_hash (gconstpointer v1)
 {
-	return GPOINTER_TO_UINT (v1);
+	return GCONSTPOINTER_TO_UINT (v1);
 }
 
 gboolean

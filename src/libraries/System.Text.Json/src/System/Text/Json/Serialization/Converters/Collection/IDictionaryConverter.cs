@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Converters
             if (returnValue.IsReadOnly)
             {
                 state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
         }
 
@@ -100,9 +100,9 @@ namespace System.Text.Json.Serialization.Converters
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
             // Deserialize as Dictionary<TKey,TValue> for interface types that support it.
-            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(Dictionary<string, object?>)))
+            if (jsonTypeInfo.CreateObject is null && Type.IsAssignableFrom(typeof(Dictionary<string, object?>)))
             {
-                Debug.Assert(TypeToConvert.IsInterface);
+                Debug.Assert(Type.IsInterface);
                 jsonTypeInfo.CreateObject = () => new Dictionary<string, object?>();
             }
         }

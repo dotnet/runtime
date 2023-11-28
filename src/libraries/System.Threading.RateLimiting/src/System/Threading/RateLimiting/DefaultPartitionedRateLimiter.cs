@@ -45,7 +45,6 @@ namespace System.Threading.RateLimiting
             _limiters = new Dictionary<TKey, Lazy<RateLimiter>>(equalityComparer);
             _partitioner = partitioner;
 
-            // TODO: Figure out what interval we should use
             _timer = new TimerAwaitable(timerInterval, timerInterval);
             _timerTask = RunTimer();
         }
@@ -57,9 +56,14 @@ namespace System.Threading.RateLimiting
             {
                 try
                 {
-                    await Heartbeat().ConfigureAwait(false);
+                    await Heartbeat().ConfigureAwait(
+#if NET8_0_OR_GREATER
+                        ConfigureAwaitOptions.SuppressThrowing
+#else
+                        false
+#endif
+                        );
                 }
-                // TODO: Can we log to EventSource or somewhere? Maybe dispatch throwing the exception so it is at least an unhandled exception?
                 catch { }
             }
             _timer.Dispose();

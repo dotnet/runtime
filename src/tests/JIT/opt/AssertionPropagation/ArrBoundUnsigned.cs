@@ -5,8 +5,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class ArrBoundUnsigned
+public class ArrBoundUnsigned
 {
     // The method names indicate when the array access takes place e.g i_LT_UN_len executes a[i] if (uint)i < (uint)a.len.
     // If the condition is true and the array index is invalid then an IndexOutOfRangeException is expected.
@@ -300,7 +301,8 @@ class ArrBoundUnsigned
             return a[i];
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

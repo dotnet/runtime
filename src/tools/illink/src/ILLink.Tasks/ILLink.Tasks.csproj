@@ -24,12 +24,27 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
+  <!-- Include the illink.runtimeconfig.pack.json file (which depends on the runtimeversion being built)
+       as illink.runtimeconfig.json in the package, instead of the original illink.runtimeconfig.json. -->
+  <Target Name="FixPackageRuntimeConfigPath"
+          AfterTargets="AddBuildOutputToToolsPackage"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
+    <ItemGroup>
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile)"
+                              Condition="$([System.String]::Copy('%(Identity)').EndsWith('.runtimeconfig.json'))" />
+      <TfmSpecificPackageFile
+        Condition="$([System.String]::Copy('%(TfmSpecificPackageFile.PackagePath)').EndsWith('.pack.json'))"
+        PackagePath="$([System.String]::Copy(%(TfmSpecificPackageFile.PackagePath)).Substring(0, $([MSBuild]::Subtract($([System.String]::Copy('%(TfmSpecificPackageFile.PackagePath)').Length), 10)))).json" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <!-- Note: 'build/Microsoft.NET.ILLink.targets' should not match the package name, because we don't want the targets
          to be imported by nuget. The SDK will import them in the right order. -->
-    <None Include="**\*.props;**\*.targets" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="build/6.0_suppressions.xml" Pack="true" PackagePath="build/" />
-    <None Include="..\ILLink.RoslynAnalyzer\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build/" />
+    <Content Include="**\*.props;**\*.targets" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" TargetPath="%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="..\ILLink.RoslynAnalyzer\build\**\*.props" Pack="true" PackagePath="build/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" TargetPath="build/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

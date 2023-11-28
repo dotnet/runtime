@@ -124,6 +124,9 @@ typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* session);
 // the function pointer used for new  session
 typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 
+// the function pointer for keylog
+typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
+
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -163,6 +166,11 @@ PALEXPORT void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val);
 Sets session caching. 0 is disabled.
 */
 PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb);
+
+/*
+Sets callback to log TLS session keys
+*/
+PALEXPORT void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback callback);
 
 /*
 Returns name associated with given ssl session.

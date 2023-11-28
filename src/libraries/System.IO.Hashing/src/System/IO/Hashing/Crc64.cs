@@ -167,6 +167,18 @@ namespace System.IO.Hashing
 
         private static ulong Update(ulong crc, ReadOnlySpan<byte> source)
         {
+#if NET7_0_OR_GREATER
+            if (CanBeVectorized(source))
+            {
+                return UpdateVectorized(crc, source);
+            }
+#endif
+
+            return UpdateScalar(crc, source);
+        }
+
+        private static ulong UpdateScalar(ulong crc, ReadOnlySpan<byte> source)
+        {
             ReadOnlySpan<ulong> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {

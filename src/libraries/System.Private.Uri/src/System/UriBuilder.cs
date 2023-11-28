@@ -262,7 +262,7 @@ namespace System
 
         private static string EncodeUserInfo(string input)
         {
-            if (input.AsSpan().IndexOfAny(s_userInfoReservedChars) < 0)
+            if (!input.AsSpan().ContainsAny(s_userInfoReservedChars))
             {
                 return input;
             }

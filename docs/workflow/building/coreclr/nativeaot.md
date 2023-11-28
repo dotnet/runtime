@@ -109,6 +109,10 @@ Build library tests by passing the `libs.tests` subset together with the `/p:Tes
 * [ILC Compiler Architecture](/docs/design/coreclr/botr/ilc-architecture.md)
 * [Managed Type System](/docs/design/coreclr/botr/managed-type-system.md)
 
+## Native Sanitizers
+
+Using native sanitizers with NativeAOT requires additional care compared to using them with CoreCLR. In addition to passing the `-fsanitize` flag to the command that builds NativeAOT, you must also pass the `EnableNativeSanitizers` MSBuild property to any commands that build projects with a sanitized NativeAOT build to ensure that any sanitizer runtimes are correctly linked with the project.
+
 ## Further Reading
 
 If you want to know more about working with _NativeAOT_ in general, you can check out their [more in-depth docs](/src/coreclr/nativeaot/docs/README.md) in the `src/coreclr/nativeaot` subtree.

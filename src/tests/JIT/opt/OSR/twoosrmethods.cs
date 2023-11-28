@@ -3,13 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Method creates has two OSR methods
 
-class TwoOSRMethods
+public class TwoOSRMethods
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void I(ref int p, int i) => p = p + i;
+    internal static void I(ref int p, int i) => p = p + i;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F(int from, int to, bool b)
@@ -34,7 +35,8 @@ class TwoOSRMethods
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int final = 1_000_000;
         int result1 = F(0, final, true);

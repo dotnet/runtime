@@ -187,6 +187,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE,
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
@@ -274,6 +275,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
         CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
         CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
+        CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION, // throw EntryPointNotFoundException for failed static virtual method resolution
 
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument

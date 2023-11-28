@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential)]
 struct VT
@@ -26,7 +27,7 @@ struct VT
     }
 }
 
-class P
+public class P
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     unsafe static int TestMethodInlining(VT* pVT)
@@ -56,7 +57,8 @@ class P
         return Do(v1, v2);
     }
     
-    unsafe static int Main()
+    [Fact]
+    public unsafe static int TestEntryPoint()
     {
         byte* pDataBytes = stackalloc byte[VT.Size];
         VT* pVT = (VT*)pDataBytes;

@@ -32,9 +32,9 @@ namespace Internal.Runtime
         HasFinalizerFlag = 0x00100000,
 
         /// <summary>
-        /// This type contain GC pointers.
+        /// This type has optional fields present.
         /// </summary>
-        HasPointersFlag = 0x00200000,
+        OptionalFieldsFlag = 0x00200000,
 
         /// <summary>
         /// This MethodTable has sealed vtable entries
@@ -48,9 +48,9 @@ namespace Internal.Runtime
         GenericVarianceFlag = 0x00800000,
 
         /// <summary>
-        /// This type has optional fields present.
+        /// This type contain GC pointers.
         /// </summary>
-        OptionalFieldsFlag = 0x01000000,
+        HasPointersFlag = 0x01000000,
 
         /// <summary>
         /// This type is generic.
@@ -62,11 +62,6 @@ namespace Internal.Runtime
         /// </summary>
         ElementTypeMask = 0x7C000000,
         ElementTypeShift = 26,
-
-        /// <summary>
-        /// Single mark to check TypeKind and two flags. When non-zero, casting is more complicated.
-        /// </summary>
-        ComplexCastingMask = EETypeKindMask | GenericVarianceFlag,
 
         /// <summary>
         /// The _usComponentSize is a number (not holding FlagsEx).

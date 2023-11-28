@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
@@ -130,25 +131,23 @@ namespace Internal.Runtime.CompilerServices
         {
             if (!IsGenericMethodPointer(functionPointerA))
             {
-                IntPtr codeTargetA = RuntimeAugments.GetCodeTarget(functionPointerA);
-                IntPtr codeTargetB = RuntimeAugments.GetCodeTarget(functionPointerB);
-                return codeTargetA == codeTargetB;
+                return functionPointerA == functionPointerB;
             }
-            else
+
+            if (!IsGenericMethodPointer(functionPointerB))
             {
-                if (!IsGenericMethodPointer(functionPointerB))
-                    return false;
-
-                GenericMethodDescriptor* pointerDefA = ConvertToGenericDescriptor(functionPointerA);
-                GenericMethodDescriptor* pointerDefB = ConvertToGenericDescriptor(functionPointerB);
-
-                if (pointerDefA->InstantiationArgument != pointerDefB->InstantiationArgument)
-                    return false;
-
-                IntPtr codeTargetA = RuntimeAugments.GetCodeTarget(pointerDefA->MethodFunctionPointer);
-                IntPtr codeTargetB = RuntimeAugments.GetCodeTarget(pointerDefB->MethodFunctionPointer);
-                return codeTargetA == codeTargetB;
+                return false;
             }
+
+            GenericMethodDescriptor* pointerDefA = ConvertToGenericDescriptor(functionPointerA);
+            GenericMethodDescriptor* pointerDefB = ConvertToGenericDescriptor(functionPointerB);
+
+            if (pointerDefA->InstantiationArgument != pointerDefB->InstantiationArgument)
+            {
+                return false;
+            }
+
+            return pointerDefA->MethodFunctionPointer == pointerDefB->MethodFunctionPointer;
         }
     }
 }

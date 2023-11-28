@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
@@ -467,8 +468,49 @@ namespace System.Text.Json
         private static IAsyncEnumerable<T> DeserializeAsyncEnumerableCore<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
-            jsonTypeInfo._asyncEnumerableQueueTypeInfo ??= CreateQueueTypeInfo(jsonTypeInfo);
-            return jsonTypeInfo.DeserializeAsyncEnumerable(utf8Json, cancellationToken);
+
+            JsonTypeInfo<Queue<T>> queueTypeInfo = jsonTypeInfo._asyncEnumerableQueueTypeInfo is { } cachedQueueTypeInfo
+                ? (JsonTypeInfo<Queue<T>>)cachedQueueTypeInfo
+                : CreateQueueTypeInfo(jsonTypeInfo);
+
+            return CreateAsyncEnumerable(utf8Json, queueTypeInfo, cancellationToken);
+
+            static async IAsyncEnumerable<T> CreateAsyncEnumerable(Stream utf8Json, JsonTypeInfo<Queue<T>> queueTypeInfo, [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                Debug.Assert(queueTypeInfo.IsConfigured);
+                JsonSerializerOptions options = queueTypeInfo.Options;
+                var bufferState = new ReadBufferState(options.DefaultBufferSize);
+                ReadStack readStack = default;
+                readStack.Initialize(queueTypeInfo, supportContinuation: true);
+
+                var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
+
+                try
+                {
+                    do
+                    {
+                        bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                        queueTypeInfo.ContinueDeserialize(
+                            ref bufferState,
+                            ref jsonReaderState,
+                            ref readStack);
+
+                        if (readStack.Current.ReturnValue is { } returnValue)
+                        {
+                            var queue = (Queue<T>)returnValue!;
+                            while (queue.TryDequeue(out T? element))
+                            {
+                                yield return element;
+                            }
+                        }
+                    }
+                    while (!bufferState.IsFinalBlock);
+                }
+                finally
+                {
+                    bufferState.Dispose();
+                }
+            }
 
             static JsonTypeInfo<Queue<T>> CreateQueueTypeInfo(JsonTypeInfo<T> jsonTypeInfo)
             {
@@ -481,6 +523,7 @@ namespace System.Text.Json
                 };
 
                 queueTypeInfo.EnsureConfigured();
+                jsonTypeInfo._asyncEnumerableQueueTypeInfo = queueTypeInfo;
                 return queueTypeInfo;
             }
         }

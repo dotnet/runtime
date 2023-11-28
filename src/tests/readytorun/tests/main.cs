@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Reflection;
 using System.IO;
+using Xunit;
 
 class InstanceFieldTest : MyClass
 {
@@ -48,7 +49,7 @@ static class OpenClosedDelegateExtension
     }
 }
 
-class Program
+public class Program
 {
     static void TestVirtualMethodCalls()
     {
@@ -441,6 +442,19 @@ class Program
         Assert.AreEqual(ILInliningTest.TestDifferentIntValue(), actualMethodCallResult);
     }
 
+    private class CallDefaultVsExactStaticVirtual<T> where T : IDefaultVsExactStaticVirtual
+    {
+        public static string CallMethodOnGenericType() => T.Method();
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestDefaultVsExactStaticVirtualMethodImplementation()
+    {
+        Assert.AreEqual(CallDefaultVsExactStaticVirtual<DefaultVsExactStaticVirtualClass>.CallMethodOnGenericType(), "DefaultVsExactStaticVirtualMethod");
+        // Naively one would expect that the following should do, however Roslyn fails to compile it claiming that the type DVESVC doesn't contain 'Method':
+        // Assert.AreEqual(DefaultVsExactStaticVirtualClass.Method(), "DefaultVsExactStaticVirtualMethod");
+    }
+
     static void RunAllTests()
     {
         Console.WriteLine("TestVirtualMethodCalls");
@@ -527,10 +541,14 @@ class Program
 
         Console.WriteLine("TestILBodyChange");
         TestILBodyChange();
+        
+        Console.WriteLine("TestDefaultVsExactStaticVirtualMethodImplementation");
+        TestDefaultVsExactStaticVirtualMethodImplementation();
+        
         ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
     }
 
-    static int Main()
+    public static int Main()
     {
         // Run all tests 3x times to exercise both slow and fast paths work
         for (int i = 0; i < 3; i++)

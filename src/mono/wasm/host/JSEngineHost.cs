@@ -25,14 +25,14 @@ internal sealed class JSEngineHost
         _logger = logger;
     }
 
-    public static async Task<int> InvokeAsync(CommonConfiguration commonArgs,
+    public static Task<int> InvokeAsync(CommonConfiguration commonArgs,
                                               ILoggerFactory _,
                                               ILogger logger,
                                               CancellationToken _1)
     {
         var args = new JSEngineArguments(commonArgs);
         args.Validate();
-        return await new JSEngineHost(args, logger).RunAsync();
+        return new JSEngineHost(args, logger).RunAsync();
     }
 
     private async Task<int> RunAsync()
@@ -88,8 +88,11 @@ internal sealed class JSEngineHost
         int exitCode = await Utils.TryRunProcess(psi,
                                     _logger,
                                     msg => { if (msg != null) _logger.LogInformation(msg); },
-                                    msg => { if (msg != null) _logger.LogInformation(msg); });
+                                    msg => { if (msg != null) _logger.LogInformation(msg); },
+                                    silent: _args.CommonConfig.Silent);
 
+        if (!_args.CommonConfig.Silent)
+            Console.WriteLine($"{_args.Host} exited with {exitCode}");
         return exitCode;
     }
 }

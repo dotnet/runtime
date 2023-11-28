@@ -19,7 +19,9 @@ static bool strictArmAsm;
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
+const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
+const char* emitPredicateRegName(regNumber reg);
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
@@ -38,10 +40,12 @@ void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
+void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
+void emitDispPredicateReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -99,6 +103,7 @@ emitAttr emitInsLoadStoreSize(instrDesc* id);
 
 emitter::insFormat emitInsFormat(instruction ins);
 emitter::code_t emitInsCode(instruction ins, insFormat fmt);
+emitter::code_t emitInsCodeSve(instruction ins, insFormat fmt);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + index<<scale +
 // offset]
@@ -310,6 +315,60 @@ static code_t insEncodeReg_Vm(regNumber reg);
 
 // Returns an encoding for the specified register used in the 'Va' position
 static code_t insEncodeReg_Va(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '4' thru '0' position.
+static code_t insEncodeReg_V_4_to_0(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '9' thru '5' position.
+static code_t insEncodeReg_V_9_to_5(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '12' thru '10' position.
+static code_t insEncodeReg_P_12_to_10(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '21' thru '17' position.
+static code_t insEncodeReg_V_21_to_17(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '21' thru '17' position.
+static code_t insEncodeReg_R_21_to_17(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '9' thru '5' position.
+static code_t insEncodeReg_R_9_to_5(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '4' thru '0' position.
+static code_t insEncodeReg_R_4_to_0(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '20' thru '17' position.
+static code_t insEncodeReg_P_20_to_17(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '3' thru '0' position.
+static code_t insEncodeReg_P_3_to_0(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '8' thru '5' position.
+static code_t insEncodeReg_P_8_to_5(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '13' thru '10' position.
+static code_t insEncodeReg_P_13_to_10(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '18' thru '17' position.
+static code_t insEncodeReg_R_18_to_17(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '7' thru '5' position.
+static code_t insEncodeReg_P_7_to_5(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '3' thru '1' position.
+static code_t insEncodeReg_P_3_to_1(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '2' thru '0' position.
+static code_t insEncodeReg_P_2_to_0(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '19' thru '17' position.
+static code_t insEncodeReg_V_19_to_17(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '20' thru '17' position.
+static code_t insEncodeReg_V_20_to_17(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '9' thru '6' position.
+static code_t insEncodeReg_V_9_to_6(regNumber reg);
 
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
@@ -543,6 +602,9 @@ static bool emitIns_valid_imm_for_alu(INT64 imm, emitAttr size);
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
 
+// true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
+static bool emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm);
+
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 static bool emitIns_valid_imm_for_ccmp(INT64 imm);
 
@@ -598,6 +660,11 @@ inline static bool isValidGeneralDatasize(emitAttr size)
 inline static bool isValidScalarDatasize(emitAttr size)
 {
     return (size == EA_8BYTE) || (size == EA_4BYTE);
+}
+
+inline static bool isValidScalableDatasize(emitAttr size)
+{
+    return ((size & EA_SCALABLE) == EA_SCALABLE);
 }
 
 inline static bool isValidVectorDatasize(emitAttr size)
@@ -658,6 +725,11 @@ inline static bool isVectorRegister(regNumber reg)
 inline static bool isFloatReg(regNumber reg)
 {
     return isVectorRegister(reg);
+}
+
+inline static bool isPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -754,6 +826,12 @@ inline static bool insOptsConvertFloatToInt(insOpts opt)
 inline static bool insOptsConvertIntToFloat(insOpts opt)
 {
     return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_D));
+}
+
+inline static bool insOptsScalable(insOpts opt)
+{
+    return ((opt == INS_OPTS_SCALABLE_B || opt == INS_OPTS_SCALABLE_H || opt == INS_OPTS_SCALABLE_S ||
+             opt == INS_OPTS_SCALABLE_D));
 }
 
 static bool isValidImmCond(ssize_t imm);
@@ -1002,31 +1080,5 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
     return ((jmp->idInsFmt() == IF_LS_1A) || // ldr
             (jmp->idInsFmt() == IF_LARGELDC));
 }
-
-#if defined(FEATURE_SIMD)
-//-----------------------------------------------------------------------------------
-// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
-//
-// Arguments:
-//     varNum  - the variable on the stack to use as a base;
-//     offset  - the offset from the varNum;
-//     dataReg - the src reg with SIMD12 value;
-//     tmpReg  - a tmp reg to use for the write, can be general or float.
-//
-void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, regNumber tmpReg)
-{
-    assert(varNum != BAD_VAR_NUM);
-    assert(isVectorRegister(dataReg));
-
-    // store lower 8 bytes
-    emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
-
-    // Extract upper 4-bytes from data
-    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
-
-    // 4-byte write
-    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
-}
-#endif // FEATURE_SIMD
 
 #endif // TARGET_ARM64

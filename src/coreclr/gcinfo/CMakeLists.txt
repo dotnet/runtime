@@ -1,12 +1,12 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set( GCINFO_ALLARCH_SOURCES
+set(GCINFO_ALLARCH_SOURCES
   arraylist.cpp
   gcinfoencoder.cpp
   simplerhash.cpp
 )
 
-set( GCINFO_I386_SOURCES
+set(GCINFO_I386_SOURCES
   ../gcdump/gcdump.cpp
   ../gcdump/i386/gcdumpx86.cpp
 )
@@ -24,13 +24,7 @@ if(CLR_CMAKE_TARGET_ARCH_I386)
 endif(CLR_CMAKE_TARGET_ARCH_I386)
 
 
-add_library_clr(gcinfo_obj
-    OBJECT
-    ${GCINFO_SOURCES}
-)
-
-add_library(gcinfo INTERFACE)
-target_sources(gcinfo INTERFACE $<TARGET_OBJECTS:gcinfo_obj>)
+add_library_clr(gcinfo OBJECT ${GCINFO_SOURCES})
 
 install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)

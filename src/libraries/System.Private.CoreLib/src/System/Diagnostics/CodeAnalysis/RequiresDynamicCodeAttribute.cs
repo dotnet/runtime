@@ -5,7 +5,7 @@ namespace System.Diagnostics.CodeAnalysis
 {
     /// <summary>
     /// Indicates that the specified method requires the ability to generate new code at runtime,
-    /// for example through <see cref="System.Reflection"/>.
+    /// for example through <see cref="Reflection"/>.
     /// </summary>
     /// <remarks>
     /// This allows tools to understand which methods are unsafe to call when compiling ahead of time.

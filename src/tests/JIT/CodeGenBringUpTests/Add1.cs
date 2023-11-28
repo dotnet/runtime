@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_Add1
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_Add1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int Add1(int x) { return x+1; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int y = Add1(1);
         if (y == 2) return Pass;

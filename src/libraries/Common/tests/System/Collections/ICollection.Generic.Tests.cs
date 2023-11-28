@@ -406,8 +406,10 @@ namespace System.Collections.Tests
         public void ICollection_Generic_Contains_DefaultValueOnCollectionNotContainingDefaultValue(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
-            if (DefaultValueAllowed)
+            if (DefaultValueAllowed && default(T) is null) // it's true only for reference types and for Nullable<T>
+            {
                 Assert.False(collection.Contains(default(T)));
+            }
         }
 
         [Theory]

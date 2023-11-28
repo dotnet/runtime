@@ -12,10 +12,9 @@ namespace DefaultNamespace
             return new float[7];
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new DD().Method1();
-            return 100;
         }
     }
 }

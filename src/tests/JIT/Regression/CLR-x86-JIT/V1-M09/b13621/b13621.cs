@@ -13,7 +13,7 @@ namespace DefaultNamespace
         internal static int n;
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int iSize = 1000;
             root = new GCHandle[iSize];
@@ -30,8 +30,6 @@ namespace DefaultNamespace
             {
                 root[n].Free();
             }
-
-            return 100;
         }
 
         public RootMem(int i)

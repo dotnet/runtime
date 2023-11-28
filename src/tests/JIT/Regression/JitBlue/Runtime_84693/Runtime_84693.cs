@@ -28,7 +28,7 @@ public class Test
 		}
 	}
 
-	[ActiveIssue("https://github.com/dotnet/runtime/issues/85081")]
+	[Fact]
 	public static int TestEntryPoint() {
 		var result = Test.Program.M8(1);
 		if (result != 255)

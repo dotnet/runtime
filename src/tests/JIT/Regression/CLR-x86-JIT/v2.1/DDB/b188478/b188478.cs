@@ -10,12 +10,11 @@ using Xunit;
 public class My
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         My[] s = new My[0];
         IList<My> ls = (IList<My>)s;
         ReadOnlyCollection<My> roc = new ReadOnlyCollection<My>(ls);
         Console.WriteLine(roc.Count);
-        return 100;
     }
 }

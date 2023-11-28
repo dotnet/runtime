@@ -877,7 +877,7 @@ class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gbo
 {
 	g_assert ((temporary && do_free) || (!temporary && !do_free));
 
-	DEBUG (printf ("get slot: %s %d\n", mono_type_full_name (m_class_get_byval_arg (class)), slot));
+	DEBUG (printf ("get slot: %s %d\n", mono_type_full_name (m_class_get_byval_arg (klass)), slot));
 
 	if (mono_class_is_ginst (klass) && !shared) {
 		MonoRuntimeGenericContextInfoTemplate oti;
@@ -1172,6 +1172,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	MonoClass *klass;
 	MonoClass *tuple_class = NULL;
 	int findex = 0;
+#ifdef TARGET_WASM
+	gboolean has_fp = FALSE;
+#endif
 
 	// FIXME: Map 1 member structs to primitive types on platforms where its supported
 
@@ -1199,29 +1202,31 @@ get_wrapper_shared_vtype (MonoType *t)
 		args [findex ++] = ftype;
 		if (findex >= 16)
 			break;
+#ifdef TARGET_WASM
+		if (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8 || MONO_TYPE_ISSTRUCT (ftype))
+			has_fp = TRUE;
+#endif
 	}
 
 #ifdef TARGET_WASM
-	guint32 align;
-	int size = mono_class_value_size (klass, &align);
+	if (!has_fp) {
+		guint32 align;
+		int size = mono_class_value_size (klass, &align);
 
-	/* Other platforms might pass small valuestypes or valuetypes with non-int fields differently */
-	if (align == 4 && size <= 4 * 5) {
-		findex = size / align;
-		for (int i = 0; i < findex; ++i)
-			args [i] = m_class_get_byval_arg (mono_get_int32_class ());
-	} else if (align == 8 && size <= 8 * 5) {
-		findex = size / align;
-		for (int i = 0; i < findex; ++i)
-			args [i] = m_class_get_byval_arg (mono_get_int64_class ());
-	} else {
-		if (findex > 7)
-			return NULL;
+		/* Other platforms might pass small valuetypes or valuetypes with non-int fields differently */
+		if (align == 4 && size <= 4 * 5) {
+			findex = size / align;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int32_class ());
+		} else if (align == 8 && size <= 8 * 5) {
+			findex = size / align;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+		}
 	}
-#else
+#endif
 	if (findex > 7)
 		return NULL;
-#endif
 
 	switch (findex) {
 	case 0:
@@ -1394,7 +1399,6 @@ get_wrapper_shared_type (MonoType *t)
 {
 	return get_wrapper_shared_type_full (t, FALSE);
 }
-
 
 /* Returns the intptr type for types that are passed in a single register */
 static MonoType*
@@ -2272,22 +2276,28 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 		mono_class_setup_vtable (info->klass);
 		// FIXME: Check type load
-		if (mono_class_is_interface (iface_class)) {
-			gboolean variance_used;
-			ioffset = mono_class_interface_offset_with_variance (info->klass, iface_class, &variance_used);
-			g_assert (ioffset != -1);
+
+		if (mono_class_is_interface (info->klass)) {
+			// If constrained class is interface, we don't learn anything new by constraining
+			method = info->method;
 		} else {
-			ioffset = 0;
+			if (mono_class_is_interface (iface_class)) {
+				gboolean variance_used;
+				ioffset = mono_class_interface_offset_with_variance (info->klass, iface_class, &variance_used);
+				g_assert (ioffset != -1);
+			} else {
+				ioffset = 0;
+			}
+
+			if (info->method->is_generic == 0 && mono_class_is_ginst (info->method->klass)) {
+				slot = mono_method_get_vtable_slot (((MonoMethodInflated*)(info->method))->declaring);
+			} else {
+				slot = mono_method_get_vtable_slot (info->method);
+			}
+			g_assert (slot != -1);
+			g_assert (m_class_get_vtable (info->klass));
+			method = m_class_get_vtable (info->klass) [ioffset + slot];
 		}
-		
-		if (info->method->is_generic == 0 && mono_class_is_ginst (info->method->klass)) {
-			slot = mono_method_get_vtable_slot (((MonoMethodInflated*)(info->method))->declaring);
-		} else {
-			slot = mono_method_get_vtable_slot (info->method);
-		}
-		g_assert (slot != -1);
-		g_assert (m_class_get_vtable (info->klass));
-		method = m_class_get_vtable (info->klass) [ioffset + slot];
 
 		if (info->method->is_inflated) {
 			MonoGenericContext *method_ctx = mono_method_get_context (info->method);
@@ -2753,7 +2763,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_REFLECTION_TYPE: return "REFLECTION_TYPE";
 	case MONO_RGCTX_INFO_METHOD: return "METHOD";
 	case MONO_RGCTX_INFO_METHOD_FTNDESC: return "METHOD_FTNDESC";
-	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO: return "GSHAREDVT_INFO";
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO: return "METHOD_GSHAREDVT_INFO";
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: return "GENERIC_METHOD_CODE";
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER: return "GSHAREDVT_OUT_WRAPPER";
 	case MONO_RGCTX_INFO_INTERP_METHOD: return "INTERP_METHOD";
@@ -2782,6 +2792,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: return "VIRT_METHOD_CODE";
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: return "VIRT_METHOD_BOX_TYPE";
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: return "DELEGATE_TRAMP_INFO";
+	case MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO: return "GSHAREDVT_CONSTRAINED_CALL_INFO";
 	default:
 		return "<UNKNOWN RGCTX INFO TYPE>";
 	}
@@ -2814,7 +2825,7 @@ register_info (MonoClass *klass, int type_argc, gpointer data, MonoRgctxInfoType
 			break;
 	}
 
-	DEBUG (printf ("set slot %s, infos [%d] = %s, %s\n", mono_type_get_full_name (class), i, mono_rgctx_info_type_to_str (info_type), rgctx_info_to_str (info_type, data)));
+	DEBUG (printf ("set slot %s, infos [%d] = %s, %s\n", mono_type_get_full_name (klass), i, mono_rgctx_info_type_to_str (info_type), rgctx_info_to_str (info_type, data)));
 
 	/* Mark the slot as used in all parent classes (until we find
 	   a parent class which already has it marked used). */
@@ -2885,7 +2896,8 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 		return data1 == data2;
 	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
-	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
+	case MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO: {
 		MonoJumpInfoVirtMethod *info1 = (MonoJumpInfoVirtMethod *)data1;
 		MonoJumpInfoVirtMethod *info2 = (MonoJumpInfoVirtMethod *)data2;
 

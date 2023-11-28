@@ -231,6 +231,7 @@ typedef enum
     DWARF_WHERE_REG,            /* register saved in another register */
     DWARF_WHERE_EXPR,           /* register saved */
     DWARF_WHERE_VAL_EXPR,       /* register has computed value */
+    DWARF_WHERE_CFA,            /* register is set to the computed cfa value */
   }
 dwarf_where_t;
 
@@ -313,7 +314,7 @@ typedef struct dwarf_cursor
     void *as_arg;               /* argument to address-space callbacks */
     unw_addr_space_t as;        /* reference to per-address-space info */
 
-    unw_word_t cfa;     /* canonical frame address; aka frame-/stack-pointer */
+    unw_word_t cfa;     /* canonical frame address; aka frame-pointer */
     unw_word_t ip;              /* instruction pointer */
     unw_word_t args_size;       /* size of arguments */
     unw_word_t eh_args[UNW_TDEP_NUM_EH_REGS];
@@ -421,7 +422,7 @@ extern int dwarf_search_unwind_table (unw_addr_space_t as,
                                       int need_unwind_info, void *arg);
 
 extern int dwarf_find_unwind_table (struct elf_dyn_info *edi, unw_addr_space_t as,
-                                    char *path, unw_word_t segbase, unw_word_t mapoff,
+                                    const char *path, unw_word_t segbase, unw_word_t mapoff,
                                     unw_word_t ip);
 extern void dwarf_put_unwind_info (unw_addr_space_t as,
                                    unw_proc_info_t *pi, void *arg);

@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    static class IntMultiply
+    public static class IntMultiply
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint UInt32_MultiplyWithUInt32MaxValue(uint value)
@@ -257,7 +258,8 @@ namespace CodeGenTests
 
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (UInt32_MultiplyWithUInt32MaxValue(1) != UInt32.MaxValue)
                 return 0;

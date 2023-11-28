@@ -87,7 +87,9 @@ internal class ChromeProvider : WasmHostProvider
 
         _logger.LogInformation($"{messagePrefix} launching proxy for {con_str}");
 
-        _debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id);
+        var options = new ProxyOptions();
+        options.JustMyCode = true;
+        _debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id, options: options);
         TestHarnessProxy.RegisterNewProxy(Id, _debuggerProxy);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
@@ -168,11 +170,9 @@ internal class ChromeProvider : WasmHostProvider
     private static string GetInitParms(int port, string lang="en-US")
     {
         string str = $"--headless --disable-gpu --lang={lang} --incognito --remote-debugging-port={port}";
-        if (File.Exists("/.dockerenv"))
-        {
-            Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");
+        // `/.dockerenv` - is to check if this is running in a codespace
+        if (DebuggerTestBase.IsRunningInContainer)
             str = "--no-sandbox " + str;
-        }
         return str;
     }
 }

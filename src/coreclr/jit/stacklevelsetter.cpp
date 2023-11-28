@@ -137,19 +137,16 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(bndsChk->gtThrowKind, block);
         }
         break;
+
         case GT_INDEX_ADDR:
         case GT_ARR_ELEM:
-        case GT_ARR_INDEX:
-        {
             SetThrowHelperBlock(SCK_RNGCHK_FAIL, block);
-        }
-        break;
+            break;
 
         case GT_CKFINITE:
-        {
             SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
-        }
-        break;
+            break;
+
         default: // Other opers can target throw only due to overflow.
             break;
     }

@@ -2368,7 +2368,7 @@ namespace System.Configuration
             }
         }
 
-        private bool CopyConfigDeclarationsRecursive(
+        private static bool CopyConfigDeclarationsRecursive(
             SectionUpdates declarationUpdates, XmlUtil xmlUtil, XmlUtilWriter utilWriter, string group,
             int parentLinePosition, int parentIndent)
         {

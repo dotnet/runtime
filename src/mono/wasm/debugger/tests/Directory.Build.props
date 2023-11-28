@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+     <LibrariesConfiguration>$(RuntimeConfiguration)</LibrariesConfiguration>
+  </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
   <Import Project="$(MSBuildThisFileDirectory)..\..\build\WasmApp.InTree.props" />
   <PropertyGroup>

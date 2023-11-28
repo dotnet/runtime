@@ -8,12 +8,11 @@ using Xunit;
 public class Runtime_80239
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Unsafe.SkipInit(out Vector3 test);
         test.X = 500.0f;
         Consume(test);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

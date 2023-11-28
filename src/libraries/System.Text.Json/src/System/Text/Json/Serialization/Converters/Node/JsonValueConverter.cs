@@ -6,9 +6,9 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverter : JsonConverter<JsonValue>
+    internal sealed class JsonValueConverter : JsonConverter<JsonValue?>
     {
-        public override void Write(Utf8JsonWriter writer, JsonValue value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, JsonValue? value, JsonSerializerOptions options)
         {
             if (value is null)
             {
@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             JsonElement element = JsonElement.ParseValue(ref reader);
-            JsonValue value = new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options.GetNodeOptions());
+            JsonValue value = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options.GetNodeOptions());
             return value;
         }
     }

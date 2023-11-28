@@ -33,10 +33,10 @@ function set_env_vars()
         export SDK_HAS_WORKLOAD_INSTALLED=false
     fi
 
-    if [ "x$TEST_USING_WEBCIL" = "xtrue" ]; then
-        export USE_WEBCIL_FOR_TESTS=true
-    else
+    if [ "x$TEST_USING_WEBCIL" = "xfalse" ]; then
         export USE_WEBCIL_FOR_TESTS=false
+    else
+        export USE_WEBCIL_FOR_TESTS=true
     fi
 
     local _SDK_DIR=

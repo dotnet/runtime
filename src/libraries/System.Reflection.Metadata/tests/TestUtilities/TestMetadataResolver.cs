@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata.Tests
                 }
             }
 
-            Assert.True(false, "Cannot find test type:" + type);
+            Assert.Fail("Cannot find test type:" + type);
             return default(TypeDefinitionHandle);
         }
     }

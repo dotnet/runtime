@@ -25,10 +25,10 @@ namespace ILCompiler
         private readonly FeatureSwitchHashtable _hashtable;
         private readonly ILProvider _nestedILProvider;
 
-        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
+        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
+            _hashtable = new FeatureSwitchHashtable(logger, switchValues, globalSubstitutions);
         }
 
         private BodySubstitution GetSubstitution(MethodDesc method)
@@ -289,7 +289,21 @@ namespace ILCompiler
                         if (delta >= 0 && delta < ehRegion.TryLength)
                         {
                             if (ehRegion.Kind == ILExceptionRegionKind.Filter)
+                            {
                                 offsetsToVisit.Push(ehRegion.FilterOffset);
+
+                                // Filter must end with endfilter, so ensure we don't accidentally remove it.
+                                // ECMA-335 dictates that filter block starts at FilterOffset and ends at HandlerOffset.
+                                int expectedEndfilterLocation = ehRegion.HandlerOffset - 2;
+                                bool isValidFilter = expectedEndfilterLocation >= 0
+                                    && (flags[expectedEndfilterLocation] & OpcodeFlags.InstructionStart) != 0
+                                    && methodBytes[expectedEndfilterLocation] == (byte)ILOpcode.prefix1
+                                    && methodBytes[expectedEndfilterLocation + 1] == unchecked((byte)ILOpcode.endfilter);
+                                if (isValidFilter)
+                                {
+                                    flags[expectedEndfilterLocation] |= OpcodeFlags.VisibleBasicBlockStart | OpcodeFlags.Mark;
+                                }
+                            }
 
                             offsetsToVisit.Push(ehRegion.HandlerOffset);
 
@@ -875,13 +889,15 @@ namespace ILCompiler
 
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
-            internal readonly Dictionary<string, bool> _switchValues;
+            internal readonly IReadOnlyDictionary<string, bool> _switchValues;
             private readonly Logger _logger;
+            private readonly BodyAndFieldSubstitutions _globalSubstitutions;
 
-            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
+            public FeatureSwitchHashtable(Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
             {
                 _logger = logger;
                 _switchValues = switchValues;
+                _globalSubstitutions = globalSubstitutions;
             }
 
             protected override bool CompareKeyToValue(EcmaModule key, AssemblyFeatureInfo value) => key == value.Module;
@@ -891,7 +907,7 @@ namespace ILCompiler
 
             protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
             {
-                return new AssemblyFeatureInfo(key, _logger, _switchValues);
+                return new AssemblyFeatureInfo(key, _logger, _switchValues, _globalSubstitutions);
             }
         }
 
@@ -899,11 +915,11 @@ namespace ILCompiler
         {
             public EcmaModule Module { get; }
 
-            public Dictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
-            public Dictionary<FieldDesc, object> FieldSubstitutions { get; }
+            public IReadOnlyDictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
+            public IReadOnlyDictionary<FieldDesc, object> FieldSubstitutions { get; }
             public Dictionary<string, string> InlineableResourceStrings { get; }
 
-            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, BodyAndFieldSubstitutions globalSubstitutions)
             {
                 Module = module;
 
@@ -931,7 +947,13 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
+                        BodyAndFieldSubstitutions substitutions = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
+
+                        // Also apply any global substitutions
+                        // Note we allow these to overwrite substitutions in the assembly
+                        substitutions.AppendFrom(globalSubstitutions);
+
+                        (BodySubstitutions, FieldSubstitutions) = (substitutions.BodySubstitutions, substitutions.FieldSubstitutions);
                     }
                     else if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName))
                     {

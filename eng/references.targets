@@ -43,16 +43,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- An opt-in target to trim out private assemblies from the ref assembly ReferencePath. -->
-  <Target Name="TrimOutPrivateAssembliesFromReferencePath"
-          Condition="'$(CompileUsingReferenceAssemblies)' == 'true' and '$(TrimOutPrivateAssembliesFromReferencePath)' == 'true'"
-          AfterTargets="FindReferenceAssembliesForReferences">
-    <ItemGroup>
-      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)"
-                                      Condition="$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
           AfterTargets="FindReferenceAssembliesForReferences"
           Condition="'$(CompileUsingReferenceAssemblies)' != 'true' and '@(_coreLibProjectReference)' != ''">

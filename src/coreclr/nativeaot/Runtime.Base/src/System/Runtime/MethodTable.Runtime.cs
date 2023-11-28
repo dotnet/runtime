@@ -11,84 +11,28 @@ namespace Internal.Runtime
     // Extensions to MethodTable that are specific to the use in Runtime.Base.
     internal unsafe partial struct MethodTable
     {
-#pragma warning disable CA1822
+#if !INPLACE_RUNTIME
         internal MethodTable* GetArrayEEType()
         {
-#if INPLACE_RUNTIME
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
-#else
-            fixed (MethodTable* pThis = &this)
-            {
-                void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
-                return ((delegate* <MethodTable*>)pGetArrayEEType)();
-            }
-#endif
+            MethodTable* pThis = (MethodTable*)Unsafe.Pointer(ref this);
+            void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(pThis, ClassLibFunctionId.GetSystemArrayEEType);
+            return ((delegate* <MethodTable*>)pGetArrayEEType)();
         }
 
         internal Exception GetClasslibException(ExceptionIDs id)
         {
-#if INPLACE_RUNTIME
-            return RuntimeExceptionHelpers.GetRuntimeException(id);
-#else
             if (IsParameterizedType)
             {
                 return RelatedParameterType->GetClasslibException(id);
             }
 
-            return EH.GetClasslibExceptionFromEEType(id, GetAssociatedModuleAddress());
-#endif
+            return EH.GetClasslibExceptionFromEEType(id, (MethodTable*)Unsafe.AsPointer(ref this));
         }
-#pragma warning restore CA1822
+#endif
 
         internal IntPtr GetClasslibFunction(ClassLibFunctionId id)
         {
             return (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
-        }
-
-        /// <summary>
-        /// Return true if type is good for simple casting : canonical, no generic variance
-        /// </summary>
-        internal bool SimpleCasting()
-        {
-            return (_uFlags & (uint)EETypeFlags.ComplexCastingMask) == (uint)EETypeKind.CanonicalEEType;
-        }
-
-        /// <summary>
-        /// Return true if both types are good for simple casting: canonical, no related type via IAT, no generic variance
-        /// </summary>
-        internal static bool BothSimpleCasting(MethodTable* pThis, MethodTable* pOther)
-        {
-            return ((pThis->_uFlags | pOther->_uFlags) & (uint)EETypeFlags.ComplexCastingMask) == 0;
-        }
-
-        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
-        {
-            if (mt1 == mt2)
-                return true;
-
-            return mt1->IsEquivalentTo(mt2);
-        }
-
-        internal bool IsEquivalentTo(MethodTable* pOtherEEType)
-        {
-            fixed (MethodTable* pThis = &this)
-            {
-                if (pThis == pOtherEEType)
-                    return true;
-
-                MethodTable* pThisEEType = pThis;
-
-                if (pThisEEType == pOtherEEType)
-                    return true;
-
-                if (pThisEEType->IsParameterizedType && pOtherEEType->IsParameterizedType)
-                {
-                    return pThisEEType->RelatedParameterType->IsEquivalentTo(pOtherEEType->RelatedParameterType) &&
-                        pThisEEType->ParameterizedTypeShape == pOtherEEType->ParameterizedTypeShape;
-                }
-            }
-
-            return false;
         }
     }
 
@@ -103,11 +47,13 @@ namespace Internal.Runtime
             return (pEEType->NonArrayBaseType == null) && !pEEType->IsInterface;
         }
 
-        // Returns true if the passed in MethodTable is the MethodTable for System.Array.
-        // The binder sets a special CorElementType for this well known type
-        internal static unsafe bool IsSystemArray(MethodTable* pEEType)
+        // Returns true if the passed in MethodTable is the MethodTable for System.Array or System.Object.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool IsValidArrayBaseType(MethodTable* pEEType)
         {
-            return (pEEType->ElementType == EETypeElementType.SystemArray);
+            EETypeElementType elementType = pEEType->ElementType;
+            return elementType == EETypeElementType.SystemArray
+                || (elementType == EETypeElementType.Class && pEEType->NonArrayBaseType == null);
         }
     }
 }

@@ -21,9 +21,9 @@ namespace System.Reflection.Emit.Tests
         };
 
         private static readonly Type s_comVisibleType = typeof(ComVisibleAttribute);
-        private static readonly Type s_guideType = typeof(GuidAttribute);
+        private static readonly Type s_guidType = typeof(GuidAttribute);
         private static readonly (ConstructorInfo con, object[] args) s_comVisiblePair = (s_comVisibleType.GetConstructor(new Type[] { typeof(bool) }), new object[] { true });
-        private static readonly (ConstructorInfo con, object[] args) s_guidPair = (s_guideType.GetConstructor(new Type[] { typeof(string) }), new object[] { "9ED54F84-A89D-4fcd-A854-44251E925F09" });
+        private static readonly (ConstructorInfo con, object[] args) s_guidPair = (s_guidType.GetConstructor(new Type[] { typeof(string) }), new object[] { "9ED54F84-A89D-4fcd-A854-44251E925F09" });
 
         private static AssemblyName PopulateAssemblyName()
         {
@@ -42,10 +42,10 @@ namespace System.Reflection.Emit.Tests
             {
                 WriteAssemblyToDisk(assemblyName, Type.EmptyTypes, file.Path, _attributes, _attributes);
 
-                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
-                AssemblyTools.AssertAssemblyNameAndModule(assemblyName, assemblyFromDisk.GetName(), moduleFromDisk);
+                AssemblySaveTools.AssertAssemblyNameAndModule(assemblyName, assemblyFromDisk.GetName(), moduleFromDisk);
                 ValidateAttributes(assemblyFromDisk.GetCustomAttributesData());
                 ValidateAttributes(moduleFromDisk.GetCustomAttributesData());
             }
@@ -61,7 +61,7 @@ namespace System.Reflection.Emit.Tests
                 WriteAssemblyToDisk(PopulateAssemblyName(), types, file.Path, typeAttributes: _attributes,
                     methodAttributes: _attributes, fieldAttributes: _attributes);
 
-                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
 
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();
                 Type[] typesFromDisk = moduleFromDisk.GetTypes();
@@ -75,9 +75,9 @@ namespace System.Reflection.Emit.Tests
                     MethodInfo[] methodsFromDisk = typeFromDisk.IsValueType ? typeFromDisk.GetMethods(BindingFlags.DeclaredOnly) : typeFromDisk.GetMethods();
                     FieldInfo[] fieldsFromDisk = typeFromDisk.GetFields();
 
-                    AssemblyTools.AssertTypeProperties(sourceType, typeFromDisk);
-                    AssemblyTools.AssertMethods(sourceType.IsValueType ? sourceType.GetMethods(BindingFlags.DeclaredOnly) : sourceType.GetMethods(), methodsFromDisk);
-                    AssemblyTools.AssertFields(sourceType.GetFields(), fieldsFromDisk);
+                    AssemblySaveTools.AssertTypeProperties(sourceType, typeFromDisk);
+                    AssemblySaveTools.AssertMethods(sourceType.IsValueType ? sourceType.GetMethods(BindingFlags.DeclaredOnly) : sourceType.GetMethods(), methodsFromDisk);
+                    AssemblySaveTools.AssertFields(sourceType.GetFields(), fieldsFromDisk);
                     ValidateAttributes(typeFromDisk.GetCustomAttributesData());
 
                     for (int j = 0; j < methodsFromDisk.Length; j++)
@@ -109,7 +109,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     Assert.Equal(s_guidPair.con.MetadataToken, attribute.Constructor.MetadataToken);
                     Assert.Equal(s_guidPair.args[0].GetType().FullName, attribute.ConstructorArguments[0].ArgumentType.FullName);
-                    Assert.Equal(attribute.AttributeType.Name, s_guideType.Name);
+                    Assert.Equal(attribute.AttributeType.Name, s_guidType.Name);
                     Assert.Equal(s_guidPair.args[0], attribute.ConstructorArguments[0].Value);
                 }
             }
@@ -119,7 +119,7 @@ namespace System.Reflection.Emit.Tests
             List<CustomAttributeBuilder>? moduleAttributes = null, List<CustomAttributeBuilder>? typeAttributes = null,
             List<CustomAttributeBuilder>? methodAttributes = null, List<CustomAttributeBuilder>? fieldAttributes = null)
         {
-            AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(assemblyName, assemblyAttributes, typeof(string), out MethodInfo saveMethod);
+            AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(assemblyName, assemblyAttributes, typeof(string), out MethodInfo saveMethod);
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
             PopulateMembersForModule(mb, types, moduleAttributes, typeAttributes, methodAttributes, fieldAttributes);
             saveMethod.Invoke(assemblyBuilder, new object[] { fileLocation });
@@ -140,6 +140,7 @@ namespace System.Reflection.Emit.Tests
 
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly), methodAttributes);
                 DefineFieldsAndSetAttributes(fieldAttributes, type.GetFields(), tb);
+                tb.CreateType();
             }
         }
 
@@ -191,14 +192,15 @@ namespace System.Reflection.Emit.Tests
                                                               new CustomAttributeBuilder(typeof(SpecialNameAttribute).GetConstructor(Type.EmptyTypes), new object[] { })
                                                             };
 
-                AssemblyBuilder ab = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
                     PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 DefineFieldsAndSetAttributes(fieldAttributes.ToList(), type.GetFields(), tb);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
-                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();
                 Type testType = moduleFromDisk.GetTypes()[0];
                 IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
@@ -280,13 +282,14 @@ namespace System.Reflection.Emit.Tests
                         new CustomAttributeBuilder(marshalAsEnumCtor, new object[] { UnmanagedType.CustomMarshaler },
                                 new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalType")}, new object[] { typeof(EmptyTestClass).AssemblyQualifiedName })};
 
-                AssemblyBuilder ab = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.GetMethods(), parameterAttributes);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
-                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
                 IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
 
@@ -429,15 +432,16 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 Type type = typeof(StructWithFields);
-                AssemblyBuilder ab = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
                     PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 FieldInfo stringField = type.GetFields()[1];
                 FieldBuilder fb = tb.DefineField(stringField.Name, stringField.FieldType, stringField.Attributes);
                 fb.SetCustomAttribute(attribute);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
-                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 FieldInfo field = assemblyFromDisk.Modules.First().GetTypes()[0].GetFields()[0];
                 CustomAttributeData attributeFromDisk = field.GetCustomAttributesData()[0];
 
@@ -458,5 +462,52 @@ namespace System.Reflection.Emit.Tests
                 }
             }
         }
+
+        [Fact]
+        public void EnumBuilderSetCustomAttributesTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
+                    PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
+                EnumBuilder enumBuilder = ab.DefineDynamicModule("Module").DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
+
+                ConstructorInfo attributeConstructor = typeof(BoolAttribute).GetConstructor(new Type[] { typeof(bool) });
+                CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(attributeConstructor, new object[] { true });
+                enumBuilder.SetCustomAttribute(attributeBuilder);
+                enumBuilder.SetCustomAttribute(new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args));
+                enumBuilder.CreateTypeInfo();
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Type testEnum = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestEnum");
+
+                Assert.True(testEnum.IsEnum);
+                AssemblySaveTools.AssertTypeProperties(enumBuilder, testEnum);
+
+                CustomAttributeData[] attributes = testEnum.GetCustomAttributesData().ToArray();
+                if (attributes[0].AttributeType.Name == s_guidType.Name)
+                {
+                    AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[0]);
+                    AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[1]);
+                }
+                else
+                {
+                    AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[1]);
+                    AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[0]);
+                }
+
+            }
+        }
+        private void AssertEnumAttributes(string fullName, object value, CustomAttributeData testAttrbiute)
+        {
+            Assert.Equal(fullName, testAttrbiute.AttributeType.FullName);
+            Assert.Equal(value, testAttrbiute.ConstructorArguments[0].Value);
+        }
+    }
+
+    public class BoolAttribute : Attribute
+    {
+        private bool _b;
+        public BoolAttribute(bool myBool) { _b = myBool; }
     }
 }

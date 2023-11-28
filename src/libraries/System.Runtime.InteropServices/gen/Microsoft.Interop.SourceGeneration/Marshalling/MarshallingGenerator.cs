@@ -3,24 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    /// <summary>
-    /// Target framework identifier
-    /// </summary>
-    public enum TargetFramework
-    {
-        Unknown,
-        Framework,
-        Core,
-        Standard,
-        Net
-    }
-
     /// <summary>
     /// An enumeration describing how a <see cref="TypePositionInfo"/> should be represented in its corresponding native signature element (parameter, field, or return value).
     /// </summary>
@@ -69,18 +55,33 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
+    /// An enumeration describing if the provided <see cref="ByValueContentsMarshalKind" /> is supported and changes behavior from the default behavior.
+    /// </summary>
+    public enum ByValueMarshalKindSupport
+    {
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported and changes behavior from the default behavior.
+        /// </summary>
+        Supported,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is not supported.
+        /// </summary>
+        NotSupported,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not change behavior from the default in this scenario.
+        /// </summary>
+        Unnecessary,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not follow best practices.
+        /// </summary>
+        NotRecommended,
+    }
+
+    /// <summary>
     /// Interface for generation of marshalling code for P/Invoke stubs
     /// </summary>
     public interface IMarshallingGenerator
     {
-        /// <summary>
-        /// Determine if the generator is supported for the supplied version of the framework.
-        /// </summary>
-        /// <param name="target">The framework to target.</param>
-        /// <param name="version">The version of the framework.</param>
-        /// <returns>True if the marshaller is supported, otherwise false.</returns>
-        bool IsSupported(TargetFramework target, Version version);
-
         /// <summary>
         /// Get the native type syntax for <paramref name="info"/>
         /// </summary>
@@ -134,46 +135,13 @@ namespace Microsoft.Interop
         /// A supported marshal kind has a different behavior than the default behavior.
         /// </summary>
         /// <param name="marshalKind">The marshal kind.</param>
+        /// <param name="info">The TypePositionInfo of the parameter.</param>
         /// <param name="context">The marshalling context.</param>
-        /// <returns></returns>
-        bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
-    }
-
-
-    /// <summary>
-    /// Exception used to indicate marshalling isn't supported.
-    /// </summary>
-    public sealed class MarshallingNotSupportedException : Exception
-    {
-        /// <summary>
-        /// Construct a new <see cref="MarshallingNotSupportedException"/> instance.
-        /// </summary>
-        /// <param name="info"><see cref="Microsoft.Interop.TypePositionInfo"/> instance</param>
-        /// <param name="context"><see cref="Microsoft.Interop.StubCodeContext"/> instance</param>
-        public MarshallingNotSupportedException(TypePositionInfo info, StubCodeContext context)
-        {
-            TypePositionInfo = info;
-            StubCodeContext = context;
-        }
-
-        /// <summary>
-        /// Type that is being marshalled.
-        /// </summary>
-        public TypePositionInfo TypePositionInfo { get; private init; }
-
-        /// <summary>
-        /// Context in which the marshalling is taking place.
-        /// </summary>
-        public StubCodeContext StubCodeContext { get; private init; }
-
-        /// <summary>
-        /// [Optional] Specific reason marshalling of the supplied type isn't supported.
-        /// </summary>
-        public string? NotSupportedDetails { get; init; }
-
-        /// <summary>
-        /// [Optional] Properties to attach to any diagnostic emitted due to this exception.
-        /// </summary>
-        public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
+        /// <param name="diagnostic">
+        /// The diagnostic to report if the return value is not <see cref="ByValueMarshalKindSupport.Supported"/>.
+        /// It should be non-null if the value is not <see cref="ByValueMarshalKindSupport.Supported"/>
+        /// </param>
+        /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
+        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic);
     }
 }

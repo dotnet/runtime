@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -18,6 +19,7 @@ namespace System.Linq.Expressions.Compiler
         /// We take the read-only collection of Expression explicitly to avoid allocating memory (an array
         /// of types) on lookup of delegate types.
         /// </summary>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         internal static Type MakeCallSiteDelegate(ReadOnlyCollection<Expression> types, Type returnType)
         {
             lock (_DelegateCache)
@@ -52,6 +54,7 @@ namespace System.Linq.Expressions.Compiler
         /// We take the array of MetaObject explicitly to avoid allocating memory (an array of types) on
         /// lookup of delegate types.
         /// </summary>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         internal static Type MakeDeferredSiteDelegate(DynamicMetaObject[] args, Type returnType)
         {
             lock (_DelegateCache)
@@ -119,10 +122,13 @@ namespace System.Linq.Expressions.Compiler
                 const MethodImplAttributes implAttributes = MethodImplAttributes.Runtime | MethodImplAttributes.Managed;
                 const MethodAttributes invokeAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual;
 
+#pragma warning disable IL3050
+                // Suppress analyzer warnings since they don't currently support feature flags
                 TypeBuilder builder = AssemblyGen.DefineDelegateType("Delegate" + types.Length);
                 builder.DefineConstructor(ctorAttributes, CallingConventions.Standard, delegateCtorSignature).SetImplementationFlags(implAttributes);
                 builder.DefineMethod("Invoke", invokeAttributes, returnType, parameters).SetImplementationFlags(implAttributes);
                 return builder.CreateTypeInfo();
+#pragma warning restore IL3050
             }
             else
             {

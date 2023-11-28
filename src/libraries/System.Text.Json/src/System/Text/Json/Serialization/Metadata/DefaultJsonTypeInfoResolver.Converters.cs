@@ -28,6 +28,7 @@ namespace System.Text.Json.Serialization.Metadata
                 new EnumConverterFactory(),
                 new JsonNodeConverterFactory(),
                 new FSharpTypeConverterFactory(),
+                new MemoryConverterFactory(),
                 // IAsyncEnumerable takes precedence over IEnumerable.
                 new IAsyncEnumerableConverterFactory(),
                 // IEnumerable should always be second to last since they can convert any IEnumerable.
@@ -39,7 +40,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 26;
+            const int NumberOfSimpleConverters = 31;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -53,6 +54,7 @@ namespace System.Text.Json.Serialization.Metadata
 #if NETCOREAPP
             Add(JsonMetadataServices.DateOnlyConverter);
             Add(JsonMetadataServices.TimeOnlyConverter);
+            Add(JsonMetadataServices.HalfConverter);
 #endif
             Add(JsonMetadataServices.DoubleConverter);
             Add(JsonMetadataServices.DecimalConverter);
@@ -62,6 +64,8 @@ namespace System.Text.Json.Serialization.Metadata
             Add(JsonMetadataServices.Int64Converter);
             Add(JsonMetadataServices.JsonElementConverter);
             Add(JsonMetadataServices.JsonDocumentConverter);
+            Add(JsonMetadataServices.MemoryByteConverter);
+            Add(JsonMetadataServices.ReadOnlyMemoryByteConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
@@ -70,6 +74,10 @@ namespace System.Text.Json.Serialization.Metadata
             Add(JsonMetadataServices.UInt16Converter);
             Add(JsonMetadataServices.UInt32Converter);
             Add(JsonMetadataServices.UInt64Converter);
+#if NET7_0_OR_GREATER
+            Add(JsonMetadataServices.Int128Converter);
+            Add(JsonMetadataServices.UInt128Converter);
+#endif
             Add(JsonMetadataServices.UriConverter);
             Add(JsonMetadataServices.VersionConverter);
 
@@ -78,7 +86,7 @@ namespace System.Text.Json.Serialization.Metadata
             return converters;
 
             void Add(JsonConverter converter) =>
-                converters.Add(converter.TypeToConvert, converter);
+                converters.Add(converter.Type!, converter);
         }
 
         private static JsonConverter GetBuiltInConverter(Type typeToConvert)
@@ -121,7 +129,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal static JsonConverter? GetCustomConverterForMember(Type typeToConvert, MemberInfo memberInfo, JsonSerializerOptions options)
+        private static JsonConverter? GetCustomConverterForMember(Type typeToConvert, MemberInfo memberInfo, JsonSerializerOptions options)
         {
             Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
             Debug.Assert(typeToConvert != null);
@@ -154,7 +162,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Expand if factory converter & validate.
             converter = options.ExpandConverterFactory(converter, typeToConvert);
-            if (!converter.TypeToConvert.IsInSubtypeRelationshipWith(typeToConvert))
+            if (!converter.Type!.IsInSubtypeRelationshipWith(typeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }

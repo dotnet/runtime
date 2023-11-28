@@ -1,7 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using System.Diagnostics;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
@@ -15,18 +15,23 @@ namespace ILLink.Shared.TypeSystemProxy
 			Index = (ParameterIndex) parameter.Ordinal + (Method.HasImplicitThis () ? 1 : 0);
 		}
 
-		public partial ReferenceKind GetReferenceKind () =>
-			IsImplicitThis
-			? Method.Method.ContainingType.IsValueType
-				? ReferenceKind.Ref
-				: ReferenceKind.None
-			: Method.Method.Parameters[MetadataIndex].RefKind switch {
-				RefKind.Ref => ReferenceKind.Ref,
-				RefKind.In => ReferenceKind.In,
-				RefKind.Out => ReferenceKind.Out,
-				RefKind.None => ReferenceKind.None,
-				_ => throw new NotImplementedException ($"Unexpected RefKind found on parameter {GetDisplayName ()}")
-			};
+		public partial ReferenceKind GetReferenceKind ()
+		{
+			if (IsImplicitThis)
+				return Method.Method.ContainingType.IsValueType
+					? ReferenceKind.Ref
+					: ReferenceKind.None;
+
+			switch (Method.Method.Parameters[MetadataIndex].RefKind) {
+			case RefKind.Ref: return ReferenceKind.Ref;
+			case RefKind.In: return ReferenceKind.In;
+			case RefKind.Out: return ReferenceKind.Out;
+			case RefKind.None: return ReferenceKind.None;
+			default:
+				Debug.Fail ($"Unexpected RefKind {Method.Method.Parameters[MetadataIndex].RefKind} found on parameter {GetDisplayName ()}");
+				return ReferenceKind.None;
+			}
+		}
 
 		/// <summary>
 		/// Returns the IParameterSymbol representing the parameter. Returns null for the implicit this paramter.

@@ -8,12 +8,12 @@ namespace System.Collections.Frozen
     internal sealed class OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue> : OrdinalStringFrozenDictionary<TValue>
     {
         internal OrdinalStringFrozenDictionary_FullCaseInsensitive(
-            Dictionary<string, TValue> source,
             string[] keys,
+            TValue[] values,
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff)
-            : base(source, keys, comparer, minimumLength, maximumLengthDiff)
+            : base(keys, values, comparer, minimumLength, maximumLengthDiff)
         {
         }
 

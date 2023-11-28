@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Collections;
-using System.ComponentModel;
-using System.Xml.Serialization;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Threading;
+using System.Xml.Serialization;
 
 namespace System.Xml.Schema
 {
@@ -518,7 +518,7 @@ namespace System.Xml.Schema
 
         internal ArrayList ImportedNamespaces => _importedNamespaces ??= new ArrayList();
 
-        internal void GetExternalSchemasList(IList extList, XmlSchema schema)
+        internal static void GetExternalSchemasList(IList extList, XmlSchema schema)
         {
             Debug.Assert(extList != null && schema != null);
             if (extList.Contains(schema))

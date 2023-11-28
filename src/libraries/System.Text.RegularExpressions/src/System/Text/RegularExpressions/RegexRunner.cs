@@ -1,71 +1,111 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This RegexRunner class is a base class for source-generated regex extensibility
-// (and the old CompileToAssembly extensibility).  It's not intended to be used
-// by anything else.
-
-// Implementation notes:
-
-// It provides the driver code that call's the subclass's Scan
-// method for either scanning or direct execution.
-// It also maintains memory allocation for the backtracking stack,
-// the grouping stack and the longjump crawlstack, and provides
-// methods to push new subpattern match results into (or remove
-// backtracked results from) the Match instance.
-
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>
+    /// Base class for source-generated regex extensibility
+    /// (and the old CompileToAssembly extensibility).
+    /// It's not intended to be used by anything else.
+    /// </summary>
+    /// <remarks>
+    /// Provides the driver code that calls the subclass's Scan
+    /// method for either scanning or direct execution.
+    /// Also maintains memory allocation for the backtracking stack,
+    /// the grouping stack and the longjump crawlstack, and provides
+    /// methods to push new subpattern match results into (or remove
+    /// backtracked results from) the Match instance.
+    /// </remarks>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class RegexRunner
     {
-        protected internal int runtextbeg;         // Beginning of text to search. We now always use a sliced span of the input
-                                                   // from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
-                                                   // for CompiledToAssembly scenario which works over the original input.
-        protected internal int runtextend;         // End of text to search. Because we now pass in a sliced span of the input into Scan,
-                                                   // the runtextend will always match the length of that passed in span except for CompileToAssembly
-                                                   // scenario, which still works over the original input.
-        protected internal int runtextstart;       // starting point for search
+        /// <summary>Index of the first character to search</summary>
+        /// <remarks>
+        /// We now always use a sliced span of the input
+        /// from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
+        /// for CompiledToAssembly scenario which works over the original input.
+        /// </remarks>
+        protected internal int runtextbeg;
 
-        protected internal string? runtext;        // text to search
-        protected internal int runtextpos;         // current position in text
+        /// <summary>Index just past the last character to search</summary>
+        /// <remarks>
+        /// Because we now pass in a sliced span of the input into Scan,
+        /// the runtextend will always match the length of that passed in span except for CompileToAssembly
+        /// scenario, which still works over the original input.
+        /// </remarks>
+        protected internal int runtextend;
 
-        protected internal int[]? runtrack;        // The backtracking stack.  Opcodes use this to store data regarding
-        protected internal int runtrackpos;        // what they have matched and where to backtrack to.  Each "frame" on
-                                                   // the stack takes the form of [CodePosition Data1 Data2...], where
-                                                   // CodePosition is the position of the current opcode and
-                                                   // the data values are all optional.  The CodePosition can be negative, and
-                                                   // these values (also called "back2") are used by the BranchMark family of opcodes
-                                                   // to indicate whether they are backtracking after a successful or failed
-                                                   // match.
-                                                   // When we backtrack, we pop the CodePosition off the stack, set the current
-                                                   // instruction pointer to that code position, and mark the opcode
-                                                   // with a backtracking flag ("Back").  Each opcode then knows how to
-                                                   // handle its own data.
+        /// <summary>Index of the starting character for the search.</summary>
+        /// <remarks>
+        /// The differs from <see cref="runtextbeg"/> in that lookbehinds will be able to see text before
+        /// <see cref="runtextstart"/> but not before <see cref="runtextbeg"/>.
+        /// </remarks>
+        protected internal int runtextstart;
 
-        protected internal int[]? runstack;        // This stack is used to track text positions across different opcodes.
-        protected internal int runstackpos;        // For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
-                                                   // pair. SetMark records the text position before we match a*b.  Then
-                                                   // CaptureMark uses that position to figure out where the capture starts.
-                                                   // Opcodes which push onto this stack are always paired with other opcodes
-                                                   // which will pop the value from it later.  A successful match should mean
-                                                   // that this stack is empty.
+        /// <summary>Text to search. May be null if the input was supplied as a span.</summary>
+        protected internal string? runtext;
 
-        protected internal int[]? runcrawl;        // The crawl stack is used to keep track of captures.  Every time a group
-        protected internal int runcrawlpos;        // has a capture, we push its group number onto the runcrawl stack.  In
-                                                   // the case of a balanced match, we push BOTH groups onto the stack.
+        /// <summary>Current position in text</summary>
+        protected internal int runtextpos;
 
-        protected internal int runtrackcount;      // count of states that may do backtracking
+        /// <summary>Backtracking stack</summary>
+        /// <remarks>
+        /// Opcodes use this to store data regarding
+        /// what they have matched and where to backtrack to.  Each "frame" on
+        /// the stack takes the form of [CodePosition Data1 Data2...], where
+        /// CodePosition is the position of the current opcode and
+        /// the data values are all optional.  The CodePosition can be negative, and
+        /// these values (also called "back2") are used by the BranchMark family of opcodes
+        /// to indicate whether they are backtracking after a successful or failed
+        /// match.
+        /// When we backtrack, we pop the CodePosition off the stack, set the current
+        /// instruction pointer to that code position, and mark the opcode
+        /// with a backtracking flag ("Back").  Each opcode then knows how to
+        /// handle its own data.
+        /// </remarks>
+        protected internal int[]? runtrack;
+        /// <summary>Backtracking stack position</summary>
+        protected internal int runtrackpos;
 
-        protected internal Match? runmatch;        // result object
-        protected internal Regex? runregex;        // regex object
+        /// <summary>Utility stack</summary>
+        /// <remarks>
+        /// This stack is used to track text positions across different opcodes.
+        /// For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
+        /// pair. SetMark records the text position before we match a*b.  Then
+        /// CaptureMark uses that position to figure out where the capture starts.
+        /// Opcodes which push onto this stack are always paired with other opcodes
+        /// which will pop the value from it later.  A successful match should mean
+        /// that this stack is empty.
+        /// </remarks>
+        protected internal int[]? runstack;
+        /// <summary>Utility stack position</summary>
+        protected internal int runstackpos;
 
-        private protected RegexRunnerMode _mode;   // the mode in which the runner is currently operating
+        /// <summary>Crawl stack</summary>
+        /// <remarks>
+        /// Every time a group has a capture, we push its group number onto the runcrawl stack.
+        /// In the case of a balanced match, we push BOTH groups onto the stack.
+        /// </remarks>
+        protected internal int[]? runcrawl;
+        /// <summary>Crawl stack position</summary>
+        protected internal int runcrawlpos;
 
-        private int _timeout;                      // timeout in milliseconds
+        /// <summary>Count of states that may do backtracking</summary>
+        protected internal int runtrackcount;
+
+        /// <summary>Result object</summary>
+        protected internal Match? runmatch;
+        /// <summary>Regex object</summary>
+        protected internal Regex? runregex;
+
+        /// <summary>Mode in which the runner is operating</summary>
+        private protected RegexRunnerMode _mode;
+
+        /// <summary>Timeout in milliseconds</summary>
+        private int _timeout;
         private bool _checkTimeout;
         private long _timeoutOccursAt;
 

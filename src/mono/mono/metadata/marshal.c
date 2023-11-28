@@ -205,11 +205,11 @@ get_method_image (MonoMethod *method)
 // must be extern "C".
 #ifndef DISABLE_JIT
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), #func))
 #else
 /* No need for the name/C symbol */
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, NULL, (sig), (no_wrapper), NULL))
 #endif
 
 MonoMethodSignature*
@@ -2092,7 +2092,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	GHashTable *cache;
 	gpointer cache_key = NULL;
 	char *name;
-	MonoClass *target_class = NULL;
 	gboolean closed_over_null = FALSE;
 	MonoGenericContext *ctx = NULL;
 	MonoGenericContainer *container = NULL;
@@ -2111,28 +2110,8 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	 * call is made to that method with the first delegate argument as this. This is
 	 * a non-documented .NET feature.
 	 */
-	if (callvirt) {
+	if (callvirt)
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
-		if (target_method->is_inflated) {
-			ERROR_DECL (error);
-			MonoType *target_type;
-
-			g_assert (method->signature->hasthis);
-			target_type = mono_class_inflate_generic_type_checked (method->signature->params [0],
-				mono_method_get_context (method), error);
-			mono_error_assert_ok (error); /* FIXME don't swallow the error */
-			target_class = mono_class_from_mono_type_internal (target_type);
-		} else {
-			target_class = target_method->klass;
-		}
-
-		closed_over_null = sig->param_count == mono_method_signature_internal (target_method)->param_count;
-
-		/*
-		 * We don't want to use target_method's signature because it can be freed early
-		 */
-		target_method_sig = mono_method_signature_internal (target_method);
-	}
 
 	if (static_method_with_first_arg_bound) {
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND;
@@ -2150,7 +2129,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	/*
 	 * For generic delegates, create a generic wrapper, and return an instance to help AOT.
 	 */
-	if (method->is_inflated && subtype == WRAPPER_SUBTYPE_NONE) {
+	if (method->is_inflated && (subtype == WRAPPER_SUBTYPE_NONE || subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL)) {
 		ctx = &((MonoMethodInflated*)method)->context;
 		method = ((MonoMethodInflated*)method)->declaring;
 
@@ -2162,11 +2141,23 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		invoke_sig = sig = mono_signature_no_pinvoke (method);
 	}
 
+	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
+		/*
+		 * We don't want to use target_method's signature because it can be freed early
+		 */
+		target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
+
+		closed_over_null = sig->param_count == target_method_sig->param_count;
+	}
+
 	/*
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_cache, mono_aligned_addr_hash, NULL);
+		if (callvirt)
+			cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_virtual_cache, mono_aligned_addr_hash, NULL);
+		else
+			cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
@@ -2241,7 +2232,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		/* FIXME: Other subtypes */
 		mb->mem_manager = m_method_get_mem_manager (method);
 
-	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, target_method_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
+	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, target_method_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, ctx, container);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
@@ -4082,7 +4073,10 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 
 	sig = mono_method_signature_internal (method);
 
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+	if (target_handle)
+		mb = mono_mb_new_dynamic (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+	else
+		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 
 	/*the target gchandle must be the first entry after size and the wrapper itself.*/
 	mono_mb_add_data (mb, target_handle);
@@ -4190,7 +4184,6 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 												 mb, csig, sig->param_count + 16,
 												 info, NULL);
 		} else {
-			get_marshal_cb ()->mb_set_dynamic (mb);
 			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 		}
 	}
@@ -4263,7 +4256,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		mspecs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
 		mono_method_get_marshal_info (method, mspecs);
 
-		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+		mb = mono_mb_new_dynamic (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 		csig = mono_metadata_signature_dup_full (image, sig);
 		csig->hasthis = 0;
 		csig->pinvoke = 1;
@@ -4286,7 +4279,6 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0, error);
 		mono_error_assert_ok (error);
 
-		get_marshal_cb ()->mb_set_dynamic (mb);
 		method = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 		mono_mb_free (mb);
 
@@ -4301,11 +4293,10 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 	}
 
 	sig = mono_method_signature_internal (method);
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+	mb = mono_mb_new_dynamic (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 
 	param_count = sig->param_count + sig->hasthis;
 	get_marshal_cb ()->emit_vtfixup_ftnptr (mb, method, param_count, type);
-	get_marshal_cb ()->mb_set_dynamic (mb);
 
 	method = mono_mb_create (mb, sig, param_count, NULL);
 	mono_mb_free (mb);
@@ -5103,6 +5094,95 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	return res;
 }
 
+/*
+ * mono_marshal_get_unsafe_accessor_wrapper:
+ *
+ *   Return a wrapper for an extern [UnsafeAccessor] method that accesses a member of some class.
+ *
+ *   member_name can be NULL in which case the name of the member is the same as the name of the accessor method
+ *
+ *   If the kind is Field or StaticField the accessor_method must have a signature like:
+ *       ref FieldType AccessorMethod (TargetClassOrStruct @this);
+ *   or
+ *       ref FieldType AccessorMethod (ref TargetStruct @this);
+ *
+ *   If the kind is Method or StaticMethod, the accessor_method must have a signature like:
+ *       ReturnType AccessorMethod (TargetClassOrStruct @this[, FirstArg arg1[, SecondArg arg2[, ...]]])
+ *
+ *   where the member method is
+ *
+ *       class TargetClassOrStruct {
+ *           ReturnType MemberName ([FirstArg arg1[, SecondArg arg2[, ...]]]);
+ *       }
+ *
+ *
+ *  or
+ *       ReturnType AccessorMethod (ref TargetStruct @this[, FirstArg arg1[, SecondArg arg2[, ...]]])
+ *
+ *   where the member method is
+ *
+ *       struct TargetStruct {
+ *           ReturnType MemberName ([FirstArg arg1[, SecondArg arg2[, ...]]]);
+ *       }
+ *
+ *
+ *  If the kind is Constructor, the accessor_method must have a signature like:
+ *       TargetClass AccessorMethod ([FirstArg arg1[, SecondArg arg2[, ...]]]);
+ */
+MonoMethod *
+mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
+	WrapperInfo *info;
+
+	if (member_name == NULL && kind != MONO_UNSAFE_ACCESSOR_CTOR)
+		member_name = accessor_method->name;
+	
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = NULL;
+		g_assert_not_reached ();
+	} else {
+		cache = get_cache (&mono_method_get_wrapper_cache (accessor_method)->unsafe_accessor_cache, mono_aligned_addr_hash, NULL);
+		if ((res = mono_marshal_find_in_cache (cache, accessor_method)))
+			return res;
+	}
+
+	sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
+	sig->pinvoke = 0;
+
+	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
+
+	get_marshal_cb ()->mb_skip_visibility (mb);
+
+	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_UNSAFE_ACCESSOR);
+	info->d.unsafe_accessor.method = accessor_method;
+	info->d.unsafe_accessor.kind = kind;
+	info->d.unsafe_accessor.member_name = member_name;
+
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache_full (cache, accessor_method, mb, sig, sig->param_count + 16, info, NULL);
+		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
+	} else {
+		res = mono_mb_create_and_cache_full (cache, accessor_method, mb, sig, sig->param_count + 16, info, NULL);
+	}
+	mono_mb_free (mb);
+
+	/* mono_method_print_code (res); */
+
+	return res;
+}
+
 #ifdef HOST_WIN32
 
 static void*
@@ -5493,7 +5573,7 @@ mono_get_addr_compiled_method (gpointer arg, MonoDelegate *del)
 	if (m_type_is_byref (invoke_sig->params [0])) {
 		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
 	} else {
-		MonoObject *object = (MonoObject*)arg;
+		MonoObject *object = *(MonoObject**)arg;
 		arg_class = object->vtable->klass;
 	}
 
@@ -5684,21 +5764,18 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR)
 		info->native_size = TARGET_SIZEOF_VOID_P;
 
+	gboolean align_size = TRUE;
 	if (layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
 		info->native_size = MAX (native_size, info->native_size);
-		/*
-		 * If the provided Size is equal or larger than the calculated size, and there
-		 * was no Pack attribute, we set min_align to 1 to avoid native_size being increased
-		 */
 		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 			if (native_size && native_size == info->native_size && m_class_get_packing_size (klass) == 0)
-				min_align = 1;
+				align_size = FALSE;
 			else
 				min_align = MIN (min_align, packing);
 		}
 	}
 
-	if (info->native_size & (min_align - 1)) {
+	if (info->native_size & (min_align - 1) && align_size) {
 		info->native_size += min_align - 1;
 		info->native_size &= ~(min_align - 1);
 	}
@@ -6384,6 +6461,7 @@ void
 mono_wrapper_caches_free (MonoWrapperCaches *cache)
 {
 	free_hash (cache->delegate_invoke_cache);
+	free_hash (cache->delegate_invoke_virtual_cache);
 	free_hash (cache->delegate_begin_invoke_cache);
 	free_hash (cache->delegate_end_invoke_cache);
 	free_hash (cache->delegate_bound_static_invoke_cache);
@@ -6406,4 +6484,5 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->cominterop_invoke_cache);
 	free_hash (cache->cominterop_wrapper_cache);
 	free_hash (cache->thunk_invoke_cache);
+	free_hash (cache->unsafe_accessor_cache);
 }

@@ -16,6 +16,7 @@ namespace System.Runtime.InteropServices
         /// Items should not be added or removed from the <see cref="List{T}"/> while the <see cref="Span{T}"/> is in use.
         /// </summary>
         /// <param name="list">The list to get the data view over.</param>
+        /// <typeparam name="T">The type of the elements in the list.</typeparam>
         public static Span<T> AsSpan<T>(List<T>? list)
             => list is null ? default : new Span<T>(list._items, 0, list._size);
 
@@ -24,6 +25,8 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
         /// <param name="key">The key used for lookup.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
         /// <remarks>
         /// Items should not be added or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.
         /// The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
@@ -37,6 +40,8 @@ namespace System.Runtime.InteropServices
         /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
         /// <param name="key">The key used for lookup.</param>
         /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
         /// <remarks>Items should not be added to or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull
             => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
@@ -46,6 +51,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="list">The list to set the count of.</param>
         /// <param name="count">The value to set the list's count to.</param>
+        /// <typeparam name="T">The type of the elements in the list.</typeparam>
         /// <exception cref="NullReferenceException">
         /// <paramref name="list"/> is <see langword="null"/>.
         /// </exception>

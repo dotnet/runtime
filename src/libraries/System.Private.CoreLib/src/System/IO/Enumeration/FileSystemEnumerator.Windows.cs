@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace System.IO.Enumeration
 {
-    /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="Enumeration.FileSystemEnumerable{T}" />.</summary>
+    /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="FileSystemEnumerable{T}" />.</summary>
     public abstract unsafe partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         private const int StandardBufferSize = 4096;
@@ -203,7 +203,7 @@ namespace System.IO.Enumeration
                 || ContinueOnError(error);
         }
 
-        /// <summary>Advances the enumerator to the next item of the <see cref="Enumeration.FileSystemEnumerator{T}" />.</summary>
+        /// <summary>Advances the enumerator to the next item of the <see cref="FileSystemEnumerator{T}" />.</summary>
         /// <returns><see langword="true" /> if the enumerator successfully advanced to the next item; <see langword="false" /> if the end of the enumerator has been passed.</returns>
         public bool MoveNext()
         {

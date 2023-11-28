@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Provides a builder for asynchronous methods that return <see cref="System.Threading.Tasks.Task{TResult}"/>.
+    /// Provides a builder for asynchronous methods that return <see cref="Task{TResult}"/>.
     /// This type is intended for compiler use only.
     /// </summary>
     /// <remarks>
@@ -36,8 +36,8 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (<see langword="Nothing" /> in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine) =>
             AsyncMethodBuilderCore.SetStateMachine(stateMachine, m_task);
 
@@ -65,7 +65,7 @@ namespace System.Runtime.CompilerServices
             }
             catch (Exception e)
             {
-                System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
+                Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
             }
         }
 
@@ -93,7 +93,9 @@ namespace System.Runtime.CompilerServices
             AwaitUnsafeOnCompleted(ref awaiter, box);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)] // workaround boxing allocations in Tier0: https://github.com/dotnet/runtime/issues/9120
+        // Tier0 codegen for this function may still allocate (while FullOpts won't).
+        // TODO: remove once https://github.com/dotnet/runtime/issues/90965 is implemented
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static void AwaitUnsafeOnCompleted<TAwaiter>(
             ref TAwaiter awaiter, IAsyncStateMachineBox box)
             where TAwaiter : ICriticalNotifyCompletion
@@ -109,7 +111,7 @@ namespace System.Runtime.CompilerServices
             else if ((null != (object?)default(TAwaiter)) && (awaiter is IConfiguredTaskAwaiter))
             {
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
+                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, (ta.m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0);
             }
             else if ((null != (object?)default(TAwaiter)) && (awaiter is IStateMachineBoxAwareAwaiter))
             {
@@ -126,7 +128,7 @@ namespace System.Runtime.CompilerServices
                     // exceptions well at that location in the state machine, especially if the exception may occur
                     // after the ValueTaskAwaiter already successfully hooked up the callback, in which case it's possible
                     // two different flows of execution could end up happening in the same async method call.
-                    System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
+                    Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
                 }
             }
             else
@@ -138,7 +140,7 @@ namespace System.Runtime.CompilerServices
                 }
                 catch (Exception e)
                 {
-                    System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
+                    Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
                 }
             }
         }
@@ -230,9 +232,9 @@ namespace System.Runtime.CompilerServices
             }
 
             // And if async debugging is enabled, track the task.
-            if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+            if (Threading.Tasks.Task.s_asyncDebuggingEnabled)
             {
-                System.Threading.Tasks.Task.AddToActiveTasks(box);
+                Threading.Tasks.Task.AddToActiveTasks(box);
             }
 
             return box;
@@ -333,7 +335,7 @@ namespace System.Runtime.CompilerServices
             {
                 get
                 {
-                    Debug.Assert(m_stateObject is null || m_stateObject is ExecutionContext, $"{nameof(m_stateObject)} must only be for ExecutionContext but contained {m_stateObject}.");
+                    Debug.Assert(m_stateObject is null or ExecutionContext, $"Expected {nameof(m_stateObject)} to be null or an ExecutionContext but was {(m_stateObject is object o ? o.GetType().ToString() : "(null)")}.");
                     return ref Unsafe.As<object?, ExecutionContext?>(ref m_stateObject);
                 }
             }
@@ -417,8 +419,8 @@ namespace System.Runtime.CompilerServices
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
         }
 
-        /// <summary>Gets the <see cref="System.Threading.Tasks.Task{TResult}"/> for this builder.</summary>
-        /// <returns>The <see cref="System.Threading.Tasks.Task{TResult}"/> representing the builder's asynchronous operation.</returns>
+        /// <summary>Gets the <see cref="Task{TResult}"/> for this builder.</summary>
+        /// <returns>The <see cref="Task{TResult}"/> representing the builder's asynchronous operation.</returns>
         public Task<TResult> Task
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -453,11 +455,11 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Completes the <see cref="System.Threading.Tasks.Task{TResult}"/> in the
-        /// <see cref="System.Threading.Tasks.TaskStatus">RanToCompletion</see> state with the specified result.
+        /// Completes the <see cref="Task{TResult}"/> in the
+        /// <see cref="TaskStatus">RanToCompletion</see> state with the specified result.
         /// </summary>
         /// <param name="result">The result to use to complete the task.</param>
-        /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
+        /// <exception cref="InvalidOperationException">The task has already completed.</exception>
         public void SetResult(TResult result)
         {
             // Get the currently stored task, which will be non-null if get_Task has already been accessed.
@@ -492,12 +494,12 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Completes the <see cref="System.Threading.Tasks.Task{TResult}"/> in the
-        /// <see cref="System.Threading.Tasks.TaskStatus">Faulted</see> state with the specified exception.
+        /// Completes the <see cref="Task{TResult}"/> in the
+        /// <see cref="TaskStatus">Faulted</see> state with the specified exception.
         /// </summary>
-        /// <param name="exception">The <see cref="System.Exception"/> to use to fault the task.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
+        /// <param name="exception">The <see cref="Exception"/> to use to fault the task.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="exception"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The task has already completed.</exception>
         public void SetException(Exception exception) => SetException(exception, ref m_task);
 
         internal static void SetException(Exception exception, ref Task<TResult>? taskField)

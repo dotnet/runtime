@@ -829,7 +829,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayTarget = _owningTarget as IDebuggerDisplay;
-                return $"Block=\"{(displayTarget != null ? displayTarget.Content : _owningTarget)}\"";
+                return $"Block = \"{(displayTarget != null ? displayTarget.Content : _owningTarget)}\"";
             }
         }
 

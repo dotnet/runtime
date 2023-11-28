@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly extern xunit.core {}
-.assembly refanytype1 { }
+.assembly ASSEMBLY_NAME { }
 .method public static int32 f()
 {
 ldc.i4 100

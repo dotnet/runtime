@@ -1,28 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-** Purpose: A circular-array implementation of a generic queue.
-**
-**
-=============================================================================*/
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    // A simple Queue of generic objects.  Internally it is implemented as a
-    // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
+    /// <summary>
+    /// Represents a first-in, first-out collection of objects.
+    /// </summary>
+    /// <remarks>
+    /// Implemented as a circular buffer, so <see cref="Enqueue(T)"/> and <see cref="Dequeue"/> are typically <c>O(1)</c>.
+    /// </remarks>
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Queue<T> : IEnumerable<T>,
-        System.Collections.ICollection,
+        ICollection,
         IReadOnlyCollection<T>
     {
         private T[] _array;
@@ -56,15 +52,15 @@ namespace System.Collections.Generic
             if (_size != _array.Length) _tail = _size;
         }
 
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        /// <summary>
+        /// Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _array.Length;
+
+        /// <inheritdoc cref="ICollection{T}"/>
+        bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot => this;
 
@@ -313,6 +309,7 @@ namespace System.Collections.Generic
         // must be >= _size.
         private void SetCapacity(int capacity)
         {
+            Debug.Assert(capacity >= _size);
             T[] newarray = new T[capacity];
             if (_size > 0)
             {
@@ -363,6 +360,22 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Sets the capacity of a <see cref="Queue{T}"/> object to the specified number of entries.
+        /// </summary>
+        /// <param name="capacity">The new capacity.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
+        public void TrimExcess(int capacity)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+
+            if (capacity == _array.Length)
+                return;
+
+            SetCapacity(capacity);
+        }
+
+        /// <summary>
         /// Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
@@ -406,7 +419,7 @@ namespace System.Collections.Generic
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
         public struct Enumerator : IEnumerator<T>,
-            System.Collections.IEnumerator
+            IEnumerator
         {
             private readonly Queue<T> _q;
             private readonly int _version;

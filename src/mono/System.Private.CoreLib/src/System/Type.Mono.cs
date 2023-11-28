@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -24,17 +24,6 @@ namespace System
         }
 
         internal virtual bool IsTypeBuilder() => false;
-
-        public bool IsInterface
-        {
-            get
-            {
-                if (this is RuntimeType rt)
-                    return RuntimeTypeHandle.IsInterface(rt);
-
-                return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-            }
-        }
 
         [RequiresUnreferencedCode("The type might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod

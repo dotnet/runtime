@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -27,16 +28,16 @@ namespace Microsoft.Interop
             _direction = direction;
         }
 
-        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
+        public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             if (info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo)
             {
-                return _direction switch
+                return ResolvedGenerator.Resolved(_direction switch
                 {
                     MarshalDirection.UnmanagedToManaged => new UnmanagedToManagedMarshaller(),
                     MarshalDirection.ManagedToUnmanaged => new ManagedToUnmanagedMarshaller(),
                     _ => throw new UnreachableException()
-                };
+                });
             }
             else
             {
@@ -51,7 +52,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
+                if (context.CurrentStage != StubCodeContext.Stage.NotifyForSuccessfulInvoke)
                 {
                     yield break;
                 }
@@ -59,19 +60,16 @@ namespace Microsoft.Interop
                 (string managedIdentifier, _) = context.GetIdentifiers(info);
 
                 // Marshal.ThrowExceptionForHR(<managed>);
-                yield return ExpressionStatement(
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
-                            IdentifierName("ThrowExceptionForHR")),
-                        ArgumentList(
-                            SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))));
+                yield return MethodInvocationStatement(
+                                TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                                IdentifierName("ThrowExceptionForHR"),
+                                Argument(IdentifierName(managedIdentifier)));
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
-            public bool IsSupported(TargetFramework target, Version version) => true;
-            public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
         }
 
@@ -82,7 +80,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
+                if (context.CurrentStage != StubCodeContext.Stage.NotifyForSuccessfulInvoke)
                 {
                     yield break;
                 }
@@ -107,8 +105,8 @@ namespace Microsoft.Interop
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
-            public bool IsSupported(TargetFramework target, Version version) => true;
-            public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
         }
     }

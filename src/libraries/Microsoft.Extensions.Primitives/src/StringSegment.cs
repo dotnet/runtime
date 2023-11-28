@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// An optimized representation of a substring.
     /// </summary>
+    [DebuggerDisplay("{Value}")]
     public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<string?>
     {
         /// <summary>

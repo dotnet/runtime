@@ -51,11 +51,11 @@ public class Program
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
 #if DEBUG
-        const int MinWarnings = 12000;
-        const int MaxWarnings = 20000;
+        const int MinWarnings = 2000;
+        const int MaxWarnings = 4000;
 #else
-        const int MinWarnings = 12000;
-        const int MaxWarnings = 13000;
+        const int MinWarnings = 3000;
+        const int MaxWarnings = 5000;
 #endif
         int count = 0;
         string line;
@@ -66,6 +66,29 @@ public class Program
                 count++;
             }
         }
+
+
+        if (count == 0)
+        {
+            // something is off, lets check the StandardError stream
+            int errorCount = 0;
+            string[] firstFiveErrors = new string[5];
+            while ((line = proc.StandardError.ReadLine()) != null)
+            {
+                if (line.Contains("error:"))
+                {
+                    if (errorCount < 5) firstFiveErrors[errorCount] = line;
+                    errorCount++;
+                }
+            }
+
+            if (errorCount > 0)
+            {
+                Console.Error.WriteLine($"llvm-dwarfdump failed. First five errors:{Environment.NewLine}{string.Join(Environment.NewLine, firstFiveErrors)}");
+                return 10;
+            }
+        }
+
         proc.WaitForExit();
         Console.WriteLine($"Found {count} warnings and errors");
         if (count is not (>= MinWarnings and <= MaxWarnings))

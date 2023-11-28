@@ -63,7 +63,7 @@ public class Runtime_57061
     static sbyte s_56;
     static S3 s_60;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         uint vr2 = default(uint);
         uint vr3;
@@ -97,8 +97,7 @@ public class Runtime_57061
 
             vr3 = vr3;
         }
-        
-        return 100;
+       
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

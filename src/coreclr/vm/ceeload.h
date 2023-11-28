@@ -67,9 +67,9 @@ class CodeVersionManager;
 class TieredCompilationManager;
 class JITInlineTrackingMap;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -78,21 +78,6 @@ class EnCEEClassData;
 #define PARAMMETHODS_HASH_BUCKETS 11
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
-
-// The native symbol reader dll name
-#if defined(HOST_AMD64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
-#elif defined(HOST_X86)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
-#elif defined(HOST_ARM)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
-#elif defined(HOST_ARM64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#elif defined(HOST_LOONGARCH64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
-#elif defined(HOST_RISCV64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.riscv64.dll")
-#endif
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
@@ -565,6 +550,7 @@ public:
         return NULL;
     };
 
+    const ReadyToRun_EnclosingTypeMap *m_pEnclosingTypeMap = &ReadyToRun_EnclosingTypeMap::EmptyInstance;
 
 #ifndef DACCESS_COMPILE
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of ThrowTypeLoadException in the DAC
@@ -677,10 +663,6 @@ private:
 
         // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
         COLLECTIBLE_MODULE          = 0x00000080,
-
-        // Caches metadata version
-        COMPUTED_IS_PRE_V4_ASSEMBLY = 0x00000100,
-        IS_PRE_V4_ASSEMBLY          = 0x00000200,
 
         //If attribute value has been cached before
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED   = 0x00000400,
@@ -953,10 +935,10 @@ protected:
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Holds a table of EnCEEClassData object for classes in this module that have been modified
     CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 private:
     void EnableEditAndContinue()
@@ -1079,9 +1061,6 @@ public:
     // Note that this may require calling into managed code (to resolve security policy).
     BOOL IsSymbolReadingEnabled(void);
 
-    BOOL IsPersistedObject(void *address);
-
-
     // Get the in-memory symbol stream for this module, if any.
     // If none, this will return null.  This is used by modules loaded in-memory (eg. from a byte-array)
     // and by dynamic modules.
@@ -1184,8 +1163,6 @@ public:
     // needed to create the array.  That way we dont need to load classes during
     // the class load, which avoids the need for a 'being loaded' list
     MethodTable* CreateArrayMethodTable(TypeHandle elemType, CorElementType kind, unsigned rank, class AllocMemTracker *pamTracker);
-
-    CHECK CheckStringRef(RVA rva);
 
     // Module/Assembly traversal
     Assembly * GetAssemblyIfLoaded(
@@ -1621,6 +1598,9 @@ public:
     // Self-initializing accessor for domain-independent IJW thunk heap
     LoaderHeap              *GetDllThunkHeap();
 
+    const ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
+    const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
+
 protected:
 
     void            BuildStaticsOffsets     (AllocMemTracker *pamTracker);
@@ -1710,20 +1690,10 @@ public:
         return (m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
 
-    //-----------------------------------------------------------------------------------------
-    // True iff metadata version string is 1.* or 2.*.
-    // @TODO (post-Dev10): All places that need this information should call this function
-    // instead of parsing the version themselves.
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsPreV4Assembly();
-
 protected:
-
 
     // initialize Crst controlling the Dynamic IL hashtables
     void                    InitializeDynamicILCrst();
-
-public:
 
 private:
 

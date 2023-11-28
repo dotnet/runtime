@@ -22,7 +22,7 @@ internal static partial class Interop
             string? lpClass,
             int dwOptions,
             int samDesired,
-            ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs,
+            ref Kernel32.SECURITY_ATTRIBUTES secAttrs,
             out SafeRegistryHandle hkResult,
             out int lpdwDisposition);
     }

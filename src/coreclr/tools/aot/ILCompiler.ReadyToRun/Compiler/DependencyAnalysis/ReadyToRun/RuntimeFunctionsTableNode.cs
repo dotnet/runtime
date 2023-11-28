@@ -126,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
                             runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
                         }
-                        runtimeFunctionsBuilder.EmitReloc(factory.RuntimeFunctionsGCInfo.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
+                        runtimeFunctionsBuilder.EmitReloc(factory.RuntimeFunctionsGCInfo, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
                         runtimeFunctionIndex++;
                     }
                 }

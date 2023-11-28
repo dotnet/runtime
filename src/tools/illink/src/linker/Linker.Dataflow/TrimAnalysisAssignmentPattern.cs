@@ -17,8 +17,8 @@ namespace Mono.Linker.Dataflow
 
 		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, MessageOrigin origin)
 		{
-			Source = source.Clone ();
-			Target = target.Clone ();
+			Source = source.DeepCopy ();
+			Target = target.DeepCopy ();
 			Origin = origin;
 		}
 

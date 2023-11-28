@@ -27,6 +27,8 @@ namespace System.Net.Security
         private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
         private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
 
+        private const int UnknownTlsFrameLength = int.MaxValue;              // frame too short to determine length
+
         private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
@@ -211,12 +213,12 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(status);
                 }
 
-                _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
-
                 ProtocolToken message;
                 do
                 {
-                    message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    ProcessTlsFrame(frameSize, out message);
+
                     if (message.Size > 0)
                     {
                         await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
@@ -245,7 +247,7 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            ProtocolToken message;
+            ProtocolToken message = default;
             bool handshakeCompleted = false;
 
             if (reAuthenticationData == null)
@@ -256,12 +258,12 @@ namespace System.Net.Security
                     throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
             }
-
             try
             {
                 if (!receiveFirst)
                 {
-                    message = NextMessage(reAuthenticationData);
+                    NextMessage(reAuthenticationData, out message);
+
                     if (message.Size > 0)
                     {
                         await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
@@ -289,7 +291,8 @@ namespace System.Net.Security
 
                 while (!handshakeCompleted)
                 {
-                    message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    ProcessTlsFrame(frameSize, out message);
 
                     ReadOnlyMemory<byte> payload = default;
                     if (message.Size > 0)
@@ -355,10 +358,11 @@ namespace System.Net.Security
 
         }
 
-        private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(CancellationToken cancellationToken)
+        // This method will make sure we have at least one full TLS frame buffered.
+        private async ValueTask<int> ReceiveHandshakeFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            int frameSize = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+            int frameSize = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, InitialHandshakeBufferSize).ConfigureAwait(false);
 
             if (frameSize == 0)
             {
@@ -430,11 +434,11 @@ namespace System.Net.Security
 
             }
 
-            return ProcessBlob(frameSize);
+            return frameSize;
         }
 
         // Calls crypto on received data. No IO inside.
-        private ProtocolToken ProcessBlob(int frameSize)
+        private void ProcessTlsFrame(int frameSize, out ProtocolToken message)
         {
             int chunkSize = frameSize;
 
@@ -467,18 +471,18 @@ namespace System.Net.Security
                 _buffer.DiscardEncrypted(frameSize);
             }
 
-            return NextMessage(availableData.Slice(0, chunkSize));
+            NextMessage(availableData.Slice(0, chunkSize), out message);
         }
 
         //
         //  This is to reset auth state on remote side.
         //  If this write succeeds we will allow auth retrying.
         //
-        private void SendAuthResetSignal(ProtocolToken? message, ExceptionDispatchInfo exception)
+        private void SendAuthResetSignal(ReadOnlySpan<byte> alert, ExceptionDispatchInfo exception)
         {
             SetException(exception.SourceException);
 
-            if (message == null || message.Size == 0)
+            if (alert.Length == 0)
             {
                 //
                 // We don't have an alert to send so cannot retry and fail prematurely.
@@ -486,7 +490,7 @@ namespace System.Net.Security
                 exception.Throw();
             }
 
-            InnerStream.Write(message.Payload!, 0, message.Size);
+            InnerStream.Write(alert);
 
             exception.Throw();
         }
@@ -499,7 +503,7 @@ namespace System.Net.Security
         //
         // - Returns false if failed to verify the Remote Cert
         //
-        private bool CompleteHandshake(ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        private bool CompleteHandshake(ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             ProcessHandshakeSuccess();
 
@@ -512,13 +516,6 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
-            {
-                // We may select client cert but it may not be used.
-                // This is primarily an issue on Windows with credential caching.
-                _selectedClientCertificate = null;
-            }
-
 #if TARGET_ANDROID
             // On Android, the remote certificate verification can be invoked from Java TrustManager's callback
             // during the handshake process. If that has occurred, we shouldn't run the validation again and
@@ -527,7 +524,7 @@ namespace System.Net.Security
             // The Java TrustManager callback is called only when the peer has a certificate. It's possible that
             // the peer didn't provide any certificate (for example when the peer is the client) and the validation
             // result hasn't been set. In that case we still need to run the verification at this point.
-            if (TryGetRemoteCertificateValidationResult(out sslPolicyErrors, out chainStatus, out alertToken, out bool isValid))
+            if (TryGetRemoteCertificateValidationResult(out sslPolicyErrors, out chainStatus, ref alertToken, out bool isValid))
             {
                 _handshakeCompleted = isValid;
                 return isValid;
@@ -546,23 +543,23 @@ namespace System.Net.Security
 
         private void CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            ProtocolToken? alertToken = null;
+            ProtocolToken alertToken = default;
             if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
                 if (sslAuthenticationOptions!.CertValidationDelegate != null)
                 {
                     // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
                 }
                 else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
                 {
                     // We failed only because of chain and we have some insight.
-                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
                 }
                 else
                 {
                     // Simple add sslPolicyErrors as crude info.
-                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
                 }
             }
         }
@@ -695,38 +692,27 @@ namespace System.Net.Security
 
         private bool HaveFullTlsFrame(out int frameSize)
         {
-            if (_buffer.EncryptedLength < TlsFrameHelper.HeaderSize)
-            {
-                frameSize = int.MaxValue;
-                return false;
-            }
-
             frameSize = GetFrameSize(_buffer.EncryptedReadOnlySpan);
             return _buffer.EncryptedLength >= frameSize;
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
-        private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
+        private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken, int estimatedSize)
             where TIOAdapter : IReadWriteAdapter
         {
-            int frameSize;
-            if (HaveFullTlsFrame(out frameSize))
+            if (HaveFullTlsFrame(out int frameSize))
             {
                 return frameSize;
             }
 
-            if (frameSize != int.MaxValue)
-            {
-                // make sure we have space for the whole frame
-                _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
-            }
-            else
-            {
-                // move existing data to the beginning of the buffer (they will
-                // be couple of bytes only, otherwise we would have entire
-                // header and know exact size)
-                _buffer.EnsureAvailableSpace(_buffer.Capacity - _buffer.EncryptedLength);
-            }
+            await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+
+            // If we don't have enough data to determine the frame size, use the provided estimate
+            // (e.g. a full TLS frame for reads, and a somewhat shorter frame for handshake / renegotiation).
+            // If we do know the frame size, ensure we have space for the whole frame.
+            _buffer.EnsureAvailableSpace(frameSize == UnknownTlsFrameLength ?
+                estimatedSize :
+                frameSize - _buffer.EncryptedLength);
 
             while (_buffer.EncryptedLength < frameSize)
             {
@@ -802,6 +788,7 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
@@ -815,11 +802,12 @@ namespace System.Net.Security
             try
             {
                 int processedLength = 0;
+                int nextTlsFrameLength = UnknownTlsFrameLength;
 
                 if (_buffer.DecryptedLength != 0)
                 {
                     processedLength = CopyDecryptedData(buffer);
-                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out _))
+                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out nextTlsFrameLength))
                     {
                         // We either filled whole buffer or used all buffered frames.
                         return processedLength;
@@ -828,32 +816,19 @@ namespace System.Net.Security
                     buffer = buffer.Slice(processedLength);
                 }
 
-                if (_receivedEOF)
+                if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength)
                 {
+                    // there should be no frames waiting for processing
                     Debug.Assert(_buffer.EncryptedLength == 0);
                     // We received EOF during previous read but had buffered data to return.
                     return 0;
                 }
 
-                if (buffer.Length == 0 && _buffer.ActiveLength == 0)
-                {
-                    // User requested a zero-byte read, and we have no data available in the buffer for processing.
-                    // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
-                    // for reduced memory consumption when data is not immediately available.
-                    // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
-                    // until data is actually available from the underlying stream.
-                    // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
-                    // complete immediately and won't save any memory, but will still function correctly.
-                    await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
-                }
-
                 Debug.Assert(_buffer.DecryptedLength == 0);
-
-                _buffer.EnsureAvailableSpace(ReadBufferSize - _buffer.ActiveLength);
 
                 while (true)
                 {
-                    int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
                         _receivedEOF = true;
@@ -883,17 +858,16 @@ namespace System.Net.Security
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
                             await ReplyOnReAuthenticationAsync<TIOAdapter>(extraBuffer, cancellationToken).ConfigureAwait(false);
-                            // Loop on read.
-                            continue;
                         }
-
-                        if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
+                        else if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
                         {
                             _receivedEOF = true;
                             break;
                         }
-
-                        throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
+                        else
+                        {
+                            throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
+                        }
                     }
 
                     if (_buffer.DecryptedLength > 0)
@@ -1005,6 +979,11 @@ namespace System.Net.Security
         // Returns TLS Frame size including header size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
+            if (buffer.Length < TlsFrameHelper.HeaderSize)
+            {
+                return UnknownTlsFrameLength;
+            }
+
             if (!TlsFrameHelper.TryGetFrameHeader(buffer, ref _lastFrame.Header))
             {
                 throw new IOException(SR.net_ssl_io_frame);

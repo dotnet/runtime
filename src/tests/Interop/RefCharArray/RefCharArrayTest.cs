@@ -6,6 +6,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 public class Test_RefCharArrayTest
 {
@@ -247,7 +248,8 @@ public class Test_RefCharArrayTest
     #endregion
 
     
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool bresult = true;
 

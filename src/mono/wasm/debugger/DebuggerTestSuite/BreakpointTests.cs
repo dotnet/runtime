@@ -837,9 +837,9 @@ namespace DebuggerTests
         [Theory]
         [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1089, 1005, 1003, 1007)]
         [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1090, 1049, 1047, 1051)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsync>d__3>", 37, 1018, 1016, 1020)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "DefaultInterfaceMethod.EvaluateAsync", 1097, 1018, 1016, 1020)]
         [InlineData("IDefaultInterface", "DefaultMethodStatic", "EvaluateStatic", "DefaultInterfaceMethod.EvaluateStatic", 1126, 1024, 1022, 1026)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsyncStatic>d__5>", 37, 1033, 1031, 1035)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "DefaultInterfaceMethod.EvaluateAsyncStatic", 1131, 1033, 1031, 1035)]
         public async Task BreakInDefaultInterfaceMethod(
             string dimClassName, string dimName, string entryMethod,  string prevFrameInDim, int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine)
         {

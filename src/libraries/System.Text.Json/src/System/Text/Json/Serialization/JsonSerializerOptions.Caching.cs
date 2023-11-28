@@ -8,8 +8,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -19,12 +19,19 @@ namespace System.Text.Json
         /// Encapsulates all cached metadata referenced by the current <see cref="JsonSerializerOptions" /> instance.
         /// Context can be shared across multiple equivalent options instances.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal CachingContext CacheContext
         {
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
+                return _cachingContext ?? GetOrCreate();
+
+                CachingContext GetOrCreate()
+                {
+                    CachingContext ctx = TrackedCachingContexts.GetOrCreate(this);
+                    return Interlocked.CompareExchange(ref _cachingContext, ctx, null) ?? ctx;
+                }
             }
         }
 
@@ -178,27 +185,13 @@ namespace System.Text.Json
         }
 
         // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo ObjectTypeInfo
         {
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _objectTypeInfo ??= GetObjectTypeInfo(this);
-
-                static JsonTypeInfo GetObjectTypeInfo(JsonSerializerOptions options)
-                {
-                    JsonTypeInfo? typeInfo = options.GetTypeInfoInternal(JsonTypeInfo.ObjectType, ensureNotNull: null);
-                    if (typeInfo is null)
-                    {
-                        // If the user-supplied resolver does not provide a JsonTypeInfo<object>,
-                        // use a placeholder value to drive root-level boxed value serialization.
-                        var converter = new ObjectConverterSlim();
-                        typeInfo = new JsonTypeInfo<object>(converter, options);
-                        typeInfo.EnsureConfigured();
-                    }
-
-                    return typeInfo;
-                }
+                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
             }
         }
 

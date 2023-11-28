@@ -9,6 +9,13 @@ namespace System.Text.Json.Serialization.Metadata
     public static partial class JsonMetadataServices
     {
         public static System.Text.Json.Serialization.JsonConverter<System.DateOnly> DateOnlyConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Half> HalfConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.TimeOnly> TimeOnlyConverter { get { throw null; } }
+
+#if NET7_0_OR_GREATER
+        public static System.Text.Json.Serialization.JsonConverter<System.Int128> Int128Converter { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Serialization.JsonConverter<System.UInt128> UInt128Converter { get { throw null; } }
+#endif
     }
 }

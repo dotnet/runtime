@@ -25,7 +25,7 @@ namespace System.Threading.Tasks
     /// <para>
     /// <see cref="Task{TResult}"/> instances may be created in a variety of ways. The most common approach is by
     /// using the task's <see cref="Factory"/> property to retrieve a <see
-    /// cref="System.Threading.Tasks.TaskFactory{TResult}"/> instance that can be used to create tasks for several
+    /// cref="TaskFactory{TResult}"/> instance that can be used to create tasks for several
     /// purposes. For example, to create a <see cref="Task{TResult}"/> that runs a function, the factory's StartNew
     /// method may be used:
     /// <code>
@@ -45,12 +45,12 @@ namespace System.Threading.Tasks
     /// schedule it for execution. For performance reasons, the StartNew method should be the
     /// preferred mechanism for creating and scheduling computational tasks, but for scenarios where creation
     /// and scheduling must be separated, the constructors may be used, and the task's
-    /// <see cref="System.Threading.Tasks.Task.Start()">Start</see>
+    /// <see cref="Task.Start()">Start</see>
     /// method may then be used to schedule the task for execution at a later time.
     /// </para>
     /// <para>
     /// All members of <see cref="Task{TResult}"/>, except for
-    /// <see cref="System.Threading.Tasks.Task.Dispose()">Dispose</see>, are thread-safe
+    /// <see cref="Task.Dispose()">Dispose</see>, are thread-safe
     /// and may be used from multiple threads concurrently.
     /// </para>
     /// </remarks>
@@ -112,7 +112,7 @@ namespace System.Threading.Tasks
         /// The delegate that represents the code to execute in the task. When the function has completed,
         /// the task's <see cref="Result"/> property will be set to return the result value of the function.
         /// </param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
         public Task(Func<TResult> function)
@@ -130,10 +130,10 @@ namespace System.Threading.Tasks
         /// the task's <see cref="Result"/> property will be set to return the result value of the function.
         /// </param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to be assigned to this task.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task(Func<TResult> function, CancellationToken cancellationToken)
@@ -150,18 +150,18 @@ namespace System.Threading.Tasks
         /// the task's <see cref="Result"/> property will be set to return the result value of the function.
         /// </param>
         /// <param name="creationOptions">
-        /// The <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions</see> used to
+        /// The <see cref="TaskCreationOptions">TaskCreationOptions</see> used to
         /// customize the task's behavior.
         /// </param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="creationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskCreationOptions"/>.
+        /// cref="TaskCreationOptions"/>.
         /// </exception>
         public Task(Func<TResult> function, TaskCreationOptions creationOptions)
-            : this(function, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, InternalTaskOptions.None, null)
+            : this(function, InternalCurrentIfAttached(creationOptions), default, creationOptions, InternalTaskOptions.None, null)
         {
         }
 
@@ -174,21 +174,21 @@ namespace System.Threading.Tasks
         /// </param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that will be assigned to the new task.</param>
         /// <param name="creationOptions">
-        /// The <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions</see> used to
+        /// The <see cref="TaskCreationOptions">TaskCreationOptions</see> used to
         /// customize the task's behavior.
         /// </param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="creationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskCreationOptions"/>.
+        /// cref="TaskCreationOptions"/>.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task(Func<TResult> function, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
-            : this(function, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
+            : this(function, InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
         }
 
@@ -200,7 +200,7 @@ namespace System.Threading.Tasks
         /// the task's <see cref="Result"/> property will be set to return the result value of the function.
         /// </param>
         /// <param name="state">An object representing data to be used by the action.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
         public Task(Func<object?, TResult> function, object? state)
@@ -218,10 +218,10 @@ namespace System.Threading.Tasks
         /// </param>
         /// <param name="state">An object representing data to be used by the function.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to be assigned to the new task.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task(Func<object?, TResult> function, object? state, CancellationToken cancellationToken)
@@ -239,18 +239,18 @@ namespace System.Threading.Tasks
         /// </param>
         /// <param name="state">An object representing data to be used by the function.</param>
         /// <param name="creationOptions">
-        /// The <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions</see> used to
+        /// The <see cref="TaskCreationOptions">TaskCreationOptions</see> used to
         /// customize the task's behavior.
         /// </param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="creationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskCreationOptions"/>.
+        /// cref="TaskCreationOptions"/>.
         /// </exception>
         public Task(Func<object?, TResult> function, object? state, TaskCreationOptions creationOptions)
-            : this(function, state, Task.InternalCurrentIfAttached(creationOptions), default,
+            : this(function, state, InternalCurrentIfAttached(creationOptions), default,
                     creationOptions, InternalTaskOptions.None, null)
         {
         }
@@ -266,21 +266,21 @@ namespace System.Threading.Tasks
         /// <param name="state">An object representing data to be used by the function.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to be assigned to the new task.</param>
         /// <param name="creationOptions">
-        /// The <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions</see> used to
+        /// The <see cref="TaskCreationOptions">TaskCreationOptions</see> used to
         /// customize the task's behavior.
         /// </param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="function"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="creationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskCreationOptions"/>.
+        /// cref="TaskCreationOptions"/>.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task(Func<object?, TResult> function, object? state, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
-            : this(function, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken,
+            : this(function, state, InternalCurrentIfAttached(creationOptions), cancellationToken,
                     creationOptions, InternalTaskOptions.None, null)
         {
         }
@@ -481,7 +481,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <remarks>
         /// The factory returned from <see cref="Factory"/> is a default instance
-        /// of <see cref="System.Threading.Tasks.TaskFactory{TResult}"/>, as would result from using
+        /// of <see cref="TaskFactory{TResult}"/>, as would result from using
         /// the default constructor on the factory type.
         /// </remarks>
         public static new TaskFactory<TResult> Factory =>
@@ -512,21 +512,41 @@ namespace System.Threading.Tasks
 
         #region Await Support
 
-        /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
+        /// <summary>Gets an awaiter used to await this <see cref="Task{TResult}"/>.</summary>
         /// <returns>An awaiter instance.</returns>
         public new TaskAwaiter<TResult> GetAwaiter()
         {
             return new TaskAwaiter<TResult>(this);
         }
 
-        /// <summary>Configures an awaiter used to await this <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
+        /// <summary>Configures an awaiter used to await this <see cref="Task{TResult}"/>.</summary>
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <returns>An object used to await this task.</returns>
         public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext)
         {
-            return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext);
+            return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+        }
+
+        /// <summary>Configures an awaiter used to await this <see cref="Task"/>.</summary>
+        /// <param name="options">Options used to configure how awaits on this task are performed.</param>
+        /// <returns>An object used to await this task.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(ConfigureAwaitOptions options)
+        {
+            if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
+                             ConfigureAwaitOptions.ForceYielding)) != 0)
+            {
+                ThrowForInvalidOptions(options);
+            }
+
+            return new ConfiguredTaskAwaitable<TResult>(this, options);
+
+            static void ThrowForInvalidOptions(ConfigureAwaitOptions options) =>
+                throw ((options & ConfigureAwaitOptions.SuppressThrowing) == 0 ?
+                    new ArgumentOutOfRangeException(nameof(options)) :
+                    new ArgumentOutOfRangeException(nameof(options), SR.TaskT_ConfigureAwait_InvalidOptions));
         }
 
         #endregion
@@ -614,7 +634,7 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction)
@@ -637,7 +657,7 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, CancellationToken cancellationToken)
@@ -662,10 +682,10 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, TaskScheduler scheduler)
@@ -683,9 +703,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <returns>A new continuation <see cref="Task"/>.</returns>
         /// <remarks>
@@ -694,12 +714,12 @@ namespace System.Threading.Tasks
         /// name="continuationOptions"/> parameter are not met, the continuation task will be canceled
         /// instead of scheduled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, TaskContinuationOptions continuationOptions)
         {
@@ -717,9 +737,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <param name="scheduler">
         /// The <see cref="TaskScheduler"/> to associate with the continuation task and to use for its
@@ -731,14 +751,14 @@ namespace System.Threading.Tasks
         /// completed. If the criteria specified through the <paramref name="continuationOptions"/> parameter
         /// are not met, the continuation task will be canceled instead of scheduled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, CancellationToken cancellationToken,
@@ -795,7 +815,7 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state)
@@ -819,7 +839,7 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state, CancellationToken cancellationToken)
@@ -845,10 +865,10 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state, TaskScheduler scheduler)
@@ -867,9 +887,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <returns>A new continuation <see cref="Task"/>.</returns>
         /// <remarks>
@@ -878,12 +898,12 @@ namespace System.Threading.Tasks
         /// name="continuationOptions"/> parameter are not met, the continuation task will be canceled
         /// instead of scheduled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state, TaskContinuationOptions continuationOptions)
         {
@@ -902,9 +922,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <param name="scheduler">
         /// The <see cref="TaskScheduler"/> to associate with the continuation task and to use for its
@@ -916,14 +936,14 @@ namespace System.Threading.Tasks
         /// completed. If the criteria specified through the <paramref name="continuationOptions"/> parameter
         /// are not met, the continuation task will be canceled instead of scheduled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state, CancellationToken cancellationToken,
@@ -983,12 +1003,12 @@ namespace System.Threading.Tasks
         /// task has completed, whether it completes due to running to completion successfully, faulting due
         /// to an unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction)
         {
-            return ContinueWith<TNewResult>(continuationFunction, TaskScheduler.Current, default, TaskContinuationOptions.None);
+            return ContinueWith(continuationFunction, TaskScheduler.Current, default, TaskContinuationOptions.None);
         }
 
 
@@ -1009,15 +1029,15 @@ namespace System.Threading.Tasks
         /// task has completed, whether it completes due to running to completion successfully, faulting due
         /// to an unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction, CancellationToken cancellationToken)
         {
-            return ContinueWith<TNewResult>(continuationFunction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
+            return ContinueWith(continuationFunction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -1039,15 +1059,15 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction, TaskScheduler scheduler)
         {
-            return ContinueWith<TNewResult>(continuationFunction, scheduler, default, TaskContinuationOptions.None);
+            return ContinueWith(continuationFunction, scheduler, default, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -1063,9 +1083,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <returns>A new continuation <see cref="Task{TNewResult}"/>.</returns>
         /// <remarks>
@@ -1080,16 +1100,16 @@ namespace System.Threading.Tasks
         /// from the ContinueWith call.
         /// </para>
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction, TaskContinuationOptions continuationOptions)
         {
-            return ContinueWith<TNewResult>(continuationFunction, TaskScheduler.Current, default, continuationOptions);
+            return ContinueWith(continuationFunction, TaskScheduler.Current, default, continuationOptions);
         }
 
         /// <summary>
@@ -1106,9 +1126,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <param name="scheduler">
         /// The <see cref="TaskScheduler"/> to associate with the continuation task and to use for its
@@ -1127,23 +1147,23 @@ namespace System.Threading.Tasks
         /// ContinueWith call.
         /// </para>
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction, CancellationToken cancellationToken,
             TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            return ContinueWith<TNewResult>(continuationFunction, scheduler, cancellationToken, continuationOptions);
+            return ContinueWith(continuationFunction, scheduler, cancellationToken, continuationOptions);
         }
 
         // Same as the above overload, just with a stack mark.
@@ -1197,12 +1217,12 @@ namespace System.Threading.Tasks
         /// task has completed, whether it completes due to running to completion successfully, faulting due
         /// to an unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object?, TNewResult> continuationFunction, object? state)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, TaskScheduler.Current, default, TaskContinuationOptions.None);
+            return ContinueWith(continuationFunction, state, TaskScheduler.Current, default, TaskContinuationOptions.None);
         }
 
 
@@ -1224,16 +1244,16 @@ namespace System.Threading.Tasks
         /// task has completed, whether it completes due to running to completion successfully, faulting due
         /// to an unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object?, TNewResult> continuationFunction, object? state,
             CancellationToken cancellationToken)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
+            return ContinueWith(continuationFunction, state, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -1256,16 +1276,16 @@ namespace System.Threading.Tasks
         /// completed, whether it completes due to running to completion successfully, faulting due to an
         /// unhandled exception, or exiting out early due to being canceled.
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object?, TNewResult> continuationFunction, object? state,
             TaskScheduler scheduler)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, scheduler, default, TaskContinuationOptions.None);
+            return ContinueWith(continuationFunction, state, scheduler, default, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -1282,9 +1302,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <returns>A new continuation <see cref="Task{TNewResult}"/>.</returns>
         /// <remarks>
@@ -1299,17 +1319,17 @@ namespace System.Threading.Tasks
         /// from the ContinueWith call.
         /// </para>
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object?, TNewResult> continuationFunction, object? state,
             TaskContinuationOptions continuationOptions)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, TaskScheduler.Current, default, continuationOptions);
+            return ContinueWith(continuationFunction, state, TaskScheduler.Current, default, continuationOptions);
         }
 
         /// <summary>
@@ -1327,9 +1347,9 @@ namespace System.Threading.Tasks
         /// <param name="continuationOptions">
         /// Options for when the continuation is scheduled and how it behaves. This includes criteria, such
         /// as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
+        /// cref="TaskContinuationOptions.OnlyOnCanceled">OnlyOnCanceled</see>, as
         /// well as execution options, such as <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
+        /// cref="TaskContinuationOptions.ExecuteSynchronously">ExecuteSynchronously</see>.
         /// </param>
         /// <param name="scheduler">
         /// The <see cref="TaskScheduler"/> to associate with the continuation task and to use for its
@@ -1348,23 +1368,23 @@ namespace System.Threading.Tasks
         /// ContinueWith call.
         /// </para>
         /// </remarks>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
-        /// cref="System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
+        /// cref="TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        /// <exception cref="System.ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
+        /// <exception cref="ObjectDisposedException">The provided <see cref="CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
         public Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object?, TNewResult> continuationFunction, object? state,
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            return ContinueWith<TNewResult>(continuationFunction, state, scheduler, cancellationToken, continuationOptions);
+            return ContinueWith(continuationFunction, state, scheduler, cancellationToken, continuationOptions);
         }
 
         // Same as the above overload, just with a stack mark.

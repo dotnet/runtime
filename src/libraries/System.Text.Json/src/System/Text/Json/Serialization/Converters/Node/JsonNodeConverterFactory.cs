@@ -30,8 +30,6 @@ namespace System.Text.Json.Serialization.Converters
             return JsonNodeConverter.Instance;
         }
 
-        public override bool CanConvert(Type typeToConvert) =>
-            typeToConvert != JsonTypeInfo.ObjectType &&
-            typeof(JsonNode).IsAssignableFrom(typeToConvert);
+        public override bool CanConvert(Type typeToConvert) => typeof(JsonNode).IsAssignableFrom(typeToConvert);
     }
 }

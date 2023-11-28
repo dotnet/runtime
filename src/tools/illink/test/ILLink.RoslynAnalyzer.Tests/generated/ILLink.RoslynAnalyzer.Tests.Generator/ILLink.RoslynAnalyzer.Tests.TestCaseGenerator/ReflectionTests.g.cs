@@ -74,6 +74,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task UnsafeAccessor ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task UsedViaReflectionIntegrationTest ()
 		{
 			return RunTest (allowMissingWarnings: true);
