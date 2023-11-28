@@ -11,6 +11,7 @@
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
