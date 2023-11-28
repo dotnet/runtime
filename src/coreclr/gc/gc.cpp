@@ -9469,7 +9469,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         {
             //modify the highest address so the span covered
             //is twice the previous one.
-            uint8_t* top = (uint8_t*)0 + Align (GCToOSInterface::GetVirtualMemoryLimit());
+            uint8_t* top = (uint8_t*)0 + Align (GCToOSInterface::GetVirtualMemoryMaxAddress());
             // On non-Windows systems, we get only an approximate value that can possibly be
             // slightly lower than the saved_g_highest_address.
             // In such case, we set the top to the saved_g_highest_address so that the
@@ -48095,8 +48095,9 @@ HRESULT GCHeap::Initialize()
         else
         {
             // If no hard_limit is configured the reservation size is min of 1/2 GetVirtualMemoryLimit() or max of 256Gb or 2x physical limit.
-            gc_heap::regions_range = min(GCToOSInterface::GetVirtualMemoryLimit()/2, max((size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem)));
+            gc_heap::regions_range = max((size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
         }
+        gc_heap::regions_range = min(gc_heap::regions_range, GCToOSInterface::GetVirtualMemoryLimit()/2);
         gc_heap::regions_range = align_on_page(gc_heap::regions_range);
     }
     GCConfig::SetGCRegionRange(gc_heap::regions_range);
