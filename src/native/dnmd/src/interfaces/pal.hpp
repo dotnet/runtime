@@ -70,7 +70,7 @@ namespace pal
             }
         }
 
-        StringConvert(A const* c) noexcept
+        explicit StringConvert(A const* c) noexcept
             : StringConvert(c, nullptr, 0)
         { }
 

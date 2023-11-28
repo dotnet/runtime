@@ -71,7 +71,7 @@ namespace
         return S_OK;
     }
 
-    struct TokenRangeFilter
+    struct TokenRangeFilter final
     {
         col_index_t FilterColumn;
         LPCWSTR Value;

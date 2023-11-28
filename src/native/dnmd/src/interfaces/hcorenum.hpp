@@ -1,7 +1,7 @@
 #ifndef _SRC_INTERFACES_HCORENUM_HPP_
 #define _SRC_INTERFACES_HCORENUM_HPP_
 
-#include "internal/dnmd_platform.hpp"
+#include <internal/dnmd_platform.hpp>
 
 enum class HCORENUMType : uint32_t
 {
@@ -87,7 +87,7 @@ private:
     HRESULT ResetDynamicEnum(_In_ uint32_t position) noexcept;
 };
 
-struct HCORENUMImplDeleter
+struct HCORENUMImplDeleter final
 {
     using pointer = HCORENUMImpl*;
     void operator()(HCORENUMImpl* mem)

@@ -432,16 +432,16 @@ static bool dump_table_rows(mdtable_t* table)
                         }
                         else if (sequence_points->records[k].kind == mdsp_HiddenSequencePointRecord)
                         {
-                            printf("hidden-sequence-point-record: %u", sequence_points->records[k].hidden_sequence_point.il_offset);
+                            printf("hidden-sequence-point-record: %u", sequence_points->records[k].hidden_sequence_point.rolling_il_offset);
                         }
                         else if (sequence_points->records[k].kind == mdsp_SequencePointRecord)
                         {
                             printf("sequence-point-record: (%u, %u, %" PRId64 ", %" PRId64 ", %" PRId64 ")",
-                                sequence_points->records[k].sequence_point.il_offset,
-                                sequence_points->records[k].sequence_point.num_lines,
+                                sequence_points->records[k].sequence_point.rolling_il_offset,
+                                sequence_points->records[k].sequence_point.delta_lines,
                                 sequence_points->records[k].sequence_point.delta_columns,
-                                sequence_points->records[k].sequence_point.start_line,
-                                sequence_points->records[k].sequence_point.start_column);
+                                sequence_points->records[k].sequence_point.rolling_start_line,
+                                sequence_points->records[k].sequence_point.rolling_start_column);
                         }
                         else
                         {

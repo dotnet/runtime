@@ -23,7 +23,7 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
 template<typename T>
-struct malloc_deleter_t
+struct malloc_deleter_t final
 {
     using pointer = T*;
     void operator()(T* mem)

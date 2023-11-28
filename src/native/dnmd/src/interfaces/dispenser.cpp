@@ -6,7 +6,7 @@
 #endif // !_MSC_VER
 #endif // DNMD_BUILD_SHARED
 
-#include "internal/dnmd_platform.hpp"
+#include <internal/dnmd_platform.hpp>
 #include "dnmd_interfaces.hpp"
 #include "controllingiunknown.hpp"
 #include "metadataimportro.hpp"

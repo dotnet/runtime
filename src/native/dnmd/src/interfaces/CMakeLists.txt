@@ -46,8 +46,8 @@ target_compile_definitions(dnmd_interfaces PRIVATE DNMD_BUILD_SHARED)
 
 target_link_libraries(dnmd_interfaces_static
   PUBLIC
-  dnmd::dnmd
-  dncp::dncp)
+  dncp::dncp
+  dnmd::dnmd)
 
 target_link_libraries(dnmd_interfaces
   PRIVATE

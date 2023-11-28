@@ -126,7 +126,7 @@ HRESULT pal::StringConvert<char, WCHAR>::ConvertWorker(char const* c, WCHAR* buf
 int strcat_s(char* dest, rsize_t destsz, char const* src)
 {
     assert(dest != nullptr && src != nullptr);
-    ::strcat(dest, src);
+    (void)::strcat(dest, src);
     return 0;
 }
 #endif // !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)

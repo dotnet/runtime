@@ -43,15 +43,15 @@ typedef struct md_sequence_points__
             } document;
             struct
             {
-                uint32_t il_offset;
-                uint32_t num_lines;
+                uint32_t rolling_il_offset;
+                uint32_t delta_lines;
                 int64_t delta_columns;
-                int64_t start_line;
-                int64_t start_column;
+                int64_t rolling_start_line;
+                int64_t rolling_start_column;
             } sequence_point;
             struct
             {
-                uint32_t il_offset;
+                uint32_t rolling_il_offset;
             } hidden_sequence_point;
         };
     } records[];
@@ -72,15 +72,13 @@ typedef struct md_local_constant_sig__
     {
         struct
         {
-            uint8_t type_code;
+            uint8_t type_code; // ELEMENT_TYPE_* - ECMA-335 II.23.1.16
         } primitive;
-
         struct
         {
-            uint8_t type_code;
-            mdToken enum_type;
+            uint8_t type_code; // ELEMENT_TYPE_* - ECMA-335 II.23.1.16
+            mdToken enum_type; // See ECMA-335 II.14.3 for Enum restrictions.
         } enum_constant;
-
         struct
         {
             enum
@@ -89,7 +87,7 @@ typedef struct md_local_constant_sig__
                 mdgc_Class,
                 mdgc_Object
             } kind;
-            mdToken type;
+            mdToken type; // TypeDefOrRefOrSpecEncoded - ECMA-335 II.23.2.8
         } general;
     };
 
@@ -97,11 +95,10 @@ typedef struct md_local_constant_sig__
     size_t value_len;
 
     uint32_t custom_modifier_count;
-    
     struct
     {
-        bool required;
-        mdToken type;
+        bool required; // Differentiate modreq vs modopt.
+        mdToken type; // Custom modifier - ECMA-335 II.23.2.7
     } custom_modifiers[];
 } md_local_constant_sig_t;
 md_blob_parse_result_t md_parse_local_constant_sig(mdhandle_t handle, uint8_t const* blob, size_t blob_len, md_local_constant_sig_t* local_constant_sig, size_t* buffer_len);

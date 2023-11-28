@@ -4,7 +4,7 @@
 #include "dnmd.h"
 #include <memory>
 
-struct mdhandle_deleter_t
+struct mdhandle_deleter_t final
 {
     using pointer = mdhandle_t;
     void operator()(mdhandle_t handle)

@@ -1,7 +1,7 @@
 #ifndef _SRC_INTERFACES_DNMDOWNER_HPP_
 #define _SRC_INTERFACES_DNMDOWNER_HPP_
 
-#include "internal/dnmd_platform.hpp"
+#include <internal/dnmd_platform.hpp>
 #include "tearoffbase.hpp"
 #include "controllingiunknown.hpp"
 
@@ -22,54 +22,47 @@ struct IDNMDOwner : IUnknown
 // We use a reference wrapper around the handle to allow the handle to be swapped out.
 // We plan to use swapping to implement table sorting as DNMD itself does not support
 // sorting tables or remapping tokens.
-// This is explitly a non-owning view as this view will be passed to other tear-offs of the same object,
+// This is explicitly a non-owning view as this view will be passed to other tear-offs of the same object,
 // which would otherwise lead to memory leaks.
 class mdhandle_view final
 {
 private:
     IDNMDOwner* _owner;
 public:
-    mdhandle_view(IDNMDOwner* owner)
+    explicit mdhandle_view(IDNMDOwner* owner)
         : _owner{ owner }
     {
     }
 
-    mdhandle_view(mdhandle_view const& other)
-        : _owner{ other._owner }
-    {
-    }
+    mdhandle_view(mdhandle_view const& other) = default;
 
     mdhandle_view(mdhandle_view&& other) = default;
 
-    mdhandle_view& operator=(mdhandle_view const& other)
-    {
-        _owner = other._owner;
-        return *this;
-    }
+    mdhandle_view& operator=(mdhandle_view const& other) = default;
 
     mdhandle_view& operator=(mdhandle_view&& other) = default;
 
-    mdhandle_t get()
+    mdhandle_t get() const
     {
         return _owner->MetaData();
     }
 
-    bool operator==(std::nullptr_t)
+    bool operator==(std::nullptr_t) const
     {
         return get() == nullptr;
     }
-    bool operator!=(std::nullptr_t)
+    bool operator!=(std::nullptr_t) const
     {
         return get() != nullptr;
     }
 };
 
-inline bool operator==(std::nullptr_t, mdhandle_view& view)
+inline bool operator==(std::nullptr_t, mdhandle_view const& view)
 {
     return view == nullptr;
 }
 
-inline bool operator!=(std::nullptr_t, mdhandle_view& view)
+inline bool operator!=(std::nullptr_t, mdhandle_view const& view)
 {
     return view != nullptr;
 }
@@ -101,7 +94,7 @@ public:
         , _cotaskmem_to_free{ std::move(cotaskmemMem) }
     { }
 
-    virtual ~DNMDOwner() = default;
+    virtual ~DNMDOwner() noexcept = default;
 
 public: // IDNMDOwner
     mdhandle_t MetaData() override

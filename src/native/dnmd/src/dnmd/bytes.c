@@ -257,28 +257,27 @@ bool decompress_i32(uint8_t const** data, size_t* data_len, int32_t* o)
     uint32_t unsigned_value;
     size_t original_data_len = *data_len;
     if (!decompress_u32(data, data_len, &unsigned_value))
-    {
         return false;
-    }
+
     bool is_signed = (unsigned_value & 1) != 0;
     unsigned_value >>= 1;
     if (is_signed)
     {
-        switch (*data_len - original_data_len)
+        switch (original_data_len - *data_len)
         {
             // Sign extend the value based on the number of bytes used.
             case 1:
-            {
                 unsigned_value |= SIGN_MASK_ONEBYTE;
-            }
+                break;
             case 2:
-            {
                 unsigned_value |= SIGN_MASK_TWOBYTE;
-            }
-            default:
-            {
+                break;
+            case 4:
                 unsigned_value |= SIGN_MASK_FOURBYTE;
-            }
+                break;
+            default:
+                assert(false);
+                return false;
         }
     }
     *o = (int32_t)unsigned_value;

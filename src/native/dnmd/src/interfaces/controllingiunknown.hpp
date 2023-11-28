@@ -10,7 +10,6 @@
 
 class ControllingIUnknown final : public IUnknown
 {
-private:
     std::atomic<int32_t> _refCount{ 1 };
     std::vector<std::unique_ptr<TearOffUnknown>> _tearOffs;
 public:
@@ -69,4 +68,4 @@ public: // IUnknown
     }
 };
 
-#endif
+#endif // _SRC_INTERFACES_CONTROLLINGIUNKNOWN_HPP_
