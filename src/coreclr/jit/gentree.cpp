@@ -4512,7 +4512,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_types type)
 {
     GenTree* addrComma = addr;
-    addr               = addr->gtEffectiveVal(/* commaOnly */ true);
+    addr               = addr->gtEffectiveVal();
 
     // These are "out" parameters on the call to genCreateAddrMode():
     bool rev;      // This will be true if the operands will need to be reversed. At this point we
@@ -6444,6 +6444,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_NOP:
             return false;
 
         // Standard unary operators
@@ -6473,7 +6474,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_RETURNTRAP:
-        case GT_NOP:
         case GT_RETURN:
         case GT_RETFILT:
         case GT_BSWAP:
@@ -8641,8 +8641,8 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
 #endif // TARGET_ARM64
 
     bool     isSignedDivide = OperIs(GT_DIV, GT_MOD);
-    GenTree* dividend       = gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
-    GenTree* divisor        = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+    GenTree* dividend       = gtGetOp1()->gtEffectiveVal();
+    GenTree* divisor        = gtGetOp2()->gtEffectiveVal();
 
 #if !defined(TARGET_64BIT)
     if (dividend->OperIs(GT_LONG))
@@ -8764,7 +8764,7 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
     {
         // Now set DONT_CSE on the GT_CNS_INT divisor, note that
         // with ValueNumbering we can have a non GT_CNS_INT divisor
-        GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+        GenTree* divisor = gtGetOp2()->gtEffectiveVal();
         if (divisor->OperIs(GT_CNS_INT))
         {
             divisor->gtFlags |= GTF_DONT_CSE;
@@ -10099,6 +10099,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_NOP:
             m_state = -1;
             return;
 
@@ -10142,7 +10143,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         // Unary operators with an optional operand
-        case GT_NOP:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -14011,12 +14011,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
 {
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
-
-    // Walk through any wrapping nop.
-    if ((tree->gtOper == GT_NOP) && (tree->gtType == TYP_I_IMPL))
-    {
-        tree = tree->AsOp()->gtOp1;
-    }
 
     // The handle could be a literal constant
     if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() == TYP_I_IMPL))
@@ -18239,7 +18233,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
     }
 
     // Tunnel through commas.
-    GenTree*         obj   = tree->gtEffectiveVal(false);
+    GenTree*         obj   = tree->gtEffectiveVal();
     const genTreeOps objOp = obj->OperGet();
 
     switch (objOp)

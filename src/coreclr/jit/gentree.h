@@ -1816,7 +1816,7 @@ public:
 
     void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
 
-    inline GenTree* gtEffectiveVal(bool commaOnly = false);
+    inline GenTree* gtEffectiveVal();
 
     inline GenTree* gtCommaStoreVal();
 
@@ -9239,18 +9239,14 @@ inline GenTree*& GenTree::Data()
     return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
-inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
+inline GenTree* GenTree::gtEffectiveVal()
 {
     GenTree* effectiveVal = this;
     while (true)
     {
-        if (effectiveVal->gtOper == GT_COMMA)
+        if (effectiveVal->OperIs(GT_COMMA))
         {
-            effectiveVal = effectiveVal->AsOp()->gtGetOp2();
-        }
-        else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->AsOp()->gtOp1 != nullptr))
-        {
-            effectiveVal = effectiveVal->AsOp()->gtOp1;
+            effectiveVal = effectiveVal->gtGetOp2();
         }
         else
         {

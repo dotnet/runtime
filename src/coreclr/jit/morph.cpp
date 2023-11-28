@@ -2351,7 +2351,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         if (isStructArg)
         {
-            GenTree* actualArg = argx->gtEffectiveVal(true /* Commas only */);
+            GenTree* actualArg = argx->gtEffectiveVal();
 
             // Here we look at "actualArg" to avoid calling "getClassSize".
             structSize = actualArg->TypeIs(TYP_STRUCT) ? actualArg->GetLayout(comp)->GetSize() : genTypeSize(actualArg);
@@ -3188,7 +3188,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 
         bool     isStructArg    = varTypeIsStruct(arg.GetSignatureType());
-        GenTree* argObj         = argx->gtEffectiveVal(true /*commaOnly*/);
+        GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 
         if (isStructArg && !reMorphing && !argObj->OperIs(GT_MKREFANY))
@@ -6384,11 +6384,6 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
                 return WALK_ABORT;
             }
 
-            // GT_NOP might appear due to stores that end up as
-            // self-stores, which get morphed to GT_NOP.
-            if (tree->OperIs(GT_NOP))
-            {
-            }
             // We might see arbitrary chains of stores that trivially
             // propagate the result. Example:
             //
@@ -8225,7 +8220,7 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
 
     // op1 can be GT_COMMA, in this case we're going to fold
     // "(op (COMMA(... (op X C1))) C2)" to "(COMMA(... (op X C3)))"
-    GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal(true);
+    GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal();
     genTreeOps oper = tree->OperGet();
 
     if (!op1->OperIs(oper) || !tree->gtGetOp2()->IsCnsIntOrI() || !op1->gtGetOp2()->IsCnsIntOrI() ||
@@ -13146,7 +13141,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
         GenTree* condTree;
         condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = condTree->gtEffectiveVal(true);
+        cond = condTree->gtEffectiveVal();
 
         if (cond->OperIsConst())
         {
@@ -13370,7 +13365,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
         GenTree* condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
-        GenTree* cond     = condTree->gtEffectiveVal(true);
+        GenTree* cond     = condTree->gtEffectiveVal();
 
         if (cond->OperIsConst())
         {

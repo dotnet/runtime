@@ -2572,7 +2572,6 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
 
     // To ensure optNarrowTree() doesn't fold back to the original tree.
     tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp1, false, TYP_LONG);
-    tree->AsOp()->gtOp1 = pComp->gtNewOperNode(GT_NOP, TYP_LONG, tree->AsOp()->gtOp1);
     tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp1, false, TYP_LONG);
     tree->AsOp()->gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp2, false, TYP_LONG);
     tree->gtType        = TYP_LONG;
@@ -3244,6 +3243,12 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
             {
                 m_compiler->gtDispTree(node);
                 assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+            }
+
+            if (node->OperIs(GT_NOP))
+            {
+                assert(node->gtGetOp1() == nullptr && "GT_NOP should be a leaf node.");
+                assert(node->TypeIs(TYP_VOID) && "GT_NOP should be TYP_VOID.");
             }
 
             if (varTypeIsSmall(node))

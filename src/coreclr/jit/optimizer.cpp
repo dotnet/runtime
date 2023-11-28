@@ -8557,7 +8557,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         continue;
                     }
 
-                    GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
+                    GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal();
 
                     if (addr->TypeGet() == TYP_BYREF && addr->OperGet() == GT_LCL_VAR)
                     {
