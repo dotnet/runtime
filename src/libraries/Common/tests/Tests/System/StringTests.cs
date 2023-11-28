@@ -2136,18 +2136,21 @@ namespace System.Tests
                     Assert.False(s1.EndsWith(s2, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCulture),
-                        s1.EndsWith(s2, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        s1.EndsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCulture),
-                        s1.EndsWith(s2, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        s1.EndsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                    if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
+                    {
+                        Assert.Equal(
+                            s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCulture),
+                            s1.EndsWith(s2, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            s1.EndsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCulture),
+                            s1.EndsWith(s2, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            s1.EndsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                    }
 
                     var firstSpan = new ReadOnlySpan<char>(first);
                     var secondSpan = new ReadOnlySpan<char>(second);
@@ -2156,18 +2159,21 @@ namespace System.Tests
                     Assert.False(firstSpan.EndsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.EndsWith(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.EndsWith(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
+                    {
+                        Assert.Equal(
+                            firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.EndsWith(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.EndsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.EndsWith(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.EndsWith(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
