@@ -156,6 +156,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasiAfterRuntimeLoadedDeclarations Include="@(WasiAfterRuntimeLoaded->'void %(Identity)();')" />
+      <WasiAfterRuntimeLoadedCalls Include="@(WasiAfterRuntimeLoaded->'%(Identity)();')" />
+
       <_WasmCommonIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_WasmCommonIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
       <_WasmCommonIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
@@ -410,13 +413,7 @@
     <Delete Files="@(WasmBundleFileToDelete)" />
   </Target>
 
-  <!-- replace with wasmlinkdotnet -->
-  <Target Name="_WasiLinkDotNet"
-          DependsOnTargets="_CheckWasiClangIsExpectedVersion;_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
-          Inputs="@(_WasmLinkDependencies);$(_WasiClangDefaultFlagsRsp);$(_WasiClangDefaultLinkFlagsRsp);$(_WasiClangLinkRsp)"
-          Outputs="$(_WasmOutputFileName)"
-          Returns="@(FileWrites)">
-
+  <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckWasiClangIsExpectedVersion;_WasmCalculateInitialHeapSize">
     <!-- Generate a file entrypoint_YourAssemblyName.c containing the dotnet_wasi_getentrypointassemblyname symbol.
        This means we don't have to hardcode the assembly name in main.c -->
     <PropertyGroup>
@@ -434,9 +431,9 @@
               WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasiGetEntrypointCFile)" />
-      <WasiAfterRuntimeLoadedDeclarations Include="@(WasiAfterRuntimeLoaded->'void %(Identity)();')" />
-      <WasiAfterRuntimeLoadedCalls Include="@(WasiAfterRuntimeLoaded->'%(Identity)();')" />
+    </ItemGroup>
 
+    <ItemGroup>
       <_WasiClangXLinkerFlags Include="--initial-memory=$(WasmInitialHeapSize)" />
 
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
@@ -444,6 +441,8 @@
       <_WasiFilePathForFixup Include="$(_WasiGetEntrypointCFile)" />
       <_WasiFilePathForFixup Include="@(_WasiObjectFilesForBundle)" />
       <_WasiFilePathForFixup Include="@(_WasmNativeFileForLinking)" />
+
+      <_WasmLinkDependencies Include="@(_WasiFilePathForFixup)" />
 
       <_WasiSdkClangArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
       <_WasiSdkClangArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
@@ -460,7 +459,18 @@
       <_WasiSdkClangArgs Include="-o &quot;$(_WasmOutputFileName.Replace('\', '/'))&quot;" />
     </ItemGroup>
 
-    <WriteLinesToFile Lines="@(_WasiSdkClangArgs)" File="$(_WasiClangLinkRsp)" Overwrite="true" />
+    <WriteLinesToFile Lines="@(_WasiSdkClangArgs)" File="$(_WasiClangLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_WasmLinkDependencies Include="$(_WasiClangLinkRsp)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- replace with wasmlinkdotnet -->
+  <Target Name="_WasiLinkDotNet"
+          DependsOnTargets="_CheckWasiClangIsExpectedVersion;_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
+          Inputs="@(_WasmLinkDependencies);$(_WasiClangDefaultFlagsRsp);$(_WasiClangDefaultLinkFlagsRsp);$(_WasiClangLinkRsp)"
+          Outputs="$(_WasmOutputFileName)"
+          Returns="@(FileWrites)">
 
     <!--<Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @(_WasiSdkClangArgs, ' ')" />-->
     <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; &quot;$(_WasiClangLinkRsp)&quot;" />
@@ -614,5 +624,5 @@
   </Target>
 
   <Target Name="_CheckWasiClangIsExpectedVersion" />
-  <Target Name="_WasmWriteRspFilesForLinking" />
+  <Target Name="_WasmCalculateInitialHeapSize" />
 </Project>
