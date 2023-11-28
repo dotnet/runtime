@@ -114,7 +114,7 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second, millisecond);
             var dateTime = new DateTime(date, time);
-            
+
             Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond), dateTime);
         }
 
@@ -125,7 +125,7 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second, millisecond);
             var dateTime = new DateTime(date, time, DateTimeKind.Local);
-            
+
             Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond, DateTimeKind.Local), dateTime);
         }
 
@@ -2983,6 +2983,13 @@ namespace System.Tests
                     }
                 break;
             }
+        }
+
+        [Fact]
+        public void TestBadFormatException()
+        {
+            FormatException ex = Assert.Throws<FormatException>(() => DateTime.ParseExact("11.2023", "dd.mm.yyyy", System.Globalization.CultureInfo.InvariantCulture));
+            Assert.Contains("11.2023", ex.Message, StringComparison.Ordinal);
         }
     }
 }
