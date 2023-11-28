@@ -310,14 +310,14 @@ int32_t GlobalizationNative_GetSortKeyNative(
     @autoreleasepool {
         if (cwStrLength == 0)
         {
-            if  (sortKey == NULL)
+            if (sortKey == NULL)
                 sortKey = malloc(1);
             sortKey[0] = '\0';
             return 1;
         }
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
         NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString);
-     
+
         NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
         NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options);
 
@@ -326,29 +326,24 @@ int32_t GlobalizationNative_GetSortKeyNative(
 
         // Convert the string to UTF-8 representation
         const char *utf8Bytes = [transformedString UTF8String];
+        NSData *dataToUse = nil;
+        NSUInteger utf8Length = 0;
         if (utf8Bytes != NULL) {
-            NSUInteger utf8Length = [transformedString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
-            if  (sortKey == NULL)
-                sortKey = (uint8_t *)malloc(utf8Length);
-            memcpy(sortKey, utf8Bytes, utf8Length);
-            return utf8Length;
+            utf8Length = [transformedString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+            dataToUse = [NSData dataWithBytes:utf8Bytes length:utf8Length];
         }
-        else
-        {
-            // Convert the string to UTF-16 representation
-            NSData *utf16Data = [transformedString dataUsingEncoding:NSUTF16StringEncoding];
+        // else {
+        //     // Convert the string to UTF-16 representation
+        //     dataToUse = [transformedString dataUsingEncoding:NSUTF16StringEncoding];
+        //     utf8Length = ([dataToUse length] / sizeof(uint16_t)) * 2;
+        // }
 
-            if (utf16Data != nil) {
-                const uint16_t *utf16Bytes = (const uint16_t *)[utf16Data bytes];
-                NSUInteger utf16Length = [utf16Data length] / sizeof(uint16_t);
-
-                if (sortKey == NULL)
-                    sortKey = (uint8_t *)malloc(utf16Length * 2);
-                    // Convert UTF-16 to UTF-8 manually (in this example, using memcpy)
-                    //sortKey = (uint8_t *)malloc(utf16Length * 2);
-                memcpy(sortKey, utf16Bytes, utf16Length * 2); // Assuming UTF-16 (2 bytes per character)
-                return utf16Length * 2;
-            }
+        if (dataToUse != nil) {
+            const uint8_t *bytesToCopy = (const uint8_t *)[dataToUse bytes];
+            if (sortKey == NULL)
+                sortKey = (uint8_t *)malloc(utf8Length);
+            memcpy(sortKey, bytesToCopy, utf8Length);
+            return utf8Length;
         }
 
         return 0;
