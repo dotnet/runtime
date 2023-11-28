@@ -5019,6 +5019,29 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 }
 
 //------------------------------------------------------------------------
+// GetLexicallyTopMostBlock: Get the lexically top-most block contained within
+// the loop.
+//
+// Returns:
+//   Block with highest bbNum.
+//
+// Remarks:
+//   Mostly exists as a quirk while transitioning from the old loop
+//   representation to the new one.
+//
+BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
+{
+    BasicBlock* top = m_header;
+    VisitLoopBlocks([&top](BasicBlock* loopBlock) {
+        if (loopBlock->bbNum < top->bbNum)
+            top = loopBlock;
+        return BasicBlockVisit::Continue;
+    });
+
+    return top;
+}
+
+//------------------------------------------------------------------------
 // GetLexicallyBottomMostBlock: Get the lexically bottom-most block contained
 // within the loop.
 //

@@ -2146,25 +2146,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
-    unsigned numBlocks = loop->NumLoopBlocks();
-
-    BasicBlock** lexicalBlocks = new (this, CMK_LoopClone) BasicBlock*[numBlocks];
-    unsigned     index         = 0;
-    loop->VisitLoopBlocks([=, &index](BasicBlock* block) {
-        assert(index < numBlocks);
-        lexicalBlocks[index++] = block;
-        return BasicBlockVisit::Continue;
-    });
-
-    assert(index == numBlocks);
-
-    jitstd::sort(lexicalBlocks, lexicalBlocks + numBlocks,
-                 [](BasicBlock* lhs, BasicBlock* rhs) { return lhs->bbNum < rhs->bbNum; });
-
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
-    for (unsigned i = 0; i < numBlocks; i++)
-    {
-        BasicBlock* blk = lexicalBlocks[i];
+    loop->VisitLoopBlocksLexical([=, &newPred](BasicBlock* blk) {
         // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later with optCopyBlkDest()
         BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
@@ -2215,7 +2198,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
         // If the block falls through to a block outside the loop then we may
         // need to insert a new block to redirect.
-        if ((i < numBlocks - 1) && blk->bbFallsThrough() && !blk->NextIs(lexicalBlocks[i + 1]))
+        if (blk->bbFallsThrough() && !loop->ContainsBlock(blk->Next()))
         {
             if (blk->KindIs(BBJ_COND))
             {
@@ -2235,16 +2218,16 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 assert(!"Cannot handle fallthrough");
             }
         }
-    }
+
+        return BasicBlockVisit::Continue;
+    });
 
     // Perform the static optimizations on the fast path.
     optPerformStaticOptimizations(loop, context DEBUGARG(true));
 
     // Now go through the new blocks, remapping their jump targets within the loop
     // and updating the preds lists.
-    for (unsigned i = 0; i < numBlocks; i++)
-    {
-        BasicBlock* blk    = lexicalBlocks[i];
+    loop->VisitLoopBlocks([=](BasicBlock* blk) {
         BasicBlock* newblk = nullptr;
         bool        b      = blockMap->Lookup(blk, &newblk);
         assert(b && newblk != nullptr);
@@ -2281,7 +2264,9 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             default:
                 break;
         }
-    }
+
+        return BasicBlockVisit::Continue;
+    });
 
 #ifdef DEBUG
     // Display the preds for the new blocks, after all the new blocks have been redirected.
@@ -3070,7 +3055,9 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
             shouldCloneForArrayBounds ? " (array bounds)" : "", shouldCloneForGdvTests ? " (GDV tests)" : "");
 
     LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
-    loop->VisitLoopBlocks([=, &info](BasicBlock* block) {
+
+    // TODO-Quirk: Switch this to VisitLoopBlocks
+    loop->VisitLoopBlocksLexical([=, &info](BasicBlock* block) {
         compCurBB = block;
         for (Statement* const stmt : block->Statements())
         {

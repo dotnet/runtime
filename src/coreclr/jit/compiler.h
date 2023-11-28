@@ -2111,6 +2111,10 @@ public:
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocks(TFunc func);
 
+    template<typename TFunc>
+    BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
+
+    BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
     bool AnalyzeIteration(NaturalLoopIterInfo* info);
