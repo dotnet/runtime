@@ -395,6 +395,107 @@ namespace System
             return result;
         }
 
+        private static ParsingStatus HexNumberToBigInteger(ref NumberBuffer number, out BigInteger result)
+        {
+            if (number.DigitsCount == 0)
+            {
+                result = default;
+                return ParsingStatus.Failed;
+            }
+
+            const int DigitsPerBlock = 8;
+
+            int totalDigitCount = number.DigitsCount;
+            int blockCount, partialDigitCount;
+
+            blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainder);
+            if (remainder == 0)
+            {
+                partialDigitCount = 0;
+            }
+            else
+            {
+                blockCount += 1;
+                partialDigitCount = DigitsPerBlock - remainder;
+            }
+
+            bool isNegative = HexConverter.FromChar(number.Digits[0]) >= 8;
+            uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
+
+            uint[]? arrayFromPool = null;
+
+            Span<uint> bitsBuffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
+                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
+
+            int bitsBufferPos = blockCount - 1;
+
+            try
+            {
+                for (int i = 0; i < number.DigitsCount; i++)
+                {
+                    byte digitChar = number.Digits[i];
+                    if (digitChar == 0)
+                    {
+                        break;
+                    }
+
+                    int hexValue = HexConverter.FromChar(digitChar);
+                    Debug.Assert(hexValue != 0xFF);
+
+                    partialValue = (partialValue << 4) | (uint)hexValue;
+                    partialDigitCount++;
+
+                    if (partialDigitCount == DigitsPerBlock)
+                    {
+                        bitsBuffer[bitsBufferPos] = partialValue;
+                        bitsBufferPos--;
+                        partialValue = 0;
+                        partialDigitCount = 0;
+                    }
+                }
+
+                Debug.Assert(partialDigitCount == 0 && bitsBufferPos == -1);
+
+                if (isNegative)
+                {
+                    NumericsHelpers.DangerousMakeTwosComplement(bitsBuffer);
+                }
+
+                // BigInteger requires leading zero blocks to be truncated.
+                bitsBuffer = bitsBuffer.TrimEnd(0u);
+
+                int sign;
+                uint[]? bits;
+
+                if (bitsBuffer.IsEmpty)
+                {
+                    sign = 0;
+                    bits = null;
+                }
+                else if (bitsBuffer.Length == 1 && bitsBuffer[0] <= int.MaxValue)
+                {
+                    sign = (int)bitsBuffer[0] * (isNegative ? -1 : 1);
+                    bits = null;
+                }
+                else
+                {
+                    sign = isNegative ? -1 : 1;
+                    bits = bitsBuffer.ToArray();
+                }
+
+                result = new BigInteger(sign, bits);
+                return ParsingStatus.OK;
+            }
+            finally
+            {
+                if (arrayFromPool != null)
+                {
+                    ArrayPool<uint>.Shared.Return(arrayFromPool);
+                }
+            }
+        }
+
         private static ParsingStatus BinaryNumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
             if (number.DigitsCount == 0)
