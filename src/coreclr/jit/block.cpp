@@ -298,9 +298,9 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
 {
     assert(KindIs(BBJ_ALWAYS));
-    const bool tryJumpOpt = compiler->opts.OptimizationEnabled() || ((bbFlags & BBF_NONE_QUIRK) != 0);
-    const bool skipJump   = tryJumpOpt && JumpsToNext() && !hasAlign() && ((bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
-                          !compiler->fgInDifferentRegions(this, bbJumpDest);
+    const bool tryJumpOpt = !compiler->opts.compDbgCode || ((bbFlags & BBF_NONE_QUIRK) != 0);
+    const bool skipJump =
+        tryJumpOpt && JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbJumpDest);
     return skipJump;
 }
 
