@@ -4660,7 +4660,7 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 {
     class VisitDefsVisitor : public GenTreeVisitor<VisitDefsVisitor>
     {
-        using GenTreeVisitor::m_compiler;
+        using GenTreeVisitor<VisitDefsVisitor>::m_compiler;
 
         TFunc& m_func;
 
@@ -4670,7 +4670,7 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
             DoPreOrder = true,
         };
 
-        VisitDefsVisitor(Compiler* comp, TFunc& func) : GenTreeVisitor(comp), m_func(func)
+        VisitDefsVisitor(Compiler* comp, TFunc& func) : GenTreeVisitor<VisitDefsVisitor>(comp), m_func(func)
         {
         }
 
