@@ -32,7 +32,7 @@ extern "C" void QCALLTYPE LogContentionLockCreated(void* LockID, void* Associate
 extern "C" void QCALLTYPE LogContentionStart(uint8_t ContentionFlags, uint16_t ClrInstanceID, void* LockID, void* AssociatedObjectID, uint64_t LockOwnerThreadID);
 extern "C" void QCALLTYPE LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs);
 extern "C" void QCALLTYPE LogWaitHandleWaitStart(uint8_t WaitSource, void* AssociatedObjectID, uint16_t ClrInstanceID);
-extern "C" void QCALLTYPE LogWaitHandleWaitStop(uint8_t WaitSource, uint16_t ClrInstanceID);
+extern "C" void QCALLTYPE LogWaitHandleWaitStop(uint16_t ClrInstanceID);
 #endif // defined(FEATURE_PERFTRACING)
 
 #endif //_NATIVEEVENTSOURCE_H_

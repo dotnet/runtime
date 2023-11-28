@@ -105,9 +105,9 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitSt
     FireEtwWaitHandleWaitStart(WaitSource, reinterpret_cast<const void*>(AssociatedObjectID), ClrInstanceID);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint8_t WaitSource, uint16_t ClrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID)
 {
-    FireEtwWaitHandleWaitStop(WaitSource, ClrInstanceID);
+    FireEtwWaitHandleWaitStop(ClrInstanceID);
 }
 
 #endif // FEATURE_PERFTRACING

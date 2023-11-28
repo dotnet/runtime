@@ -3208,9 +3208,7 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
 
     if (isWaitHandleKeywordEnabled)
     {
-        FireEtwWaitHandleWaitStop(
-            ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
-            GetClrInstanceId());
+        FireEtwWaitHandleWaitStop(GetClrInstanceId());
     }
 
     return(param.dwRet);

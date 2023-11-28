@@ -196,6 +196,7 @@ nomac:Contention:::ContentionLockCreated
 # WaitHandle events
 ###################
 nomac:WaitHandle:::WaitHandleWaitStart
+nostack:WaitHandle:::WaitHandleWaitStop
 nomac:WaitHandle:::WaitHandleWaitStop
 
 ##################

@@ -483,11 +483,9 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitS
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
-	uint8_t wait_source,
 	uint16_t clr_instance_id)
 {
 	mono_component_event_pipe ()->write_event_wait_handle_wait_stop (
-		wait_source,
 		clr_instance_id);
 }
 
@@ -813,7 +811,6 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitS
 
 void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
-	uint8_t wait_source,
 	uint16_t clr_instance_id)
 {
 	ERROR_DECL (error);

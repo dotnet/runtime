@@ -107,8 +107,6 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void LogWaitHandleWaitStop(
-            WaitHandleWaitSourceMap WaitSource,
-            ushort ClrInstanceID);
+        private static partial void LogWaitHandleWaitStop(ushort ClrInstanceID);
     }
 }

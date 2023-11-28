@@ -34,7 +34,7 @@ namespace System.Diagnostics.Tracing
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
             public const string WaitHandleWaitStart = "WaitSource={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
-            public const string WaitHandleWaitStop = "WaitSource={0};\nClrInstanceID={1}";
+            public const string WaitHandleWaitStop = "ClrInstanceID={0}";
         }
 
         // The task definitions for the ETW manifest
@@ -46,7 +46,7 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPool = (EventTask)23;
             public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
             public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
-            public const EventTask WaitHandle = (EventTask)39;
+            public const EventTask WaitHandleWait = (EventTask)39;
         }
 
         public static partial class Opcodes // this name and visibility is important for EventSource
@@ -516,7 +516,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
-        [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandle, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
+        [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
         public unsafe void WaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             nint AssociatedObjectID,
@@ -529,7 +529,7 @@ namespace System.Diagnostics.Tracing
             data[0].Size = sizeof(WaitHandleWaitSourceMap);
             data[0].Reserved = 0;
             data[1].DataPointer = (nint)(&AssociatedObjectID);
-            data[2].Size = nint.Size;
+            data[1].Size = nint.Size;
             data[1].Reserved = 0;
             data[2].DataPointer = (nint)(&ClrInstanceID);
             data[2].Size = sizeof(ushort);
@@ -538,21 +538,16 @@ namespace System.Diagnostics.Tracing
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
-        [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandle, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
-        public unsafe void WaitHandleWaitStop(
-            WaitHandleWaitSourceMap WaitSource,
-            ushort ClrInstanceID = DefaultClrInstanceId)
+        [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
+        public unsafe void WaitHandleWaitStop(ushort ClrInstanceID = DefaultClrInstanceId)
         {
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
 
-            EventData* data = stackalloc EventData[2];
-            data[0].DataPointer = (nint)(&WaitSource);
-            data[0].Size = sizeof(WaitHandleWaitSourceMap);
+            EventData* data = stackalloc EventData[1];
+            data[0].DataPointer = (nint)(&ClrInstanceID);
+            data[0].Size = sizeof(ushort);
             data[0].Reserved = 0;
-            data[1].DataPointer = (nint)(&ClrInstanceID);
-            data[1].Size = sizeof(ushort);
-            data[1].Reserved = 0;
-            WriteEventCore(302, 2, data);
+            WriteEventCore(302, 1, data);
         }
     }
 }

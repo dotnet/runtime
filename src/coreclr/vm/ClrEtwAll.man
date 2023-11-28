@@ -455,9 +455,9 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                    <task name="WaitHandle" symbol="CLR_WAITHANDLE_TASK"
+                    <task name="WaitHandleWait" symbol="CLR_WAITHANDLEWAIT_TASK"
                           value="39" eventGUID="{E90049D8-8AB8-4799-B072-EEF41265BCA4}"
-                          message="$(string.RuntimePublisher.WaitHandleTaskMessage)">
+                          message="$(string.RuntimePublisher.WaitHandleWaitTaskMessage)">
                         <opcodes>
                         </opcodes>
                     </task>
@@ -513,8 +513,8 @@
                         <map value="0x1" message="$(string.RuntimePublisher.Contention.NativeMapMessage)"/>
                     </valueMap>
                     <valueMap name="WaitHandleWaitSourceMap">
-                        <map value="0x0" message="$(string.RuntimePublisher.WaitHandle.UnknownMapMessage)"/>
-                        <map value="0x1" message="$(string.RuntimePublisher.WaitHandle.MonitorWaitMapMessage)"/>
+                        <map value="0x0" message="$(string.RuntimePublisher.WaitHandleWaitSource.UnknownMapMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.WaitHandleWaitSource.MonitorWaitMapMessage)"/>
                     </valueMap>
                     <valueMap name="TailCallTypeMap">
                         <map value="0x0" message="$(string.RuntimePublisher.TailCallType.OptimizedMapMessage)"/>
@@ -1801,12 +1801,10 @@
                     </template>
 
                     <template tid="WaitHandleWaitStop">
-                        <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
                             <WaitHandle xmlns="myNs">
-                                <WaitSource> %1 </WaitSource>
-                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <ClrInstanceID> %1 </ClrInstanceID>
                             </WaitHandle>
                         </UserData>
                     </template>
@@ -8615,7 +8613,7 @@
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStartEventMessage" value="WaitSource=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
-                <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="WaitSource=%1;%nClrInstanceID=%2"/>
+                <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="ClrInstanceID=%1"/>
 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
@@ -8790,7 +8788,7 @@
                 <string id="RuntimePublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
-                <string id="RuntimePublisher.WaitHandleTaskMessage" value="WaitHandle" />
+                <string id="RuntimePublisher.WaitHandleWaitTaskMessage" value="WaitHandleWait" />
 
                 <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
@@ -8983,8 +8981,8 @@
                 <string id="RuntimePublisher.ResolutionAttempted.IncompatibleVersion" value="IncompatibleVersion" />
                 <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
                 <string id="RuntimePublisher.ResolutionAttempted.Exception" value="Exception" />
-                <string id="RuntimePublisher.WaitHandle.UnknownMapMessage" value="Unknown" />
-                <string id="RuntimePublisher.WaitHandle.MonitorWaitMapMessage" value="MonitorWait" />
+                <string id="RuntimePublisher.WaitHandleWaitSource.UnknownMapMessage" value="Unknown" />
+                <string id="RuntimePublisher.WaitHandleWaitSource.MonitorWaitMapMessage" value="MonitorWait" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />

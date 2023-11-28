@@ -830,15 +830,13 @@ namespace System.Runtime
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStart(
-            uint WaitSource,
+            byte WaitSource,
             IntPtr AssociatedObjectID,
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStop(
-            uint WaitSource,
-            ushort ClrInstanceID);
+        internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStop(ushort ClrInstanceID);
 #endif // FEATURE_PERFTRACING
 
         //

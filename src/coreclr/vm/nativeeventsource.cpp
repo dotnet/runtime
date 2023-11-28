@@ -199,12 +199,12 @@ extern "C" void QCALLTYPE LogWaitHandleWaitStart(uint8_t WaitSource, void* Assoc
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogWaitHandleWaitStop(uint8_t WaitSource, uint16_t ClrInstanceID)
+extern "C" void QCALLTYPE LogWaitHandleWaitStop(uint16_t ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtwWaitHandleWaitStop(WaitSource, ClrInstanceID);
+    FireEtwWaitHandleWaitStop(ClrInstanceID);
 
     END_QCALL;
 }

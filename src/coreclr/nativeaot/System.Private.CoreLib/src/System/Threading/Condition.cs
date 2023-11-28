@@ -108,13 +108,13 @@ namespace System.Threading
             AddWaiter(waiter);
 
             bool isWaitHandleKeywordEnabled = NativeRuntimeEventSource.Log.IsEnabled(
-                EventLevel.Informational,
+                EventLevel.Verbose,
                 NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
             if (isWaitHandleKeywordEnabled)
             {
                 NativeRuntimeEventSource.Log.WaitHandleWaitStart(
                     NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
-                    0);
+                    *(nint*)Unsafe.AsPointer(ref this));
             }
 
             uint recursionCount = _lock.ExitAll();
@@ -144,7 +144,7 @@ namespace System.Threading
 
                 if (isWaitHandleKeywordEnabled)
                 {
-                    NativeRuntimeEventSource.Log.WaitHandleWaitStop(NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait);
+                    NativeRuntimeEventSource.Log.WaitHandleWaitStop();
                 }
 
                 AssertIsNotInList(waiter);

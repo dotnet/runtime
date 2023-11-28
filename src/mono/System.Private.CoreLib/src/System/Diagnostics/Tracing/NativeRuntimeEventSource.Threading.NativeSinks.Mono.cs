@@ -107,8 +107,6 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void LogWaitHandleWaitStop(
-            WaitHandleWaitSourceMap WaitSource,
-            ushort ClrInstanceID);
+        private static extern void LogWaitHandleWaitStop(ushort ClrInstanceID);
     }
 }

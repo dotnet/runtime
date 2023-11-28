@@ -153,7 +153,7 @@ namespace System.Threading
 
                 if (isWaitHandleKeywordEnabled)
                 {
-                    NativeRuntimeEventSource.Log.WaitHandleWaitStop(NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown);
+                    NativeRuntimeEventSource.Log.WaitHandleWaitStop();
                 }
             }
         }
