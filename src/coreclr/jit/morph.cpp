@@ -9900,7 +9900,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         {
             optNarrowTree(src, src->TypeGet(), castToType, cast->gtVNPair, true);
 
-            // "optNarrowTree" may leave a dead cast behind.
+            // "optNarrowTree" may leave a redundant cast behind.
             if (src->OperIs(GT_CAST) && (src->AsCast()->CastToType() == genActualType(src->AsCast()->CastOp())))
             {
                 src = src->AsCast()->CastOp();
@@ -10253,10 +10253,18 @@ SKIP:
             return cmp;
         }
 
+        GenTree* andOpOp1 = andOp->gtGetOp1();
         // Now we narrow the first operand of AND to int.
-        if (optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
+        if (optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
         {
-            optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
+            optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
+
+            // "optNarrowTree" may leave a redundant cast behind.
+            if (andOpOp1->OperIs(GT_CAST) &&
+                (andOpOp1->AsCast()->CastToType() == genActualType(andOpOp1->AsCast()->CastOp())))
+            {
+                andOp->gtOp1 = andOpOp1->AsCast()->CastOp();
+            }
         }
         else
         {

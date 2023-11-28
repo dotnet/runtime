@@ -5997,36 +5997,20 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CAST:
             {
-                var_types cast    = tree->CastToType();
-                var_types oprt    = op1->TypeGet();
-                unsigned  oprSize = genTypeSize(oprt);
-
-                if (cast != srct)
+                if ((tree->CastToType() != srct) || tree->gtOverflow())
                 {
                     return false;
                 }
 
-                if (varTypeIsIntegralOrI(dstt) != varTypeIsIntegralOrI(oprt))
+                if (varTypeIsInt(op1) && varTypeIsInt(dstt) && tree->TypeIs(TYP_LONG))
                 {
-                    return false;
-                }
-
-                if (tree->gtOverflow())
-                {
-                    return false;
-                }
-
-                /* Is this a cast from the type we're narrowing to or a smaller one? */
-
-                if ((oprSize == dstSize) && !varTypeIsSmall(dstt) && (varTypeToSigned(dstt) == oprt))
-                {
+                    // We have a CAST that converts into to long while dstt is int.
+                    // so we can just convert the cast to int -> int and someone will clean it up.
                     if (doit)
                     {
-                        tree->ChangeOper(GT_NOP);
-                        tree->gtType = varTypeToSigned(dstt);
-                        tree->gtFlags &= ~GTF_UNSIGNED;
-                        tree->AsOp()->gtOp2 = nullptr;
-                        tree->gtVNPair      = op1->gtVNPair;
+                        tree->CastToType() = TYP_INT;
+                        tree->ChangeType(TYP_INT);
+                        tree->ClearUnsigned();
                     }
                     return true;
                 }
