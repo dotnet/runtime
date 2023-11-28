@@ -332,31 +332,51 @@ namespace System
             return TryParseBigInteger(value.AsSpan(), style, info, out result);
         }
 
-        internal static ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static unsafe ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
-            if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
+            scoped Span<byte> buffer;
+            byte[]? arrayFromPool = null;
+
+            if (value.Length < 255)
             {
-                throw e; // TryParse still throws ArgumentException on invalid NumberStyles
+                buffer = stackalloc byte[value.Length + 1 + 1];
+            }
+            else
+            {
+                buffer = arrayFromPool = ArrayPool<byte>.Shared.Rent(value.Length + 1 + 1);
             }
 
-            BigNumberBuffer bigNumber = BigNumberBuffer.Create();
-            if (!FormatProvider.TryStringToBigInteger(value, style, info, bigNumber.digits, out bigNumber.precision, out bigNumber.scale, out bigNumber.sign))
+            ParsingStatus ret;
+
+            fixed (byte* ptr = buffer) // NumberBuffer expects pinned span
             {
-                result = default;
-                return ParsingStatus.Failed;
+                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
+
+                if (!TryStringToNumber(value, style, ref number, info))
+                {
+                    result = default;
+                    ret = ParsingStatus.Failed;
+                }
+                else if ((style & NumberStyles.AllowHexSpecifier) != 0)
+                {
+                    ret = NumberToBigInteger(ref number, out result);
+                }
+                else if ((style & NumberStyles.AllowBinarySpecifier) != 0)
+                {
+                    ret = HexNumberToBigInteger(ref number, out result); ;
+                }
+                else
+                {
+                    ret = BinaryNumberToBigInteger(ref number, out result);
+                }
             }
 
-            if ((style & NumberStyles.AllowHexSpecifier) != 0)
+            if (arrayFromPool != null)
             {
-                return HexNumberToBigInteger(ref bigNumber, out result);
+                ArrayPool<byte>.Shared.Return(arrayFromPool);
             }
 
-            if ((style & NumberStyles.AllowBinarySpecifier) != 0)
-            {
-                return BinaryNumberToBigInteger(ref bigNumber, out result);
-            }
-
-            return NumberToBigInteger(ref bigNumber, out result);
+            return ret;
         }
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
@@ -373,129 +393,6 @@ namespace System
             }
 
             return result;
-        }
-
-        internal static ParsingStatus TryParseBigIntegerHexNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
-        {
-            int whiteIndex = 0;
-
-            // Skip past any whitespace at the beginning.
-            if ((style & NumberStyles.AllowLeadingWhite) != 0)
-            {
-                for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
-                {
-                    if (!IsWhite(value[whiteIndex]))
-                        break;
-                }
-
-                value = value[whiteIndex..];
-            }
-
-            // Skip past any whitespace at the end.
-            if ((style & NumberStyles.AllowTrailingWhite) != 0)
-            {
-                for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
-                {
-                    if (!IsWhite(value[whiteIndex]))
-                        break;
-                }
-
-                value = value[..(whiteIndex + 1)];
-            }
-
-            if (value.IsEmpty)
-            {
-                goto FailExit;
-            }
-
-            const int DigitsPerBlock = 8;
-
-            int totalDigitCount = value.Length;
-            int blockCount, partialDigitCount;
-
-            blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainder);
-            if (remainder == 0)
-            {
-                partialDigitCount = 0;
-            }
-            else
-            {
-                blockCount += 1;
-                partialDigitCount = DigitsPerBlock - remainder;
-            }
-
-            if (!HexConverter.IsHexChar(value[0])) goto FailExit;
-            bool isNegative = HexConverter.FromChar(value[0]) >= 8;
-            uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
-
-            uint[]? arrayFromPool = null;
-
-            Span<uint> bitsBuffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
-                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
-
-            int bitsBufferPos = blockCount - 1;
-
-            try
-            {
-                for (int i = 0; i < value.Length; i++)
-                {
-                    char digitChar = value[i];
-
-                    if (!HexConverter.IsHexChar(digitChar)) goto FailExit;
-                    int hexValue = HexConverter.FromChar(digitChar);
-
-                    partialValue = (partialValue << 4) | (uint)hexValue;
-                    partialDigitCount++;
-
-                    if (partialDigitCount == DigitsPerBlock)
-                    {
-                        bitsBuffer[bitsBufferPos] = partialValue;
-                        bitsBufferPos--;
-                        partialValue = 0;
-                        partialDigitCount = 0;
-                    }
-                }
-
-                Debug.Assert(partialDigitCount == 0 && bitsBufferPos == -1);
-
-                if (isNegative)
-                {
-                    NumericsHelpers.DangerousMakeTwosComplement(bitsBuffer);
-                }
-
-                // BigInteger requires leading zero blocks to be truncated.
-                bitsBuffer = bitsBuffer.TrimEnd(0u);
-
-                int sign;
-                uint[]? bits;
-
-                if (bitsBuffer.IsEmpty)
-                {
-                    sign = 0;
-                    bits = null;
-                }
-                else if (bitsBuffer.Length == 1 && bitsBuffer[0] <= int.MaxValue)
-                {
-                    sign = (int)bitsBuffer[0] * (isNegative ? -1 : 1);
-                    bits = null;
-                }
-                else
-                {
-                    sign = isNegative ? -1 : 1;
-                    bits = bitsBuffer.ToArray();
-                }
-
-                result = new BigInteger(sign, bits);
-                return ParsingStatus.OK;
-            }
-            finally
-            {
-                if (arrayFromPool != null)
-                {
-                    ArrayPool<uint>.Shared.Return(arrayFromPool);
-                }
-            }
         }
 
         private static ParsingStatus BinaryNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
