@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.JavaScript
             [FieldOffset(8)]
             internal int Length;
             [FieldOffset(8)]
-            internal IntPtr TargetThreadId;
+            internal IntPtr TargetTID;
 
             /// <summary>
             /// Discriminators
@@ -66,6 +66,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe void Initialize()
         {
             slot.Type = MarshalerType.None;
+#if FEATURE_WASM_THREADS
+            JSFunctionBinding.CurrentCallTargetContext = null;
+#endif
         }
     }
 }

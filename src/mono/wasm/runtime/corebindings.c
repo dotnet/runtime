@@ -41,6 +41,9 @@ extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *ca
 #ifndef DISABLE_THREADS
 extern void mono_wasm_install_js_worker_interop ();
 extern void mono_wasm_uninstall_js_worker_interop ();
+extern void mono_wasm_invoke_import_async(void* args, void* signature);
+extern void mono_wasm_invoke_import_sync(void* args, void* signature);
+extern void mono_wasm_cancel_promise(int task_holder_gc_handle);
 #else
 extern void mono_wasm_bind_js_import(void *signature, int *is_exception, MonoObject **result);
 extern void mono_wasm_invoke_bound_function(int function_js_handle, void *args);
@@ -70,6 +73,8 @@ void bindings_initialize_internals (void)
 #ifndef DISABLE_THREADS
 	mono_add_internal_call ("Interop/Runtime::InstallWebWorkerInterop", mono_wasm_install_js_worker_interop);
 	mono_add_internal_call ("Interop/Runtime::UninstallWebWorkerInterop", mono_wasm_uninstall_js_worker_interop);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportSync", mono_wasm_invoke_import_sync);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportAsync", mono_wasm_invoke_import_async);
 #else
 	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);

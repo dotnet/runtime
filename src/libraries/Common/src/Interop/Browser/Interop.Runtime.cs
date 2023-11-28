@@ -34,13 +34,20 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSImportAsync(IntPtr targetTID, void* data, void* signature);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void CancelPromise(IntPtr targetTID, IntPtr gcHandle);
+
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSFunction(int functionHandle, void* data);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSImport(int importHandle, void* data);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void CancelPromise(IntPtr gcHandle);
 #endif
 
         #region Legacy

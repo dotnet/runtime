@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 slot.Type = MarshalerType.JSObject;
                 slot.JSHandle = value.JSHandle;
 #if FEATURE_WASM_THREADS
-                slot.TargetThreadId = value.OwnerTID;
+                slot.TargetTID = value.OwnerTID;
                 JSFunctionBinding.CurrentCallTargetContext = (JSSynchronizationContext)value.SynchronizationContext;
 #endif
             }

@@ -15,10 +15,17 @@ namespace Sample
 {
     public partial class Test
     {
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            await Delay(100);
+            Console.WriteLine("Hello world");
             return 0;
+        }
+
+        [JSExport]
+        internal static async Task PrintMeaning(Task<int> meaningPromise)
+        {
+            Console.WriteLine("Meaning of life is " + await meaningPromise);
         }
 
         [JSExport]
@@ -107,7 +114,7 @@ namespace Sample
         [JSImport("responseText", fetchhelper)]
         private static partial Task<string> FetchHelperResponseText(JSObject response, int delayMs);
 
-        [JSImport("delay", fetchhelper)]
+        [JSImport("delay", "main.js")]
         private static partial Task Delay(int timeoutMs);
 
         [JSExport]

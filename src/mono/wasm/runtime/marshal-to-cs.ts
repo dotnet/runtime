@@ -14,7 +14,7 @@ import {
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol
+    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
@@ -306,9 +306,12 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }
     mono_check(isThenable(value), "Value is not a Promise");
 
-    const gc_handle = alloc_gcv_handle();
-    set_gc_handle(arg, gc_handle);
-    set_arg_type(arg, MarshalerType.Task);
+    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.Task;
+    const gc_handle = handleIsPreallocated ? get_arg_gc_handle(arg) : alloc_gcv_handle();
+    if (!handleIsPreallocated) {
+        set_gc_handle(arg, gc_handle);
+        set_arg_type(arg, MarshalerType.Task);
+    }
     const holder = new PromiseHolder(value);
     setup_managed_proxy(holder, gc_handle);
     if (BuildConfiguration === "Debug") {

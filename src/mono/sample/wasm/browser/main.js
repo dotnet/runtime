@@ -7,18 +7,30 @@ function displayMeaning(meaning) {
     document.getElementById("out").innerHTML = `${meaning}`;
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 try {
-    const { setModuleImports } = await dotnet
+    const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
         .withElementOnExit()
         .create();
 
     setModuleImports("main.js", {
         Sample: {
             Test: {
-                displayMeaning
+                displayMeaning,
+                delay,
             }
         }
     });
+
+    const config = getConfig();
+    const exports = await getAssemblyExports(config.mainAssemblyName);
+
+    const meaning = 42;
+    const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
+    exports.Sample.Test.PrintMeaning(deepMeaning);
 
     await dotnet.run();
 }

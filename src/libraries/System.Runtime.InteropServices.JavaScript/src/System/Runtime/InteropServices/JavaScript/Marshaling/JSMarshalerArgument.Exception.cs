@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     slot.Type = MarshalerType.JSException;
                     slot.JSHandle = jse.jsException.JSHandle;
 #if FEATURE_WASM_THREADS
-                    slot.TargetThreadId = jse.jsException.OwnerTID;
+                    slot.TargetTID = jse.jsException.OwnerTID;
                     JSFunctionBinding.CurrentCallTargetContext = (JSSynchronizationContext)jse.jsException.SynchronizationContext;
 #endif
                 }

@@ -269,6 +269,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImportAsync(JSFunctionBinding signature, IntPtr targetTID, JSMarshalerArgument* arguments)
         {
+            // pre-allocate the result handle and Task
+            var holder = new JSHostImplementation.PromiseHolder();
+            holder.OwnerTID = targetTID;
+            arguments[1].slot.Type = MarshalerType.Task;
+            arguments[1].slot.GCHandle = holder.GCHandle;
+
             Interop.Runtime.InvokeJSImportAsync(targetTID, arguments, signature.Header);
 
             // this never throws directly, because any result would be reject/resolve callback
@@ -302,6 +308,13 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             fixed (JSMarshalerArgument* ptr = arguments)
             {
+                if (signature.IsAsync)
+                {
+                    // this is async method, we could pre-allocate the result handle and Task
+                    arguments[1].slot.Type = MarshalerType.Task;
+                    arguments[1].slot.GCHandle = new JSHostImplementation.PromiseHolder().GCHandle;
+                }
+
                 Interop.Runtime.InvokeJSImport(signature.ImportHandle, ptr);
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
@@ -317,11 +330,13 @@ namespace System.Runtime.InteropServices.JavaScript
             var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);
 
 #if !FEATURE_WASM_THREADS
+
             Interop.Runtime.BindJSImport(signature.Header, out int isException, out object exceptionMessage);
             if (isException != 0)
                 throw new JSException((string)exceptionMessage);
 
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
+
 #endif
 
             return signature;

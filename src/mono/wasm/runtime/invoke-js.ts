@@ -22,6 +22,7 @@ import { assert_synchronization_context } from "./pthreads/shared";
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
 export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    if (MonoWasmThreads) return;
     assert_bindings();
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
@@ -49,6 +50,8 @@ export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signat
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
 
     bound_fn(args);
+
+    Module._free(args as any);
 }
 
 export function mono_wasm_invoke_import_sync(args: JSMarshalerArguments, signature: JSFunctionSignature) {

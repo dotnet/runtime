@@ -9,7 +9,7 @@ const assemblyName = "Wasm.Browser.Threads.Minimal.Sample.dll";
 try {
     const resolveUrl = (relativeUrl) => (new URL(relativeUrl, window.location.href)).toString()
 
-    const { getAssemblyExports, runMain } = await dotnet
+    const { setModuleImports, getAssemblyExports, runMain } = await dotnet
         //.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
         //.withDiagnosticTracing(true)
         .withElementOnExit()
@@ -20,6 +20,15 @@ try {
     globalThis.test2 = { a: 2 };
 
     const exports = await getAssemblyExports(assemblyName);
+    setModuleImports("main.js", {
+        delay,
+    });
+
+    let exit_code = await runMain(assemblyName, []);
+
+    const meaning = 42;
+    const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
+    exports.Sample.Test.PrintMeaning(deepMeaning);
 
     console.log("smoke: running LockTest");
     await exports.Sample.Test.LockTest();
@@ -122,7 +131,6 @@ try {
     console.log("smoke: running StopTimerFromWorker");
     exports.Sample.Test.StopTimerFromWorker();
 
-    let exit_code = await runMain(assemblyName, []);
     exit(exit_code);
 } catch (err) {
     exit(2, err);

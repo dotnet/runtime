@@ -5,12 +5,13 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Sample
 {
     public partial class Test
     {
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
 
@@ -19,6 +20,7 @@ namespace Sample
 
             var start = DateTime.UtcNow;
             var timezonesCount = TimeZoneInfo.GetSystemTimeZones().Count;
+            await Delay(100);
             var end = DateTime.UtcNow;
             Console.WriteLine($"Found {timezonesCount} timezones in the TZ database in {end-start}");
 
@@ -44,6 +46,16 @@ namespace Sample
 
         [JSImport("Sample.Test.add", "main.js")]
         internal static partial int Add(int a, int b);
+
+        [JSImport("Sample.Test.delay", "main.js")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Void>>]
+        internal static partial Task Delay([JSMarshalAs<JSType.Number>] int ms);
+
+        [JSExport]
+        internal static async Task PrintMeaning(Task<int> meaningPromise)
+        {
+            Console.WriteLine("Meaning of life is " + await meaningPromise);
+        }
 
         [JSExport]
         internal static int TestMeaning()

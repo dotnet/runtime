@@ -36,6 +36,7 @@ import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
 import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
+import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -121,6 +122,7 @@ export const mono_wasm_imports = [
     mono_wasm_get_culture_info,
     mono_wasm_get_first_day_of_week,
     mono_wasm_get_first_week_of_year,
+    mono_wasm_cancel_promise,
 ];
 
 const wasmImports: Function[] = [
