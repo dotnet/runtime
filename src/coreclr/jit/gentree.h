@@ -1723,7 +1723,6 @@ public:
         {
             case GT_LEA:
             case GT_RETFILT:
-            case GT_NOP:
             case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
