@@ -3182,10 +3182,14 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     bool isWaitHandleKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_WAITHANDLE_KEYWORD);
     if (isWaitHandleKeywordEnabled)
     {
-        FireEtwWaitHandleWaitStart(
-            ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
-            syncState ? syncState->m_Object : NULL,
-            GetClrInstanceId());
+        if (syncState)
+        {
+            FireEtwWaitHandleWaitStart(ETW::WaitHandleLog::WaitHandleStructs::MonitorWait, syncState->m_Object, GetClrInstanceId());
+        }
+        else
+        {
+            FireEtwWaitHandleWaitStart(ETW::WaitHandleLog::WaitHandleStructs::Unknown, NULL, GetClrInstanceId());
+        }
     }
 
     EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
