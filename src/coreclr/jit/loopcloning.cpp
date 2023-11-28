@@ -2207,15 +2207,26 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         {
             if (blk->KindIs(BBJ_COND))
             {
+                // TODO-Quirk: We see a lot of these cases and some of them cause diffs.
+                BasicBlock* targetBlk = blk->Next();
+                if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
+                    targetBlk = targetBlk->GetJumpDest();
+
                 // Need to insert a block.
-                BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, blk->Next());
+                BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, targetBlk);
                 newRedirBlk->copyEHRegion(newPred);
                 newRedirBlk->bbNatLoopNum = ambientLoop;
-                newRedirBlk->inheritWeight(blk->Next());
+                newRedirBlk->bbWeight     = blk->Next()->bbWeight;
                 newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
+
+                // TODO-Quirk: This next block is not part of the loop and
+                // should not be scaled down, especially once we get rid of the
+                // other quirk above.
+                blk->Next()->scaleBBWeight(fastPathWeightScaleFactor);
+
                 // This block isn't part of the loop, so below loop won't add
                 // refs for it.
-                fgAddRefPred(blk->Next(), newRedirBlk);
+                fgAddRefPred(targetBlk, newRedirBlk);
                 newPred = newRedirBlk;
             }
             else
