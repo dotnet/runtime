@@ -743,15 +743,15 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return CreateLibrariesNotNull(libraries, runtime, libraryStubs);
-        }
 
-        private IEnumerable<Library> CreateLibrariesNotNull(IEnumerable<TargetLibrary> libraries, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
-        {
-            foreach (TargetLibrary library in libraries)
+            IEnumerable<Library> CreateLibrariesNotNull(IEnumerable<TargetLibrary> libraries, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
             {
-                Library? createdLibrary = CreateLibrary(library, runtime, libraryStubs);
-                if (createdLibrary is not null)
-                    yield return createdLibrary;
+                foreach (TargetLibrary library in libraries)
+                {
+                    Library? createdLibrary = CreateLibrary(library, runtime, libraryStubs);
+                    if (createdLibrary is not null)
+                        yield return createdLibrary;
+                }
             }
         }
 
