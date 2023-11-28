@@ -6661,35 +6661,37 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
+            regNumber tempReg = cast->GetSingleTempReg();
             // We need to check if the value is not greater than 0xFFFFFFFF
             // if the upper 32 bits are zero.
             ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, rsGetRsvdReg(), REG_R0, imm);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, tempReg, REG_R0, imm);
 
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, rsGetRsvdReg(), rsGetRsvdReg(), 32);
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, rsGetRsvdReg(), reg, rsGetRsvdReg());
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, rsGetRsvdReg());
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, tempReg, 32);
+            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, tempReg, reg, tempReg);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
         }
         break;
 
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
         {
+            regNumber tempReg = cast->GetSingleTempReg();
             // We need to check if the value is not greater than 0x7FFFFFFF
             // if the upper 33 bits are zero.
-            // instGen_Set_Reg_To_Imm(EA_8BYTE, rsGetRsvdReg(), 0xFFFFFFFF80000000LL);
+            // instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, 0xFFFFFFFF80000000LL);
             ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, rsGetRsvdReg(), REG_R0, imm);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, tempReg, REG_R0, imm);
 
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, rsGetRsvdReg(), rsGetRsvdReg(), 31);
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, tempReg, 31);
 
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, rsGetRsvdReg(), reg, rsGetRsvdReg());
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, rsGetRsvdReg());
+            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, tempReg, reg, tempReg);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
         }
         break;
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = rsGetRsvdReg();
+            const regNumber tempReg = cast->GetSingleTempReg();
             assert(tempReg != reg);
             GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MAX);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);
@@ -6702,39 +6704,37 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         default:
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int   castMaxValue = desc.CheckSmallIntMax();
-            const int   castMinValue = desc.CheckSmallIntMin();
-            instruction ins;
+            const int       castMaxValue = desc.CheckSmallIntMax();
+            const int       castMinValue = desc.CheckSmallIntMin();
+            const regNumber tempReg      = cast->GetSingleTempReg();
+            instruction     ins;
 
             if (castMaxValue > 2047)
             {
                 assert((castMaxValue == 32767) || (castMaxValue == 65535));
-                GetEmitter()->emitLoadImmediate(EA_ATTR(desc.CheckSrcSize()), rsGetRsvdReg(), castMaxValue + 1);
+                GetEmitter()->emitLoadImmediate(EA_ATTR(desc.CheckSrcSize()), tempReg, castMaxValue + 1);
                 ins = castMinValue == 0 ? INS_bgeu : INS_bge;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, reg, nullptr, rsGetRsvdReg());
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, reg, nullptr, tempReg);
             }
             else
             {
-                GetEmitter()->emitIns_R_R_I(INS_addiw, EA_ATTR(desc.CheckSrcSize()), rsGetRsvdReg(), REG_R0,
-                                            castMaxValue);
+                GetEmitter()->emitIns_R_R_I(INS_addiw, EA_ATTR(desc.CheckSrcSize()), tempReg, REG_R0, castMaxValue);
                 ins = castMinValue == 0 ? INS_bltu : INS_blt;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, rsGetRsvdReg(), nullptr, reg);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, tempReg, nullptr, reg);
             }
 
             if (castMinValue != 0)
             {
                 if (emitter::isValidSimm12(castMinValue))
                 {
-                    GetEmitter()->emitIns_R_R_I(INS_slti, EA_ATTR(desc.CheckSrcSize()), rsGetRsvdReg(), reg,
-                                                castMinValue);
+                    GetEmitter()->emitIns_R_R_I(INS_slti, EA_ATTR(desc.CheckSrcSize()), tempReg, reg, castMinValue);
                 }
                 else
                 {
-                    GetEmitter()->emitLoadImmediate(EA_8BYTE, rsGetRsvdReg(), castMinValue);
-                    GetEmitter()->emitIns_R_R_R(INS_slt, EA_ATTR(desc.CheckSrcSize()), rsGetRsvdReg(), reg,
-                                                rsGetRsvdReg());
+                    GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, castMinValue);
+                    GetEmitter()->emitIns_R_R_R(INS_slt, EA_ATTR(desc.CheckSrcSize()), tempReg, reg, tempReg);
                 }
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, rsGetRsvdReg());
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
             }
         }
         break;

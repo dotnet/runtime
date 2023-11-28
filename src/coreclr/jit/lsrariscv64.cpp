@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jit.h"
 #include "sideeffects.h"
 #include "lower.h"
+#include "codegen.h"
 
 //------------------------------------------------------------------------
 // BuildNode: Build the RefPositions for a node
@@ -1384,6 +1385,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 //
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
+    enum CodeGen::GenIntCastDesc::CheckKind kind = CodeGen::GenIntCastDesc(cast).CheckKind();
+    if (kind != CodeGen::GenIntCastDesc::CHECK_NONE && kind != CodeGen::GenIntCastDesc::CHECK_POSITIVE)
+    {
+        buildInternalIntRegisterDefForNode(cast);
+    }
+    buildInternalRegisterUses();
     int srcCount = BuildOperandUses(cast->CastOp());
     BuildDef(cast);
 

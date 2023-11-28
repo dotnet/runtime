@@ -803,11 +803,16 @@ protected:
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale
-    #ifdef TARGET_RISCV64
-        , regNumber scaleTempReg
-    #endif
-    );
+    void genScaledAdd(emitAttr  attr,
+                      regNumber targetReg,
+                      regNumber baseReg,
+                      regNumber indexReg,
+                      int       scale
+#ifdef TARGET_RISCV64
+                      ,
+                      regNumber scaleTempReg
+#endif
+                      );
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_ARMARCH)
@@ -824,6 +829,7 @@ protected:
     // Generate the instruction to move a value between register files
     void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg);
 
+public:
     struct GenIntCastDesc
     {
         enum CheckKind
@@ -901,6 +907,7 @@ protected:
         }
     };
 
+protected:
     void genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg);
     void genIntToIntCast(GenTreeCast* cast);
     void genFloatToFloatCast(GenTree* treeNode);
