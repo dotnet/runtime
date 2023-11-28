@@ -74,12 +74,29 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        private static string GetArgumentName(ExceptionArgument argument)
+        private static string GetArgumentString(ExceptionArgument argument)
         {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
-                "The enum value is not defined, please check the ExceptionArgument Enum.");
-
-            return argument.ToString();
+            switch (argument)
+            {
+                case ExceptionArgument.buffer: return nameof(ExceptionArgument.buffer);
+                case ExceptionArgument.offset: return nameof(ExceptionArgument.offset);
+                case ExceptionArgument.length: return nameof(ExceptionArgument.length);
+                case ExceptionArgument.text: return nameof(ExceptionArgument.text);
+                case ExceptionArgument.start: return nameof(ExceptionArgument.start);
+                case ExceptionArgument.count: return nameof(ExceptionArgument.count);
+                case ExceptionArgument.index: return nameof(ExceptionArgument.index);
+                case ExceptionArgument.value: return nameof(ExceptionArgument.value);
+                case ExceptionArgument.capacity: return nameof(ExceptionArgument.capacity);
+                case ExceptionArgument.separators: return nameof(ExceptionArgument.separators);
+                case ExceptionArgument.comparisonType: return nameof(ExceptionArgument.comparisonType);
+                case ExceptionArgument.changeTokens: return nameof(ExceptionArgument.changeTokens);
+                case ExceptionArgument.changeTokenProducer: return nameof(ExceptionArgument.changeTokenProducer);
+                case ExceptionArgument.changeTokenConsumer: return nameof(ExceptionArgument.changeTokenConsumer);
+                case ExceptionArgument.array: return nameof(ExceptionArgument.array);
+                default:
+                    Debug.Fail("The ExceptionArgument value is not defined.");
+                    return string.Empty;
+            }
         }
     }
 
