@@ -333,8 +333,9 @@
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
     
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
+    <!-- TODO: Enable XUnitLogChecker for NativeAOT tests https://github.com/dotnet/runtime/issues/94722 -->
     <IsXUnitLogCheckerSupported Condition="'$(IsXUnitLogCheckerSupported)' == ''">false</IsXUnitLogCheckerSupported>
-    <IsXUnitLogCheckerSupported Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TestNativeAot)' != 'true' and '$(RunNativeAotTestApps)' != 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsXUnitLogCheckerSupported>
+    <IsXUnitLogCheckerSupported Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TestNativeAot)' != 'true' and '$(RunNativeAotTestApps)' != 'true' and '$(TestSingleFile)' != 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsXUnitLogCheckerSupported>
     <XUnitLogCheckerLibrariesOutDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesOutDir>
   </PropertyGroup>
 

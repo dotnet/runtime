@@ -232,22 +232,8 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
-    <_ShouldSetXUnitLogCheckerEnvVar>1</_ShouldSetXUnitLogCheckerEnvVar>
-    <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
-      $(HelixPreCommands);
-      set __TestArchitecture=$(TargetArchitecture);
-      set __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
-    </HelixPreCommands>
-    <HelixPreCommands Condition="'$(TargetOS)' != 'windows'">
-      $(HelixPreCommands);
-      export __TestArchitecture=$(TargetArchitecture);
-      export __IsXUnitLogCheckerSupported=$(_ShouldSetXUnitLogCheckerEnvVar)
-    </HelixPreCommands>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(_ShouldSetXUnitLogCheckerEnvVar)' == '1'">  
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />  
+  <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">  
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />
   </ItemGroup>  
 
   <!--

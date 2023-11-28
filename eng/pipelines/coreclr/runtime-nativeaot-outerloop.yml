@@ -74,7 +74,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-                  extraHelixArguments: /p:IsXUnitLogCheckerSupported=false
 
       #
       # CoreCLR NativeAOT release build (checked runtime) and libraries tests
@@ -100,7 +99,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
-                  extraHelixArguments: /p:IsXUnitLogCheckerSupported=false
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SizeOpt and libraries tests
@@ -126,7 +124,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
-                  extraHelixArguments: /p:IsXUnitLogCheckerSupported=false
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SpeedOpt and libraries tests
@@ -152,7 +149,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
-                  extraHelixArguments: /p:IsXUnitLogCheckerSupported=false
 
       #
       # CoreCLR NativeAOT checked build and Pri0 tests
@@ -187,4 +183,3 @@ extends:
                 parameters:
                   testGroup: innerloop
                   liveLibrariesBuildConfig: Release
-                  extraHelixArguments: /p:IsXUnitLogCheckerSupported=false
