@@ -888,11 +888,6 @@ void Compiler::fgExtendDbgLifetimes()
 
         switch (block->GetJumpKind())
         {
-            case BBJ_NONE:
-                PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:

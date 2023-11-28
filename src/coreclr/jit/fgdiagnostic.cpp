@@ -77,7 +77,7 @@ void Compiler::fgDebugCheckUpdate()
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
      * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
      *                           kind of redundand with the above, but to make sure)
-     * no un-compacted blocks -> BBJ_NONE followed by block with no jumps to it (countOfInEdges() = 1)
+     * no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
      */
 
     BasicBlock* prev;
@@ -140,32 +140,8 @@ void Compiler::fgDebugCheckUpdate()
         if (block->KindIs(BBJ_COND))
         {
             // A conditional branch should never jump to the next block
-            // as it can be folded into a BBJ_NONE;
+            // as it can be folded into a BBJ_ALWAYS;
             doAssertOnJumpToNextBlock = true;
-        }
-        else if (block->KindIs(BBJ_ALWAYS))
-        {
-            // Generally we will want to assert if a BBJ_ALWAYS branches to the next block
-            doAssertOnJumpToNextBlock = true;
-
-            // If the BBF_KEEP_BBJ_ALWAYS flag is set we allow it to jump to the next block
-            if (block->bbFlags & BBF_KEEP_BBJ_ALWAYS)
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
-
-            // A call/always pair is also allowed to jump to the next block
-            if (prevIsCallAlwaysPair)
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
-
-            // We are allowed to have a branch from a hot 'block' to a cold 'bbNext'
-            //
-            if (!block->IsLast() && fgInDifferentRegions(block, block->Next()))
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
         }
 
         if (doAssertOnJumpToNextBlock)
@@ -2777,12 +2753,8 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             assert(blockPred->NextIs(block) || blockPred->HasJumpTo(block));
             return true;
 
-        case BBJ_NONE:
-            assert(blockPred->NextIs(block));
-            return true;
-
-        case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
+        case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             assert(blockPred->HasJumpTo(block));
@@ -5022,19 +4994,10 @@ void Compiler::fgDebugCheckLoopTable()
             BasicBlock* h = loop.lpHead;
             assert(h->bbFlags & BBF_LOOP_PREHEADER);
 
-            // The pre-header can only be BBJ_ALWAYS or BBJ_NONE and must enter the loop.
+            // The pre-header can only be BBJ_ALWAYS and must enter the loop.
             BasicBlock* e = loop.lpEntry;
-            if (h->KindIs(BBJ_ALWAYS))
-            {
-                assert(h->HasJumpTo(e));
-            }
-            else
-            {
-                assert(h->KindIs(BBJ_NONE));
-                assert(h->NextIs(e));
-                assert(loop.lpTop == e);
-                assert(loop.lpIsTopEntry());
-            }
+            assert(h->KindIs(BBJ_ALWAYS));
+            assert(h->HasJumpTo(e));
 
             // The entry block has a single non-loop predecessor, and it is the pre-header.
             for (BasicBlock* const predBlock : e->PredBlocks())

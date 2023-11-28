@@ -286,6 +286,25 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
+// CanRemoveJumpToNext: determine if jump to the next block can be omitted
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if the peephole optimization is enabled,
+//    and block is a BBJ_ALWAYS to the next block that we can fall through into
+//
+bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
+{
+    assert(KindIs(BBJ_ALWAYS));
+    const bool tryJumpOpt = compiler->opts.OptimizationEnabled() || ((bbFlags & BBF_NONE_QUIRK) != 0);
+    const bool skipJump   = tryJumpOpt && JumpsToNext() && !hasAlign() && ((bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
+                          !compiler->fgInDifferentRegions(this, bbJumpDest);
+    return skipJump;
+}
+
+//------------------------------------------------------------------------
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:
@@ -719,10 +738,6 @@ void BasicBlock::dspJumpKind()
             printf(" (return)");
             break;
 
-        case BBJ_NONE:
-            // For fall-through blocks, print nothing.
-            break;
-
         case BBJ_ALWAYS:
             if (bbFlags & BBF_KEEP_BBJ_ALWAYS)
             {
@@ -981,7 +996,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 
 //------------------------------------------------------------------------
 // GetUniqueSucc: Returns the unique successor of a block, if one exists.
-// Only considers BBJ_ALWAYS and BBJ_NONE block types.
+// Only considers BBJ_ALWAYS block types.
 //
 // Arguments:
 //    None.
@@ -991,18 +1006,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
-    if (bbJumpKind == BBJ_ALWAYS)
-    {
-        return bbJumpDest;
-    }
-    else if (bbJumpKind == BBJ_NONE)
-    {
-        return bbNext;
-    }
-    else
-    {
-        return nullptr;
-    }
+    return KindIs(BBJ_ALWAYS) ? bbJumpDest : nullptr;
 }
 
 // Static vars.
@@ -1120,7 +1124,6 @@ bool BasicBlock::bbFallsThrough() const
         case BBJ_SWITCH:
             return false;
 
-        case BBJ_NONE:
         case BBJ_COND:
             return true;
 
@@ -1156,7 +1159,6 @@ unsigned BasicBlock::NumSucc() const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-        case BBJ_NONE:
             return 1;
 
         case BBJ_COND:
@@ -1214,9 +1216,6 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             return bbJumpDest;
-
-        case BBJ_NONE:
-            return bbNext;
 
         case BBJ_COND:
             if (i == 0)
@@ -1283,7 +1282,6 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-        case BBJ_NONE:
             return 1;
 
         case BBJ_COND:
@@ -1339,9 +1337,6 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
             return bbJumpDest;
-
-        case BBJ_NONE:
-            return bbNext;
 
         case BBJ_COND:
             if (i == 0)
@@ -1619,7 +1614,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock
     block->bbJumpKind = jumpKind;
     block->bbJumpDest = jumpDest;
 
-    if (jumpKind == BBJ_THROW)
+    if (block->KindIs(BBJ_THROW))
     {
         block->bbSetRunRarely();
     }

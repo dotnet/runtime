@@ -379,6 +379,15 @@ void CodeGen::genMarkLabelsForCodegen()
         switch (block->GetJumpKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
+            {
+                // If we can skip this jump, don't create a label for the target
+                if (block->CanRemoveJumpToNext(compiler))
+                {
+                    break;
+                }
+
+                FALLTHROUGH;
+            }
             case BBJ_COND:
             case BBJ_EHCATCHRET:
                 JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
@@ -422,7 +431,6 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_EHFILTERRET:
             case BBJ_RETURN:
             case BBJ_THROW:
-            case BBJ_NONE:
                 break;
 
             default:

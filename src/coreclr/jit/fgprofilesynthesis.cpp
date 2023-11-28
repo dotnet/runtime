@@ -142,7 +142,6 @@ void ProfileSynthesis::AssignLikelihoods()
                 // (todo: finally ret may have succs)
                 break;
 
-            case BBJ_NONE:
             case BBJ_CALLFINALLY:
                 // Single successor next cases
                 //
@@ -404,7 +403,6 @@ void ProfileSynthesis::RepairLikelihoods()
                 // Nothing to do.
                 break;
 
-            case BBJ_NONE:
             case BBJ_CALLFINALLY:
                 // Single successor next cases.
                 // Just assign 1.0
@@ -496,7 +494,6 @@ void ProfileSynthesis::BlendLikelihoods()
                 // Nothing to do.
                 break;
 
-            case BBJ_NONE:
             case BBJ_CALLFINALLY:
                 // Single successor next cases.
                 // Just assign 1.0
