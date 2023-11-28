@@ -333,6 +333,11 @@ namespace System
                 return TryParseBigIntegerHexNumberStyle(value, style, out result);
             }
 
+            if ((style & NumberStyles.AllowBinarySpecifier) != 0)
+            {
+                return TryParseBigIntegerBinaryNumberStyle(value, style, out result);
+            }
+
             return TryParseBigIntegerNumber(value, style, info, out result);
         }
 
@@ -524,15 +529,40 @@ namespace System
             return ParsingStatus.Failed;
         }
 
-        private static ParsingStatus BinaryNumberToBigInteger(ref NumberBuffer number, out BigInteger result)
+        internal static ParsingStatus TryParseBigIntegerBinaryNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
         {
-            if (number.DigitsCount == 0)
+            int whiteIndex = 0;
+
+            // Skip past any whitespace at the beginning.
+            if ((style & NumberStyles.AllowLeadingWhite) != 0)
             {
-                result = default;
-                return ParsingStatus.Failed;
+                for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
+                {
+                    if (!IsWhite(value[whiteIndex]))
+                        break;
+                }
+
+                value = value[whiteIndex..];
             }
 
-            int totalDigitCount = number.DigitsCount;
+            // Skip past any whitespace at the end.
+            if ((style & NumberStyles.AllowTrailingWhite) != 0)
+            {
+                for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
+                {
+                    if (!IsWhite(value[whiteIndex]))
+                        break;
+                }
+
+                value = value[..(whiteIndex + 1)];
+            }
+
+            if (value.IsEmpty)
+            {
+                goto FailExit;
+            }
+
+            int totalDigitCount = value.Length;
             int partialDigitCount;
 
             (int blockCount, int remainder) = int.DivRem(totalDigitCount, BigInteger.kcbitUint);
@@ -546,8 +576,8 @@ namespace System
                 partialDigitCount = BigInteger.kcbitUint - remainder;
             }
 
-            Debug.Assert(number.Digits[0] is (byte)'0' or (byte)'1');
-            bool isNegative = number.Digits[0] == (byte)'1';
+            if (value[0] is not ('0' or '1')) goto FailExit;
+            bool isNegative = value[0] == '1';
             uint currentBlock = isNegative ? 0xFF_FF_FF_FFu : 0x0;
 
             uint[]? arrayFromPool = null;
@@ -559,15 +589,11 @@ namespace System
 
             try
             {
-                for (int i = 0; i < number.DigitsCount; i++)
+                for (int i = 0; i < value.Length; i++)
                 {
-                    byte digitChar = number.Digits[i];
-                    if (digitChar == 0)
-                    {
-                        break;
-                    }
+                    char digitChar = value[i];
 
-                    Debug.Assert(digitChar is (byte)'0' or (byte)'1');
+                    if (digitChar is not ('0' or '1')) goto FailExit;
                     currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
                     partialDigitCount++;
 
@@ -624,6 +650,10 @@ namespace System
                     ArrayPool<uint>.Shared.Return(arrayFromPool);
                 }
             }
+
+        FailExit:
+            result = default;
+            return ParsingStatus.Failed;
         }
 
         //
