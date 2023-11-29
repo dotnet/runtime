@@ -53,7 +53,7 @@
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) --usemonoruntime</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(DotnetBuildVertical) != ''">$(InnerBuildArgs) /p:DotnetBuildVertical=$(DotnetBuildVertical)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotnetBuildVertical)' != ''">$(InnerBuildArgs) /p:DotnetBuildVertical=$(DotnetBuildVertical)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
@@ -76,7 +76,7 @@
       <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
         Category="Crossgen2Pack" />
-        
+
         <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;"
         Category="Crossgen2Archive" />
