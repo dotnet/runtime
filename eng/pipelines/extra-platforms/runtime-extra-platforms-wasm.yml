@@ -16,7 +16,7 @@ jobs:
 
 #
 # ************ Rolling builds: *************
-# - only run eat, aot and hg tests
+# - only run eat and aot tests
 # - rest are covered by runtime
 #
 - ${{ if eq(parameters.isRollingBuild, true) }}:
@@ -186,7 +186,7 @@ jobs:
         - browser_wasm
         - browser_wasm_win
       nameSuffix: _HybridGlobalization
-      extraHelixArgs: /p:HybridGlobalization=true
+      extraBuildArgs: /p:HybridGlobalization=true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
@@ -202,8 +202,7 @@ jobs:
         - browser_wasm
         - browser_wasm_win
       nameSuffix: _HybridGlobalization_AOT
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      extraHelixArgs: /p:HybridGlobalization=true
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:HybridGlobalization=true
       runAOT: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
