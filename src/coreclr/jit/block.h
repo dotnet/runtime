@@ -706,12 +706,16 @@ public:
         // Assert flag is not multiple BasicBlockFlags OR'd together
         // by checking if it is a power of 2
         // (CheckFlag expects to check only one flag at a time)
-        assert((flag & (flag - 1)) == 0);
+        assert(isPow2(flag));
         return (bbFlags & flag);
     }
 
     BasicBlockFlags CheckFlags(const BasicBlockFlags flags) const
     {
+        // Assert flag is multiple BasicBlockFlags OR'd together
+        // by checking if it is not a power of 2
+        // (CheckFlags expects to check only one flag at a time)
+        assert(!isPow2(flags));
         return (bbFlags & flags);
     }
 
