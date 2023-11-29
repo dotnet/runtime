@@ -462,6 +462,7 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>

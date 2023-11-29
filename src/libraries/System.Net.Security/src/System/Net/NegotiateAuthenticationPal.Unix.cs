@@ -13,6 +13,7 @@ using System.Security;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Principal;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
@@ -25,7 +26,7 @@ namespace System.Net
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :
             OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-            (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic", StringComparison.OrdinalIgnoreCase));
+            (OperatingSystem.IsLinux() && Regex.IsMatch(RuntimeInformation.RuntimeIdentifier, "^linux-bionic(-.*)?$", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture));
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
