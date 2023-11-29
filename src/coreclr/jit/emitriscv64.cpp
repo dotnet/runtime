@@ -941,9 +941,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   reg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
@@ -1243,8 +1243,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*    addr,
-                           ssize_t  argSize,
+                           void*            addr,
+                           ssize_t          argSize,
                            emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -1713,9 +1713,9 @@ void emitter::emitJumpDistBind()
         emitCounts_INS_OPTS_J * (6 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J)
     NATIVE_OFFSET psd = B_DIST_SMALL_MAX_POS - maxPlaceholderSize;
 
-/*****************************************************************************/
-/* If the default small encoding is not enough, we start again here.     */
-/*****************************************************************************/
+    /*****************************************************************************/
+    /* If the default small encoding is not enough, we start again here.     */
+    /*****************************************************************************/
 
 AGAIN:
 
@@ -1746,7 +1746,7 @@ AGAIN:
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
 
-/* Make sure the jumps are properly ordered */
+        /* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
@@ -1904,8 +1904,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -1981,8 +1981,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2086,7 +2086,7 @@ AGAIN:
 }
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -2505,7 +2505,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         regNumber reg2 = REG_R0;
                         if (INS_beqz != ins && INS_bnez != ins)
                             reg2 = id->idReg2();
-                        code     = emitInsCode(ins) ^ 0x1000;
+                        code = emitInsCode(ins) ^ 0x1000;
                         code |= (code_t)reg1 << 15; /* rj */
                         code |= (code_t)reg2 << 20; /* rd */
                         code |= 0x8 << 7;
@@ -2585,7 +2585,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         regNumber reg2 = REG_R0;
                         if (INS_beqz != ins && INS_bnez != ins)
                             reg2 = id->idReg2();
-                        code     = emitInsCode(ins) ^ 0x1000;
+                        code = emitInsCode(ins) ^ 0x1000;
                         code |= (code_t)reg1 << 15; /* rj */
                         code |= (code_t)reg2 << 20; /* rd */
                         code |= 28 << 7;
@@ -2840,7 +2840,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
 #if DUMP_GC_TABLES
         bool dspOffs = emitComp->opts.dspGCtbls;
-#else // !DUMP_GC_TABLES
+#else  // !DUMP_GC_TABLES
         bool dspOffs = !emitComp->opts.disDiffable;
 #endif // !DUMP_GC_TABLES
         emitDispIns(id, false, dspOffs, true, 0, *dp, (dstRW - odstRW), ig);
@@ -2855,7 +2855,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(!"JitBreakEmitOutputInstr reached");
         }
     }
-#else // !DEBUG
+#else  // !DEBUG
     if (emitComp->opts.disAsm)
     {
         emitDispIns(id, false, false, true, 0, *dp, (dstRW - odstRW), ig);
@@ -3828,7 +3828,7 @@ void emitter::emitDispIns(
         return;
 
     const BYTE* instr = pCode + writeableOffset + offset;
-    size_t instrSize;
+    size_t      instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize)
     {
         instrSize = sizeof(code_t);
