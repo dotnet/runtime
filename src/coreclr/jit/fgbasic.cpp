@@ -5042,7 +5042,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // The new block always jumps to 'succ'
         newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* jumpDest */ succ, /* isRunRarely */ curr->isRunRarely());
     }
-    newBlock->CopyFlags(curr, succ->CheckFlag(BBF_BACKWARD_JUMP));
+    newBlock->CopyFlags(curr, succ->GetFlagsRaw() & BBF_BACKWARD_JUMP);
 
     JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
             newBlock->bbNum);
