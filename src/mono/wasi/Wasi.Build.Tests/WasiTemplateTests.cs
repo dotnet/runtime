@@ -136,7 +136,7 @@ public class WasiTemplateTests : BuildTestBase
         BuildProject(buildArgs,
                     id: id,
                     new BuildProjectOptions(
-                        DotnetWasmFromRuntimePack: false,
+                        DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
                         Publish: true,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
