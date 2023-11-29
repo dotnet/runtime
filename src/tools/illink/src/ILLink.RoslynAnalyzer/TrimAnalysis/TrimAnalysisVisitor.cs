@@ -101,7 +101,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			var arrayValue = ArrayValue.Create (Visit (operation.DimensionSizes[0], state));
 			var elements = operation.Initializer?.ElementValues.Select (val => Visit (val, state)).ToArray () ?? System.Array.Empty<MultiValue> ();
-			foreach (var array in arrayValue.Cast<ArrayValue> ()) {
+			foreach (var array in arrayValue.AsEnumerable ().Cast<ArrayValue> ()) {
 				for (int i = 0; i < elements.Length; i++) {
 					array.IndexValues.Add (i, ArrayValue.SanitizeArrayElementValue(elements[i]));
 				}
@@ -183,11 +183,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				MultiValue rightValue = Visit (operation.RightOperand, argument);
 
 				MultiValue result = TopValue;
-				foreach (var left in leftValue) {
+				foreach (var left in leftValue.AsEnumerable ()) {
 					if (left is UnknownValue)
 						result = _multiValueLattice.Meet (result, left);
 					else if (left is ConstIntValue leftConstInt) {
-						foreach (var right in rightValue) {
+						foreach (var right in rightValue.AsEnumerable ()) {
 							if (right is UnknownValue)
 								result = _multiValueLattice.Meet (result, right);
 							else if (right is ConstIntValue rightConstInt) {
@@ -240,7 +240,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return UnknownValue.Instance;
 
 			MultiValue result = TopValue;
-			foreach (var value in arrayValue) {
+			foreach (var value in arrayValue.AsEnumerable ()) {
 				if (value is ArrayValue arr && arr.TryGetValueByIndex (index, out var elementValue))
 					result = _multiValueLattice.Meet (result, elementValue);
 				else
@@ -252,7 +252,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public override void HandleArrayElementWrite (MultiValue arrayValue, MultiValue indexValue, MultiValue valueToWrite, IOperation operation, bool merge)
 		{
 			int? index = indexValue.AsConstInt ();
-			foreach (var arraySingleValue in arrayValue) {
+			foreach (var arraySingleValue in arrayValue.AsEnumerable ()) {
 				if (arraySingleValue is ArrayValue arr) {
 					if (index == null) {
 						// Reset the array to all unknowns - since we don't know which index is being assigned
@@ -297,7 +297,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContext));
 
 			foreach (var argument in arguments) {
-				foreach (var argumentValue in argument) {
+				foreach (var argumentValue in argument.AsEnumerable ()) {
 					if (argumentValue is ArrayValue arrayValue)
 						arrayValue.IndexValues.Clear ();
 				}
@@ -338,7 +338,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				break;
 
 			case IntrinsicId.Object_GetType: {
-					foreach (var valueNode in instance) {
+					foreach (var valueNode in instance.AsEnumerable ()) {
 						// Note that valueNode can be statically typed as some generic argument type.
 						// For example:
 						//   void Method<T>(T instance) { instance.GetType().... }

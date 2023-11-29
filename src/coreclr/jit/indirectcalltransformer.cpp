@@ -42,7 +42,7 @@
 //   current block
 //   {
 //     previous statements
-//   } BBJ_NONE check block
+//   } BBJ_ALWAYS check block
 //   check block
 //   {
 //     jump to else if function ptr has the FAT_POINTER_MASK bit set.
@@ -58,7 +58,7 @@
 //     load instantiation argument
 //     create newArgList = (instantiation argument, original argList)
 //     call (actual function pointer, newArgList)
-//   } BBJ_NONE remainder block
+//   } BBJ_ALWAYS remainder block
 //   remainder block
 //   {
 //     subsequent statements
@@ -273,11 +273,13 @@ private:
 
             if (checkBlock != currBlock)
             {
+                assert(currBlock->KindIs(BBJ_ALWAYS));
+                currBlock->SetJumpDest(checkBlock);
                 compiler->fgAddRefPred(checkBlock, currBlock);
             }
 
             // checkBlock
-            assert(checkBlock->KindIs(BBJ_NONE));
+            assert(checkBlock->KindIs(BBJ_ALWAYS));
             checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
@@ -365,7 +367,8 @@ private:
         {
             assert(checkIdx == 0);
 
-            checkBlock                 = CreateAndInsertBasicBlock(BBJ_NONE, currBlock);
+            checkBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock->Next());
+            checkBlock->SetFlags(BBF_NONE_QUIRK);
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
@@ -393,7 +396,8 @@ private:
         //
         virtual void CreateElse()
         {
-            elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
+            elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             GenTree* fixedFptrAddress  = GetFixedFptrAddress();
             GenTree* actualCallAddress = compiler->gtNewIndir(pointerType, fixedFptrAddress);
@@ -583,8 +587,9 @@ private:
             else
             {
                 // In case of multiple checks, append to the previous thenBlock block
+                // (Set jump target of new checkBlock in CreateThen())
                 BasicBlock* prevCheckBlock = checkBlock;
-                checkBlock                 = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+                checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
                 checkFallsThrough          = false;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
@@ -653,11 +658,11 @@ private:
 
             // In case if GDV candidates are "exact" (e.g. we have the full list of classes implementing
             // the given interface in the app - NativeAOT only at this moment) we assume the last
-            // check will always be true, so we just simplify the block to BBJ_NONE
+            // check will always be true, so we just simplify the block to BBJ_ALWAYS
             const bool isLastCheck = (checkIdx == origCall->GetInlineCandidatesCount() - 1);
             if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
             {
-                checkBlock->SetJumpKindAndTarget(BBJ_NONE);
+                assert(checkBlock->KindIs(BBJ_ALWAYS));
                 checkFallsThrough = true;
                 return;
             }
@@ -1005,6 +1010,10 @@ private:
             thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
 
             // Also, thenBlock has a single pred - last checkBlock
+            assert(checkBlock->KindIs(BBJ_ALWAYS));
+            checkBlock->SetJumpDest(thenBlock);
+            checkBlock->SetFlags(BBF_NONE_QUIRK);
+            assert(checkBlock->JumpsToNext());
             compiler->fgAddRefPred(thenBlock, checkBlock);
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
@@ -1016,8 +1025,9 @@ private:
         //
         virtual void CreateElse()
         {
-            elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
             elseBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
+            elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)
@@ -1076,7 +1086,7 @@ private:
 
         // For chained gdv, we modify the expansion as follows:
         //
-        // We verify the check block has two BBJ_NONE/ALWAYS predecessors, one of
+        // We verify the check block has two BBJ_ALWAYS predecessors, one of
         // which (the "cold path") ends in a normal call, the other in an
         // inline candidate call.
         //
@@ -1093,7 +1103,7 @@ private:
             //
             BasicBlock* const coldBlock = checkBlock->Prev();
 
-            if (!coldBlock->KindIs(BBJ_NONE))
+            if (!coldBlock->KindIs(BBJ_ALWAYS) || !coldBlock->JumpsToNext())
             {
                 JITDUMP("Unexpected flow from cold path " FMT_BB "\n", coldBlock->bbNum);
                 return;

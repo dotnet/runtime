@@ -626,9 +626,6 @@ protected:
     void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
-#if defined(TARGET_ARM)
-    void genInsertNopForUnwinder(BasicBlock* block);
-#endif
 
 #else // !FEATURE_EH_FUNCLETS
 

@@ -6284,7 +6284,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // fgSetBlockOrder() is going to mark the method as fully interruptible
         // if the block containing this tail call is reachable without executing
         // any call.
-        if (canFastTailCall || fgFirstBB->HasFlag(BBF_GC_SAFE_POINT) || compCurBB->HasFlag(BBF_GC_SAFE_POINT))
+        if (canFastTailCall || fgFirstBB->CheckFlag(BBF_GC_SAFE_POINT) || compCurBB->CheckFlag(BBF_GC_SAFE_POINT))
         {
             // No gc poll needed
         }
@@ -13186,10 +13186,11 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     optUnmarkLoopBlocks(block->GetJumpDest(), block);
                 }
 
-                /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
+                /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
                 bTaken    = block->Next();
                 bNotTaken = block->GetJumpDest();
-                block->SetJumpKindAndTarget(BBJ_NONE);
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, bTaken);
+                block->SetFlags(BBF_NONE_QUIRK);
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13244,13 +13245,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     // Now fix the weights of the edges out of 'bUpdated'
                     switch (bUpdated->GetJumpKind())
                     {
-                        case BBJ_NONE:
-                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
-                            break;
-
                         case BBJ_COND:
                             edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
@@ -13281,11 +13275,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
-                }
+                printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13413,16 +13404,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    if (!block->NextIs(curJump))
-                    {
-                        // transform the basic block into a BBJ_ALWAYS
-                        block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
-                    }
-                    else
-                    {
-                        // transform the basic block into a BBJ_NONE
-                        block->SetJumpKindAndTarget(BBJ_NONE);
-                    }
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
                     foundVal = true;
                 }
                 else
@@ -13433,16 +13415,17 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             }
 
             assert(foundVal);
+            if (block->JumpsToNext())
+            {
+                block->SetFlags(BBF_NONE_QUIRK);
+            }
 
 #ifdef DEBUG
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
-                }
+                printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13566,9 +13549,9 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
 
         // The rest of block has been removed and we will always throw an exception.
         //
-        // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_NONE.
+        // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_ALWAYS.
         // We should not convert it to a ThrowBB.
-        if ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL))
+        if ((block != fgFirstBB) || !fgFirstBB->CheckFlag(BBF_INTERNAL))
         {
             // Convert block to a throw bb
             fgConvertBBToThrowBB(block);
@@ -13711,9 +13694,10 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             //   - a tail call dispatched via runtime help (IL stubs), in which
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
-            noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) && compCurBB->HasFlag(BBF_HAS_JMP)) ||
-                         (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
-                         (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
+            noway_assert(
+                (call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) && compCurBB->CheckFlag(BBF_HAS_JMP)) ||
+                (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
+                (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
         }
 
 #ifdef DEBUG
@@ -13857,7 +13841,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
             //
             // Some blocks are ineligible.
             //
-            bool canUsePredAssertions = !block->HasFlag(BBF_CAN_ADD_PRED) && !bbIsHandlerBeg(block);
+            bool canUsePredAssertions = !block->CheckFlag(BBF_CAN_ADD_PRED) && !bbIsHandlerBeg(block);
 
             // Validate all preds have valid info
             //
@@ -13960,7 +13944,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
     fgMorphStmts(block);
 
     // Do we need to merge the result of this block into a single return block?
-    if (block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP))
+    if (block->KindIs(BBJ_RETURN) && !block->CheckFlag(BBF_HAS_JMP))
     {
         if ((genReturnBB != nullptr) && (genReturnBB != block))
         {
@@ -14123,8 +14107,9 @@ PhaseStatus Compiler::fgMorphBlocks()
 
     // We are done with the global morphing phase
     //
-    fgGlobalMorph = false;
-    compCurBB     = nullptr;
+    fgGlobalMorph     = false;
+    fgGlobalMorphDone = true;
+    compCurBB         = nullptr;
 
 #ifdef DEBUG
     if (optLocalAssertionProp)
@@ -14156,7 +14141,7 @@ PhaseStatus Compiler::fgMorphBlocks()
 //
 void Compiler::fgMergeBlockReturn(BasicBlock* block)
 {
-    assert(block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP));
+    assert(block->KindIs(BBJ_RETURN) && !block->CheckFlag(BBF_HAS_JMP));
     assert((genReturnBB != nullptr) && (genReturnBB != block));
 
     // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
@@ -14648,21 +14633,23 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    BasicBlockFlags propagateFlags = block->GetFlagsRaw() & BBF_GC_SAFE_POINT;
+    BasicBlockFlags propagateFlags = block->CheckFlag(BBF_GC_SAFE_POINT);
     BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
-    BasicBlock* helperBlock = fgNewBBafter(BBJ_NONE, block, true);
+    BasicBlock* helperBlock = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
     BasicBlock* cond2Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
-    BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
+    BasicBlock* asgBlock    = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
 
     block->RemoveFlags(BBF_NEEDS_GCPOLL);
     remainderBlock->SetFlags(propagateFlags);
+    helperBlock->SetFlags(BBF_NONE_QUIRK);
+    asgBlock->SetFlags(BBF_NONE_QUIRK);
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
-    if (!block->HasFlag(BBF_INTERNAL))
+    if (!block->CheckFlag(BBF_INTERNAL))
     {
         helperBlock->RemoveFlags(BBF_INTERNAL);
         cond2Block->RemoveFlags(BBF_INTERNAL);
@@ -14675,6 +14662,8 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     }
 
     // Chain the flow correctly.
+    assert(block->KindIs(BBJ_ALWAYS));
+    block->SetJumpDest(asgBlock);
     fgAddRefPred(asgBlock, block);
     fgAddRefPred(cond1Block, asgBlock);
     fgAddRefPred(cond2Block, cond1Block);
@@ -14848,18 +14837,18 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    BasicBlockFlags propagateFlagsToRemainder = block->GetFlagsRaw() & BBF_GC_SAFE_POINT;
+    BasicBlockFlags propagateFlagsToRemainder = block->CheckFlag(BBF_GC_SAFE_POINT);
     // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
-    BasicBlockFlags propagateFlagsToAll = block->GetFlagsRaw() & BBF_COPY_PROPAGATE;
+    BasicBlockFlags propagateFlagsToAll = block->CheckFlags(BBF_COPY_PROPAGATE);
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
-    BasicBlock* condBlock = fgNewBBafter(BBJ_NONE, block, true);
-    BasicBlock* elseBlock = fgNewBBafter(BBJ_NONE, condBlock, true);
+    BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
+    BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
-    if (!block->HasFlag(BBF_INTERNAL))
+    if (!block->CheckFlag(BBF_INTERNAL))
     {
         condBlock->RemoveFlags(BBF_INTERNAL);
         elseBlock->RemoveFlags(BBF_INTERNAL);
@@ -14872,12 +14861,19 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     condBlock->inheritWeight(block);
 
+    assert(block->KindIs(BBJ_ALWAYS));
+    block->SetJumpDest(condBlock);
+    condBlock->SetJumpDest(elseBlock);
+    elseBlock->SetJumpDest(remainderBlock);
+    assert(condBlock->JumpsToNext());
+    assert(elseBlock->JumpsToNext());
+
     fgAddRefPred(condBlock, block);
     fgAddRefPred(elseBlock, condBlock);
     fgAddRefPred(remainderBlock, elseBlock);
 
-    condBlock->SetFlags(propagateFlagsToAll);
-    elseBlock->SetFlags(propagateFlagsToAll);
+    condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
+    elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)
@@ -14895,7 +14891,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->SetFlags(propagateFlagsToAll);
-        if (!block->HasFlag(BBF_INTERNAL))
+        if (!block->CheckFlag(BBF_INTERNAL))
         {
             thenBlock->RemoveFlags(BBF_INTERNAL);
             thenBlock->SetFlags(BBF_IMPORTED);
@@ -16125,7 +16121,7 @@ PhaseStatus Compiler::fgMorphArrayOps()
 
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->HasFlag(BBF_HAS_MDARRAYREF))
+        if (!block->CheckFlag(BBF_HAS_MDARRAYREF))
         {
             // No MD array references in this block
             continue;

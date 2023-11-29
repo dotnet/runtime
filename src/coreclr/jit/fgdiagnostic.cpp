@@ -77,7 +77,7 @@ void Compiler::fgDebugCheckUpdate()
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
      * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
      *                           kind of redundand with the above, but to make sure)
-     * no un-compacted blocks -> BBJ_NONE followed by block with no jumps to it (countOfInEdges() = 1)
+     * no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
      */
 
     BasicBlock* prev;
@@ -86,20 +86,14 @@ void Compiler::fgDebugCheckUpdate()
     {
         /* no unreachable blocks */
 
-        if ((block->countOfInEdges() == 0) && !block->HasFlag(BBF_DONT_REMOVE)
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // With funclets, we never get rid of the BBJ_ALWAYS part of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
-            // even if we can prove that the finally block never returns.
-            && !block->isBBCallAlwaysPairTail()
-#endif // FEATURE_EH_FUNCLETS
-                )
+        if ((block->countOfInEdges() == 0) && !block->CheckFlag(BBF_DONT_REMOVE))
         {
             noway_assert(!"Unreachable block not removed!");
         }
 
         /* no empty blocks */
 
-        if (block->isEmpty() && !block->HasFlag(BBF_DONT_REMOVE))
+        if (block->isEmpty() && !block->CheckFlag(BBF_DONT_REMOVE))
         {
             switch (block->GetJumpKind())
             {
@@ -128,11 +122,11 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-imported blocks */
 
-        if (!block->HasFlag(BBF_IMPORTED))
+        if (!block->CheckFlag(BBF_IMPORTED))
         {
             /* internal blocks do not count */
 
-            if (!block->HasFlag(BBF_INTERNAL))
+            if (!block->CheckFlag(BBF_INTERNAL))
             {
                 noway_assert(!"Non IMPORTED block not removed!");
             }
@@ -146,32 +140,8 @@ void Compiler::fgDebugCheckUpdate()
         if (block->KindIs(BBJ_COND))
         {
             // A conditional branch should never jump to the next block
-            // as it can be folded into a BBJ_NONE;
+            // as it can be folded into a BBJ_ALWAYS;
             doAssertOnJumpToNextBlock = true;
-        }
-        else if (block->KindIs(BBJ_ALWAYS))
-        {
-            // Generally we will want to assert if a BBJ_ALWAYS branches to the next block
-            doAssertOnJumpToNextBlock = true;
-
-            // If the BBF_KEEP_BBJ_ALWAYS flag is set we allow it to jump to the next block
-            if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
-
-            // A call/always pair is also allowed to jump to the next block
-            if (prevIsCallAlwaysPair)
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
-
-            // We are allowed to have a branch from a hot 'block' to a cold 'bbNext'
-            //
-            if (!block->IsLast() && fgInDifferentRegions(block, block->Next()))
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
         }
 
         if (doAssertOnJumpToNextBlock)
@@ -186,7 +156,7 @@ void Compiler::fgDebugCheckUpdate()
 
         if (block->KindIs(BBJ_ALWAYS) && prevIsCallAlwaysPair)
         {
-            noway_assert(block->HasFlag(BBF_KEEP_BBJ_ALWAYS));
+            noway_assert(block->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
         }
 
         /* For a BBJ_CALLFINALLY block we make sure that we are followed by */
@@ -194,7 +164,7 @@ void Compiler::fgDebugCheckUpdate()
         /* or that it's a BBF_RETLESS_CALL */
         if (block->KindIs(BBJ_CALLFINALLY))
         {
-            assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
+            assert(block->CheckFlag(BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
         }
 
         /* no un-compacted blocks */
@@ -910,7 +880,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock = bbIsTryBeg(block);
 
                 if (isTryEntryBlock ||
-                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
+                    block->CheckFlags(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
                                       BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
@@ -919,23 +889,23 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         fprintf(fgxFile, "T");
                     }
-                    if (block->HasFlag(BBF_FUNCLET_BEG))
+                    if (block->CheckFlag(BBF_FUNCLET_BEG))
                     {
                         fprintf(fgxFile, "F");
                     }
-                    if (block->HasFlag(BBF_RUN_RARELY))
+                    if (block->CheckFlag(BBF_RUN_RARELY))
                     {
                         fprintf(fgxFile, "R");
                     }
-                    if (block->HasFlag(BBF_LOOP_HEAD))
+                    if (block->CheckFlag(BBF_LOOP_HEAD))
                     {
                         fprintf(fgxFile, "L");
                     }
-                    if (block->HasFlag(BBF_LOOP_PREHEADER))
+                    if (block->CheckFlag(BBF_LOOP_PREHEADER))
                     {
                         fprintf(fgxFile, "P");
                     }
-                    if (block->HasFlag(BBF_LOOP_ALIGN))
+                    if (block->CheckFlag(BBF_LOOP_ALIGN))
                     {
                         fprintf(fgxFile, "A");
                     }
@@ -1025,7 +995,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, ", shape = \"trapezium\"");
             }
-            else if (block->HasFlag(BBF_INTERNAL))
+            else if (block->CheckFlag(BBF_INTERNAL))
             {
                 fprintf(fgxFile, ", shape = \"note\"");
             }
@@ -1046,15 +1016,15 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            inHandler=\"%s\"", "true");
             }
-            if ((fgFirstBB->hasProfileWeight()) && !block->HasFlag(BBF_COLD))
+            if ((fgFirstBB->hasProfileWeight()) && !block->CheckFlag(BBF_COLD))
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
-            if (block->HasFlag(BBF_HAS_NEWOBJ))
+            if (block->CheckFlag(BBF_HAS_NEWOBJ))
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
-            if (block->HasFlag(BBF_LOOP_HEAD))
+            if (block->CheckFlag(BBF_LOOP_HEAD))
             {
                 fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
@@ -2783,12 +2753,8 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             assert(blockPred->NextIs(block) || blockPred->HasJumpTo(block));
             return true;
 
-        case BBJ_NONE:
-            assert(blockPred->NextIs(block));
-            return true;
-
-        case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
+        case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             assert(blockPred->HasJumpTo(block));
@@ -2960,7 +2926,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (fgFirstFuncletBB != nullptr)
         {
             assert(fgFirstFuncletBB->hasHndIndex() == true);
-            assert(fgFirstFuncletBB->HasFlag(BBF_FUNCLET_BEG));
+            assert(fgFirstFuncletBB->CheckFlag(BBF_FUNCLET_BEG));
         }
     }
 #endif // FEATURE_EH_FUNCLETS
@@ -2976,6 +2942,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
 
     unsigned numBlocks = 0;
+    unsigned maxBBNum  = 0;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2986,6 +2953,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             // Check that bbNum is sequential
             assert(block->IsLast() || (block->bbNum + 1 == block->Next()->bbNum));
         }
+
+        maxBBNum = max(maxBBNum, block->bbNum);
 
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
@@ -3028,7 +2997,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // This may not be true for unimported blocks, if
         // we haven't run post-importation cleanup yet.
         //
-        if (compPostImportationCleanupDone || block->HasFlag(BBF_IMPORTED))
+        if (compPostImportationCleanupDone || block->CheckFlag(BBF_IMPORTED))
         {
             if (block->KindIs(BBJ_COND))
             {
@@ -3127,9 +3096,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         // Blocks with these jump kinds must have non-null jump targets
-        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE))
+        if (block->HasJumpDest())
         {
-            assert(block->HasJump());
+            assert(block->HasInitializedJumpDest());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
@@ -3190,6 +3159,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
     assert(fgBBcount == numBlocks);
+    assert(fgBBNumMax >= maxBBNum);
 
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
@@ -3237,6 +3207,71 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckTypes: Validate node types used in the given tree
+//
+// Arguments:
+//    tree - the tree to (recursively) check types for
+//
+void Compiler::fgDebugCheckTypes(GenTree* tree)
+{
+    struct NodeTypeValidator : GenTreeVisitor<NodeTypeValidator>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        NodeTypeValidator(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
+        {
+            GenTree* node = *use;
+
+            // Validate types of nodes in the IR:
+            //
+            // * TYP_ULONG and TYP_UINT are not legal.
+            // * Small types are only legal for the following nodes:
+            //    * All kinds of indirections including GT_NULLCHECK
+            //    * All kinds of locals
+            //    * GT_COMMA wrapped around any of the above.
+            //
+            if (node->TypeIs(TYP_ULONG, TYP_UINT))
+            {
+                m_compiler->gtDispTree(node);
+                assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+            }
+
+            if (varTypeIsSmall(node))
+            {
+                if (node->OperIs(GT_COMMA))
+                {
+                    // TODO: it's only allowed if its underlying effective node is also a small type.
+                    return WALK_CONTINUE;
+                }
+
+                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+                {
+                    return WALK_CONTINUE;
+                }
+
+                m_compiler->gtDispTree(node);
+                assert(!"Unexpected small type in IR");
+            }
+
+            // TODO: validate types in GT_CAST nodes.
+            // Validate mismatched types in binopt's arguments, etc.
+            //
+            return WALK_CONTINUE;
+        }
+    };
+
+    NodeTypeValidator walker(this);
+    walker.WalkTree(&tree, nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -3343,7 +3378,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             if (!fgGlobalMorphDone && call->CanTailCall() && gtIsRecursiveCall(call))
             {
                 assert(doesMethodHaveRecursiveTailcall());
-                assert(block->HasFlag(BBF_RECURSIVE_TAILCALL));
+                assert(block->CheckFlag(BBF_RECURSIVE_TAILCALL));
             }
 
             for (CallArg& arg : call->gtArgs.Args())
@@ -3846,6 +3881,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         fgDebugCheckFlags(stmt->GetRootNode(), block);
+        fgDebugCheckTypes(stmt->GetRootNode());
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()
@@ -4725,7 +4761,7 @@ void Compiler::fgDebugCheckLoopTable()
     unsigned newBBnum = 1;
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->HasFlag(BBF_REMOVED))
+        if (!block->CheckFlag(BBF_REMOVED))
         {
             assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
             assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
@@ -4956,21 +4992,12 @@ void Compiler::fgDebugCheckLoopTable()
             ++preHeaderCount;
 
             BasicBlock* h = loop.lpHead;
-            assert(h->HasFlag(BBF_LOOP_PREHEADER));
+            assert(h->CheckFlag(BBF_LOOP_PREHEADER));
 
-            // The pre-header can only be BBJ_ALWAYS or BBJ_NONE and must enter the loop.
+            // The pre-header can only be BBJ_ALWAYS and must enter the loop.
             BasicBlock* e = loop.lpEntry;
-            if (h->KindIs(BBJ_ALWAYS))
-            {
-                assert(h->HasJumpTo(e));
-            }
-            else
-            {
-                assert(h->KindIs(BBJ_NONE));
-                assert(h->NextIs(e));
-                assert(loop.lpTop == e);
-                assert(loop.lpIsTopEntry());
-            }
+            assert(h->KindIs(BBJ_ALWAYS));
+            assert(h->HasJumpTo(e));
 
             // The entry block has a single non-loop predecessor, and it is the pre-header.
             for (BasicBlock* const predBlock : e->PredBlocks())
@@ -5090,7 +5117,7 @@ void Compiler::fgDebugCheckLoopTable()
             loopNum = optLoopTable[loopNum].lpParent;
         }
 
-        if (block->HasFlag(BBF_LOOP_PREHEADER))
+        if (block->CheckFlag(BBF_LOOP_PREHEADER))
         {
             // Note that the bbNatLoopNum will not point to the loop where this is a pre-header, since bbNatLoopNum
             // is only set on the blocks from `top` to `bottom`, and `head` is outside that.

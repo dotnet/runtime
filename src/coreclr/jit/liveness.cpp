@@ -692,7 +692,7 @@ void Compiler::fgExtendDbgScopes()
         // If we get to a funclet, reset the scope lists and start again, since the block
         // offsets will be out of order compared to the previous block.
 
-        if (block->HasFlag(BBF_FUNCLET_BEG))
+        if (block->CheckFlag(BBF_FUNCLET_BEG))
         {
             compResetScopeLists();
             VarSetOps::ClearD(this, inScope);
@@ -888,11 +888,6 @@ void Compiler::fgExtendDbgLifetimes()
 
         switch (block->GetJumpKind())
         {
-            case BBJ_NONE:
-                PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -900,7 +895,7 @@ void Compiler::fgExtendDbgLifetimes()
                 break;
 
             case BBJ_CALLFINALLY:
-                if (!block->HasFlag(BBF_RETLESS_CALL))
+                if (!block->CheckFlag(BBF_RETLESS_CALL))
                 {
                     assert(block->isBBCallAlwaysPair());
                     PREFIX_ASSUME(!block->IsLast());
@@ -1103,7 +1098,7 @@ class LiveVarAnalysis
             }
         }
 
-        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() && block->HasFlag(BBF_RECURSIVE_TAILCALL))
+        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() && block->CheckFlag(BBF_RECURSIVE_TAILCALL))
         {
             // Early liveness happens between import and morph where we may
             // have identified a tailcall-to-loop candidate but not yet
@@ -1177,7 +1172,7 @@ class LiveVarAnalysis
             {
                 // Only "extend" liveness over BBF_INTERNAL blocks
 
-                noway_assert(block->HasFlag(BBF_INTERNAL));
+                noway_assert(block->CheckFlag(BBF_INTERNAL));
 
                 liveInChanged = !VarSetOps::IsSubset(m_compiler, m_liveIn, block->bbLiveIn);
                 if (liveInChanged || !VarSetOps::IsSubset(m_compiler, m_liveOut, block->bbLiveOut))
@@ -1249,7 +1244,7 @@ class LiveVarAnalysis
 
                     noway_assert(m_compiler->opts.compDbgCode && (m_compiler->info.compVarScopesCount > 0));
 
-                    if (!block->HasFlag(BBF_INTERNAL))
+                    if (!block->CheckFlag(BBF_INTERNAL))
                     {
                         continue;
                     }
@@ -1924,7 +1919,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
-            case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
                 if (node->IsUnusedValue())

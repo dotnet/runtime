@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // keep always and have the sole finally block as a pred.
                 // Remove `leaveBlock` as a successor of the finally `lastBlock`, which also removes the predecessor
                 // edge in `leaveBlock` from the finally return.
-                assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
+                assert(leaveBlock->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
                 nextBlock = leaveBlock->Next();
                 fgRemoveEhfSuccessor(lastBlock, leaveBlock);
                 leaveBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
@@ -454,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Time to optimize.
         //
         // (1) Convert the callfinally to a normal jump to the handler
-        assert(callFinally->HasJump());
+        assert(callFinally->HasInitializedJumpDest());
         callFinally->SetJumpKind(BBJ_ALWAYS);
 
         // Identify the leave block and the continuation
@@ -462,7 +462,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const continuation = leave->GetJumpDest();
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
-        assert(leave->HasFlag(BBF_KEEP_BBJ_ALWAYS));
+        assert(leave->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
         leave->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // (3) Cleanup the continuation
@@ -808,11 +808,7 @@ PhaseStatus Compiler::fgCloneFinally()
             // through to a callfinally.
             BasicBlock* jumpDest = nullptr;
 
-            if (block->KindIs(BBJ_NONE) && (block == lastTryBlock))
-            {
-                jumpDest = block->Next();
-            }
-            else if (block->KindIs(BBJ_ALWAYS))
+            if (block->KindIs(BBJ_ALWAYS))
             {
                 jumpDest = block->GetJumpDest();
             }
@@ -1031,7 +1027,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 // callfinallys, depending on the EH implementation.
                 const unsigned    hndIndex = 0;
                 BasicBlock* const nearBlk  = cloneInsertAfter;
-                newBlock                   = fgNewBBinRegion(BBJ_NONE, finallyTryIndex, hndIndex, nearBlk);
+                newBlock                   = fgNewBBinRegion(BBJ_ALWAYS, finallyTryIndex, hndIndex, nearBlk);
 
                 // If the clone ends up just after the finally, adjust
                 // the stopping point for finally traversal.
@@ -1045,7 +1041,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Put subsequent blocks in the same region...
                 const bool extendRegion = true;
-                newBlock                = fgNewBBafter(BBJ_NONE, insertAfter, extendRegion);
+                newBlock                = fgNewBBafter(BBJ_ALWAYS, insertAfter, extendRegion);
             }
 
             cloneBBCount++;
@@ -1081,7 +1077,8 @@ PhaseStatus Compiler::fgCloneFinally()
             newBlock->clearHndIndex();
 
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-            assert(!newBlock->HasJump());
+            assert(newBlock->KindIs(BBJ_ALWAYS));
+            assert(!newBlock->HasInitializedJumpDest());
         }
 
         if (!clonedOk)
@@ -1104,7 +1101,8 @@ PhaseStatus Compiler::fgCloneFinally()
         {
             BasicBlock* newBlock = blockMap[block];
             // Jump kind/target should not be set yet
-            assert(newBlock->KindIs(BBJ_NONE));
+            assert(newBlock->KindIs(BBJ_ALWAYS));
+            assert(!newBlock->HasInitializedJumpDest());
 
             if (block->KindIs(BBJ_EHFINALLYRET))
             {
@@ -1160,7 +1158,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     // Delete the leave block, which should be marked as
                     // keep always.
-                    assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
+                    assert(leaveBlock->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
                     nextBlock = leaveBlock->Next();
 
                     // All preds should be BBJ_EHFINALLYRETs from the finally.
@@ -1417,7 +1415,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
 
                 bool isJumpToClonedFinally = false;
 
-                if (succBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
+                if (succBlock->CheckFlag(BBF_CLONED_FINALLY_BEGIN))
                 {
                     // case (b)
                     isJumpToClonedFinally = true;
@@ -1429,25 +1427,14 @@ void Compiler::fgDebugCheckTryFinallyExits()
                         // case (c)
                         BasicBlock* const succSuccBlock = succBlock->GetJumpDest();
 
-                        if (succSuccBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
+                        if (succSuccBlock->CheckFlag(BBF_CLONED_FINALLY_BEGIN))
                         {
                             isJumpToClonedFinally = true;
                         }
                     }
                 }
-                else if (succBlock->KindIs(BBJ_NONE))
-                {
-                    if (succBlock->isEmpty())
-                    {
-                        BasicBlock* const succSuccBlock = succBlock->Next();
 
-                        // case (d)
-                        if (succSuccBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
-                        {
-                            isJumpToClonedFinally = true;
-                        }
-                    }
-                }
+                // ~~case (d) via a fallthrough to an empty block to (b)~~ [no longer possible]
 
                 bool isReturnFromFinally = false;
 
@@ -1456,13 +1443,13 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // to the right finally -- but there are odd cases
                 // like orphaned second halves of callfinally pairs
                 // that we need to tolerate.
-                if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+                if (block->CheckFlag(BBF_KEEP_BBJ_ALWAYS))
                 {
                     isReturnFromFinally = true;
                 }
 
                 // Case (f)
-                if (block->HasFlag(BBF_CLONED_FINALLY_END))
+                if (block->CheckFlag(BBF_CLONED_FINALLY_END))
                 {
                     isReturnFromFinally = true;
                 }
@@ -1528,109 +1515,6 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     assert(foundEndLFin);
 #endif // !FEATURE_EH_FUNCLETS
 }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
-//------------------------------------------------------------------------
-// fgUpdateFinallyTargetFlags: recompute BBF_FINALLY_TARGET bits
-//    after EH optimizations
-//
-// Returns:
-//   phase status indicating if anything was modified
-//
-PhaseStatus Compiler::fgUpdateFinallyTargetFlags()
-{
-    // Any finally targetflag fixup required?
-    if (fgOptimizedFinally)
-    {
-        JITDUMP("updating finally target flag bits\n");
-        fgClearAllFinallyTargetBits();
-        fgAddFinallyTargetFlags();
-        return PhaseStatus::MODIFIED_EVERYTHING;
-    }
-    else
-    {
-        JITDUMP("no finally opts, no fixup required\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-}
-
-//------------------------------------------------------------------------
-// fgClearAllFinallyTargetBits: Clear all BBF_FINALLY_TARGET bits; these will need to be
-// recomputed later.
-//
-void Compiler::fgClearAllFinallyTargetBits()
-{
-    JITDUMP("*************** In fgClearAllFinallyTargetBits()\n");
-
-    // Note that we clear the flags even if there are no EH clauses (compHndBBtabCount == 0)
-    // in case bits are left over from EH clauses being deleted.
-
-    // Walk all blocks, and reset the target bits.
-    for (BasicBlock* const block : Blocks())
-    {
-        block->RemoveFlags(BBF_FINALLY_TARGET);
-    }
-}
-
-//------------------------------------------------------------------------
-// fgAddFinallyTargetFlags: Add BBF_FINALLY_TARGET bits to all finally targets.
-//
-void Compiler::fgAddFinallyTargetFlags()
-{
-    JITDUMP("*************** In fgAddFinallyTargetFlags()\n");
-
-    if (compHndBBtabCount == 0)
-    {
-        JITDUMP("No EH in this method, no flags to set.\n");
-        return;
-    }
-
-    for (BasicBlock* const block : Blocks())
-    {
-        if (block->isBBCallAlwaysPair())
-        {
-            BasicBlock* const leave        = block->Next();
-            BasicBlock* const continuation = leave->GetJumpDest();
-
-            if (!continuation->HasFlag(BBF_FINALLY_TARGET))
-            {
-                JITDUMP("Found callfinally " FMT_BB "; setting finally target bit on " FMT_BB "\n", block->bbNum,
-                        continuation->bbNum);
-
-                continuation->SetFlags(BBF_FINALLY_TARGET);
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// fgFixFinallyTargetFlags: Update BBF_FINALLY_TARGET bits after redirecting flow
-//
-// Arguments:
-//   pred - source of flow
-//   succ - original target of flow from pred
-//   newSucc - new target of flow from pred
-//
-void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newSucc)
-{
-    if (pred->isBBCallAlwaysPairTail())
-    {
-        assert(succ->HasFlag(BBF_FINALLY_TARGET));
-        newSucc->SetFlags(BBF_FINALLY_TARGET);
-        succ->RemoveFlags(BBF_FINALLY_TARGET);
-
-        for (BasicBlock* const pred : succ->PredBlocks())
-        {
-            if (pred->isBBCallAlwaysPairTail())
-            {
-                succ->SetFlags(BBF_FINALLY_TARGET);
-                break;
-            }
-        }
-    }
-}
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 //------------------------------------------------------------------------
 // fgMergeFinallyChains: tail merge finally invocations
@@ -2164,13 +2048,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
             switch (predBlock->GetJumpKind())
             {
-                case BBJ_NONE:
-                {
-                    fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updated = true;
-                }
-                break;
-
                 case BBJ_ALWAYS:
                 {
                     fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);

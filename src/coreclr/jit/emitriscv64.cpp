@@ -1003,7 +1003,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(dst->HasFlag(BBF_HAS_LABEL));
+    assert(dst->CheckFlag(BBF_HAS_LABEL));
 
     // if for reloc!  4-ins:
     //   auipc reg, offset-hi20
@@ -1068,7 +1068,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
     // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
 
-    assert(dst->HasFlag(BBF_HAS_LABEL));
+    assert(dst->CheckFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
     assert((INS_jal <= ins) && (ins <= INS_bgeu));
@@ -1129,7 +1129,7 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     //   ins  reg1, reg2, dst
 
     assert(dst != nullptr);
-    assert(dst->HasFlag(BBF_HAS_LABEL));
+    assert(dst->CheckFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -3856,7 +3856,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_LCL_ADDR, GT_LEA));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -4000,14 +4000,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
         else // no Index register
         {
-            if (addr->OperGet() == GT_CLS_VAR_ADDR)
-            {
-                // Get a temp integer register to compute long address.
-                regNumber addrReg = indir->GetSingleTempReg();
-
-                emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
-            }
-            else if (addr->OperIs(GT_LCL_ADDR))
+            if (addr->OperIs(GT_LCL_ADDR))
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();

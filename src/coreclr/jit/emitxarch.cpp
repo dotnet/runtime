@@ -4624,8 +4624,7 @@ emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
 // Arguments:
 //    indir - the memory operand.
 //    id - the instrDesc to fill in.
-//    fmt - the instruction format to use. This must be one of the ARD, AWR, or ARW formats. If necessary (such as for
-//          GT_CLS_VAR_ADDR), this function will map it to the correct format.
+//    fmt - the instruction format to use. This must be one of the ARD, AWR, or ARW formats.
 //    ins - the instruction we are generating. This might affect the instruction format we choose.
 //
 // Assumptions:
@@ -4650,27 +4649,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 
     GenTree* memBase = indir->Base();
 
-    if ((memBase != nullptr) && memBase->isContained() && (memBase->OperGet() == GT_CLS_VAR_ADDR))
-    {
-        CORINFO_FIELD_HANDLE fldHnd = memBase->AsClsVar()->gtClsVarHnd;
-
-        // Static always need relocs
-        if (!jitStaticFldIsGlobAddr(fldHnd))
-        {
-            // "CLS_VAR_ADDR"s (currently only used for data section constants, which
-            // are addressable IP relative) are, by contract, always relocatable.
-            id->idSetIsDspReloc();
-        }
-
-        id->idAddr()->iiaFieldHnd = fldHnd;
-        id->idInsFmt(emitMapFmtForIns(emitMapFmtAtoM(fmt), ins));
-
-#ifdef DEBUG
-        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_STATIC_HDL;
-        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(fldHnd);
-#endif
-    }
-    else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
+    if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
         // Absolute addresses marked as contained should fit within the base of addr mode.
         assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
@@ -4791,12 +4770,6 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
 
     GenTree* addr = mem->Addr();
 
-    if (addr->OperGet() == GT_CLS_VAR_ADDR)
-    {
-        emitIns_R_C(ins, attr, dstReg, addr->AsClsVar()->gtClsVarHnd, 0);
-        return;
-    }
-
     if (addr->OperIs(GT_LCL_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
@@ -4845,41 +4818,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     {
         assert(ins == INS_movbe);
         data = data->gtGetOp1();
-    }
-
-    if (addr->OperGet() == GT_CLS_VAR_ADDR)
-    {
-        if (data->isContainedIntOrIImmed())
-        {
-            emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
-        }
-#if defined(FEATURE_HW_INTRINSICS)
-        else if (data->OperIsHWIntrinsic() && data->isContained())
-        {
-            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
-            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-            size_t              numArgs     = hwintrinsic->GetOperandCount();
-            GenTree*            op1         = hwintrinsic->Op(1);
-
-            if (numArgs == 1)
-            {
-                emitIns_C_R(ins, attr, addr->AsClsVar()->gtClsVarHnd, op1->GetRegNum(), 0);
-            }
-            else
-            {
-                assert(numArgs == 2);
-
-                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
-                emitIns_C_R_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, op1->GetRegNum(), icon);
-            }
-        }
-#endif // FEATURE_HW_INTRINSICS
-        else
-        {
-            assert(!data->isContained());
-            emitIns_C_R(ins, attr, addr->AsClsVar()->gtClsVarHnd, data->GetRegNum(), 0);
-        }
-        return;
     }
 
     if (addr->OperIs(GT_LCL_ADDR))
@@ -5136,54 +5074,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     break;
                 }
 
-                case GT_CLS_VAR_ADDR:
-                {
-                    if (memOp == src)
-                    {
-                        assert(otherOp == dst);
-                        assert(cnsOp == nullptr);
-
-                        if (instrHasImplicitRegPairDest(ins))
-                        {
-                            // src is a class static variable
-                            // dst is implicit - RDX:RAX
-                            emitIns_C(ins, attr, memBase->AsClsVar()->gtClsVarHnd, 0);
-                        }
-                        else
-                        {
-                            // src is a class static variable
-                            // dst is a register
-                            emitIns_R_C(ins, attr, dst->GetRegNum(), memBase->AsClsVar()->gtClsVarHnd, 0);
-                        }
-                    }
-                    else
-                    {
-                        assert(memOp == dst);
-
-                        if (cnsOp != nullptr)
-                        {
-                            assert(cnsOp == src);
-                            assert(otherOp == nullptr);
-                            assert(src->IsCnsIntOrI());
-
-                            // src is an contained immediate
-                            // dst is a class static variable
-                            emitIns_C_I(ins, attr, memBase->AsClsVar()->gtClsVarHnd, 0,
-                                        (int)src->AsIntConCommon()->IconValue());
-                        }
-                        else
-                        {
-                            assert(otherOp == src);
-
-                            // src is a register
-                            // dst is a class static variable
-                            emitIns_C_R(ins, attr, memBase->AsClsVar()->gtClsVarHnd, src->GetRegNum(), 0);
-                        }
-                    }
-
-                    return dst->GetRegNum();
-                }
-
                 default: // Addressing mode [base + index * scale + offset]
                 {
                     instrDesc* id = nullptr;
@@ -5437,16 +5327,12 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperIs(GT_LCL_VAR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT) || addr->IsLclVarAddr());
+    assert(addr->OperIs(GT_LCL_VAR, GT_LEA, GT_CNS_INT) || addr->IsLclVarAddr());
 
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
 
-    ssize_t offset = 0;
-    if (addr->OperGet() != GT_CLS_VAR_ADDR)
-    {
-        offset = storeInd->Offset();
-    }
+    ssize_t offset = storeInd->Offset();
 
     if (src->isContainedIntOrIImmed())
     {
@@ -5532,13 +5418,9 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperIs(GT_LCL_VAR, GT_CLS_VAR_ADDR, GT_LEA, GT_CNS_INT) || addr->IsLclVarAddr());
+    assert(addr->OperIs(GT_LCL_VAR, GT_LEA, GT_CNS_INT) || addr->IsLclVarAddr());
 
-    ssize_t offset = 0;
-    if (addr->OperGet() != GT_CLS_VAR_ADDR)
-    {
-        offset = storeInd->Offset();
-    }
+    ssize_t offset = storeInd->Offset();
 
     if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
@@ -7528,7 +7410,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
 {
     assert(ins == INS_mov);
-    assert(dst->HasFlag(BBF_HAS_LABEL));
+    assert(dst->CheckFlag(BBF_HAS_LABEL));
 
     instrDescLbl* id = emitNewInstrLbl();
 
@@ -7587,7 +7469,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     assert(ins == INS_lea);
-    assert(dst->HasFlag(BBF_HAS_LABEL));
+    assert(dst->CheckFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -9205,7 +9087,7 @@ void emitter::emitIns_J(instruction ins,
 
     if (dst != nullptr)
     {
-        assert(dst->HasFlag(BBF_HAS_LABEL));
+        assert(dst->CheckFlag(BBF_HAS_LABEL));
         assert(instrCount == 0);
     }
     else

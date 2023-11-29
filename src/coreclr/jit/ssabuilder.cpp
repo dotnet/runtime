@@ -61,6 +61,9 @@ PhaseStatus Compiler::fgSsaBuild()
         fgResetForSsa();
     }
 
+    // Reset BlockPredsWithEH cache.
+    m_blockToEHPreds = nullptr;
+
     SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
@@ -68,8 +71,6 @@ PhaseStatus Compiler::fgSsaBuild()
 #ifdef DEBUG
     JitTestCheckSSA();
 #endif // DEBUG
-
-    fgSSAPostOrder = builder.GetPostOrder(&fgSSAPostOrderCount);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -136,88 +137,6 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
 {
 }
 
-//------------------------------------------------------------------------
-//  TopologicalSort: Topologically sort the graph and return the number of nodes visited.
-//
-//  Arguments:
-//     postOrder - The array in which the arranged basic blocks have to be returned.
-//     count - The size of the postOrder array.
-//
-//  Return Value:
-//     The number of nodes visited while performing DFS on the graph.
-//
-unsigned SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
-{
-    Compiler* comp = m_pCompiler;
-
-    // TopologicalSort is called first so m_visited should already be empty
-    assert(BitVecOps::IsEmpty(&m_visitedTraits, m_visited));
-
-    // Display basic blocks.
-    DBEXEC(VERBOSE, comp->fgDispBasicBlocks());
-    DBEXEC(VERBOSE, comp->fgDispHandlerTab());
-
-    auto DumpBlockAndSuccessors = [](Compiler* comp, BasicBlock* block) {
-#ifdef DEBUG
-        if (comp->verboseSsa)
-        {
-            printf("[SsaBuilder::TopologicalSort] Pushing " FMT_BB ": [", block->bbNum);
-            AllSuccessorEnumerator successors(comp, block);
-            unsigned               index = 0;
-            while (true)
-            {
-                BasicBlock* succ = successors.NextSuccessor(comp);
-
-                if (succ == nullptr)
-                {
-                    break;
-                }
-
-                printf("%s" FMT_BB, (index++ ? ", " : ""), succ->bbNum);
-            }
-            printf("]\n");
-        }
-#endif
-    };
-
-    // Compute order.
-    unsigned    postIndex = 0;
-    BasicBlock* block     = comp->fgFirstBB;
-    BitVecOps::AddElemD(&m_visitedTraits, m_visited, block->bbNum);
-
-    ArrayStack<AllSuccessorEnumerator> blocks(m_allocator);
-    blocks.Emplace(comp, block);
-    DumpBlockAndSuccessors(comp, block);
-
-    while (!blocks.Empty())
-    {
-        BasicBlock* block = blocks.TopRef().Block();
-        BasicBlock* succ  = blocks.TopRef().NextSuccessor(comp);
-
-        if (succ != nullptr)
-        {
-            // if the block on TOS still has unreached successors, visit them
-            if (BitVecOps::TryAddElemD(&m_visitedTraits, m_visited, succ->bbNum))
-            {
-                blocks.Emplace(comp, succ);
-                DumpBlockAndSuccessors(comp, succ);
-            }
-        }
-        else
-        {
-            // all successors have been visited
-            blocks.Pop();
-
-            DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%u] = " FMT_BB "\n", postIndex, block->bbNum);
-            postOrder[postIndex]  = block;
-            block->bbPostorderNum = postIndex;
-            postIndex++;
-        }
-    }
-
-    return postIndex;
-}
-
 /**
  * Computes the immediate dominator IDom for each block iteratively.
  *
@@ -226,9 +145,13 @@ unsigned SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
  *
  * @see "A simple, fast dominance algorithm." paper.
  */
-void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
+void SsaBuilder::ComputeImmediateDom()
 {
     JITDUMP("[SsaBuilder::ComputeImmediateDom]\n");
+
+    FlowGraphDfsTree* dfs       = m_pCompiler->m_dfs;
+    BasicBlock**      postOrder = dfs->GetPostOrder();
+    unsigned          count     = dfs->GetPostOrderCount();
 
     // Add entry point to visited as its IDom is NULL.
     assert(postOrder[count - 1] == m_pCompiler->fgFirstBB);
@@ -604,13 +527,14 @@ void SsaBuilder::AddPhiArg(
  *
  * To do so, the function computes liveness, dominance frontier and inserts a phi node,
  * if we have var v in def(b) and live-in(l) and l is in DF(b).
- *
- * @param postOrder The array of basic blocks arranged in postOrder.
- * @param count The size of valid elements in the postOrder array.
  */
-void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
+void SsaBuilder::InsertPhiFunctions()
 {
     JITDUMP("*************** In SsaBuilder::InsertPhiFunctions()\n");
+
+    FlowGraphDfsTree* dfs       = m_pCompiler->m_dfs;
+    BasicBlock**      postOrder = dfs->GetPostOrder();
+    unsigned          count     = dfs->GetPostOrderCount();
 
     // Compute dominance frontier.
     BlkToBlkVectorMap mapDF(m_allocator);
@@ -622,7 +546,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 
     JITDUMP("Inserting phi functions:\n");
 
-    for (int i = 0; i < count; ++i)
+    for (unsigned i = 0; i < count; ++i)
     {
         BasicBlock* block = postOrder[i];
         DBG_SSA_JITDUMP("Considering dominance frontier of block " FMT_BB ":\n", block->bbNum);
@@ -978,7 +902,7 @@ void SsaBuilder::AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock
     assert(block->HasPotentialEHSuccs(m_pCompiler));
 
     // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-    if (block->HasFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
+    if (block->CheckFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
     {
         return;
     }
@@ -1494,8 +1418,6 @@ void SsaBuilder::Build()
 
     // Allocate the postOrder array for the graph.
 
-    m_postOrder = new (m_allocator) BasicBlock*[blockCount];
-
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
 
@@ -1511,13 +1433,10 @@ void SsaBuilder::Build()
         block->bbPostorderNum = 0;
     }
 
-    // Topologically sort the graph.
-    m_postOrderCount = TopologicalSort(m_postOrder, blockCount);
-    JITDUMP("[SsaBuilder] Topologically sorted the graph.\n");
-    EndPhase(PHASE_BUILD_SSA_TOPOSORT);
+    m_pCompiler->m_dfs = m_pCompiler->fgComputeDfs();
 
     // Compute IDom(b).
-    ComputeImmediateDom(m_postOrder, m_postOrderCount);
+    ComputeImmediateDom();
 
     m_pCompiler->fgSsaDomTree = m_pCompiler->fgBuildDomTree();
     EndPhase(PHASE_BUILD_SSA_DOMS);
@@ -1536,7 +1455,7 @@ void SsaBuilder::Build()
     }
 
     // Insert phi functions.
-    InsertPhiFunctions(m_postOrder, m_postOrderCount);
+    InsertPhiFunctions();
 
     // Rename local variables and collect UD information for each ssa var.
     RenameVariables();
@@ -1560,8 +1479,8 @@ void SsaBuilder::SetupBBRoot()
         return;
     }
 
-    BasicBlock* bbRoot = BasicBlock::New(m_pCompiler, BBJ_NONE);
-    bbRoot->SetFlags(BBF_INTERNAL);
+    BasicBlock* bbRoot = BasicBlock::New(m_pCompiler, BBJ_ALWAYS, m_pCompiler->fgFirstBB);
+    bbRoot->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 
     // May need to fix up preds list, so remember the old first block.
     BasicBlock* oldFirst = m_pCompiler->fgFirstBB;

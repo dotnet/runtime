@@ -3081,7 +3081,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 GenTree* thisOp  = impStackTop(1).val;
                 GenTree* flagOp  = impStackTop(0).val;
-                GenTree* optTree = gtOptimizeEnumHasFlag(thisOp, flagOp);
+                GenTree* optTree = gtOptimizeEnumCheckFlag(thisOp, flagOp);
 
                 if (optTree != nullptr)
                 {

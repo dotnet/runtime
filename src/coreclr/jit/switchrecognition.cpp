@@ -8,7 +8,7 @@
 
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
-#define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
+#define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
 #define SWITCH_MIN_TESTS 3
 
 //-----------------------------------------------------------------------------
@@ -68,7 +68,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                              ssize_t*          cns          = nullptr)
 {
     // NOTE: caller is expected to check that a block has multiple statements or not
-    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && !block->HasFlag(BBF_DONT_REMOVE))
+    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && !block->CheckFlag(BBF_DONT_REMOVE))
     {
         const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));

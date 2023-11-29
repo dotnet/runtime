@@ -59,8 +59,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode)) {
-				foreach (var sourceValue in Source) {
-					foreach (var targetValue in Target) {
+				foreach (var sourceValue in Source.AsEnumerable ()) {
+					foreach (var targetValue in Target.AsEnumerable ()) {
 						// The target should always be an annotated value, but the visitor design currently prevents
 						// declaring this in the type system.
 						if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)

@@ -185,7 +185,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     genTreeOps foldOp;
     genTreeOps cmpOp;
-    var_types  foldType = m_c1->TypeGet();
+    var_types  foldType = genActualType(m_c1);
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -735,7 +735,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || m_b2->HasFlag(BBF_DONT_REMOVE))
+    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || m_b2->CheckFlag(BBF_DONT_REMOVE))
     {
         // Conditions aren't in the same EH region or m_b2 can't be removed
         return false;
@@ -1008,7 +1008,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
-    m_b1->SetJumpKindAndTarget(BBJ_NONE);
+    m_b1->SetJumpKindAndTarget(BBJ_ALWAYS, m_b1->Next());
+    m_b1->SetFlags(BBF_NONE_QUIRK);
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
@@ -1412,7 +1413,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
     // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
 
-    var_types foldType = m_c1->TypeGet();
+    var_types foldType = genActualType(m_c1->TypeGet());
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -1900,7 +1901,7 @@ PhaseStatus Compiler::optOptimizeBools()
             }
 
             // The next block must not be marked as BBF_DONT_REMOVE
-            if (b2->HasFlag(BBF_DONT_REMOVE))
+            if (b2->CheckFlag(BBF_DONT_REMOVE))
             {
                 continue;
             }
@@ -1947,7 +1948,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 
-                if (b3->HasFlag(BBF_DONT_REMOVE))
+                if (b3->CheckFlag(BBF_DONT_REMOVE))
                 {
                     continue;
                 }

@@ -321,7 +321,6 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeStoreDynBlk)  <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeClsVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
 #ifndef FEATURE_PUT_STRUCT_ARG_STK
@@ -6440,7 +6439,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
@@ -10096,7 +10094,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
@@ -12111,10 +12108,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         }
         break;
 
-        case GT_CLS_VAR_ADDR:
-            printf(" Hnd=%#x", dspPtr(tree->AsClsVar()->gtClsVarHnd));
-            break;
-
         case GT_LABEL:
             break;
 
@@ -13470,7 +13463,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         {
             GenTree* thisOp = call->gtArgs.GetArgByIndex(0)->GetNode();
             GenTree* flagOp = call->gtArgs.GetArgByIndex(1)->GetNode();
-            GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
+            GenTree* result = gtOptimizeEnumCheckFlag(thisOp, flagOp);
 
             if (result != nullptr)
             {
@@ -14818,7 +14811,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 //    If successful, may allocate new temps and modify connected
 //    statements.
 
-GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
+GenTree* Compiler::gtOptimizeEnumCheckFlag(GenTree* thisOp, GenTree* flagOp)
 {
     JITDUMP("Considering optimizing call to Enum.HasFlag....\n");
 
@@ -17924,10 +17917,6 @@ ssize_t GenTreeIndir::Offset()
     if (isIndirAddrMode())
     {
         return Addr()->AsAddrMode()->Offset();
-    }
-    else if (Addr()->gtOper == GT_CLS_VAR_ADDR)
-    {
-        return static_cast<ssize_t>(reinterpret_cast<intptr_t>(Addr()->AsClsVar()->gtClsVarHnd));
     }
     else if (Addr()->IsCnsIntOrI() && Addr()->isContained())
     {
@@ -21736,7 +21725,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_UBYTE);
+    assert(type == TYP_INT);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -21875,7 +21864,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_UBYTE);
+    assert(type == TYP_INT);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -23861,7 +23850,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 #if defined(TARGET_XARCH)
     uint8_t  control   = 0;
     bool     crossLane = false;
-    bool     needsZero = varTypeIsSmallInt(simdBaseType) && (simdSize <= 16);
+    bool     needsZero = varTypeIsSmall(simdBaseType) && (simdSize <= 16);
     uint64_t value     = 0;
     simd_t   vecCns    = {};
     simd_t   mskCns    = {};

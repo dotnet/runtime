@@ -591,9 +591,14 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
     switch (bbJumpKind)
     {
         case BBJ_EHFINALLYRET:
-            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+            // This can run before import, in which case we haven't converted
+            // LEAVE into callfinally yet, and haven't added return successors.
+            if (bbJumpEhf != nullptr)
             {
-                RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                {
+                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                }
             }
 
             return VisitEHSuccs(comp, func);
@@ -621,10 +626,6 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             }
 
             return BasicBlockVisit::Continue;
-
-        case BBJ_NONE:
-            RETURN_ON_ABORT(func(bbNext));
-            return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
@@ -673,9 +674,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
     switch (bbJumpKind)
     {
         case BBJ_EHFINALLYRET:
-            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+            // This can run before import, in which case we haven't converted
+            // LEAVE into callfinally yet, and haven't added return successors.
+            if (bbJumpEhf != nullptr)
             {
-                RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                {
+                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                }
             }
 
             return BasicBlockVisit::Continue;
@@ -686,9 +692,6 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
             return func(bbJumpDest);
-
-        case BBJ_NONE:
-            return func(bbNext);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
@@ -799,7 +802,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     assert(fgFuncletsCreated);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(block->CheckFlag(BBF_FUNCLET_BEG));
 
     EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
     unsigned int funcIdx = eh->ebdFuncIndex;
@@ -3020,7 +3023,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (!block->HasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
+    if (!block->CheckFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
     {
         return false;
     }
@@ -3290,7 +3293,7 @@ __forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 #ifdef TARGET_ARM
         if (type == TYP_DOUBLE)
         {
-            assert((result & RBM_DBL_REGS) != 0);
+            assert((result & RBM_ALLDOUBLE) != 0);
             result |= (result << 1);
         }
 #endif
@@ -4407,7 +4410,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
@@ -4934,6 +4936,86 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     }
 
     return whyNot == nullptr;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder: Visit all of the
+// loop's blocks in reverse post order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func)
+{
+    BitVecTraits traits(m_blocksSize, m_tree->GetCompiler());
+    bool result = BitVecOps::VisitBits(&traits, m_blocks, [=](unsigned index) {
+        // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
+        // loop block rpo index = head block rpoIndex + index
+        // loop block po index = PostOrderCount - 1 - loop block rpo index
+        //                     = headPreOrderIndex - index
+        unsigned poIndex = m_header->bbPostorderNum - index;
+        assert(poIndex < m_tree->GetPostOrderCount());
+        return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+    });
+
+    return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocksPostOrder: Visit all of the loop's
+// blocks in post order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
+{
+    BitVecTraits traits(m_blocksSize, m_tree->GetCompiler());
+    bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
+        unsigned poIndex = m_header->bbPostorderNum - index;
+        assert(poIndex < m_tree->GetPostOrderCount());
+        return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+    });
+
+    return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocks: Visit all of the loop's blocks.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
+{
+    return VisitLoopBlocksReversePostOrder(func);
 }
 
 /*****************************************************************************/

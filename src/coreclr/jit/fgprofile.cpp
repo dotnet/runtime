@@ -381,7 +381,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
+        return block->CheckFlag(BBF_IMPORTED) && !block->CheckFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -467,7 +467,7 @@ void BlockCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
+        if (!block->CheckFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -497,12 +497,6 @@ void BlockCountInstrumentor::RelocateProbes()
             }
             else
             {
-                // Ensure this pred is not a fall through.
-                //
-                if (pred->KindIs(BBJ_NONE))
-                {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
-                }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
         }
@@ -513,8 +507,9 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED);
+            BasicBlock* const intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             SetModifiedFlow();
@@ -533,10 +528,6 @@ void BlockCountInstrumentor::RelocateProbes()
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-                    m_comp->fgFixFinallyTargetFlags(pred, block, intermediary);
-#endif
                 }
             }
         }
@@ -642,14 +633,14 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
-    if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
+    if (block->CheckFlag(BBF_TAILCALL_SUCCESSOR))
     {
         // This block probe needs to be relocated; instrument each predecessor.
         //
         bool first = true;
         for (BasicBlock* pred : block->PredBlocks())
         {
-            const bool isLivePred = ShouldProcess(pred) || pred->HasFlag(BBF_MARKED);
+            const bool isLivePred = ShouldProcess(pred) || pred->CheckFlag(BBF_MARKED);
             if (!isLivePred)
             {
                 continue;
@@ -1235,13 +1226,13 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 {
     static const int IS_INTERNAL_BLOCK = (int32_t)0x80000000;
     int32_t          key               = (int32_t)block->bbCodeOffs;
-    // We may see empty BBJ_NONE BBF_INTERNAL blocks that were added
+    // We may see empty BBJ_ALWAYS BBF_INTERNAL blocks that were added
     // by fgNormalizeEH.
     //
     // We'll use their bbNum in place of IL offset, and set
     // a high bit as a "flag"
     //
-    if (block->HasFlag(BBF_INTERNAL))
+    if (block->CheckFlag(BBF_INTERNAL))
     {
         key = block->bbNum | IS_INTERNAL_BLOCK;
     }
@@ -1375,7 +1366,7 @@ public:
     void Prepare(bool isPreImport) override;
     bool ShouldProcess(BasicBlock* block) override
     {
-        return block->HasFlag(BBF_IMPORTED);
+        return block->CheckFlag(BBF_IMPORTED);
     }
     bool ShouldInstrument(BasicBlock* block) override
     {
@@ -1548,14 +1539,6 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
 
                     if (found)
                     {
-                        // Importer folding may have changed the block jump kind
-                        // to BBJ_NONE. If so, warp it back to BBJ_ALWAYS.
-                        //
-                        if (block->KindIs(BBJ_NONE))
-                        {
-                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target);
-                        }
-
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
                         instrumentedBlock->SetFlags(BBF_IMPORTED);
                         edgesSplit++;
@@ -1649,7 +1632,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
         // Nothing to do unless the block is a tail call successor.
         //
-        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
+        if (!block->CheckFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -1691,13 +1674,10 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 NewRelocatedProbe(pred, probe->source, probe->target, &leader);
 
-                // Ensure this pred is not a fall through.
+                // Ensure this pred always jumps to block
                 //
-                if (pred->KindIs(BBJ_NONE))
-                {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
-                }
                 assert(pred->KindIs(BBJ_ALWAYS));
+                assert(pred->HasJumpTo(block));
             }
         }
 
@@ -1706,8 +1686,9 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->SetFlags(BBF_IMPORTED);
+            BasicBlock* intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
@@ -2221,7 +2202,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
+        return block->CheckFlag(BBF_IMPORTED) && !block->CheckFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -2261,7 +2242,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 //
 void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
+    if (!block->CheckFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2290,7 +2271,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 //
 void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
+    if (!block->CheckFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -3800,7 +3781,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->HasJump());
+        assert(block->HasInitializedJumpDest());
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
@@ -4426,11 +4407,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bSrc = bDst->bbPreds->getSourceBlock();
 
                     // Does this block flow into only one other block
-                    if (bSrc->KindIs(BBJ_NONE))
-                    {
-                        bOnlyNext = bSrc->Next();
-                    }
-                    else if (bSrc->KindIs(BBJ_ALWAYS))
+                    if (bSrc->KindIs(BBJ_ALWAYS))
                     {
                         bOnlyNext = bSrc->GetJumpDest();
                     }
@@ -4447,11 +4424,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 }
 
                 // Does this block flow into only one other block
-                if (bDst->KindIs(BBJ_NONE))
-                {
-                    bOnlyNext = bDst->Next();
-                }
-                else if (bDst->KindIs(BBJ_ALWAYS))
+                if (bDst->KindIs(BBJ_ALWAYS))
                 {
                     bOnlyNext = bDst->GetJumpDest();
                 }
@@ -4577,7 +4550,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        while (firstILBlock->HasFlag(BBF_INTERNAL))
+        while (firstILBlock->CheckFlag(BBF_INTERNAL))
         {
             firstILBlock = firstILBlock->Next();
         }
@@ -4688,7 +4661,6 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                case BBJ_NONE:
                 case BBJ_CALLFINALLY:
                     // We know the exact edge weight
                     assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
@@ -5105,10 +5077,10 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //   and/or
     // new likelyhood based weights.
     //
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
-    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
-    const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && CheckFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = CheckFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool assertOnFailure      = CheckFlag(checks, ProfileChecks::RAISE_ASSERT);
+    const bool checkAllBlocks       = CheckFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -5282,8 +5254,8 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 //
 bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && CheckFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = CheckFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -5382,8 +5354,8 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 //
 bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && CheckFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = CheckFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {

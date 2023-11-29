@@ -356,7 +356,7 @@ void CodeGen::genMarkLabelsForCodegen()
     // No label flags should be set before this.
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert(!block->HasFlag(BBF_HAS_LABEL));
+        assert(!block->CheckFlag(BBF_HAS_LABEL));
     }
 #endif // DEBUG
 
@@ -379,6 +379,15 @@ void CodeGen::genMarkLabelsForCodegen()
         switch (block->GetJumpKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
+            {
+                // If we can skip this jump, don't create a label for the target
+                if (block->CanRemoveJumpToNext(compiler))
+                {
+                    break;
+                }
+
+                FALLTHROUGH;
+            }
             case BBJ_COND:
             case BBJ_EHCATCHRET:
                 JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
@@ -422,7 +431,6 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_EHFILTERRET:
             case BBJ_RETURN:
             case BBJ_THROW:
-            case BBJ_NONE:
                 break;
 
             default:
@@ -909,7 +917,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
 {
     genLogLabel(label);
     label->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label));
+                                                     gcInfo.gcRegByrefSetCur DEBUG_ARG(label));
 }
 
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
@@ -960,7 +968,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 
     if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
-        noway_assert(block->HasFlag(BBF_HAS_LABEL));
+        noway_assert(block->CheckFlag(BBF_HAS_LABEL));
 
         SetStackLevel(compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int));
 
@@ -1441,7 +1449,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
+    bool jmpEpilog = block->CheckFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
         genEmitGSCookieCheck(jmpEpilog);
@@ -1621,7 +1629,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
 void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 {
-    if (block->HasFlag(BBF_FUNCLET_BEG))
+    if (block->CheckFlag(BBF_FUNCLET_BEG))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
@@ -3664,7 +3672,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                  * have to "swap" the registers in the GC reg pointer mask
                  */
 
-                if (varTypeGCtype(varDscSrc->TypeGet()) != varTypeGCtype(varDscDest->TypeGet()))
+                if (varTypeIsGC(varDscSrc) != varTypeIsGC(varDscDest))
                 {
                     size = EA_GCREF;
                 }
@@ -4025,7 +4033,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // Don't process the double until both halves of the destination are clear.
                 if (genActualType(destMemType) == TYP_DOUBLE)
                 {
-                    assert((destMask & RBM_DBL_REGS) != 0);
+                    assert((destMask & RBM_ALLDOUBLE) != 0);
                     destMask |= genRegMask(REG_NEXT(destRegNum));
                 }
 #endif
@@ -5149,7 +5157,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     /* The return value is special-cased: make sure it goes live for the epilog */
 
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
+    bool jmpEpilog = block->CheckFlag(BBF_HAS_JMP);
 
     if (IsFullPtrRegMapRequired() && !jmpEpilog)
     {
