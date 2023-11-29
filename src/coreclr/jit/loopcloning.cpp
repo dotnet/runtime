@@ -2217,6 +2217,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 newRedirBlk->copyEHRegion(newPred);
                 newRedirBlk->bbNatLoopNum = ambientLoop;
                 newRedirBlk->bbWeight     = blk->Next()->bbWeight;
+                newRedirBlk->bbFlags |= blk->Next()->bbFlags & (BBF_RUN_RARELY | BBF_PROF_WEIGHT);
                 newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
 
                 // TODO-Quirk: This next block is not part of the loop and
