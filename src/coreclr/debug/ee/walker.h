@@ -242,6 +242,7 @@ public:
         Walker::Init(ip, pregisters);
     }
     void Decode();
+    uint64_t GetReg(uint64_t reg);
 };
 #else
 PORTABILITY_WARNING("NativeWalker not implemented on this platform");

@@ -37,6 +37,14 @@ inline uint64_t BitExtract(uint64_t value, unsigned int highbit, unsigned int lo
     return signExtend ? SignExtend(extractedValue, highbit - lowbit) : extractedValue;
 }
 
+uint64_t NativeWalker::GetReg(uint64_t reg)
+{
+    _ASSERTE(reg <= 31);
+    _ASSERTE(m_registers->pCurrentContext->R0 == 0);
+
+    return (&m_registers->pCurrentContext->R0)[reg];
+}
+
 void NativeWalker::Decode()
 {
     // Reset so that we do not provide bogus info
@@ -50,8 +58,6 @@ void NativeWalker::Decode()
        // Without registers decoding will work only for handful of instructions
        return;
     }
-
-    PT_CONTEXT context = m_registers->pCurrentContext;
 
     // Fetch first word of the current instruction. If the current instruction is a break instruction, we'll
     // need to check the patch table to get the correct instruction.
@@ -95,7 +101,7 @@ void NativeWalker::Decode()
         uint64_t Rs1 = BitExtract(opcode, 19, 15);
         uint64_t Rd = BitExtract(opcode, 11, 7);
 
-        m_nextIP = (BYTE*)((GetReg(context, Rs1) + imm) & ~1ull);
+        m_nextIP = (BYTE*)((GetReg(Rs1) + imm) & ~1ull);
         // The standard software calling convention uses X1 as the return address register and X5 as an alternate link register.
         if (Rd == 1 || Rd == 5)
         {
@@ -119,8 +125,8 @@ void NativeWalker::Decode()
     {
         uint64_t Rs1 = BitExtract(opcode, 19, 15);
         uint64_t Rs2 = BitExtract(opcode, 24, 20);
-        int64_t Rs1SValue = GetReg(context, Rs1);
-        int64_t Rs2SValue = GetReg(context, Rs2);
+        int64_t Rs1SValue = GetReg(Rs1);
+        int64_t Rs2SValue = GetReg(Rs2);
 
         if ((((opcode & 0x707f) == 0x63) && Rs1SValue == Rs2SValue) ||
             (((opcode & 0x707f) == 0x1063) && Rs1SValue != Rs2SValue) ||
@@ -143,8 +149,8 @@ void NativeWalker::Decode()
     {
         uint64_t Rs1 = BitExtract(opcode, 19, 15);
         uint64_t Rs2 = BitExtract(opcode, 24, 20);
-        uint64_t Rs1Value = GetReg(context, Rs1);
-        uint64_t Rs2Value = GetReg(context, Rs2);
+        uint64_t Rs1Value = GetReg(Rs1);
+        uint64_t Rs2Value = GetReg(Rs2);
 
         if ((((opcode & 0x707f) == 0x6063) && Rs1Value < Rs2Value) ||
             (((opcode & 0x707f) == 0x7063) && Rs1Value >= Rs2Value))

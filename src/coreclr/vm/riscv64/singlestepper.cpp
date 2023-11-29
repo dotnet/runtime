@@ -298,6 +298,7 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
 uint64_t RiscV64SingleStepper::GetReg(T_CONTEXT *pCtx, uint64_t reg)
 {
     _ASSERTE(reg <= 31);
+    _ASSERTE(pCtx->R0 == 0);
 
     return (&pCtx->R0)[reg];
 }
