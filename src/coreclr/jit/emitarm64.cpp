@@ -989,9 +989,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_AK_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableToSimdScalar(id->idInsOpt())); // xx
-            assert(isVectorRegister(id->idReg1()));        // ddddd
-            assert(isLowPredicateRegister(id->idReg2()));  // ggg
-            assert(isVectorRegister(id->idReg3()));        // mmmmm
+            assert(isVectorRegister(id->idReg1()));              // ddddd
+            assert(isLowPredicateRegister(id->idReg2()));        // ggg
+            assert(isVectorRegister(id->idReg3()));              // mmmmm
             assert(isValidVectorElemsize(elemsize));
             break;
 
@@ -999,9 +999,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableToSimdFPScalar(id->idInsOpt())); // xx
-            assert(isVectorRegister(id->idReg1()));             // ddddd
-            assert(isLowPredicateRegister(id->idReg2()));       // ggg
-            assert(isVectorRegister(id->idReg3()));             // mmmmm
+            assert(isVectorRegister(id->idReg1()));                // ddddd
+            assert(isLowPredicateRegister(id->idReg2()));          // ggg
+            assert(isVectorRegister(id->idReg3()));                // mmmmm
             assert(isValidVectorElemsizeSveFloat(elemsize));
             break;
 
@@ -1048,7 +1048,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidVectorElemsizeWidening(elemsize));
             break;
 
-        // Scable, possibly FP.
+        // Scalable, possibly FP.
         case IF_SVE_AP_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise unary operations (predicated)
             switch (id->idIns())
             {
@@ -1056,8 +1056,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 case INS_sve_fneg:
                     assert(insOptsScalableFloat(id->idInsOpt())); // xx
                     break;
+
                 default:
                     assert(insOptsScalableSimple(id->idInsOpt())); // xx
+                    break;
             }
             elemsize = id->idOpSize();
             assert(isVectorRegister(id->idReg1()));       // ddddd
