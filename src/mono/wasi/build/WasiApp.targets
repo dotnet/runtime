@@ -162,7 +162,8 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <RunArguments Condition="'$(RunArguments)' == '' and '$(WasmSingleFileBundle)' != 'true'">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <RunArguments Condition="'$(RunArguments)' == '' and '$(WasmSingleFileBundle)' == 'true'">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
