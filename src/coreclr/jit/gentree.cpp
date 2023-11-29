@@ -2763,6 +2763,7 @@ AGAIN:
                 }
                 return true;
 
+            case GT_NOP:
             case GT_LABEL:
                 return true;
 
@@ -5334,6 +5335,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = 0;
                 break;
 
+            case GT_NOP:
+                level  = 0;
+                costEx = 0;
+                costSz = 0;
+                break;
+
             default:
                 level  = 1;
                 costEx = 1;
@@ -5447,11 +5454,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 6;
                     }
 
-                    break;
-
-                case GT_NOP:
-                    costEx = 0;
-                    costSz = 0;
                     break;
 
                 case GT_INTRINSIC:
