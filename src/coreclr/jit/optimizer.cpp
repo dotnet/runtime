@@ -4662,92 +4662,6 @@ PhaseStatus Compiler::optUnrollLoops()
 #pragma warning(pop)
 #endif
 
-/*****************************************************************************
- *
- *  Return false if there is a code path from 'topBB' to 'botBB' that might
- *  not execute a method call.
- */
-
-bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
-{
-    // TODO-Cleanup: Currently BBF_GC_SAFE_POINT is not set for helper calls,
-    // as some helper calls are neither interruptible nor hijackable.
-    // When we can determine this, then we can set BBF_GC_SAFE_POINT for
-    // those helpers too.
-
-    // We can always check topBB and botBB for any gc safe points and early out
-
-    if ((topBB->bbFlags | botBB->bbFlags) & BBF_GC_SAFE_POINT)
-    {
-        return false;
-    }
-
-    // Otherwise we will need to rely upon the dominator sets
-
-    if (!fgDomsComputed)
-    {
-        // return a conservative answer of true when we don't have the dominator sets
-        return true;
-    }
-
-    noway_assert(topBB->bbNum <= botBB->bbNum);
-
-    BasicBlock* curBB = topBB;
-    for (;;)
-    {
-        noway_assert(curBB);
-
-        // If we added a loop pre-header block then we will
-        //  have a bbNum greater than fgLastBB, and we won't have
-        //  any dominator information about this block, so skip it.
-        //
-        if (curBB->bbNum <= fgLastBB->bbNum)
-        {
-            noway_assert(curBB->bbNum <= botBB->bbNum);
-
-            // Does this block contain a gc safe point?
-
-            if (curBB->bbFlags & BBF_GC_SAFE_POINT)
-            {
-                // Will this block always execute on the way to botBB ?
-                //
-                // Since we are checking every block in [topBB .. botBB] and we are using
-                // a lexical definition of a loop.
-                //  (all that we know is that is that botBB is a back-edge to topBB)
-                // Thus while walking blocks in this range we may encounter some blocks
-                // that are not really part of the loop, and so we need to perform
-                // some additional checks:
-                //
-                // We will check that the current 'curBB' is reachable from 'topBB'
-                // and that it dominates the block containing the back-edge 'botBB'
-                // When both of these are true then we know that the gcsafe point in 'curBB'
-                // will be encountered in the loop and we can return false
-                //
-                if (fgDominate(curBB, botBB) && fgReachable(topBB, curBB))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                // If we've reached the destination block, then we're done
-
-                if (curBB == botBB)
-                {
-                    break;
-                }
-            }
-        }
-
-        curBB = curBB->Next();
-    }
-
-    // If we didn't find any blocks that contained a gc safe point and
-    // also met the fgDominate and fgReachable criteria then we must return true
-    //
-    return true;
-}
-
 Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
 {
     class CountTreeInfoVisitor : public GenTreeVisitor<CountTreeInfoVisitor>
@@ -6044,68 +5958,21 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CAST:
             {
-                var_types cast    = tree->CastToType();
-                var_types oprt    = op1->TypeGet();
-                unsigned  oprSize = genTypeSize(oprt);
-
-                if (cast != srct)
+                if ((tree->CastToType() != srct) || tree->gtOverflow())
                 {
                     return false;
                 }
 
-                if (varTypeIsIntegralOrI(dstt) != varTypeIsIntegralOrI(oprt))
+                if (varTypeIsInt(op1) && varTypeIsInt(dstt) && tree->TypeIs(TYP_LONG))
                 {
-                    return false;
-                }
-
-                if (tree->gtOverflow())
-                {
-                    return false;
-                }
-
-                /* Is this a cast from the type we're narrowing to or a smaller one? */
-
-                if (oprSize <= dstSize)
-                {
-                    /* Bash the target type of the cast */
-
+                    // We have a CAST that converts into to long while dstt is int.
+                    // so we can just convert the cast to int -> int and someone will clean it up.
                     if (doit)
                     {
-                        if (!varTypeIsSmall(dstt))
-                        {
-                            dstt = varTypeToSigned(dstt);
-                        }
-
-                        if ((oprSize == dstSize) &&
-                            ((varTypeIsUnsigned(dstt) == varTypeIsUnsigned(oprt)) || !varTypeIsSmall(dstt)))
-                        {
-                            // Same size and there is no signedness mismatch for small types: change the CAST
-                            // into a NOP
-
-                            JITDUMP("Cast operation has no effect, bashing [%06d] GT_CAST into a GT_NOP.\n",
-                                    dspTreeID(tree));
-
-                            tree->ChangeOper(GT_NOP);
-                            tree->gtType = dstt;
-                            // Clear the GTF_UNSIGNED flag, as it may have been set on the cast node
-                            tree->gtFlags &= ~GTF_UNSIGNED;
-                            tree->AsOp()->gtOp2 = nullptr;
-                            tree->gtVNPair      = op1->gtVNPair; // Set to op1's ValueNumber
-                        }
-                        else
-                        {
-                            // oprSize is smaller or there is a signedness mismatch for small types
-
-                            // Change the CastToType in the GT_CAST node
-                            tree->CastToType() = dstt;
-
-                            // The result type of a GT_CAST is never a small type.
-                            // Use genActualType to widen dstt when it is a small types.
-                            tree->gtType = genActualType(dstt);
-                            tree->SetVNs(vnpNarrow);
-                        }
+                        tree->CastToType() = TYP_INT;
+                        tree->ChangeType(TYP_INT);
+                        tree->ClearUnsigned();
                     }
-
                     return true;
                 }
             }
