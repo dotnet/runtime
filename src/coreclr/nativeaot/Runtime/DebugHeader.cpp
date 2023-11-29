@@ -108,6 +108,10 @@ struct DotNetRuntimeDebugHeader
 };
 
 extern "C" struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader;
+
+#ifdef HOST_UNIX
+__attribute__ ((visibility ("default")))
+#endif
 struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
 
 #define MAKE_DEBUG_ENTRY(TypeName, FieldName, Value)                             \
