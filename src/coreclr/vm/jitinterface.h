@@ -101,6 +101,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #endif // TARGET_X86
 
+// thread local struct to store the "thread static blocks"
+struct ThreadStaticBlockInfo
+{
+    uint32_t NonGCMaxThreadStaticBlocks;
+    void** NonGCThreadStaticBlocks;
+
+    uint32_t GCMaxThreadStaticBlocks;
+    void** GCThreadStaticBlocks;
+};
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.

@@ -69,23 +69,10 @@
 EXTERN_C uint32_t _tls_index;
 #endif
 
-struct ThreadStaticBlockInfo
-{
-    uint32_t NonGCMaxThreadStaticBlocks;
-    void** NonGCThreadStaticBlocks;
-
-    uint32_t GCMaxThreadStaticBlocks;
-    void** GCThreadStaticBlocks;
-};
 #ifdef _MSC_VER
 __declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
 extern "C" void* __tls_get_addr(void* ti);
-__thread ThreadStaticBlockInfo t_ThreadStatics;
-__thread uint32_t t_NonGCThreadStaticBlocksSize;
-__thread uint32_t t_GCThreadStaticBlocksSize;
 EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
 #endif // _MSC_VER
 

@@ -1777,15 +1777,6 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
-struct ThreadStaticBlockInfo
-{
-    uint32_t NonGCMaxThreadStaticBlocks;
-    void** NonGCThreadStaticBlocks;
-
-    uint32_t GCMaxThreadStaticBlocks;
-    void** GCThreadStaticBlocks;
-};
-
 #ifdef _MSC_VER
 __declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
 __declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
