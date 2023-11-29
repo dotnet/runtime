@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void MuxerExec_BadExtension_Fails()
         {
             // Get a valid file name, but not exe or dll
-            string fxDir = Path.Combine(sharedTestState.RepoDirectories.DotnetSDK, "shared", "Microsoft.NETCore.App");
+            string fxDir = Path.Combine(TestContext.BuiltDotNet, "shared", "Microsoft.NETCore.App");
             fxDir = new DirectoryInfo(fxDir).GetDirectories()[0].FullName;
             string assemblyName = Path.Combine(fxDir, "Microsoft.NETCore.App.deps.json");
 
@@ -90,14 +90,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutMatching($@"Architecture:\s*{RepoDirectoriesProvider.Default.BuildArchitecture}")
-                .And.HaveStdOutMatching($@"RID:\s*{RepoDirectoriesProvider.Default.BuildRID}");
+                .And.HaveStdOutMatching($@"Architecture:\s*{TestContext.BuildArchitecture}")
+                .And.HaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
         }
 
         [Fact]
         public void DotNetInfo_WithSDK()
         {
-            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, RepoDirectoriesProvider.Default.BuiltDotnet, "withSdk")
+            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, TestContext.BuiltDotNet, "withSdk")
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("1.0.0")
                 .AddMockSDK("1.0.0", "1.0.0")
                 .Build();
@@ -108,13 +108,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.NotHaveStdOutMatching($@"RID:\s*{RepoDirectoriesProvider.Default.BuildRID}");
+                .And.NotHaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
         }
 
         // Return a non-existent path that contains a mix of / and \
         private string GetNonexistentAndUnnormalizedPath()
         {
-            return Path.Combine(sharedTestState.RepoDirectories.DotnetSDK, @"x\y/");
+            return Path.Combine(TestContext.BuiltDotNet, @"x\y/");
         }
 
         public class SharedTestState : IDisposable
@@ -126,8 +126,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                BuiltDotNet = new DotNetCli(RepoDirectories.BuiltDotnet);
+                BuiltDotNet = new DotNetCli(TestContext.BuiltDotNet);
 
                 BaseDirectory = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "argValidation")));
 

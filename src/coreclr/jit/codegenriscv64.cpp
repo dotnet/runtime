@@ -3308,18 +3308,17 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     assert(treeNode->OperGet() == GT_CAST);
     assert(!treeNode->gtOverflow());
 
-    regNumber targetReg = treeNode->GetRegNum();
-    assert(genIsValidIntReg(targetReg));
+    assert(genIsValidIntReg(treeNode->GetRegNum())); // Must be a valid int reg.
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;
     assert(!op1->isContained());                  // Cannot be contained
-    assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid int reg.
+    assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid float reg.
 
     var_types dstType = treeNode->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
     assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
 
-    // We should never see a srcType whose size is neither EA_4BYTE or EA_8BYTE
+    // We should never see a dstType whose size is neither EA_4BYTE or EA_8BYTE
     emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
     noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
 
@@ -3330,44 +3329,58 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     {
         if (srcType == TYP_DOUBLE)
         {
-            ins = INS_fcvt_lu_d;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_wu_d;
+            }
+            else
+            {
+                ins = INS_fcvt_lu_d;
+            }
         }
         else
         {
             assert(srcType == TYP_FLOAT);
-            ins = INS_fcvt_lu_s;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_wu_s;
+            }
+            else
+            {
+                ins = INS_fcvt_lu_s;
+            }
         }
     }
     else
     {
         if (srcType == TYP_DOUBLE)
         {
-            ins = INS_fcvt_l_d;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_w_d;
+            }
+            else
+            {
+                ins = INS_fcvt_l_d;
+            }
         }
         else
         {
             assert(srcType == TYP_FLOAT);
-            ins = INS_fcvt_l_s;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_w_s;
+            }
+            else
+            {
+                ins = INS_fcvt_l_s;
+            }
         }
     }
 
     genConsumeOperands(treeNode->AsOp());
 
-    GetEmitter()->emitIns_R_R(ins, EA_8BYTE, treeNode->GetRegNum(), op1->GetRegNum());
-    if (dstSize == EA_4BYTE)
-
-    {
-        emitAttr attr = emitActualTypeSize(dstType);
-        if (isUnsigned)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_slli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
-            GetEmitter()->emitIns_R_R_I(INS_srli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_R_I(INS_addiw, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 0);
-        }
-    }
+    GetEmitter()->emitIns_R_R(ins, dstSize, treeNode->GetRegNum(), op1->GetRegNum());
 
     genProduceReg(treeNode);
 }

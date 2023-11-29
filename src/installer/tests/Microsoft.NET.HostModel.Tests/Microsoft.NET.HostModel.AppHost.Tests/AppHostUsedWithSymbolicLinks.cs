@@ -89,7 +89,7 @@ namespace Microsoft.NET.HostModel.Tests
                 Command.Create(symlink.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .DotNetRoot(RepoDirectoriesProvider.Default.BuiltDotnet)
+                    .DotNetRoot(TestContext.BuiltDotNet)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World");
@@ -105,7 +105,7 @@ namespace Microsoft.NET.HostModel.Tests
             {
                 var dotnetSymlink = Path.Combine(testDir.Location, "dotnet");
 
-                using var symlink = new SymLink(dotnetSymlink, RepoDirectoriesProvider.Default.BuiltDotnet);
+                using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet);
                 Command.Create(sharedTestState.FrameworkDependentApp.AppExe)
                     .EnvironmentVariable("DOTNET_ROOT", symlink.SrcPath)
                     .CaptureStdErr()
@@ -141,7 +141,7 @@ namespace Microsoft.NET.HostModel.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_dotnet_behind_symlink()
         {
-            var dotnet = new DotNet.Cli.Build.DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
+            var dotnet = new DotNet.Cli.Build.DotNetCli(TestContext.BuiltDotNet);
             using (var testDir = TestArtifact.Create("symlink"))
             {
                 var dotnetSymlink = Path.Combine(testDir.Location, Binaries.DotNet.FileName);
@@ -161,7 +161,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
             var app = sharedTestState.SelfContainedApp.Copy();
-            var dotnet = new DotNet.Cli.Build.DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
+            var dotnet = new DotNet.Cli.Build.DotNetCli(TestContext.BuiltDotNet);
 
             using (var newAppDir = TestArtifact.Create("PutTheBinDirSomewhereElse"))
             {

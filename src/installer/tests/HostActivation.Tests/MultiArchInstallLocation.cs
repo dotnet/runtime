@@ -28,7 +28,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
+            var arch = TestContext.BuildArchitecture.ToUpper();
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(fixture.BuiltDotnet.BinPath, arch)
@@ -44,7 +44,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
+            var arch = TestContext.BuildArchitecture.ToUpper();
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(fixture.BuiltDotnet.BinPath)
@@ -60,7 +60,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
+            var arch = TestContext.BuildArchitecture.ToUpper();
             var dotnet = fixture.BuiltDotnet.BinPath;
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
@@ -79,7 +79,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
+            var arch = TestContext.BuildArchitecture.ToUpper();
             var dotnet = fixture.BuiltDotnet.BinPath;
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
@@ -150,7 +150,7 @@ namespace HostActivation.Tests
         [Fact]
         public void EnvironmentVariable_DotNetInfo_ListEnvironment()
         {
-            var dotnet = new DotNetCli(sharedTestState.RepoDirectories.BuiltDotnet);
+            var dotnet = new DotNetCli(TestContext.BuiltDotNet);
 
             var command = dotnet.Exec("--info")
                 .CaptureStdOut();
@@ -194,7 +194,7 @@ namespace HostActivation.Tests
             var appExe = fixture.TestProject.AppExe;
             var arch1 = "someArch";
             var path1 = "x/y/z";
-            var arch2 = fixture.RepoDirProvider.BuildArchitecture;
+            var arch2 = TestContext.BuildArchitecture;
             var path2 = "a/b/c";
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
@@ -285,7 +285,7 @@ namespace HostActivation.Tests
         {
             using (var testArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "listOtherArchs"))))
             {
-                var dotnet = new DotNetBuilder(testArtifact.Location, sharedTestState.RepoDirectories.BuiltDotnet, "exe").Build();
+                var dotnet = new DotNetBuilder(testArtifact.Location, TestContext.BuiltDotNet, "exe").Build();
                 using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
                 {
                     var installLocations = new (string, string)[] {
@@ -313,7 +313,7 @@ namespace HostActivation.Tests
                     pathOverride = System.Text.RegularExpressions.Regex.Escape(pathOverride);
                     foreach ((string arch, string path) in installLocations)
                     {
-                        if (arch == sharedTestState.RepoDirectories.BuildArchitecture)
+                        if (arch == TestContext.BuildArchitecture)
                             continue;
 
                         result.Should()
@@ -327,13 +327,11 @@ namespace HostActivation.Tests
         {
             public string BaseDirectory { get; }
             public TestProjectFixture PortableAppFixture { get; }
-            public RepoDirectoriesProvider RepoDirectories { get; }
             public string InstallLocation { get; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                var fixture = new TestProjectFixture("PortableApp", RepoDirectories);
+                var fixture = new TestProjectFixture("PortableApp", RepoDirectoriesProvider.Default);
                 fixture
                     .EnsureRestored()
                     // App Host generation is turned off by default on macOS
