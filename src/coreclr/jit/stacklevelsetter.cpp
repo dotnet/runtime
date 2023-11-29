@@ -156,6 +156,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
             break;
 
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_DIV:
         case GT_UDIV:
         {
@@ -172,6 +173,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             }
         }
         break;
+#endif
 
         default: // Other opers can target throw only due to overflow.
             break;
