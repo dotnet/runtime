@@ -14,8 +14,6 @@
 
 #include "fcall.h"
 
-#define MAX_UTF8_CHAR_SIZE 3
-
 class MarshalNative
 {
 public:
@@ -28,18 +26,12 @@ public:
     static FCDECL1(int, GetHRForException, Object* eUNSAFE);
 #endif // FEATURE_COMINTEROP
 
-    static FCDECL2(UINT32, SizeOfClass, ReflectClassBaseObject* refClass, CLR_BOOL throwIfNotMarshalable);
-
     static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
     static FCDECL0(int, GetLastPInvokeError);
     static FCDECL1(void, SetLastPInvokeError, int error);
 
-    static FCDECL3(VOID, StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld);
-    static FCDECL3(VOID, PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses);
-    static FCDECL2(VOID, DestroyStructure, LPVOID ptr, ReflectClassBaseObject* refClassUNSAFE);
-
     static FCDECL2(LPVOID, GCHandleInternalAlloc, Object *obj, int type);
-    static FCDECL1(VOID, GCHandleInternalFree, OBJECTHANDLE handle);
+    static FCDECL1(FC_BOOL_RET, GCHandleInternalFree, OBJECTHANDLE handle);
     static FCDECL1(LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
     static FCDECL2(VOID, GCHandleInternalSet, OBJECTHANDLE handle, Object *obj);
     static FCDECL3(Object*, GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj);
@@ -57,6 +49,12 @@ public:
 
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
+
+extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize);
+extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable);
+
+extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type);
+extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle);
 
 #ifdef _DEBUG
 using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);

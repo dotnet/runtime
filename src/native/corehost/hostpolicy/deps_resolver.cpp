@@ -835,7 +835,9 @@ bool deps_resolver_t::resolve_probe_dirs(
         // App local path
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
-        (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
+        // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
+        // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
+        (void) file_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
     }
 
     // Handle any additional deps.json that were specified.

@@ -4289,7 +4289,7 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
 
     // Do the xchg
     emitAttr size = EA_PTRSIZE;
-    if (varTypeGCtype(type1) != varTypeGCtype(type2))
+    if (varTypeIsGC(type1) != varTypeIsGC(type2))
     {
         // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
         // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
@@ -5431,9 +5431,12 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
  * disassembler thinks the instructions as the same as we do.
  */
 
-// Uncomment "#define ALL_ARM64_EMITTER_UNIT_TESTS" to run all the unit tests here.
+// Uncomment "#define ALL_ARM64_EMITTER_UNIT_TESTS" and one or more of the categories to run all the unit tests here.
 // After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
-//#define ALL_ARM64_EMITTER_UNIT_TESTS
+#define ALL_ARM64_EMITTER_UNIT_TESTS
+// #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
+// #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
+// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
 #if defined(DEBUG)
 void CodeGen::genArm64EmitterUnitTests()
@@ -5450,7 +5453,7 @@ void CodeGen::genArm64EmitterUnitTests()
     emitter* theEmitter = GetEmitter();
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // We use this:
     //      genDefineTempLabel(genCreateTempLabel());
     // to create artificial labels to help separate groups of tests.
@@ -5555,9 +5558,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_stlxrb, EA_4BYTE, REG_R8, REG_R5, REG_R14);
     theEmitter->emitIns_R_R_R(INS_stlxrh, EA_4BYTE, REG_R12, REG_R3, REG_R15);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -5770,9 +5773,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_tbx_4regs, EA_8BYTE, REG_V0, REG_V1, REG_V6, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_tbx_4regs, EA_16BYTE, REG_V0, REG_V1, REG_V6, INS_OPTS_16B);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -5953,9 +5956,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_ld4r, EA_8BYTE, REG_V4, REG_R8, REG_R9, INS_OPTS_1D);
     theEmitter->emitIns_R_R_R(INS_ld4r, EA_16BYTE, REG_V10, REG_R14, REG_R15, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6136,9 +6139,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_ld4r, EA_8BYTE, REG_V30, REG_R2, 32, INS_OPTS_1D);
     theEmitter->emitIns_R_R_I(INS_ld4r, EA_16BYTE, REG_V3, REG_R7, 32, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6193,9 +6196,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_st4, EA_4BYTE, REG_V10, REG_R14, 0);
     theEmitter->emitIns_R_R_I(INS_st4, EA_8BYTE, REG_V15, REG_R19, 1);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6250,9 +6253,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_st4, EA_4BYTE, REG_V12, REG_R16, REG_R17, 0, INS_OPTS_POST_INDEX);
     theEmitter->emitIns_R_R_R_I(INS_st4, EA_8BYTE, REG_V18, REG_R22, REG_R23, 1, INS_OPTS_POST_INDEX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6307,9 +6310,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I_I(INS_st4, EA_4BYTE, REG_V10, REG_R14, 0, 16, INS_OPTS_POST_INDEX);
     theEmitter->emitIns_R_R_I_I(INS_st4, EA_8BYTE, REG_V15, REG_R19, 1, 32, INS_OPTS_POST_INDEX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Compares
     //
@@ -6341,9 +6344,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_cmn, EA_8BYTE, REG_R8, 0xfffffffffffff000LL);
     theEmitter->emitIns_R_I(INS_cmn, EA_8BYTE, REG_R8, 0xffffffffff800000LL);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R
     //
 
@@ -6362,9 +6365,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R10, REG_R5);
     theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R11, REG_R6);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_I
     //
@@ -6415,9 +6418,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_tst, EA_4BYTE, REG_R8, 0xFFF00000);
     theEmitter->emitIns_R_I(INS_tst, EA_4BYTE, REG_R8, 0x55555555);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R
     //
@@ -6452,9 +6455,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_Mov(INS_uxtb, EA_4BYTE, REG_R3, REG_R13, /* canSkip */ false);
     theEmitter->emitIns_Mov(INS_uxth, EA_4BYTE, REG_R2, REG_R14, /* canSkip */ false);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_I_I
     //
@@ -6473,9 +6476,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I_I(INS_movn, EA_4BYTE, REG_R8, 0x5678, 16, INS_OPTS_LSL);
     theEmitter->emitIns_R_I_I(INS_movz, EA_4BYTE, REG_R8, 0x8765, 16, INS_OPTS_LSL);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_I
     //
@@ -6583,9 +6586,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_subs, EA_4BYTE, REG_R8, REG_R9, 0xfffffffffffff000LL);
     theEmitter->emitIns_R_R_I(INS_subs, EA_4BYTE, REG_R8, REG_R9, 0xffffffffff800000LL);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_I cmp/txt
     //
@@ -6647,9 +6650,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_cmp, EA_4BYTE, REG_R8, REG_R9, 2, INS_OPTS_SXTH);
     theEmitter->emitIns_R_R_I(INS_cmp, EA_4BYTE, REG_R8, REG_R9, 4, INS_OPTS_SXTW);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R
     //
@@ -6702,9 +6705,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_asrv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_rorv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // ARMv8.1 LSE Atomics
     //
@@ -6771,9 +6774,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_staddl, EA_4BYTE, REG_R8, REG_R10);
     theEmitter->emitIns_R_R(INS_stadd, EA_8BYTE, REG_R8, REG_R10);
     theEmitter->emitIns_R_R(INS_staddl, EA_8BYTE, REG_R8, REG_R10);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_I_I
     //
@@ -6804,9 +6807,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I_I(INS_bfxil, EA_4BYTE, REG_R1, REG_R5, 11, 9);
     theEmitter->emitIns_R_R_I_I(INS_ubfx, EA_4BYTE, REG_R8, REG_R9, 22, 8);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_I
     //
@@ -6913,7 +6916,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_I  -- load/store pair
     //
@@ -6959,9 +6962,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SP, 16, INS_OPTS_POST_INDEX);
     theEmitter->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_R8, 16, INS_OPTS_PRE_INDEX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_Ext    -- load/store shifted/extend
     //
@@ -7086,9 +7089,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_Ext(INS_strb, EA_1BYTE, REG_R8, REG_SP, REG_R9, INS_OPTS_SXTX);
     theEmitter->emitIns_R_R_R_Ext(INS_strb, EA_1BYTE, REG_R8, REG_SP, REG_R9, INS_OPTS_UXTX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_R
     //
@@ -7109,9 +7112,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_R(INS_umaddl, EA_8BYTE, REG_R10, REG_R25, REG_R8, REG_R23);
     theEmitter->emitIns_R_R_R_R(INS_umsubl, EA_8BYTE, REG_R11, REG_R26, REG_R9, REG_R24);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_COND
     //
 
@@ -7147,9 +7150,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_COND(INS_csetm, EA_4BYTE, REG_R7, INS_COND_GT); // gt
     theEmitter->emitIns_R_COND(INS_csetm, EA_8BYTE, REG_R6, INS_COND_LE); // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R_COND
     //
 
@@ -7171,9 +7174,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_COND(INS_cinc, EA_4BYTE, REG_R2, REG_R6, INS_COND_GT); // gt
     theEmitter->emitIns_R_R_COND(INS_cinv, EA_8BYTE, REG_R3, REG_R7, INS_COND_LE); // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R_R_COND
     //
 
@@ -7196,9 +7199,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_COND(INS_csel, EA_4BYTE, REG_R2, REG_R6, REG_R0, INS_COND_GT);  // gt
     theEmitter->emitIns_R_R_R_COND(INS_csinc, EA_8BYTE, REG_R3, REG_R7, REG_R1, INS_COND_LE); // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R_FLAGS_COND
     //
 
@@ -7282,9 +7285,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I_FLAGS_COND(INS_ccmn, EA_8BYTE, REG_R7, 7, INS_FLAGS_NZC, INS_COND_GT);   // gt
     theEmitter->emitIns_R_I_FLAGS_COND(INS_ccmn, EA_4BYTE, REG_R6, 4, INS_FLAGS_NZCV, INS_COND_LE);  // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Branch to register
     //
@@ -7295,9 +7298,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R(INS_ret, EA_PTRSIZE, REG_R8);
     theEmitter->emitIns_R(INS_ret, EA_PTRSIZE, REG_LR);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Misc
     //
@@ -7323,9 +7326,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_BARR(INS_dmb, INS_BARRIER_ST);
     theEmitter->emitIns_BARR(INS_isb, INS_BARRIER_SY);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     ////////////////////////////////////////////////////////////////////////////////
     //
     // SIMD and Floating point
@@ -7499,9 +7502,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_Ext(INS_ldr, EA_1BYTE, REG_V4, REG_SP, REG_R9, INS_OPTS_SXTX);
     theEmitter->emitIns_R_R_R_Ext(INS_ldr, EA_1BYTE, REG_V5, REG_R7, REG_R9, INS_OPTS_UXTX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   mov and aliases for mov
     //
@@ -7587,9 +7590,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_ext, EA_16BYTE, REG_V8, REG_V9, REG_V10, 11, INS_OPTS_16B);
     theEmitter->emitIns_R_R_R_I(INS_ext, EA_16BYTE, REG_V12, REG_V13, REG_V14, 15, INS_OPTS_16B);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_I   movi and mvni
     //
@@ -7662,9 +7665,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_mvni, EA_16BYTE, REG_V14, 0x5DFF, INS_OPTS_4S);   // MSL  8
     theEmitter->emitIns_R_I(INS_mvni, EA_16BYTE, REG_V15, 0x5DFFFF, INS_OPTS_4S); // MSL 16
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_I   orr/bic vector immediate
     //
@@ -7699,9 +7702,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_bic, EA_16BYTE, REG_V12, 0x5D0000, INS_OPTS_4S);   // LSL 16
     theEmitter->emitIns_R_I(INS_bic, EA_16BYTE, REG_V13, 0x5D000000, INS_OPTS_4S); // LSL 24
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_F   cmp/fmov immediate
     //
@@ -7740,9 +7743,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_F(INS_fcmpe, EA_8BYTE, REG_V14, 0.0);
     theEmitter->emitIns_R_F(INS_fcmpe, EA_4BYTE, REG_V15, 0.0);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   cmeq/fmov/fcmp/fcvt
     //
@@ -7784,9 +7787,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_fcvt, EA_2BYTE, REG_V5, REG_V6, INS_OPTS_S_TO_H);
     theEmitter->emitIns_R_R(INS_fcvt, EA_2BYTE, REG_V7, REG_V8, INS_OPTS_D_TO_H);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   floating point conversions
     //
@@ -7981,9 +7984,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_ucvtf, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_4S);
     theEmitter->emitIns_R_R(INS_ucvtf, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   floating point operations, one dest, one source
     //
@@ -8106,7 +8109,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #endif
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     genDefineTempLabel(genCreateTempLabel());
 
     // abs scalar
@@ -8391,9 +8394,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_xtn2, EA_16BYTE, REG_V4, REG_V10, INS_OPTS_8H);
     theEmitter->emitIns_R_R(INS_xtn2, EA_16BYTE, REG_V5, REG_V11, INS_OPTS_4S);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   floating point round to int, one dest, one source
     //
@@ -8461,9 +8464,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_frintz, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_4S);
     theEmitter->emitIns_R_R(INS_frintz, EA_16BYTE, REG_V8, REG_V9, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R   floating point operations, one dest, two source
     //
@@ -8589,9 +8592,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_fnmul, EA_4BYTE, REG_V0, REG_V1, REG_V2); // scalar 4BYTE
     theEmitter->emitIns_R_R_R(INS_fnmul, EA_8BYTE, REG_V3, REG_V4, REG_V5); // scalar 8BYTE
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_I  vector operations, one dest, one source reg, one immed
     //
@@ -9026,9 +9029,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_uqshrn2, EA_16BYTE, REG_V20, REG_V21, 17, INS_OPTS_4S);
     theEmitter->emitIns_R_R_I(INS_uqshrn2, EA_16BYTE, REG_V22, REG_V23, 32, INS_OPTS_4S);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R   vector operations, one dest, two source
     //
@@ -9140,9 +9143,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_uabd, EA_16BYTE, REG_V9, REG_V10, REG_V11, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R(INS_uabd, EA_8BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_uabd, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // sdot vector
     theEmitter->emitIns_R_R_R(INS_sdot, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_sdot, EA_16BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_4S);
@@ -9288,9 +9291,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_fcmgt, EA_8BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_fcmgt, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
     theEmitter->emitIns_R_R_R(INS_fcmgt, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_2D);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // trn1 vector
     theEmitter->emitIns_R_R_R(INS_trn1, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_trn1, EA_16BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_16B);
@@ -9344,9 +9347,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_zip2, EA_8BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_zip2, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
     theEmitter->emitIns_R_R_R(INS_zip2, EA_16BYTE, REG_V18, REG_V19, REG_V20, INS_OPTS_2D);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // srshl scalar
     theEmitter->emitIns_R_R_R(INS_srshl, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_NONE);
 
@@ -9794,9 +9797,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_usubw2, EA_16BYTE, REG_V9, REG_V10, REG_V11, INS_OPTS_16B);
     theEmitter->emitIns_R_R_R(INS_usubw2, EA_16BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R(INS_usubw2, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R  vector multiply
     //
@@ -9854,9 +9857,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_mls, EA_16BYTE, REG_V18, REG_V19, REG_V3, 0, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R_I(INS_mls, EA_16BYTE, REG_V20, REG_V21, REG_V4, 3, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R_I(INS_mls, EA_16BYTE, REG_V22, REG_V23, REG_V5, 7, INS_OPTS_8H);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // pmull vector
     theEmitter->emitIns_R_R_R(INS_pmull, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_pmull, EA_8BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_1D);
@@ -10056,9 +10059,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_umull2, EA_16BYTE, REG_V6, REG_V7, REG_V8, 7, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R_I(INS_umull2, EA_16BYTE, REG_V9, REG_V10, REG_V11, 3, INS_OPTS_4S);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R   floating point operations, one source/dest, and two source
     //
@@ -10085,9 +10088,9 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_fmls, EA_16BYTE, REG_V24, REG_V25, REG_V26, 2, INS_OPTS_4S);
     theEmitter->emitIns_R_R_R_I(INS_fmls, EA_16BYTE, REG_V27, REG_V28, REG_V29, 0, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R_R   floating point operations, one dest, and three source
     //
@@ -10103,6 +10106,238 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_R(INS_fnmsub, EA_8BYTE, REG_V7, REG_V15, REG_V23, REG_V31);
 
 #endif
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+    //
+    // R_R_R   SVE operations, one dest, two source
+    //
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // IF_SVE_AA_3A
+    theEmitter->emitIns_R_R_R(INS_sve_and, EA_SCALABLE, REG_V0, REG_P1, REG_V2,
+                              INS_OPTS_SCALABLE_B); // AND     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_bic, EA_SCALABLE, REG_V3, REG_P4, REG_V5,
+                              INS_OPTS_SCALABLE_H); // BIC     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_eor, EA_SCALABLE, REG_V14, REG_P5, REG_V16,
+                              INS_OPTS_SCALABLE_S); // EOR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, REG_V29, REG_P7, REG_V31,
+                              INS_OPTS_SCALABLE_D); // ORR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+
+    // IF_SVE_AB_3A
+    theEmitter->emitIns_R_R_R(INS_sve_add, EA_SCALABLE, REG_V5, REG_P6, REG_V7,
+                              INS_OPTS_SCALABLE_B); // ADD     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_sub, EA_SCALABLE, REG_V15, REG_P7, REG_V29,
+                              INS_OPTS_SCALABLE_H); // SUB     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_subr, EA_SCALABLE, REG_V2, REG_P0, REG_V13,
+                              INS_OPTS_SCALABLE_S); // SUBR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+
+    // IF_SVE_AC_3A
+    theEmitter->emitIns_R_R_R(INS_sve_sdiv, EA_SCALABLE, REG_V3, REG_P2, REG_V9,
+                              INS_OPTS_SCALABLE_S); // SDIV     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_sdivr, EA_SCALABLE, REG_V31, REG_P3, REG_V29,
+                              INS_OPTS_SCALABLE_D); // SDIVR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_udiv, EA_SCALABLE, REG_V1, REG_P0, REG_V0,
+                              INS_OPTS_SCALABLE_S); // UDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_udivr, EA_SCALABLE, REG_V13, REG_P7, REG_V15,
+                              INS_OPTS_SCALABLE_D); // UDIVR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+
+    // IF_SVE_AD_3A
+    theEmitter->emitIns_R_R_R(INS_sve_smax, EA_SCALABLE, REG_V24, REG_P0, REG_V2,
+                              INS_OPTS_SCALABLE_B); // SMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_smin, EA_SCALABLE, REG_V9, REG_P1, REG_V27,
+                              INS_OPTS_SCALABLE_H); // SMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_sabd, EA_SCALABLE, REG_V5, REG_P2, REG_V6,
+                              INS_OPTS_SCALABLE_B); // SABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_uabd, EA_SCALABLE, REG_V23, REG_P3, REG_V9,
+                              INS_OPTS_SCALABLE_S); // UABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_umax, EA_SCALABLE, REG_V15, REG_P4, REG_V2,
+                              INS_OPTS_SCALABLE_S); // UMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_umin, EA_SCALABLE, REG_V12, REG_P7, REG_V0,
+                              INS_OPTS_SCALABLE_D); // UMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+
+    // IF_SVE_AE_3A
+    theEmitter->emitIns_R_R_R(INS_sve_mul, EA_SCALABLE, REG_V5, REG_P1, REG_V3,
+                              INS_OPTS_SCALABLE_D); /* MUL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_smulh, EA_SCALABLE, REG_V17, REG_P5, REG_V5,
+                              INS_OPTS_SCALABLE_S); /* SMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_umulh, EA_SCALABLE, REG_V12, REG_P2, REG_V24,
+                              INS_OPTS_SCALABLE_B); /* UMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_AN_3A
+    theEmitter->emitIns_R_R_R(INS_sve_asr, EA_SCALABLE, REG_V5, REG_P0, REG_V21,
+                              INS_OPTS_SCALABLE_S); /* ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_asrr, EA_SCALABLE, REG_V1, REG_P7, REG_V20,
+                              INS_OPTS_SCALABLE_B); /* ASRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_P2, REG_V0,
+                              INS_OPTS_SCALABLE_H); /* LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_lslr, EA_SCALABLE, REG_V27, REG_P6, REG_V31,
+                              INS_OPTS_SCALABLE_D); /* LSLR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_lsr, EA_SCALABLE, REG_V5, REG_P5, REG_V6,
+                              INS_OPTS_SCALABLE_B); /* LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_lsrr, EA_SCALABLE, REG_V15, REG_P4, REG_V17,
+                              INS_OPTS_SCALABLE_S); /* LSRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_AO_3A
+    theEmitter->emitIns_R_R_R(INS_sve_asr, EA_SCALABLE, REG_V4, REG_P3, REG_V24,
+                              INS_OPTS_SCALABLE_WIDE_B); /* ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
+    theEmitter->emitIns_R_R_R(INS_sve_lsl, EA_SCALABLE, REG_V19, REG_P7, REG_V3,
+                              INS_OPTS_SCALABLE_WIDE_H); /* LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
+    theEmitter->emitIns_R_R_R(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_P0, REG_V0,
+                              INS_OPTS_SCALABLE_WIDE_S); /* LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
+
+    // IF_SVE_CM_3A
+    theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_SCALABLE, REG_V31, REG_P7, REG_V31,
+                              INS_OPTS_SCALABLE_B); /* CLASTA  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_SCALABLE, REG_V30, REG_P6, REG_V30,
+                              INS_OPTS_SCALABLE_D); /* CLASTB  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_CN_3A
+    theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_2BYTE, REG_V12, REG_P1, REG_V15,
+                              INS_OPTS_SCALABLE_H_TO_SIMD); /* CLASTA  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_V13, REG_P2, REG_V16,
+                              INS_OPTS_SCALABLE_S_TO_SIMD); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_V14, REG_P0, REG_V17,
+                              INS_OPTS_SCALABLE_D_TO_SIMD); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+
+    // IF_SVE_CO_3A
+    // Note: EA_4BYTE used for B and H (destination register is W)
+    theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_4BYTE, REG_R0, REG_P0, REG_V0,
+                              INS_OPTS_SCALABLE_B_TO_SCALAR); /* CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_4BYTE, REG_R1, REG_P2, REG_V3,
+                              INS_OPTS_SCALABLE_H_TO_SCALAR); /* CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_R23, REG_P5, REG_V12,
+                              INS_OPTS_SCALABLE_S_TO_SCALAR); /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_R3, REG_P6, REG_V9,
+                              INS_OPTS_SCALABLE_D_TO_SCALAR); /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+
+    // IF_SVE_EP_3A
+    theEmitter->emitIns_R_R_R(INS_sve_shadd, EA_SCALABLE, REG_V15, REG_P0, REG_V10,
+                              INS_OPTS_SCALABLE_B); /* SHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_shsub, EA_SCALABLE, REG_V16, REG_P1, REG_V11,
+                              INS_OPTS_SCALABLE_H); /* SHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_shsubr, EA_SCALABLE, REG_V17, REG_P2, REG_V12,
+                              INS_OPTS_SCALABLE_S); /* SHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_srhadd, EA_SCALABLE, REG_V18, REG_P3, REG_V13,
+                              INS_OPTS_SCALABLE_D); /* SRHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uhadd, EA_SCALABLE, REG_V19, REG_P4, REG_V14,
+                              INS_OPTS_SCALABLE_B); /* UHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uhsub, EA_SCALABLE, REG_V20, REG_P5, REG_V15,
+                              INS_OPTS_SCALABLE_H); /* UHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uhsubr, EA_SCALABLE, REG_V21, REG_P6, REG_V16,
+                              INS_OPTS_SCALABLE_S); /* UHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_urhadd, EA_SCALABLE, REG_V22, REG_P7, REG_V17,
+                              INS_OPTS_SCALABLE_D); /* URHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_ER_3A
+    theEmitter->emitIns_R_R_R(INS_sve_addp, EA_SCALABLE, REG_V23, REG_P6, REG_V18,
+                              INS_OPTS_SCALABLE_B); /* ADDP    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_smaxp, EA_SCALABLE, REG_V24, REG_P5, REG_V19,
+                              INS_OPTS_SCALABLE_H); /* SMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sminp, EA_SCALABLE, REG_V25, REG_P4, REG_V20,
+                              INS_OPTS_SCALABLE_S); /* SMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_umaxp, EA_SCALABLE, REG_V26, REG_P3, REG_V21,
+                              INS_OPTS_SCALABLE_D); /* UMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uminp, EA_SCALABLE, REG_V27, REG_P2, REG_V22,
+                              INS_OPTS_SCALABLE_B); /* UMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_ET_3A
+    theEmitter->emitIns_R_R_R(INS_sve_sqadd, EA_SCALABLE, REG_V28, REG_P1, REG_V23,
+                              INS_OPTS_SCALABLE_B); /* SQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqsub, EA_SCALABLE, REG_V29, REG_P0, REG_V24,
+                              INS_OPTS_SCALABLE_H); /* SQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqsubr, EA_SCALABLE, REG_V30, REG_P1, REG_V25,
+                              INS_OPTS_SCALABLE_H); /* SQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_suqadd, EA_SCALABLE, REG_V31, REG_P2, REG_V26,
+                              INS_OPTS_SCALABLE_B); /* SUQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqadd, EA_SCALABLE, REG_V0, REG_P3, REG_V27,
+                              INS_OPTS_SCALABLE_S); /* UQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqsub, EA_SCALABLE, REG_V1, REG_P4, REG_V28,
+                              INS_OPTS_SCALABLE_D); /* UQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqsubr, EA_SCALABLE, REG_V2, REG_P5, REG_V29,
+                              INS_OPTS_SCALABLE_B); /* UQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_usqadd, EA_SCALABLE, REG_V3, REG_P6, REG_V30,
+                              INS_OPTS_SCALABLE_B); /* USQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_EU_3A
+    theEmitter->emitIns_R_R_R(INS_sve_sqrshl, EA_SCALABLE, REG_V4, REG_P7, REG_V31,
+                              INS_OPTS_SCALABLE_B); /* SQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqrshlr, EA_SCALABLE, REG_V5, REG_P0, REG_V30,
+                              INS_OPTS_SCALABLE_H); /* SQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqshl, EA_SCALABLE, REG_V6, REG_P1, REG_V29,
+                              INS_OPTS_SCALABLE_S); /* SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_sqshlr, EA_SCALABLE, REG_V7, REG_P2, REG_V28,
+                              INS_OPTS_SCALABLE_D); /* SQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_srshl, EA_SCALABLE, REG_V8, REG_P3, REG_V27,
+                              INS_OPTS_SCALABLE_B); /* SRSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_srshlr, EA_SCALABLE, REG_V9, REG_P4, REG_V26,
+                              INS_OPTS_SCALABLE_H); /* SRSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqrshl, EA_SCALABLE, REG_V10, REG_P5, REG_V25,
+                              INS_OPTS_SCALABLE_S); /* UQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqrshlr, EA_SCALABLE, REG_V11, REG_P6, REG_V24,
+                              INS_OPTS_SCALABLE_D); /* UQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqshl, EA_SCALABLE, REG_V12, REG_P7, REG_V23,
+                              INS_OPTS_SCALABLE_B); /* UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_uqshlr, EA_SCALABLE, REG_V13, REG_P0, REG_V22,
+                              INS_OPTS_SCALABLE_H); /* UQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_urshl, EA_SCALABLE, REG_V14, REG_P1, REG_V21,
+                              INS_OPTS_SCALABLE_S); /* URSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_urshlr, EA_SCALABLE, REG_V15, REG_P2, REG_V20,
+                              INS_OPTS_SCALABLE_D); /* URSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_GR_3A
+    theEmitter->emitIns_R_R_R(INS_sve_faddp, EA_SCALABLE, REG_V16, REG_P3, REG_V19,
+                              INS_OPTS_SCALABLE_H); /* FADDP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fmaxnmp, EA_SCALABLE, REG_V17, REG_P4, REG_V18,
+                              INS_OPTS_SCALABLE_S); /* FMAXNMP <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fmaxp, EA_SCALABLE, REG_V18, REG_P5, REG_V17,
+                              INS_OPTS_SCALABLE_D); /* FMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fminnmp, EA_SCALABLE, REG_V19, REG_P6, REG_V16,
+                              INS_OPTS_SCALABLE_S); /* FMINNMP <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fminp, EA_SCALABLE, REG_V20, REG_P7, REG_V15,
+                              INS_OPTS_SCALABLE_H); /* FMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_HJ_3A
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_2BYTE, REG_V21, REG_P6, REG_V14,
+                              INS_OPTS_SCALABLE_H_TO_SIMD); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_4BYTE, REG_V22, REG_P5, REG_V13,
+                              INS_OPTS_SCALABLE_S_TO_SIMD); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_8BYTE, REG_V23, REG_P4, REG_V12,
+                              INS_OPTS_SCALABLE_D_TO_SIMD); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+    // IF_SVE_HL_3A
+    theEmitter->emitIns_R_R_R(INS_sve_fabd, EA_SCALABLE, REG_V24, REG_P3, REG_V11,
+                              INS_OPTS_SCALABLE_H); /* FABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fadd, EA_SCALABLE, REG_V25, REG_P2, REG_V10,
+                              INS_OPTS_SCALABLE_S); /* FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    // These are not yet supported by capstone.
+    // theEmitter->emitIns_R_R_R(INS_sve_famax, EA_SCALABLE, REG_V26, REG_P1, REG_V9, INS_OPTS_SCALABLE_D);
+    /* FAMAX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    // theEmitter->emitIns_R_R_R(INS_sve_famin, EA_SCALABLE, REG_V27, REG_P0, REG_V8, INS_OPTS_SCALABLE_H);
+    /* FAMIN   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fdiv, EA_SCALABLE, REG_V28, REG_P0, REG_V7,
+                              INS_OPTS_SCALABLE_S); /* FDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fdivr, EA_SCALABLE, REG_V29, REG_P1, REG_V6,
+                              INS_OPTS_SCALABLE_D); /* FDIVR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fmax, EA_SCALABLE, REG_V30, REG_P2, REG_V5,
+                              INS_OPTS_SCALABLE_H); /* FMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fmaxnm, EA_SCALABLE, REG_V31, REG_P3, REG_V4,
+                              INS_OPTS_SCALABLE_S); /* FMAXNM  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fmin, EA_SCALABLE, REG_V0, REG_P4, REG_V3,
+                              INS_OPTS_SCALABLE_D); /* FMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fminnm, EA_SCALABLE, REG_V1, REG_P5, REG_V2,
+                              INS_OPTS_SCALABLE_H); /* FMINNM  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fmul, EA_SCALABLE, REG_V2, REG_P6, REG_V1,
+                              INS_OPTS_SCALABLE_S); /* FMUL    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fmulx, EA_SCALABLE, REG_V3, REG_P7, REG_V0,
+                              INS_OPTS_SCALABLE_D); /* FMULX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fscale, EA_SCALABLE, REG_V4, REG_P6, REG_V31,
+                              INS_OPTS_SCALABLE_H); /* FSCALE  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fsub, EA_SCALABLE, REG_V5, REG_P5, REG_V30,
+                              INS_OPTS_SCALABLE_S); /* FSUB    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R(INS_sve_fsubr, EA_SCALABLE, REG_V6, REG_P4, REG_V29,
+                              INS_OPTS_SCALABLE_D); /* FSUBR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
 

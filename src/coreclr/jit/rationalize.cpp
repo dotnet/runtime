@@ -249,12 +249,10 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #endif
             break;
 
-        case GT_NOP:
         case GT_BOX:
         case GT_ARR_ADDR:
-            // "optNarrowTree" sometimes inserts NOP nodes between defs and uses.
-            // In this case, remove the NOP. BOX/ARR_ADDR are such "passthrough"
-            // nodes by design, and at this point we no longer need them.
+            // BOX/ARR_ADDR are "passthrough" nodes,
+            // and at this point we no longer need them.
             if (node->gtGetOp1() != nullptr)
             {
                 use.ReplaceWith(node->gtGetOp1());

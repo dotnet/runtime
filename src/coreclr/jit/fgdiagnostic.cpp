@@ -77,7 +77,7 @@ void Compiler::fgDebugCheckUpdate()
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
      * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
      *                           kind of redundand with the above, but to make sure)
-     * no un-compacted blocks -> BBJ_NONE followed by block with no jumps to it (countOfInEdges() = 1)
+     * no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
      */
 
     BasicBlock* prev;
@@ -86,13 +86,7 @@ void Compiler::fgDebugCheckUpdate()
     {
         /* no unreachable blocks */
 
-        if ((block->countOfInEdges() == 0) && !(block->bbFlags & BBF_DONT_REMOVE)
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // With funclets, we never get rid of the BBJ_ALWAYS part of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
-            // even if we can prove that the finally block never returns.
-            && !block->isBBCallAlwaysPairTail()
-#endif // FEATURE_EH_FUNCLETS
-                )
+        if ((block->countOfInEdges() == 0) && !(block->bbFlags & BBF_DONT_REMOVE))
         {
             noway_assert(!"Unreachable block not removed!");
         }
@@ -146,32 +140,8 @@ void Compiler::fgDebugCheckUpdate()
         if (block->KindIs(BBJ_COND))
         {
             // A conditional branch should never jump to the next block
-            // as it can be folded into a BBJ_NONE;
+            // as it can be folded into a BBJ_ALWAYS;
             doAssertOnJumpToNextBlock = true;
-        }
-        else if (block->KindIs(BBJ_ALWAYS))
-        {
-            // Generally we will want to assert if a BBJ_ALWAYS branches to the next block
-            doAssertOnJumpToNextBlock = true;
-
-            // If the BBF_KEEP_BBJ_ALWAYS flag is set we allow it to jump to the next block
-            if (block->bbFlags & BBF_KEEP_BBJ_ALWAYS)
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
-
-            // A call/always pair is also allowed to jump to the next block
-            if (prevIsCallAlwaysPair)
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
-
-            // We are allowed to have a branch from a hot 'block' to a cold 'bbNext'
-            //
-            if (!block->IsLast() && fgInDifferentRegions(block, block->Next()))
-            {
-                doAssertOnJumpToNextBlock = false;
-            }
         }
 
         if (doAssertOnJumpToNextBlock)
@@ -2783,12 +2753,8 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             assert(blockPred->NextIs(block) || blockPred->HasJumpTo(block));
             return true;
 
-        case BBJ_NONE:
-            assert(blockPred->NextIs(block));
-            return true;
-
-        case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
+        case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             assert(blockPred->HasJumpTo(block));
@@ -2976,6 +2942,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
 
     unsigned numBlocks = 0;
+    unsigned maxBBNum  = 0;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2986,6 +2953,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             // Check that bbNum is sequential
             assert(block->IsLast() || (block->bbNum + 1 == block->Next()->bbNum));
         }
+
+        maxBBNum = max(maxBBNum, block->bbNum);
 
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
@@ -3127,9 +3096,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         // Blocks with these jump kinds must have non-null jump targets
-        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE))
+        if (block->HasJumpDest())
         {
-            assert(block->HasJump());
+            assert(block->HasInitializedJumpDest());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
@@ -3190,6 +3159,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
     assert(fgBBcount == numBlocks);
+    assert(fgBBNumMax >= maxBBNum);
 
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
@@ -3237,6 +3207,71 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckTypes: Validate node types used in the given tree
+//
+// Arguments:
+//    tree - the tree to (recursively) check types for
+//
+void Compiler::fgDebugCheckTypes(GenTree* tree)
+{
+    struct NodeTypeValidator : GenTreeVisitor<NodeTypeValidator>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        NodeTypeValidator(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
+        {
+            GenTree* node = *use;
+
+            // Validate types of nodes in the IR:
+            //
+            // * TYP_ULONG and TYP_UINT are not legal.
+            // * Small types are only legal for the following nodes:
+            //    * All kinds of indirections including GT_NULLCHECK
+            //    * All kinds of locals
+            //    * GT_COMMA wrapped around any of the above.
+            //
+            if (node->TypeIs(TYP_ULONG, TYP_UINT))
+            {
+                m_compiler->gtDispTree(node);
+                assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+            }
+
+            if (varTypeIsSmall(node))
+            {
+                if (node->OperIs(GT_COMMA))
+                {
+                    // TODO: it's only allowed if its underlying effective node is also a small type.
+                    return WALK_CONTINUE;
+                }
+
+                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+                {
+                    return WALK_CONTINUE;
+                }
+
+                m_compiler->gtDispTree(node);
+                assert(!"Unexpected small type in IR");
+            }
+
+            // TODO: validate types in GT_CAST nodes.
+            // Validate mismatched types in binopt's arguments, etc.
+            //
+            return WALK_CONTINUE;
+        }
+    };
+
+    NodeTypeValidator walker(this);
+    walker.WalkTree(&tree, nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -3846,6 +3881,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         fgDebugCheckFlags(stmt->GetRootNode(), block);
+        fgDebugCheckTypes(stmt->GetRootNode());
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()
@@ -4958,19 +4994,10 @@ void Compiler::fgDebugCheckLoopTable()
             BasicBlock* h = loop.lpHead;
             assert(h->bbFlags & BBF_LOOP_PREHEADER);
 
-            // The pre-header can only be BBJ_ALWAYS or BBJ_NONE and must enter the loop.
+            // The pre-header can only be BBJ_ALWAYS and must enter the loop.
             BasicBlock* e = loop.lpEntry;
-            if (h->KindIs(BBJ_ALWAYS))
-            {
-                assert(h->HasJumpTo(e));
-            }
-            else
-            {
-                assert(h->KindIs(BBJ_NONE));
-                assert(h->NextIs(e));
-                assert(loop.lpTop == e);
-                assert(loop.lpIsTopEntry());
-            }
+            assert(h->KindIs(BBJ_ALWAYS));
+            assert(h->HasJumpTo(e));
 
             // The entry block has a single non-loop predecessor, and it is the pre-header.
             for (BasicBlock* const predBlock : e->PredBlocks())

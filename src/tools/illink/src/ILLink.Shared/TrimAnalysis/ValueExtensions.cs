@@ -50,10 +50,22 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal static SingleValue? AsSingleValue (this in MultiValue node)
 		{
-			if (node.Count () != 1)
+			var values = node.AsEnumerable ();
+			if (values.Count () != 1)
 				return null;
 
-			return node.Single ();
+			return values.Single ();
+		}
+
+		private static ValueSet<SingleValue>.Enumerable Unknown = new ValueSet<SingleValue>.Enumerable (UnknownValue.Instance);
+
+		// ValueSet<TValue> is not enumerable. This helper translates ValueSet<SingleValue>.Unknown
+		// into a ValueSet<SingleValue> whose sole element is UnknownValue.Instance.
+		internal static ValueSet<SingleValue>.Enumerable AsEnumerable (this MultiValue multiValue)
+		{
+			return multiValue.IsUnknown ()
+				? Unknown
+				: multiValue.GetKnownValues ();
 		}
 	}
 }

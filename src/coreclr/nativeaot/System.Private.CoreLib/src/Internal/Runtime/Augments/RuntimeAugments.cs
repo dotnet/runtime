@@ -688,12 +688,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
-        {
-            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, factory, contextObject, out auxResult);
-        }
-
         //==============================================================================================
         // Internals
         //==============================================================================================

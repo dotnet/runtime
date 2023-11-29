@@ -76,7 +76,7 @@
       <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
         Category="Crossgen2Pack" />
-
+        
         <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;"
         Category="Crossgen2Archive" />

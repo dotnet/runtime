@@ -73,6 +73,7 @@
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
       - $(WasmEnableLegacyJsInterop)        - Include support for legacy JS interop. Defaults to true.
+      - $(WasmEnableJsInteropByValue)       - Make JS interop to pass string by value instead of by reference. Defaults to false. Defaults to true for build with threads.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM post MVP Exception Handling runtime extension.
       - $(WasmEnableSIMD)                   - Enable support for the WASM post MVP SIMD runtime extension.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to Webcil wrapped in .wasm (default: true)
@@ -81,7 +82,7 @@
       - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
                                               if true, appends 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld,
                                               if false (default), removes 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=1'.
-      - $(WasmRuntimeAssetsLocation)        - Allows to override a location for build generated files. 
+      - $(WasmRuntimeAssetsLocation)        - Allows to override a location for build generated files.
                                               Defaults to '_framework', if you want to put framework files in the same directory as user files, use './' value.
                                               Output structure
                                               - AppBundle directly contains user files
@@ -115,6 +116,8 @@
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and ( '$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' )">true</WasmEnableJsInteropByValue>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'LLVMOnlyInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
@@ -316,7 +319,10 @@
 
     <PropertyGroup>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</WasmAppDir>
+
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
+      <!-- Ensure this is only the filename -->
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' != ''">$([System.IO.Path]::GetFileName($(WasmMainAssemblyFileName)))</WasmMainAssemblyFileName>
 
       <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
 
@@ -370,8 +376,8 @@
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
-    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." /> 
- 
+    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
+
     <PropertyGroup>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.js'">true</_HasDotnetJsWorker>
@@ -418,7 +424,7 @@
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
-          
+
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->

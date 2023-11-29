@@ -9668,8 +9668,7 @@ public:
     //
     bool IsReachable(BasicBlock* bb)
     {
-        return (bb->bbPostorderNum < m_comp->fgSSAPostOrderCount) &&
-               (m_comp->fgSSAPostOrder[bb->bbPostorderNum] == bb) &&
+        return m_comp->m_dfs->Contains(bb) &&
                !BitVecOps::IsMember(&m_blockTraits, m_provenUnreachableBlocks, bb->bbNum);
     }
 
@@ -9850,9 +9849,11 @@ PhaseStatus Compiler::fgValueNumber()
     // SSA has already computed a post-order taking EH successors into account.
     // Visiting that in reverse will ensure we visit a block's predecessors
     // before itself whenever possible.
-    for (unsigned i = fgSSAPostOrderCount; i != 0; i--)
+    BasicBlock** postOrder      = m_dfs->GetPostOrder();
+    unsigned     postOrderCount = m_dfs->GetPostOrderCount();
+    for (unsigned i = postOrderCount; i != 0; i--)
     {
-        BasicBlock* block = fgSSAPostOrder[i - 1];
+        BasicBlock* block = postOrder[i - 1];
         JITDUMP("Visiting " FMT_BB "\n", block->bbNum);
 
         if (block != fgFirstBB)
@@ -11368,29 +11369,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     if (tree->AsOp()->gtOp1 != nullptr)
                     {
-                        if (tree->OperIs(GT_NOP))
-                        {
-                            // Pass through arg vn.
-                            tree->gtVNPair = tree->AsOp()->gtOp1->gtVNPair;
-                        }
-                        else
-                        {
-                            ValueNumPair op1VNP;
-                            ValueNumPair op1VNPx;
-                            vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
+                        ValueNumPair op1VNP;
+                        ValueNumPair op1VNPx;
+                        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
 
-                            // If we are fetching the array length for an array ref that came from global memory
-                            // then for CSE safety we must use the conservative value number for both
-                            //
-                            if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
-                            {
-                                // use the conservative value number for both when computing the VN for the ARR_LENGTH
-                                op1VNP.SetBoth(op1VNP.GetConservative());
-                            }
-
-                            tree->gtVNPair =
-                                vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
+                        // If we are fetching the array length for an array ref that came from global memory
+                        // then for CSE safety we must use the conservative value number for both
+                        //
+                        if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
+                        {
+                            // use the conservative value number for both when computing the VN for the ARR_LENGTH
+                            op1VNP.SetBoth(op1VNP.GetConservative());
                         }
+
+                        tree->gtVNPair =
+                            vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
                     }
                     else // Is actually nullary.
                     {
