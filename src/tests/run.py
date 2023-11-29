@@ -54,7 +54,7 @@ from coreclr_arguments import *
 # Argument Parser
 ################################################################################
 
-description = """
+description = """\
 Script to run the xunit console runner. The script relies
 on build.proj and the bash and batch wrappers. All test excludes will also
 come from issues.targets. If there is a JIT stress or GC stress exclude,
@@ -74,14 +74,13 @@ prone to failure; however, copying into the Core_Root directory may create
 naming conflicts.
 """
 
-parallel_help = """
+parallel_help = """\
 Specify the level of parallelism: none, collections, assemblies, all. Default: collections.
 `-parallel none` is a synonym for `--sequential`.
 """
 
-logs_dir_help = """
-Specify the directory where log files are written. Default: a unique new directory inside
-the 'artifacts' directory in the sequence: 'log', 'log.1', 'log.2', 'log.3', etc.
+logs_dir_help = """\
+Specify the directory where log files are written. Default: `artifacts/log`.
 """
 
 parser = argparse.ArgumentParser(description=description)
@@ -272,8 +271,8 @@ class DebugEnv:
         """ Create a windows batch wrapper
         """
 
-        wrapper = \
-"""@echo off
+        wrapper = """\
+@echo off
 setlocal
 REM ============================================================================
 REM Repro environment for %s
@@ -309,7 +308,7 @@ echo Core_Root is set to: "%%CORE_ROOT%%"
         """ Create a unix bash wrapper
         """
 
-        wrapper = """
+        wrapper = """\
 #============================================================================
 # Repro environment for %s
 #
@@ -354,30 +353,6 @@ fi
 ################################################################################
 # Helper Functions
 ################################################################################
-
-def create_unique_directory_name(root_directory, base_name):
-    """ Create a unique directory name by joining `root_directory` and `base_name`.
-        If this name already exists, append ".1", ".2", ".3", etc., to the final
-        name component until the full directory name is not found.
-
-    Args:
-        root_directory (str)     : root directory in which a new directory will be created
-        base_name (str)          : the base name of the new directory name component to be added
-
-    Returns:
-        (str) The full absolute path of the new directory. The directory has been created.
-    """
-    root_directory = os.path.abspath(root_directory)
-    full_path = os.path.join(root_directory, base_name)
-
-    count = 1
-    while os.path.isdir(full_path):
-        new_full_path = os.path.join(root_directory, base_name + "." + str(count))
-        count += 1
-        full_path = new_full_path
-
-    os.makedirs(full_path)
-    return full_path
 
 def create_and_use_test_env(_os, env, func):
     """ Create a test env based on the env passed
@@ -429,13 +404,13 @@ def create_and_use_test_env(_os, env, func):
             file_header = None
 
             if _os == "windows":
-                file_header = \
-"""@REM Temporary test env for test run.
+                file_header = """\
+@REM Temporary test env for test run.
 @echo on
 """
             else:
-                file_header = \
-"""# Temporary test env for test run.
+                file_header = """\
+# Temporary test env for test run.
 """
 
             test_env.write(file_header)
@@ -463,8 +438,8 @@ def create_and_use_test_env(_os, env, func):
                 contents += line
 
             if _os == "windows":
-                file_suffix = \
-"""@echo off
+                file_suffix = """\
+@echo off
 """
                 test_env.write(file_suffix)
                 contents += file_suffix
@@ -1042,39 +1017,20 @@ def setup_args(args):
     # Choose a logs directory
     if coreclr_setup_args.logs_dir is not None:
         coreclr_setup_args.logs_dir = os.path.abspath(coreclr_setup_args.logs_dir)
-        if args.analyze_results_only:
-            # Don't create the directory in this case, if missing.
-            if not os.path.isdir(coreclr_setup_args.logs_dir):
-                print("Error: specified logs_dir not found: %s" % coreclr_setup_args.logs_dir)
-                sys.exit(1)
-        else:
-            if not os.path.isdir(coreclr_setup_args.logs_dir):
-                os.makedirs(coreclr_setup_args.logs_dir)
-            if not os.path.isdir(coreclr_setup_args.logs_dir):
-                print("Error: specified logs_dir not found or could not be created: %s" % coreclr_setup_args.logs_dir)
-                sys.exit(1)
     else:
-        if args.analyze_results_only:
-            # Find the last log file directory and use it: enumerate all the "log" / "log.1" / "log.2" / etc. directories and use the highest numbered one.
-            keep_searching = True
-            last_logs_dir = None
-            logs_dir_index = 0
-            while keep_searching:
-                logs_dir_name = "log" if logs_dir_index == 0 else "log." + str(logs_dir_index)
-                try_logs_dir = os.path.abspath(os.path.join(coreclr_setup_args.artifacts_location, logs_dir_name))
-                if os.path.isdir(try_logs_dir):
-                    last_logs_dir = try_logs_dir
-                else:
-                    keep_searching = False
-                logs_dir_index += 1
+        coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
-            if last_logs_dir is None:
-                print("Error: --analyze_results_only specified, but no logs_dir found in sequence log, log.1, log.2, etc.")
-                sys.exit(1)
-
-            coreclr_setup_args.logs_dir = last_logs_dir
-        else:
-            coreclr_setup_args.logs_dir = create_unique_directory_name(coreclr_setup_args.artifacts_location, "log")
+    if args.analyze_results_only:
+        # Don't create the directory in this case, if missing.
+        if not os.path.isdir(coreclr_setup_args.logs_dir):
+            print("Error: logs_dir not found: %s" % coreclr_setup_args.logs_dir)
+            sys.exit(1)
+    else:
+        if not os.path.isdir(coreclr_setup_args.logs_dir):
+            os.makedirs(coreclr_setup_args.logs_dir)
+        if not os.path.isdir(coreclr_setup_args.logs_dir):
+            print("Error: logs_dir not found or could not be created: %s" % coreclr_setup_args.logs_dir)
+            sys.exit(1)
 
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
@@ -1112,60 +1068,47 @@ def find_test_from_name(host_os, test_location, test_name):
     Return:
         test_path (str): Path of the test based on its name
     """
-
-    # For some reason, out-of-process tests on Linux are named with ".cmd" wrapper script names,
-    # not .sh extension names. Fix that before trying to find the test filename.
-    if args.host_os != "windows":
-        test_name_wo_extension, test_name_extension = os.path.splitext(test_name)
-        if test_name_extension == ".cmd":
-            test_name = test_name_wo_extension + ".sh"
-
-    location = test_name
-
     # Lambdas and helpers
     is_file_or_dir = lambda path : os.path.isdir(path) or os.path.isfile(path)
-    def match_filename(test_path):
-        # Scan through the test directory looking for a similar file
+
+    def get_dir_contents(test_path):
+        """ Get a list of files in the same directory as the `test_path` file. Cache
+            the results in the `file_name_cache` object for future use.
+        """
         global file_name_cache
 
-        if not os.path.isdir(os.path.dirname(test_path)):
-            pass
-
-        assert os.path.isdir(os.path.dirname(test_path))
-        size_of_largest_name_file = 0
-
-        dir_contents = file_name_cache[os.path.dirname(test_path)]
+        test_path_dir = os.path.dirname(test_path)
+        assert os.path.isdir(test_path_dir)
+        dir_contents = file_name_cache[test_path_dir]
 
         if dir_contents is None:
             dir_contents = defaultdict(lambda: None)
-            for item in os.listdir(os.path.dirname(test_path)):
+            for item in os.listdir(test_path_dir):
+                # Replace illegal characters with `_`
+                # (REVIEW: how can there be illegal characters if we got them from the OS?)
                 dir_contents[re.sub("[%s]" % string.punctuation, "_", item)] = item
 
-            file_name_cache[os.path.dirname(test_path)] = dir_contents
+            file_name_cache[test_path_dir] = dir_contents
+        
+        return dir_contents
 
-        # It is possible there has already been a match
-        # therefore we need to remove the punctuation again.
+    def match_filename(test_path):
+        """ Scan through the test directory looking for a similar file
+        """
+        dir_contents = get_dir_contents(test_path)
+
+        # It is possible there has already been a match therefore we need to remove the punctuation again.
         basename_to_match = re.sub("[%s]" % string.punctuation, "_", os.path.basename(test_path))
         if basename_to_match in dir_contents:
             test_path = os.path.join(os.path.dirname(test_path), dir_contents[basename_to_match])
 
         size_of_largest_name_file = len(max(dir_contents, key=len))
-
         return test_path, size_of_largest_name_file
 
     def dir_has_nested_substrings(test_path, test_item):
-        """ A directory has multiple paths where one path is a substring of another
+        """ Return True if a directory has multiple paths where one path is a substring of another
         """
-
-        dir_contents = file_name_cache[os.path.dirname(test_path)]
-
-        if dir_contents is None:
-            dir_contents = defaultdict(lambda: None)
-            for item in os.listdir(os.path.dirname(test_path)):
-                dir_contents[re.sub("[%s]" % string.punctuation, "_", item)] = item
-
-            file_name_cache[os.path.dirname(test_path)] = dir_contents
-
+        dir_contents = get_dir_contents(test_path)
         test_item = re.sub("[%s]" % string.punctuation, "_", test_item)
 
         count = 0
@@ -1174,6 +1117,27 @@ def find_test_from_name(host_os, test_location, test_name):
                 count += 1
 
         return count > 1
+
+    ### Start find_test_from_name code
+
+    # For some reason, out-of-process tests on Linux are named with ".cmd" wrapper script names,
+    # not .sh extension names. Fix that before trying to find the test filename.
+    if host_os != "windows":
+        test_name_wo_extension, test_name_extension = os.path.splitext(test_name)
+        if test_name_extension == ".cmd":
+            test_name = test_name_wo_extension + ".sh"
+
+    # REVIEW: It looks like this code might be mostly relevant to the pre-merged-test case.
+
+    # Try a simple check first, before trying to construct a path from what is expected to be a pathname
+    # with path separators ("\" "/") replaced by underscores ("_").
+
+    test_path = os.path.abspath(os.path.join(test_location, test_name))
+    if os.path.isfile(test_path):
+        # Simple; we're done
+        return test_path
+
+    location = test_name
 
     # Find the test by searching down the directory list.
     starting_path = test_location
@@ -1223,32 +1187,36 @@ def parse_test_results(args, tests, assemblies):
 
     Args:
         args                 : arguments
+        tests                : list of individual test results (filled in by this function)
+        assemblies           : dictionary of per-assembly aggregations (filled in by this function)
     """
     print("Parsing test results from (%s)" % args.logs_dir)
 
     found = False
 
     for item in os.listdir(args.logs_dir):
-        suffix_index = item.lower().find("testrun.xml")
-        if suffix_index >= 0:
+        item_lower = item.lower()
+        if item_lower.endswith("testrun.xml"):
             found = True
             item_name = ""
-            if suffix_index > 0:
-                item_name = item[:suffix_index - 1]
+            if item_lower.endswith(".testrun.xml"):
+                item_name = item[:-len(".testrun.xml")]
             parse_test_results_xml_file(args, item, item_name, tests, assemblies)
 
     if not found:
         print("Unable to find testRun.xml. This normally means the tests did not run.")
         print("It could also mean there was a problem logging. Please run the tests again.")
-        return
 
 def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     """ Parse test results from a single xml results file
+
     Args:
-        xml_result_file      : results xml file to parse
         args                 : arguments
-        tests                : list of individual test results
-        assemblies           : dictionary of per-assembly aggregations
+        item                 : XML filename in the logs directory
+        item_name            : distinguishing name of this XML file. E.g., for
+                             : `JIT.Regression.Regression_3.testRun.xml` it is `JIT.Regression.Regression_3`
+        tests                : list of individual test results (filled in by this function)
+        assemblies           : dictionary of per-assembly aggregations (filled in by this function)
     """
 
     xml_result_file = os.path.join(args.logs_dir, item)
@@ -1257,22 +1225,40 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     for assembly in xml_assemblies:
         if "name" not in assembly.attrib:
             continue
+
+        # Figure out the assembly display name from testRun.xml.
+        # In unmerged tests model, "name" is something like `baseservices.callconvs.XUnitWrapper.dll`; use that.
+        # In merged tests model, "name" is something like `Regression_1`. The testRun.xml filename was something like
+        # `JIT.Regression.Regression_1.testRun.xml` (the path to the testRun.xml converted path separators ("/" "\")
+        # to periods before the file was copied to the log directory), and the prefix was passed in here as `item_name`.
+        # Use this `item_name` (in this example, `JIT.Regression.Regression_1`) as the "display_name".
         assembly_name = assembly.attrib["name"]
-        assembly_info = assemblies[assembly_name]
         display_name = assembly_name
         if len(item_name) > 0:
             display_name = item_name
-        if assembly_info == None:
+
+        # Is the results XML from a merged tests model run?
+        assembly_is_merged_tests_run = False
+        assembly_test_framework = assembly.attrib["test-framework"]
+        # Non-merged tests give something like "xUnit.net 2.5.3.0"
+        if assembly_test_framework == "XUnitWrapperGenerator-generated-runner":
+            assembly_is_merged_tests_run = True
+
+        assembly_info = assemblies[assembly_name]
+        if assembly_info is None:
             assembly_info = defaultdict(lambda: None, {
                 "name": assembly_name,
                 "display_name": display_name,
+                "is_merged_tests_run" : assembly_is_merged_tests_run,
                 "time": 0.0,
                 "passed": 0,
                 "failed": 0,
                 "skipped": 0,
             })
-        assembly_info["time"] = assembly_info["time"] + float(assembly.attrib["time"])
+        assembly_info["time"] += float(assembly.attrib["time"])
+
         for collection in assembly:
+            # In the non-merged tests model, we expect to see a `<errors />` tag within `<assembly>`.
             if collection.tag == "errors" and collection.text != None:
                 # Something went wrong during running the tests.
                 print("Error running the tests, please run run.py again.")
@@ -1283,14 +1269,28 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     type = test.attrib["type"]
                     method = test.attrib["method"]
 
+                    # In the merged model, we expect something like `Test_b00719`. In the non-merged model,
+                    # something like `JIT_Regression._CLR_x86_JIT_V1_2_M02_b00719_b00719_b00719_`.
+                    # Here, we strip off the "prefix" that represents the "group", e.g., `JIT_Regression`.
+                    # This doesn't do anything in the merged model.
                     type = type.split("._")[0]
                     test_name = type + "::" + method
+                    
+                    # The "name" is something like:
+                    # 1. Merged model: "JIT\Regression\CLR-x86-JIT\V1.2-M02\b00719\b00719\b00719.dll" or
+                    # "_CompareVectorWithZero_r::CompareVectorWithZero.TestVector64Equality()"
+                    # 2. Non-merged model: "JIT\\Regression\\CLR-x86-JIT\\V1.2-M02\\b00719\\b00719\\b00719.cmd"
                     name = test.attrib["name"]
                     if len(name) > 0:
                         test_name += " (" + name + ")"
                     result = test.attrib["result"]
                     time = float(collection.attrib["time"])
-                    test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, name)
+                    if assembly_is_merged_tests_run:
+                        # REVIEW: Even if the test is a .dll file or .CMD file and is found, we don't know how to
+                        # build a repro case with it.
+                        test_location_on_filesystem = None
+                    else:
+                        test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, name)
                     if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
                         test_location_on_filesystem = None
                     test_output = test.findtext("output")
@@ -1299,7 +1299,8 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                         "test_path": test_location_on_filesystem,
                         "result" : result,
                         "time": time,
-                        "test_output": test_output
+                        "test_output": test_output,
+                        "assembly_display_name": display_name
                     }))
                     if result == "Pass":
                         assembly_info["passed"] += 1
@@ -1315,7 +1316,6 @@ def print_summary(tests, assemblies):
     Args:
         tests (defaultdict[String]: { }): The tests that were reported by
                                         : xunit
-
     """
 
     assert tests is not None
@@ -1325,7 +1325,7 @@ def print_summary(tests, assemblies):
 
     for test in tests:
         if test["result"] == "Fail":
-            print("Failed test: %s" % test["name"])
+            print("Failed test: %s (%s)" % (test["name"], test["assembly_display_name"]))
 
             test_output = test["test_output"]
 
@@ -1409,7 +1409,7 @@ def create_repro(args, env, tests):
     # create wrappers which will simply run the test with the correct environment
     for test in failed_tests:
         if test["test_path"] is None:
-            print("Failed to create repro for test: %s" % test["name"])
+            print("Failed to create repro for test: %s (%s)" % (test["name"], test["assembly_display_name"]))
         else:
             debug_env = DebugEnv(args, env, test)
             debug_env.write_repro()

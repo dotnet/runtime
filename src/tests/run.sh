@@ -36,7 +36,7 @@ function print_usage {
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
     echo '  --link=<ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --printLastResultsOnly           : Print the results of the last run'
-    echo '  --logsDir=<path>                 : Specify the logs directory (default: a new unique directory in the series: log, log.1, log.2, etc.)'
+    echo '  --logsDir=<path>                 : Specify the logs directory (default: artifacts/log)'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'

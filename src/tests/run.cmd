@@ -230,7 +230,7 @@ echo printlastresultsonly      - Print the last test results without running tes
 echo runincontext              - Run each tests in an unloadable AssemblyLoadContext
 echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(default is 10 minutes = 10 * 60 * 1000 = 600000^).
 echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
-echo logsdir ^<dir^>             - Specify the logs directory ^(default: a new unique directory in the series: log, log.1, log.2, etc.^)
+echo logsdir ^<dir^>             - Specify the logs directory ^(default: artifacts/log^)
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
 echo.
