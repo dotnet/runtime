@@ -11,8 +11,8 @@ namespace System
     // Polyfill CoreLib internal interfaces and methods
     // Define necessary members only
 
-    internal interface IUtfChar<TSelf>
-        : IEquatable<TSelf>
+    internal interface IUtfChar<TSelf> :
+        IEquatable<TSelf>
         where TSelf : unmanaged, IUtfChar<TSelf>
     {
         public static abstract TSelf CastFrom(byte value);
