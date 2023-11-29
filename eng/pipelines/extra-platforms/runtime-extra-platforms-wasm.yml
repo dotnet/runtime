@@ -205,6 +205,7 @@ jobs:
       extraHelixArgs: /p:HybridGlobalization=true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
       scenarios:
         - normal
         - WasmTestOnBrowser
