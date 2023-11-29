@@ -2892,12 +2892,17 @@ static const char* const RegNames[] =
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
+void emitter::emitDisInsName(code_t code, BYTE* addr, bool doffs, unsigned offset, instrDesc* id)
 {
-    const BYTE* insAdr = addr - writeableOffset;
+    BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
     assert((opcode & 0x3) == 0x3);
+
+    emitDispInsAddr(insAdr);
+    emitDispInsOffs(offset, doffs);
+
+    printf("      ");
 
     switch (opcode)
     {
@@ -3811,32 +3816,24 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
-#ifdef DEBUG
-
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    static constexpr code_t k32BitInstructionLowerMask = 0x1f; // 0b00000011
-    static constexpr code_t k32BitInstructionUpperMask = 0x1c; // 0b00011100
-
     if (pCode == nullptr)
         return;
 
-    printf("      ");
-
-    const BYTE* instr = pCode + writeableOffset;
+    BYTE* instr = pCode + writeableOffset;
     size_t instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize)
     {
         instrSize = sizeof(code_t);
         code_t instruction;
         memcpy(&instruction, instr, instrSize);
-        // checks whether the instruction is 4 bytes long
-        // assert(((instruction & k32BitInstructionUpperMask) != k32BitInstructionUpperMask) &&
-        //        ((instruction & k32BitInstructionLowerMask) == k32BitInstructionLowerMask));
-        emitDisInsName(instruction, instr, id);
+        emitDisInsName(instruction, instr, doffs, offset, id);
     }
 }
+
+#ifdef DEBUG
 
 /*****************************************************************************
  *
