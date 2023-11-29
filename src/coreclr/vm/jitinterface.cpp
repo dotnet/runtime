@@ -86,6 +86,7 @@ extern "C" void* __tls_get_addr(void* ti);
 __thread ThreadStaticBlockInfo t_ThreadStatics;
 __thread uint32_t t_NonGCThreadStaticBlocksSize;
 __thread uint32_t t_GCThreadStaticBlocksSize;
+EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
 #endif // _MSC_VER
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
