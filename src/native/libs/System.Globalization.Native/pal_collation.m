@@ -301,9 +301,8 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
     @autoreleasepool {
         if (cwStrLength == 0)
         {
-            if (sortKey == NULL)
-                sortKey = malloc(1);
-            sortKey[0] = '\0';
+            if (sortKey != NULL)
+                sortKey[0] = '\0';
             return 1;
         }
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
@@ -330,9 +329,8 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
 
         if (dataToUse != nil) {
             const uint8_t *bytesToCopy = (const uint8_t *)[dataToUse bytes];
-            if (sortKey == NULL)
-                sortKey = (uint8_t *)malloc(utf8Length);
-            memcpy(sortKey, bytesToCopy, utf8Length);
+            if (sortKey != NULL)
+                memcpy(sortKey, bytesToCopy, utf8Length);
             return utf8Length;
         }
 
