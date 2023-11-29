@@ -5,7 +5,7 @@
     <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
     <TargetsNet8    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsNet8>
   </PropertyGroup>
-
+  <Import Project="WasmFeatures.props" />
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <UsingWasiRuntimeWorkload Condition="'$(UsingWasiRuntimeWorkload)' == ''">$(WasiNativeWorkloadAvailable)</UsingWasiRuntimeWorkload>
   </PropertyGroup>
