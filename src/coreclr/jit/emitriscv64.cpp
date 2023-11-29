@@ -2098,6 +2098,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dstRW  = *dp + writeableOffset;
     BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
+    BYTE* const odstRW = dstRW;
     code_t      code   = 0;
     instruction ins;
     size_t      sz; // = emitSizeOfInsDsc(id);
@@ -2837,12 +2838,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     if (emitComp->opts.disAsm || emitComp->verbose)
     {
-        code_t* cp = (code_t*)(*dp + writeableOffset);
-        while ((BYTE*)cp != dstRW)
-        {
-            emitDisInsName(*cp, (BYTE*)cp, id);
-            cp++;
-        }
+#if DUMP_GC_TABLES
+        bool dspOffs = emitComp->opts.dspGCtbls;
+#else // DUMP_GC_TABLES
+        bool dspOffs = !emitComp->opts.disDiffable;
+#endif // DUMP_GC_TABLES
+        emitDispIns(id, false, dspOffs, true, 0, *dp, (dstRW - odstRW), ig);
     }
 
     if (emitComp->compDebugBreak)
@@ -2867,8 +2868,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 /*****************************************************************************/
 /*****************************************************************************/
-
-#ifdef DEBUG
 
 // clang-format off
 static const char* const RegNames[] =
@@ -2899,20 +2898,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
     unsigned int opcode = code & 0x7f;
     assert((opcode & 0x3) == 0x3);
-
-    bool disOpcode = !emitComp->opts.disDiffable;
-    bool disAddr   = emitComp->opts.disAddr;
-    if (disAddr)
-    {
-        printf("  0x%llx", insAdr);
-    }
-
-    printf("  ");
-
-    if (disOpcode)
-    {
-        printf("%08X  ", code);
-    }
 
     switch (opcode)
     {
@@ -3826,26 +3811,30 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+#ifdef DEBUG
+
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
     static constexpr code_t k32BitInstructionLowerMask = 0x1f; // 0b00000011
     static constexpr code_t k32BitInstructionUpperMask = 0x1c; // 0b00011100
 
-    if (ig == nullptr)
+    if (pCode == nullptr)
         return;
 
-    const BYTE* address = emitCodeBlock + offset + writeableOffset;
-    const BYTE* const addressSentinel = address + id->idCodeSize();
-    // TODO-RISCV64: add support for non-32 bit instructions
-    for (; address < addressSentinel; address += sizeof(code_t))
+    printf("      ");
+
+    const BYTE* instr = pCode + writeableOffset;
+    size_t instrSize;
+    for (size_t i = 0; i < sz; instr += instrSize, i += instrSize)
     {
+        instrSize = sizeof(code_t);
         code_t instruction;
-        memcpy(&instruction, address, sizeof(code_t));
+        memcpy(&instruction, instr, instrSize);
         // checks whether the instruction is 4 bytes long
-        assert((instruction & k32BitInstructionUpperMask != k32BitInstructionUpperMask) &&
-               (instruction & k32BitInstructionLowerMask == k32BitInstructionLowerMask));
-        emitDisInsName(instruction, address, id);
+        // assert(((instruction & k32BitInstructionUpperMask) != k32BitInstructionUpperMask) &&
+        //        ((instruction & k32BitInstructionLowerMask) == k32BitInstructionLowerMask));
+        emitDisInsName(instruction, instr, id);
     }
 }
 
