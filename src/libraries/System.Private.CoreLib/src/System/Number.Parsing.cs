@@ -276,7 +276,7 @@ namespace System
                         num = TChar.CastToUInt32(value[index]);
                     }
                 }
-                else if (info.AllowHyphenDuringParsing && num == '-')
+                else if (info.AllowHyphenDuringParsing() && num == '-')
                 {
                     isNegative = true;
                     index++;
@@ -1003,7 +1003,7 @@ namespace System
                         return true;
                     }
 
-                    if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
+                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
                     {
                         result = TFloat.NaN;
                         return true;

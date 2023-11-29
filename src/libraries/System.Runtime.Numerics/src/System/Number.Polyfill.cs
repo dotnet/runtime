@@ -45,6 +45,23 @@ namespace System
 
     internal static partial class Number
     {
+        internal static bool AllowHyphenDuringParsing(this NumberFormatInfo info)
+        {
+            string negativeSign = info.NegativeSign;
+            return negativeSign.Length == 1 &&
+                   negativeSign[0] switch
+                   {
+                       '\u2012' or         // Figure Dash
+                       '\u207B' or         // Superscript Minus
+                       '\u208B' or         // Subscript Minus
+                       '\u2212' or         // Minus Sign
+                       '\u2796' or         // Heavy Minus Sign
+                       '\uFE63' or         // Small Hyphen-Minus
+                       '\uFF0D' => true,   // Fullwidth Hyphen-Minus
+                       _ => false
+                   };
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> PositiveSignTChar<TChar>(this NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
