@@ -187,16 +187,23 @@ namespace System
                         int exp = 0;
                         do
                         {
-                            exp = (exp * 10) + (int)(ch - '0');
-                            ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
-                            if (exp > 1000)
+                            // Check if we are about to overflow past our limit of 9 digits
+                            if (exp >= 100_000_000)
                             {
-                                exp = 9999;
+                                // Set exp to Int.MaxValue to signify the requested exponent is too large. This will lead to an OverflowException later.
+                                exp = int.MaxValue;
+                                number.Scale = 0;
+
+                                // Finish parsing the number, a FormatException could still occur later on.
                                 while (IsDigit(ch))
                                 {
                                     ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
                                 }
+                                break;
                             }
+
+                            exp = (exp * 10) + (int)(ch - '0');
+                            ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
                         } while (IsDigit(ch));
                         if (negExp)
                         {
