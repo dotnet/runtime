@@ -7683,9 +7683,11 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     return pFrame;
 }
 
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+__declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+#else
 __thread ThreadStaticBlockInfo t_ThreadStatics;
-#endif // !_MSC_VER
+#endif // _MSC_VER
 
 //+----------------------------------------------------------------------------
 //

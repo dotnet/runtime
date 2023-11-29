@@ -1779,7 +1779,10 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+__declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
+#else
 __thread uint32_t t_NonGCThreadStaticBlocksSize;
 __thread uint32_t t_GCThreadStaticBlocksSize;
 #endif // !_MSC_VER
