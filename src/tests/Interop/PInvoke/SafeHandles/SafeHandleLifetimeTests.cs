@@ -15,6 +15,7 @@ namespace SafeHandleTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/168", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48084", TestRuntimes.Mono)]
         public static void RunTest()
         {
             var testHandle = new TestSafeHandle(initialValue);

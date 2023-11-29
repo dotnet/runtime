@@ -11,6 +11,7 @@ namespace SafeHandleTests
     public class InvalidSafeHandleMarshallingTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48084", TestRuntimes.Mono)]
         public static void RunTest()
         {
             if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)
