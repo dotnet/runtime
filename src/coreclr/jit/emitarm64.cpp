@@ -8268,6 +8268,7 @@ void emitter::emitIns_R_R_R(
         case INS_sve_andqv:
         case INS_sve_eorqv:
         case INS_sve_orqv:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -8285,6 +8286,7 @@ void emitter::emitIns_R_R_R(
             break;
 
         case INS_sve_addqv:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -8307,6 +8309,7 @@ void emitter::emitIns_R_R_R(
         case INS_sve_sminqv:
         case INS_sve_umaxqv:
         case INS_sve_uminqv:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -8506,8 +8509,6 @@ void emitter::emitIns_R_R_R(
 
         case INS_sve_fabd:
         case INS_sve_fadd:
-        case INS_sve_famax:
-        case INS_sve_famin:
         case INS_sve_fdiv:
         case INS_sve_fdivr:
         case INS_sve_fmax:
@@ -8519,6 +8520,16 @@ void emitter::emitIns_R_R_R(
         case INS_sve_fscale:
         case INS_sve_fsub:
         case INS_sve_fsubr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            fmt = IF_SVE_HL_3A;
+            break;
+
+        case INS_sve_famax:
+        case INS_sve_famin:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -18803,6 +18814,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_sve_fscale:
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    break;
+
+                case INS_sve_famax:
+                case INS_sve_famin:
+                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
+                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
                     break;
 
                 default:

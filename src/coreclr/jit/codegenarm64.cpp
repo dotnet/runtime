@@ -5437,6 +5437,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
 #if defined(DEBUG)
 void CodeGen::genArm64EmitterUnitTests()
@@ -10304,16 +10305,18 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_8BYTE, REG_V23, REG_P4, REG_V12,
                               INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+
     // IF_SVE_HL_3A
     theEmitter->emitIns_R_R_R(INS_sve_fabd, EA_SCALABLE, REG_V24, REG_P3, REG_V11,
                               INS_OPTS_SCALABLE_H); /* FABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fadd, EA_SCALABLE, REG_V25, REG_P2, REG_V10,
                               INS_OPTS_SCALABLE_S); /* FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    // These are not yet supported by capstone.
-    // theEmitter->emitIns_R_R_R(INS_sve_famax, EA_SCALABLE, REG_V26, REG_P1, REG_V9, INS_OPTS_SCALABLE_D);
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    theEmitter->emitIns_R_R_R(INS_sve_famax, EA_SCALABLE, REG_V26, REG_P1, REG_V9, INS_OPTS_SCALABLE_D);
     /* FAMAX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
-    // theEmitter->emitIns_R_R_R(INS_sve_famin, EA_SCALABLE, REG_V27, REG_P0, REG_V8, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_R(INS_sve_famin, EA_SCALABLE, REG_V27, REG_P0, REG_V8, INS_OPTS_SCALABLE_H);
     /* FAMIN   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_fdiv, EA_SCALABLE, REG_V28, REG_P0, REG_V7,
                               INS_OPTS_SCALABLE_S); /* FDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fdivr, EA_SCALABLE, REG_V29, REG_P1, REG_V6,
@@ -10348,15 +10351,16 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR); /* ORV     <V><d>, <Pg>, <Zn>.<T> */
 
     // IF_SVE_AG_3A
-    // These are not yet supported by capstone.
-    // theEmitter->emitIns_R_R_R(INS_sve_andqv, EA_1BYTE, REG_V4, REG_P4, REG_V4, INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR);
-    // /* ANDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    // theEmitter->emitIns_R_R_R(INS_sve_eorqv, EA_2BYTE, REG_V5, REG_P5, REG_V5, INS_OPTS_SCALABLE_H_TO_SIMD_VECTOR);
-    // /* EORQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    // theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_4BYTE, REG_V6, REG_P6, REG_V6, INS_OPTS_SCALABLE_S_TO_SIMD_VECTOR);
-    // /* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    // theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_V7, REG_P7, REG_V7, INS_OPTS_SCALABLE_D_TO_SIMD_VECTOR);
-    // /* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    theEmitter->emitIns_R_R_R(INS_sve_andqv, EA_1BYTE, REG_V4, REG_P4, REG_V4, INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR);
+    /* ANDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    theEmitter->emitIns_R_R_R(INS_sve_eorqv, EA_2BYTE, REG_V5, REG_P5, REG_V5, INS_OPTS_SCALABLE_H_TO_SIMD_VECTOR);
+    /* EORQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_4BYTE, REG_V6, REG_P6, REG_V6, INS_OPTS_SCALABLE_S_TO_SIMD_VECTOR);
+    /* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_V7, REG_P7, REG_V7, INS_OPTS_SCALABLE_D_TO_SIMD_VECTOR);
+    /* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AI_3A
     theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_1BYTE, REG_V1, REG_P4, REG_V2,
@@ -10367,9 +10371,10 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR); /* UADDV   <Dd>, <Pg>, <Zn>.<T> */
 
     // IF_SVE_AJ_3A
-    // These are not yet supported by capstone.
-    // theEmitter->emitIns_R_R_R(INS_sve_addqv, EA_8BYTE, REG_V21, REG_V7, REG_P22, INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR);
-    // /* ADDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    theEmitter->emitIns_R_R_R(INS_sve_addqv, EA_8BYTE, REG_V21, REG_V7, REG_P22, INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR);
+    /* ADDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AK_3A
     theEmitter->emitIns_R_R_R(INS_sve_smaxv, EA_8BYTE, REG_V15, REG_P7, REG_V4,
@@ -10382,15 +10387,16 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_B_TO_SIMD_SCALAR); /* UMINV   <V><d>, <Pg>, <Zn>.<T> */
 
     // IF_SVE_AL_3A
-    // These are not yet supported by capstone.
-    // theEmitter->emitIns_R_R_R(INS_sve_smaxqv, EA_1BYTE, REG_V0, REG_P5, REG_V25, INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR);
-    // /* SMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    // theEmitter->emitIns_R_R_R(INS_sve_sminqv, EA_2BYTE, REG_V1, REG_P4, REG_V24, INS_OPTS_SCALABLE_H_TO_SIMD_VECTOR);
-    // /* SMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    // theEmitter->emitIns_R_R_R(INS_sve_umaxqv, EA_4BYTE, REG_V2, REG_P3, REG_V23, INS_OPTS_SCALABLE_S_TO_SIMD_VECTOR);
-    // /* UMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    // theEmitter->emitIns_R_R_R(INS_sve_uminqv, EA_8BYTE, REG_V3, REG_P2, REG_V22, INS_OPTS_SCALABLE_D_TO_SIMD_VECTOR);
-    // /* UMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    theEmitter->emitIns_R_R_R(INS_sve_smaxqv, EA_1BYTE, REG_V0, REG_P5, REG_V25, INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR);
+    /* SMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    theEmitter->emitIns_R_R_R(INS_sve_sminqv, EA_2BYTE, REG_V1, REG_P4, REG_V24, INS_OPTS_SCALABLE_H_TO_SIMD_VECTOR);
+    /* SMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    theEmitter->emitIns_R_R_R(INS_sve_umaxqv, EA_4BYTE, REG_V2, REG_P3, REG_V23, INS_OPTS_SCALABLE_S_TO_SIMD_VECTOR);
+    /* UMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    theEmitter->emitIns_R_R_R(INS_sve_uminqv, EA_8BYTE, REG_V3, REG_P2, REG_V22, INS_OPTS_SCALABLE_D_TO_SIMD_VECTOR);
+    /* UMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AP_3A
     theEmitter->emitIns_R_R_R(INS_sve_cls, EA_SCALABLE, REG_V31, REG_P0, REG_V0,
