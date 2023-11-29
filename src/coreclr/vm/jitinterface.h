@@ -112,9 +112,9 @@ struct ThreadStaticBlockInfo
 };
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
+EXTERN_C __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+EXTERN_C __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+EXTERN_C __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
 EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
 EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
