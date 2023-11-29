@@ -25,7 +25,7 @@ namespace System.Net
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :
             OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-            (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic", StringComparison.OrdinalIgnoreCase));
+            (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase));
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
