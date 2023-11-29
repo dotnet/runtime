@@ -285,7 +285,7 @@ namespace System.Security.Cryptography.Xml
                             }
                             else if (_uri[0] == '#')
                             {
-                                var idref = Utils.ExtractIdFromLocalUri(_uri);
+                                string idref = Utils.ExtractIdFromLocalUri(_uri);
                                 if (idref == "xpointer(/)")
                                 {
                                     referenceTarget = transformElement.OwnerDocument;
