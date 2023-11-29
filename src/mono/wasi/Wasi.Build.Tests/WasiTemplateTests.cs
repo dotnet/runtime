@@ -13,9 +13,9 @@ using Wasm.Build.Tests;
 
 namespace Wasi.Build.Tests;
 
-public class BuildThenRun : BuildTestBase
+public class WasiTemplateTests : BuildTestBase
 {
-    public BuildThenRun(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public WasiTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
