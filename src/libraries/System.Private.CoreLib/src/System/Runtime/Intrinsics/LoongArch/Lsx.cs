@@ -424,8 +424,6 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// </summary>
         public static Vector128<long> AddOddElementsWidening(Vector128<ulong> left, Vector128<long> right) => AddOddElementsWidening(left, right);
 
-        //// TODO: LA-SIMD: add HorizontalSubtract for LA64.
-
         /// <summary>
         ///   NOTE: this is implemented by multi instructions.
         ///   LSX: VHADDW.H.B Vd.8H, Vj.16B, Vk.16B
@@ -1150,25 +1148,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vseqi_b(int8x16_t a, int8_t si5)
         ///   LSX: VSEQI.B Vd.16B, Vj.16B, si5
         /// </summary>
-        public static Vector128<sbyte> CompareEqual(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector128<sbyte> CompareEqual(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int16x8_t vseqi_h(int16x8_t a, int8_t si5)
         ///   LSX: VSEQI.H Vd.8H, Vj.8H, si5
         /// </summary>
-        public static Vector128<short> CompareEqual(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector128<short> CompareEqual(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int32x4_t vseqi_w(int32x4_t a, int8_t si5)
         ///   LSX: VSEQI.W Vd.4W, Vj.4W, si5
         /// </summary>
-        public static Vector128<int> CompareEqual(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector128<int> CompareEqual(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int64x2_t vseqi_d(int64x2_t a, int8_t si5)
         ///   LSX: VSEQI.D Vd.2D, Vj.2D, si5
         /// </summary>
-        public static Vector128<long> CompareEqual(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector128<long> CompareEqual(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int8x16_t vseq_b(int8x16_t a, int8x16_t b)
@@ -1258,25 +1256,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vslti_b(int8x16_t a, int8_t si5)
         ///   LSX: VSLTI.B Vd.16B, Vj.16B, si5
         /// </summary>
-        public static Vector128<sbyte> CompareLessThan(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector128<sbyte> CompareLessThan(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int16x8_t vslti_h(int16x8_t a, int8_t si5)
         ///   LSX: VSLTI.H Vd.8H, Vj.8H, si5
         /// </summary>
-        public static Vector128<short> CompareLessThan(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector128<short> CompareLessThan(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int32x4_t vslti_w(int32x4_t a, int8_t si5)
         ///   LSX: VSLTI.W Vd.4W, Vj.4W, si5
         /// </summary>
-        public static Vector128<int> CompareLessThan(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector128<int> CompareLessThan(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int64x2_t vslti_d(int64x2_t a, int8_t si5)
         ///   LSX: VSLTI.D Vd.2D, Vj.2D, si5
         /// </summary>
-        public static Vector128<long> CompareLessThan(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector128<long> CompareLessThan(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// uint8x16_t vslt_b(int8x16_t a, int8x16_t b)
@@ -1342,25 +1340,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vslei_b(int8x16_t a, int8_t si5)
         ///   LSX: VSLEI.B Vd.16B, Vj.16B, si5
         /// </summary>
-        public static Vector128<sbyte> CompareLessThanOrEqual(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector128<sbyte> CompareLessThanOrEqual(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int16x8_t vslei_h(int16x8_t a, int8_t si5)
         ///   LSX: VSLEI.H Vd.8H, Vj.8H, si5
         /// </summary>
-        public static Vector128<short> CompareLessThanOrEqual(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector128<short> CompareLessThanOrEqual(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int32x4_t vslei_w(int32x4_t a, int8_t si5)
         ///   LSX: VSLEI.W Vd.4W, Vj.4W, si5
         /// </summary>
-        public static Vector128<int> CompareLessThanOrEqual(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector128<int> CompareLessThanOrEqual(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int64x2_t vslei_d(int64x2_t a, int8_t si5)
         ///   LSX: VSLEI.D Vd.2D, Vj.2D, si5
         /// </summary>
-        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// uint8x16_t vsle_b(int8x16_t a, int8x16_t b)
@@ -1390,25 +1388,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint8x16_t vslei_bu(uint8x16_t a, uint8_t ui5)
         ///   LSX: VSLEI.BU Vd.16B, Vj.16B, ui5
         /// </summary>
-        public static Vector128<byte> CompareLessThanOrEqual(Vector128<byte> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector128<byte> CompareLessThanOrEqual(Vector128<byte> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint16x8_t vslei_hu(uint16x8_t a, uint8_t ui5)
         ///   LSX: VSLEI.HU Vd.8H, Vj.8H, ui5
         /// </summary>
-        public static Vector128<ushort> CompareLessThanOrEqual(Vector128<ushort> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector128<ushort> CompareLessThanOrEqual(Vector128<ushort> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint32x4_t vslei_wu(uint32x4_t a, uint8_t ui5)
         ///   LSX: VSLEI.WU Vd.4W, Vj.4W, ui5
         /// </summary>
-        public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint64x2_t vslei_du(uint64x2_t a, uint8_t ui5)
         ///   LSX: VSLEI.DU Vd.2D, Vj.2D, ui5
         /// </summary>
-        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint8x16_t vsle_bu(uint8x16_t a, uint8x16_t b)
@@ -1936,61 +1934,61 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vld(int8_t const * ptr, const short si12)
         ///   LSX: VLD Vd.16B, Rj, si12
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadVector128(sbyte* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<sbyte> LoadVector128(sbyte* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// uint8x16_t vld(uint8_t const * ptr, const short si12)
         ///   LSX: VLD Vd.16B, Rj, si12
         /// </summary>
-        public static unsafe Vector128<byte> LoadVector128(byte* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<byte> LoadVector128(byte* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// int16x8_t vld(int16_t const * ptr, const short si12)
         ///   LSX: VLD Vd.8H, Rj, si12
         /// </summary>
-        public static unsafe Vector128<short> LoadVector128(short* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<short> LoadVector128(short* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// uint16x8_t vld(uint16_t const * ptr, const short si12)
         ///   LSX: VLD Vd.8H, Rj, si12
         /// </summary>
-        public static unsafe Vector128<ushort> LoadVector128(ushort* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// int32x4_t vld(int32_t const * ptr, const short si12)
         ///   LSX: VLD Vd.4W, Rj, si12
         /// </summary>
-        public static unsafe Vector128<int> LoadVector128(int* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<int> LoadVector128(int* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// uint32x4_t vld(uint32_t const * ptr, const short si12)
         ///   LSX: VLD Vd.4W, Rj, si12
         /// </summary>
-        public static unsafe Vector128<uint> LoadVector128(uint* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<uint> LoadVector128(uint* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// int64x2_t vld(int64_t const * ptr, const short si12)
         ///   LSX: VLD Vd.2D, Rj, si12
         /// </summary>
-        public static unsafe Vector128<long> LoadVector128(long* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<long> LoadVector128(long* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// uint64x2_t vld(uint64_t const * ptr, const short si12)
         ///   LSX: VLD Vd.2D, Rj, si12
         /// </summary>
-        public static unsafe Vector128<ulong> LoadVector128(ulong* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<ulong> LoadVector128(ulong* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// float32x4_t vld(float32_t const * ptr, const short si12)
         ///   LSX: VLD Vd.4S, Rj, si12
         /// </summary>
-        public static unsafe Vector128<float> LoadVector128(float* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<float> LoadVector128(float* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// float64x2_t vld(float64_t const * ptr, const short si12)
         ///   LSX: VLD Vd.2D, Rj, si12
         /// </summary>
-        public static unsafe Vector128<double> LoadVector128(double* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadVector128(address, si12);
+        public static unsafe Vector128<double> LoadVector128(double* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadVector128(address, si12);
 
         /// <summary>
         /// int8x16_t vldx(int8_t const * ptr, long offsetValue)
@@ -2056,61 +2054,61 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vldrepl_b(int8_t const * ptr, const short si12)
         ///   LSX: VLDREPL.B Vd.16B, Rj, si12
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadElementReplicateVector(sbyte* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<sbyte> LoadElementReplicateVector(sbyte* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint8x16_t vldrepl_b(uint8_t const * ptr, const short si12)
         ///   LSX: VLDREPL.B Vd.16B, Rj, si12
         /// </summary>
-        public static unsafe Vector128<byte> LoadElementReplicateVector(byte* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<byte> LoadElementReplicateVector(byte* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// int16x8_t vldrepl_h(int16_t const * ptr, const short si12)
         ///   LSX: VLDREPL.H Vd.8H, Rj, si11
         /// </summary>
-        public static unsafe Vector128<short> LoadElementReplicateVector(short* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<short> LoadElementReplicateVector(short* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint16x8_t vldrepl_h(uint16_t const * ptr, const short si12)
         ///   LSX: VLDREPL.H Vd.8H, Rj, si11
         /// </summary>
-        public static unsafe Vector128<ushort> LoadElementReplicateVector(ushort* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<ushort> LoadElementReplicateVector(ushort* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// int32x4_t vldrepl_w(int32_t const * ptr, const short si12)
         ///   LSX: VLDREPL.W Vd.4W, Rj, si10
         /// </summary>
-        public static unsafe Vector128<int> LoadElementReplicateVector(int* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<int> LoadElementReplicateVector(int* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint32x4_t vldrepl_w(uint32_t const * ptr, const short si12)
         ///   LSX: VLDREPL.W Vd.4W, Rj, si10
         /// </summary>
-        public static unsafe Vector128<uint> LoadElementReplicateVector(uint* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<uint> LoadElementReplicateVector(uint* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// int64x2_t vldrepl_d(int64_t const * ptr, const short si12)
         ///   LSX: VLDREPL.D Vd.2D, Rj, si9
         /// </summary>
-        public static unsafe Vector128<long> LoadElementReplicateVector(long* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<long> LoadElementReplicateVector(long* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint64x2_t vldrepl_d(uint64_t const * ptr, const short si12)
         ///   LSX: VLDREPL.D Vd.2D, Rj, si9
         /// </summary>
-        public static unsafe Vector128<ulong> LoadElementReplicateVector(ulong* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<ulong> LoadElementReplicateVector(ulong* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// float32x4_t vld(float32_t const * ptr, const short si12)
         ///   LSX: VLDREPL.W Vd.4S, Rj, si10
         /// </summary>
-        public static unsafe Vector128<float> LoadElementReplicateVector(float* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<float> LoadElementReplicateVector(float* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// float64x2_t vldrepl_d(float64_t const * ptr, const short si12)
         ///   LSX: VLDREPL.D Vd.2D, Rj, si9
         /// </summary>
-        public static unsafe Vector128<double> LoadElementReplicateVector(double* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector128<double> LoadElementReplicateVector(double* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// float32x4_t vfrecip_s(float32x4_t a)
@@ -2400,77 +2398,77 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// </summary>
         public static Vector128<ulong> MultiplyWideningOdd(Vector128<ulong> left, Vector128<ulong> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// uint16x8_t vmulwev_hu_bu(uint8x16_t a, uint8x16_t b)
-        ///   LSX: VMULWEV.H.BU Vd.8H, Vj.16B, Vk.16B
-        /// </summary>
-        public static Vector128<ushort> MultiplyWideningEven(Vector128<byte> left, Vector128<byte> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// uint16x8_t vmulwev_hu_bu(uint8x16_t a, uint8x16_t b)
+        // ///   LSX: VMULWEV.H.BU Vd.8H, Vj.16B, Vk.16B
+        // /// </summary>
+        // public static Vector128<ushort> MultiplyWideningEven(Vector128<byte> left, Vector128<byte> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// uint32x4_t vmulwev_wu_hu(uint16x8_t a, uint16x8_t b)
-        ///   LSX: VMULWEV.W.HU Vd.4W, Vj.8H, Vk.8H
-        /// </summary>
-        public static Vector128<uint> MultiplyWideningEven(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// uint32x4_t vmulwev_wu_hu(uint16x8_t a, uint16x8_t b)
+        // ///   LSX: VMULWEV.W.HU Vd.4W, Vj.8H, Vk.8H
+        // /// </summary>
+        // public static Vector128<uint> MultiplyWideningEven(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// uint64x2_t vmulwev_du_wu(uint32x4_t a, uint32x4_t b)
-        ///   LSX: VMULWEV.D.WU Vd.2D, Vj.4W, Vk.4W
-        /// </summary>
-        public static Vector128<ulong> MultiplyWideningEven(Vector128<uint> left, Vector128<uint> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// uint64x2_t vmulwev_du_wu(uint32x4_t a, uint32x4_t b)
+        // ///   LSX: VMULWEV.D.WU Vd.2D, Vj.4W, Vk.4W
+        // /// </summary>
+        // public static Vector128<ulong> MultiplyWideningEven(Vector128<uint> left, Vector128<uint> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// uint128x1_t vmulwev_qu_du(uint64x2_t a, uint64x2_t b)
-        ///   LSX: VMULWEV.Q.DU Vd.Q, Vj.2D, Vk.2D
-        /// </summary>
-        public static Vector128<ulong> MultiplyWideningEven(Vector128<ulong> left, Vector128<ulong> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// uint128x1_t vmulwev_qu_du(uint64x2_t a, uint64x2_t b)
+        // ///   LSX: VMULWEV.Q.DU Vd.Q, Vj.2D, Vk.2D
+        // /// </summary>
+        // public static Vector128<ulong> MultiplyWideningEven(Vector128<ulong> left, Vector128<ulong> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// int16x8_t vmulwod_h_bu(uint8x16_t a, int8x16_t b)
-        ///   LSX: VMULWOD.H.BU.B Vd.8H, Vj.16B, Vk.16B
-        /// </summary>
-        public static Vector128<short> MultiplyWideningOdd(Vector128<byte> left, Vector128<sbyte> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int16x8_t vmulwod_h_bu(uint8x16_t a, int8x16_t b)
+        // ///   LSX: VMULWOD.H.BU.B Vd.8H, Vj.16B, Vk.16B
+        // /// </summary>
+        // public static Vector128<short> MultiplyWideningOdd(Vector128<byte> left, Vector128<sbyte> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int32x4_t vmulwod_w_hu(uint16x8_t a, int16x8_t b)
-        ///   LSX: VMULWOD.W.HU.H Vd.4W, Vj.8H, Vk.8H
-        /// </summary>
-        public static Vector128<int> MultiplyWideningOdd(Vector128<ushort> left, Vector128<short> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int32x4_t vmulwod_w_hu(uint16x8_t a, int16x8_t b)
+        // ///   LSX: VMULWOD.W.HU.H Vd.4W, Vj.8H, Vk.8H
+        // /// </summary>
+        // public static Vector128<int> MultiplyWideningOdd(Vector128<ushort> left, Vector128<short> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int64x2_t vmulwod_d_wu(uint32x4_t a, int32x4_t b)
-        ///   LSX: VMULWOD.D.WU.W Vd.2D, Vj.4W, Vk.4W
-        /// </summary>
-        public static Vector128<long> MultiplyWideningOdd(Vector128<uint> left, Vector128<int> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int64x2_t vmulwod_d_wu(uint32x4_t a, int32x4_t b)
+        // ///   LSX: VMULWOD.D.WU.W Vd.2D, Vj.4W, Vk.4W
+        // /// </summary>
+        // public static Vector128<long> MultiplyWideningOdd(Vector128<uint> left, Vector128<int> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int128x1_t vmulwod_q_du(uint64x2_t a, int64x2_t b)
-        ///   LSX: VMULWOD.Q.DU.D Vd.Q, Vj.2D, Vk.2D
-        /// </summary>
-        public static Vector128<long> MultiplyWideningOdd(Vector128<ulong> left, Vector128<long> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int128x1_t vmulwod_q_du(uint64x2_t a, int64x2_t b)
+        // ///   LSX: VMULWOD.Q.DU.D Vd.Q, Vj.2D, Vk.2D
+        // /// </summary>
+        // public static Vector128<long> MultiplyWideningOdd(Vector128<ulong> left, Vector128<long> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int16x8_t vmulwev_h_bu(uint8x16_t a, int8x16_t b)
-        ///   LSX: VMULWEV.H.BU.B Vd.8H, Vj.16B, Vk.16B
-        /// </summary>
-        public static Vector128<short> MultiplyWideningEven(Vector128<byte> left, Vector128<sbyte> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int16x8_t vmulwev_h_bu(uint8x16_t a, int8x16_t b)
+        // ///   LSX: VMULWEV.H.BU.B Vd.8H, Vj.16B, Vk.16B
+        // /// </summary>
+        // public static Vector128<short> MultiplyWideningEven(Vector128<byte> unsign, Vector128<sbyte> sign) => MultiplyWideningEven(unsign, sign);
 
-        /// <summary>
-        /// int32x4_t vmulwev_w_hu(uint16x8_t a, int16x8_t b)
-        ///   LSX: VMULWEV.W.HU.H Vd.4W, Vj.8H, Vk.8H
-        /// </summary>
-        public static Vector128<int> MultiplyWideningEven(Vector128<ushort> left, Vector128<short> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int32x4_t vmulwev_w_hu(uint16x8_t a, int16x8_t b)
+        // ///   LSX: VMULWEV.W.HU.H Vd.4W, Vj.8H, Vk.8H
+        // /// </summary>
+        // public static Vector128<int> MultiplyWideningEven(Vector128<ushort> unsign, Vector128<short> sign) => MultiplyWideningEven(unsign, sign);
 
-        /// <summary>
-        /// int64x2_t vmulwev_d_wu(uint32x4_t a, int32x4_t b)
-        ///   LSX: VMULWEV.D.WU.W Vd.2D, Vj.4W, Vk.4W
-        /// </summary>
-        public static Vector128<long> MultiplyWideningEven(Vector128<uint> left, Vector128<int> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int64x2_t vmulwev_d_wu(uint32x4_t a, int32x4_t b)
+        // ///   LSX: VMULWEV.D.WU.W Vd.2D, Vj.4W, Vk.4W
+        // /// </summary>
+        // public static Vector128<long> MultiplyWideningEven(Vector128<uint> unsign, Vector128<int> sign) => MultiplyWideningEven(unsign, sign);
 
-        /// <summary>
-        /// int128x1_t vmulwev_q_du(uint64x2_t a, int64x2_t b)
-        ///   LSX: VMULWEV.Q.DU.D Vd.Q, Vj.2D, Vk.2D
-        /// </summary>
-        public static Vector128<long> MultiplyWideningEven(Vector128<ulong> left, Vector128<long> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int128x1_t vmulwev_q_du(uint64x2_t a, int64x2_t b)
+        // ///   LSX: VMULWEV.Q.DU.D Vd.Q, Vj.2D, Vk.2D
+        // /// </summary>
+        // public static Vector128<long> MultiplyWideningEven(Vector128<ulong> unsign, Vector128<long> sign) => MultiplyWideningEven(unsign, sign);
 
         /// <summary>
         /// int8x16_t vavg_b(int8x16_t a, int8x16_t b)
@@ -3682,43 +3680,43 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint8x16_t vsrlrni_b_h(uint16x8_t left, uint16x8_t right, const int n)
         ///   LSX: VSRLRNI.B.H Vd, Vj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// int8x16_t vsrlrni_b_h(int16x8_t left, int16x8_t right, const int n)
         ///   LSX: VSRLRNI.B.H Vd, Vj, ui4
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// int16x8_t vsrlrni_h_w(int32x4_t left, int32x4_t right, const int n)
         ///   LSX: VSRLRNI.H.W Vd, Vj, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// uint16x8_t vsrlrni_h_w(uint32x4_t left, uint32x4_t right, const int n)
         ///   LSX: VSRLRNI.H.W Vd, Vj, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// int32x4_t vsrlrni_w_d(int64x2_t left, int64x2_t right, const int n)
         ///   LSX: VSRLRNI.W.D Vd, Vj, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// uint32x4_t vsrlrni_w_d(uint64x2_t left, uint64x2_t right, const int n)
         ///   LSX: VSRLRNI.W.D Vd, Vj, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
 
         ///// <summary>
         ///// int64x2_t vsrlrni_d_q(int128x1_t left, int128x1_t right, const int n)
         /////   LSX: VSRLRNI.D.Q Vd, Vj, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] const byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
+        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// int8x8_t vsrlrn_b_h(int16x8_t value, int16x8_t shift)
@@ -3856,25 +3854,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vsrarni_b_h(int16x8_t left, int16x8_t right, const int n)
         ///   LSX: VSRARNI.B.H Vd, Vj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// int16x8_t vsrarni_h_w(int32x4_t left, int32x4_t right, const int n)
         ///   LSX: VSRARNI.H.W Vd, Vj, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// int32x4_t vsrarni_w_d(int64x2_t left, int64x2_t right, const int n)
         ///   LSX: VSRARNI.W.D Vd, Vj, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
 
         ///// <summary>
         ///// int64x2_t vsrarni_d_q(int128x1_t left, int128x1_t right, const int n)
         /////   LSX: VSRARNI.D.Q Vd, Vj, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] const byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
+        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingLower(left, right, shift);
 
         /// <summary>
         /// int8x8_t vsrarn_b_h(int16x8_t value, int16x8_t shift)

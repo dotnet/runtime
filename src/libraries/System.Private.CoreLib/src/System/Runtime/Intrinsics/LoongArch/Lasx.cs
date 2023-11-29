@@ -980,25 +980,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x32_t xvseqi_b(int8x32_t a, int8_t si5)
         ///   LASX: XVSEQI.B Xd.32B, Xj.32B, si5
         /// </summary>
-        public static Vector256<sbyte> CompareEqual(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<sbyte> CompareEqual(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int16x16_t xvseqi_h(int16x16_t a, int8_t si5)
         ///   LASX: XVSEQI.H Xd.16H, Xj.16H, si5
         /// </summary>
-        public static Vector256<short> CompareEqual(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<short> CompareEqual(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int32x8_t xvseqi_w(int32x8_t a, int8_t si5)
         ///   LASX: XVSEQI.W Xd.8W, Xj.8W, si5
         /// </summary>
-        public static Vector256<int> CompareEqual(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<int> CompareEqual(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int64x4_t xvseqi_d(int64x4_t a, int8_t si5)
         ///   LASX: XVSEQI.D Xd.4D, Xj.4D, si5
         /// </summary>
-        public static Vector256<long> CompareEqual(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<long> CompareEqual(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int8x32_t xvseq_b(int8x32_t a, int8x32_t b)
@@ -1088,25 +1088,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x32_t xvslti_b(int8x32_t a, int8_t si5)
         ///   LASX: XVSLTI.Bd.32B, Xj.32B, si5
         /// </summary>
-        public static Vector256<sbyte> CompareLessThan(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<sbyte> CompareLessThan(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int16x16_t xvslti_h(int16x16_t a, int8_t si5)
         ///   LASX: XVSLTI.H Xd.16H, Xj.16H, si5
         /// </summary>
-        public static Vector256<short> CompareLessThan(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<short> CompareLessThan(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int32x8_t xvslti_w(int32x8_t a, int8_t si5)
         ///   LASX: XVSLTI.W Xd.8W, Xj.8W, si5
         /// </summary>
-        public static Vector256<int> CompareLessThan(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<int> CompareLessThan(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int64x4_t xvslti_d(int64x4_t a, int8_t si5)
         ///   LASX: XVSLTI.D Xd.4D, Xj.4D, si5
         /// </summary>
-        public static Vector256<long> CompareLessThan(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<long> CompareLessThan(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// uint8x32_t xvslt_b(int8x32_t a, int8x32_t b)
@@ -1172,25 +1172,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x32_t xvslei_b(int8x32_t a, int8_t si5)
         ///   LASX: XVSLEI.Bd.32B, Xj.32B, si5
         /// </summary>
-        public static Vector256<sbyte> CompareLessThanOrEqual(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<sbyte> CompareLessThanOrEqual(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int16x16_t xvslei_h(int16x16_t a, int8_t si5)
         ///   LASX: XVSLEI.H Xd.16H, Xj.16H, si5
         /// </summary>
-        public static Vector256<short> CompareLessThanOrEqual(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<short> CompareLessThanOrEqual(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int32x8_t xvslei_w(int32x8_t a, int8_t si5)
         ///   LASX: XVSLEI.W Xd.8W, Xj.8W, si5
         /// </summary>
-        public static Vector256<int> CompareLessThanOrEqual(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<int> CompareLessThanOrEqual(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int64x4_t xvslei_d(int64x4_t a, int8_t si5)
         ///   LASX: XVSLEI.D Xd.4D, Xj.4D, si5
         /// </summary>
-        public static Vector256<long> CompareLessThanOrEqual(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] const sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<long> CompareLessThanOrEqual(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// uint8x32_t xvsle_b(int8x32_t a, int8x32_t b)
@@ -1220,25 +1220,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint8x32_t xvslei_bu(uint8x32_t a, uint8_t ui5)
         ///   LASX: XVSLEI.BU Xd.32B, Xj.32B, ui5
         /// </summary>
-        public static Vector256<byte> CompareLessThanOrEqual(Vector256<byte> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<byte> CompareLessThanOrEqual(Vector256<byte> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint16x16_t xvslei_hu(uint16x16_t a, uint8_t ui5)
         ///   LASX: XVSLEI.HU Xd.16H, Xj.16H, ui5
         /// </summary>
-        public static Vector256<ushort> CompareLessThanOrEqual(Vector256<ushort> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<ushort> CompareLessThanOrEqual(Vector256<ushort> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint32x8_t xvslei_wu(uint32x8_t a, uint8_t ui5)
         ///   LASX: XVSLEI.WU Xd.8W, Xj.8W, ui5
         /// </summary>
-        public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint64x4_t xvslei_du(uint64x4_t a, uint8_t ui5)
         ///   LASX: XVSLEI.DU Xd.4D, Xj.4D, ui5
         /// </summary>
-        public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] const byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint8x32_t xvsle_bu(uint8x32_t a, uint8x32_t b)
@@ -1886,61 +1886,61 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x32_t xvldrepl_b(int8_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.B Xd.32B, Rj, si12
         /// </summary>
-        public static unsafe Vector256<sbyte> LoadElementReplicateVector(sbyte* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<sbyte> LoadElementReplicateVector(sbyte* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint8x32_t xvldrepl_b(uint8_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.B Xd.32B, Rj, si12
         /// </summary>
-        public static unsafe Vector256<byte> LoadElementReplicateVector(byte* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<byte> LoadElementReplicateVector(byte* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// int16x16_t xvldrepl_h(int16_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.H Xd.16H, Rj, si11
         /// </summary>
-        public static unsafe Vector256<short> LoadElementReplicateVector(short* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<short> LoadElementReplicateVector(short* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint16x16_t xvldrepl_h(uint16_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.H Xd.16H, Rj, si11
         /// </summary>
-        public static unsafe Vector256<ushort> LoadElementReplicateVector(ushort* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<ushort> LoadElementReplicateVector(ushort* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// int32x8_t xvldrepl_w(int32_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.W Xd.8W, Rj, si10
         /// </summary>
-        public static unsafe Vector256<int> LoadElementReplicateVector(int* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<int> LoadElementReplicateVector(int* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint32x8_t xvldrepl_w(uint32_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.W Xd.8W, Rj, si10
         /// </summary>
-        public static unsafe Vector256<uint> LoadElementReplicateVector(uint* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<uint> LoadElementReplicateVector(uint* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// int64x4_t xvldrepl_d(int64_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.D Xd.4D, Rj, si9
         /// </summary>
-        public static unsafe Vector256<long> LoadElementReplicateVector(long* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<long> LoadElementReplicateVector(long* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// uint64x4_t xvldrepl_d(uint64_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.D Xd.4D, Rj, si9
         /// </summary>
-        public static unsafe Vector256<ulong> LoadElementReplicateVector(ulong* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<ulong> LoadElementReplicateVector(ulong* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// float32x8_t vld(float32_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.W Xd.4S, Rj, si10
         /// </summary>
-        public static unsafe Vector256<float> LoadElementReplicateVector(float* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<float> LoadElementReplicateVector(float* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// float64x4_t xvldrepl_d(float64_t const * ptr, const short si12)
         ///   LASX: XVLDREPL.D Xd.4D, Rj, si9
         /// </summary>
-        public static unsafe Vector256<double> LoadElementReplicateVector(double* address, [ConstantExpected(Min = -2048, Max = 2047)] const short si12) => LoadElementReplicateVector(address, si12);
+        public static unsafe Vector256<double> LoadElementReplicateVector(double* address, [ConstantExpected(Min = -2048, Max = 2047)] short si12) => LoadElementReplicateVector(address, si12);
 
         /// <summary>
         /// float32x8_t xvfrecip_s(float32x8_t a)
@@ -2302,53 +2302,53 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// </summary>
         public static Vector256<ulong> MultiplyWideningEven(Vector256<ulong> left, Vector256<ulong> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// int16x16_t xvmulwod_h_bu(uint8x32_t a, int8x32_t b)
-        ///   LASX: XVMULWOD.H.BU.B Xd.16H, Xj.32B, Xk.32B
-        /// </summary>
-        public static Vector256<short> MultiplyWideningOdd(Vector256<byte> left, Vector256<sbyte> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int16x16_t xvmulwod_h_bu(uint8x32_t a, int8x32_t b)
+        // ///   LASX: XVMULWOD.H.BU.B Xd.16H, Xj.32B, Xk.32B
+        // /// </summary>
+        // public static Vector256<short> MultiplyWideningOdd(Vector256<byte> left, Vector256<sbyte> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int32x8_t xvmulwod_w_hu(uint16x16_t a, int16x16_t b)
-        ///   LASX: XVMULWOD.W.HU.H Xd.8W, Xj.16H, Xk.16H
-        /// </summary>
-        public static Vector256<int> MultiplyWideningOdd(Vector256<ushort> left, Vector256<short> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int32x8_t xvmulwod_w_hu(uint16x16_t a, int16x16_t b)
+        // ///   LASX: XVMULWOD.W.HU.H Xd.8W, Xj.16H, Xk.16H
+        // /// </summary>
+        // public static Vector256<int> MultiplyWideningOdd(Vector256<ushort> left, Vector256<short> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int64x4_t xvmulwod_d_wu(uint32x8_t a, int32x8_t b)
-        ///   LASX: XVMULWOD.D.WU.W Xd.4D, Xj.8W, Xk.8W
-        /// </summary>
-        public static Vector256<long> MultiplyWideningOdd(Vector256<uint> left, Vector256<int> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int64x4_t xvmulwod_d_wu(uint32x8_t a, int32x8_t b)
+        // ///   LASX: XVMULWOD.D.WU.W Xd.4D, Xj.8W, Xk.8W
+        // /// </summary>
+        // public static Vector256<long> MultiplyWideningOdd(Vector256<uint> left, Vector256<int> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int128x2_t xvmulwod_q_du(uint64x4_t a, int64x4_t b)
-        ///   LASX: XVMULWOD.Q.DU.D Xd.2Q, Xj.4D, Xk.4D
-        /// </summary>
-        public static Vector256<long> MultiplyWideningOdd(Vector256<ulong> left, Vector256<long> right) => MultiplyWideningOdd(left, right);
+        // /// <summary>
+        // /// int128x2_t xvmulwod_q_du(uint64x4_t a, int64x4_t b)
+        // ///   LASX: XVMULWOD.Q.DU.D Xd.2Q, Xj.4D, Xk.4D
+        // /// </summary>
+        // public static Vector256<long> MultiplyWideningOdd(Vector256<ulong> left, Vector256<long> right) => MultiplyWideningOdd(left, right);
 
-        /// <summary>
-        /// int16x16_t xvmulwev_h_bu(uint8x32_t a, int8x32_t b)
-        ///   LASX: XVMULWEV.H.BU.B Xd.16H, Xj.32B, Xk.32B
-        /// </summary>
-        public static Vector256<short> MultiplyWideningEven(Vector256<byte> left, Vector256<sbyte> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int16x16_t xvmulwev_h_bu(uint8x32_t a, int8x32_t b)
+        // ///   LASX: XVMULWEV.H.BU.B Xd.16H, Xj.32B, Xk.32B
+        // /// </summary>
+        // public static Vector256<short> MultiplyWideningEven(Vector256<byte> left, Vector256<sbyte> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// int32x8_t xvmulwev_w_hu(uint16x16_t a, int16x16_t b)
-        ///   LASX: XVMULWEV.W.HU.H Xd.8W, Xj.16H, Xk.16H
-        /// </summary>
-        public static Vector256<int> MultiplyWideningEven(Vector256<ushort> left, Vector256<short> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int32x8_t xvmulwev_w_hu(uint16x16_t a, int16x16_t b)
+        // ///   LASX: XVMULWEV.W.HU.H Xd.8W, Xj.16H, Xk.16H
+        // /// </summary>
+        // public static Vector256<int> MultiplyWideningEven(Vector256<ushort> left, Vector256<short> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// int64x4_t xvmulwev_d_wu(uint32x8_t a, int32x8_t b)
-        ///   LASX: XVMULWEV.D.WU.W Xd.4D, Xj.8W, Xk.8W
-        /// </summary>
-        public static Vector256<long> MultiplyWideningEven(Vector256<uint> left, Vector256<int> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int64x4_t xvmulwev_d_wu(uint32x8_t a, int32x8_t b)
+        // ///   LASX: XVMULWEV.D.WU.W Xd.4D, Xj.8W, Xk.8W
+        // /// </summary>
+        // public static Vector256<long> MultiplyWideningEven(Vector256<uint> left, Vector256<int> right) => MultiplyWideningEven(left, right);
 
-        /// <summary>
-        /// int128x2_t xvmulwev_q_du(uint64x4_t a, int64x4_t b)
-        ///   LASX: XVMULWEV.Q.DU.D Xd.2Q, Xj.4D, Xk.4D
-        /// </summary>
-        public static Vector256<long> MultiplyWideningEven(Vector256<ulong> left, Vector256<long> right) => MultiplyWideningEven(left, right);
+        // /// <summary>
+        // /// int128x2_t xvmulwev_q_du(uint64x4_t a, int64x4_t b)
+        // ///   LASX: XVMULWEV.Q.DU.D Xd.2Q, Xj.4D, Xk.4D
+        // /// </summary>
+        // public static Vector256<long> MultiplyWideningEven(Vector256<ulong> left, Vector256<long> right) => MultiplyWideningEven(left, right);
 
         /// <summary>
         /// int8x32_t xvavg_b(int8x32_t a, int8x32_t b)
@@ -3954,29 +3954,29 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// </summary>
         public static Vector256<double> RoundToPositiveInfinity(Vector256<double> value) => RoundToPositiveInfinity(value);
 
-        /// <summary>
-        /// int8x32_t TODO(int8x32_t v, int8_t data, const int index)  NOTE: maybe implemented by two instructions.
-        ///   LASX: TODO Xd.B, Rj, imm
-        /// </summary>
-        public static Vector256<sbyte> Insert(Vector256<sbyte> vector, sbyte data, const byte index) => Insert(vector, data, index);
+        // /// <summary>
+        // /// int8x32_t TODO(int8x32_t v, int8_t data, const int index)  NOTE: maybe implemented by two instructions.
+        // ///   LASX: TODO Xd.B, Rj, imm
+        // /// </summary>
+        // public static Vector256<sbyte> Insert(Vector256<sbyte> vector, sbyte data, const byte index) => Insert(vector, data, index);
 
-        /// <summary>
-        /// uint8x32_t TODO(uint8x32_t v, uint8_t data, const int index)  NOTE: maybe implemented by two instructions.
-        ///   LASX: TODO Xd.B, Rj, imm
-        /// </summary>
-        public static Vector256<byte> Insert(Vector256<byte> vector, byte data, const byte index) => Insert(vector, data, index);
+        // /// <summary>
+        // /// uint8x32_t TODO(uint8x32_t v, uint8_t data, const int index)  NOTE: maybe implemented by two instructions.
+        // ///   LASX: TODO Xd.B, Rj, imm
+        // /// </summary>
+        // public static Vector256<byte> Insert(Vector256<byte> vector, byte data, const byte index) => Insert(vector, data, index);
 
-        /// <summary>
-        /// int16x16_t TODO(int16x16_t v, int16_t data, const int index)  NOTE: maybe implemented by two instructions.
-        ///   LASX: TODO Xd.H, Rj, imm
-        /// </summary>
-        public static Vector256<short> Insert(Vector256<short> vector, short data, const byte index) => Insert(vector, data, index);
+        // /// <summary>
+        // /// int16x16_t TODO(int16x16_t v, int16_t data, const int index)  NOTE: maybe implemented by two instructions.
+        // ///   LASX: TODO Xd.H, Rj, imm
+        // /// </summary>
+        // public static Vector256<short> Insert(Vector256<short> vector, short data, const byte index) => Insert(vector, data, index);
 
-        /// <summary>
-        /// uint16x16_t TODO(uint16x16_t v, uint16_t data, const int index)  NOTE: maybe implemented by two instructions.
-        ///   LASX: TODO Xd.H, Rj, imm
-        /// </summary>
-        public static Vector256<ushort> Insert(Vector256<ushort> vector, ushort data, const byte index) => Insert(vector, data, index);
+        // /// <summary>
+        // /// uint16x16_t TODO(uint16x16_t v, uint16_t data, const int index)  NOTE: maybe implemented by two instructions.
+        // ///   LASX: TODO Xd.H, Rj, imm
+        // /// </summary>
+        // public static Vector256<ushort> Insert(Vector256<ushort> vector, ushort data, const byte index) => Insert(vector, data, index);
 
         /// <summary>
         /// int32x8_t xvinsgr2vr_w(int32x8_t v, int32_t data, const int index)
@@ -5699,7 +5699,5 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LASX: XVFCLASS.D Vd.4D, Vj.4D
         /// </summary>
         public static Vector256<long> FloatClass(Vector256<double> value) => FloatClass(value);
-
-        // TODO:----------------------------------
     }
 }

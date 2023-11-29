@@ -156,22 +156,22 @@ namespace System.Runtime.Intrinsics.LoongArch
             /// <summary>
             ///   LA64: FRECIPE.S fd, fj
             /// </summary>
-            public static float ReciprocalExact(float value) => ReciprocalExact(value);
+            public static float ReciprocalEstimate(float value) => ReciprocalEstimate(value);
 
             /// <summary>
             ///   LA64: FRECIPE.D fd, fj
             /// </summary>
-            public static double ReciprocalExact(double value) => ReciprocalExact(value);
+            public static double ReciprocalEstimate(double value) => ReciprocalEstimate(value);
 
             /// <summary>
             ///   LA64: FRSQRTE.S fd, fj
             /// </summary>
-            public static float ReciprocalSqrtExact(float value) => ReciprocalSqrtExact(value);
+            public static float ReciprocalSqrtEstimate(float value) => ReciprocalSqrtEstimate(value);
 
             /// <summary>
             ///   LA64: FRSQRTE.D fd, fj
             /// </summary>
-            public static double ReciprocalSqrtExact(double value) => ReciprocalSqrtExact(value);
+            public static double ReciprocalSqrtEstimate(double value) => ReciprocalSqrtEstimate(value);
 
             /// <summary>
             ///   LA64: CRC.W.B.W rd, rj, rk
@@ -293,6 +293,5 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LA32/LA64: FCLASS.S fd, fj
         /// </summary>
         public static double FloatClass(double value) => FloatClass(value);
-
     }
 }
