@@ -4028,7 +4028,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
         assert((xtab->ebdHndBeg == block) || // The normal case
                (xtab->ebdHndBeg->NextIs(block) &&
                 xtab->ebdHndBeg->HasFlag(BBF_INTERNAL))); // After we've already inserted a header block, and we're
-                                                            // trying to decide how to split up the predecessor edges.
+                                                          // trying to decide how to split up the predecessor edges.
         if (predBlock->KindIs(BBJ_CALLFINALLY))
         {
             assert(predBlock->HasJumpTo(block));

@@ -5792,8 +5792,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We should not have allowed OSR if there were backedges in handlers.
                         //
                         assert(!block->hasHndIndex());
-                        addPatchpoint =
-                            block->HasFlag(BBF_BACKWARD_JUMP_TARGET) && (verCurrentState.esStackDepth == 0);
+                        addPatchpoint = block->HasFlag(BBF_BACKWARD_JUMP_TARGET) && (verCurrentState.esStackDepth == 0);
                         break;
                     }
 

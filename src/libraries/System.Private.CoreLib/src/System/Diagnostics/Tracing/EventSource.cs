@@ -5152,7 +5152,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest don’t use this constructor.
+        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest don't use this constructor.
         ///'resources, is a resource manager.  If specified all messages are localized using that manager.
         /// </summary>
         internal ManifestBuilder(ResourceManager? resources, EventManifestOptions flags)

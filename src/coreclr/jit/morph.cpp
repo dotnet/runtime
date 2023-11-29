@@ -13702,10 +13702,9 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             //   - a tail call dispatched via runtime help (IL stubs), in which
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
-            noway_assert(
-                (call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) && compCurBB->HasFlag(BBF_HAS_JMP)) ||
-                (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
-                (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
+            noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) && compCurBB->HasFlag(BBF_HAS_JMP)) ||
+                         (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
+                         (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
         }
 
 #ifdef DEBUG
