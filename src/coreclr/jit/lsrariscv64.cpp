@@ -309,7 +309,7 @@ int LinearScan::BuildNode(GenTree* tree)
                         needTemp = true; // reg1
                 }
 
-                if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+                if (!needTemp && (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD))
                 {
                     bool checkDividend = true;
                     // Do we have an immediate for the 'divisorOp'?

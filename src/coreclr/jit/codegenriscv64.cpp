@@ -1760,8 +1760,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
         // assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
         //                                                                // aligned
-        if (tempReg == REG_NA)
-            tempReg = tree->ExtractTempReg();
+        tempReg = tree->ExtractTempReg();
         genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, tempReg);
         stackAdjustment += outgoingArgSpaceAligned;
     }
