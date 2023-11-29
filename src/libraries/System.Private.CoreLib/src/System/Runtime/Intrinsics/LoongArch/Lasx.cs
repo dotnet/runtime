@@ -1982,13 +1982,13 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// float32x8_t xvflogb_d(float32x8_t a)
         ///   LASX: XVFLOGB.S Xd.8S, Xj.8S
         /// </summary>
-        public static Vector256<float> Logarithm2(Vector256<float> value) => Logarithm2(value);
+        public static Vector256<float> FloatLogarithm2(Vector256<float> value) => FloatLogarithm2(value);
 
         /// <summary>
         /// float64x4_t xvflogb_d(float64x4_t a)
         ///   LASX: XVFLOGB.D Xd.4D, Xj.4D
         /// </summary>
-        public static Vector256<double> Logarithm2(Vector256<double> value) => Logarithm2(value);
+        public static Vector256<double> FloatLogarithm2(Vector256<double> value) => FloatLogarithm2(value);
 
         /// <summary>
         /// void xvst(int8x32_t val, int8_t* addr, const short si12)

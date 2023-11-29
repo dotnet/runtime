@@ -153,47 +153,146 @@ namespace System.Runtime.Intrinsics.LoongArch
             /// </summary>
             public static ulong ReverseElementBits(ulong value) => ReverseElementBits(value);
 
-            // TODO: add crc, ????
+            /// <summary>
+            ///   LA64: FRECIPE.S fd, fj
+            /// </summary>
+            public static float ReciprocalExact(float value) => ReciprocalExact(value);
+
+            /// <summary>
+            ///   LA64: FRECIPE.D fd, fj
+            /// </summary>
+            public static double ReciprocalExact(double value) => ReciprocalExact(value);
+
+            /// <summary>
+            ///   LA64: FRSQRTE.S fd, fj
+            /// </summary>
+            public static float ReciprocalSqrtExact(float value) => ReciprocalSqrtExact(value);
+
+            /// <summary>
+            ///   LA64: FRSQRTE.D fd, fj
+            /// </summary>
+            public static double ReciprocalSqrtExact(double value) => ReciprocalSqrtExact(value);
+
+            /// <summary>
+            ///   LA64: CRC.W.B.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckIEEE8023(int crc, byte checks) => CyclicRedundancyCheckIEEE8023(crc, checks);
+
+            /// <summary>
+            ///   LA64: CRC.W.H.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckIEEE8023(int crc, ushort checks) => CyclicRedundancyCheckIEEE8023(crc, checks);
+
+            /// <summary>
+            ///   LA64: CRC.W.W.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckIEEE8023(int crc, uint checks) => CyclicRedundancyCheckIEEE8023(crc, checks);
+
+            /// <summary>
+            ///   LA64: CRC.W.D.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckIEEE8023(int crc, ulong checks) => CyclicRedundancyCheckIEEE8023(crc, checks);
+
+            /// <summary>
+            ///   LA64: CRCC.W.B.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckCastagnoli(int crc, byte checks) => CyclicRedundancyCheckCastagnoli(crc, checks);
+
+            /// <summary>
+            ///   LA64: CRCC.W.H.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckCastagnoli(int crc, ushort checks) => CyclicRedundancyCheckCastagnoli(crc, checks);
+
+            /// <summary>
+            ///   LA64: CRCC.W.W.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckCastagnoli(int crc, uint checks) => CyclicRedundancyCheckCastagnoli(crc, checks);
+
+            /// <summary>
+            ///   LA64: CRCC.W.D.W rd, rj, rk
+            /// </summary>
+            public static long CyclicRedundancyCheckCastagnoli(int crc, ulong checks) => CyclicRedundancyCheckCastagnoli(crc, checks);
         }
 
         /// <summary>
-        ///   LA32: MULH.W rd, rj, rk
+        ///   LA32/LA64: MULH.W rd, rj, rk
         /// </summary>
         public static long MultiplyHigh(int left, int right) => MultiplyHigh(left, right);
 
         /// <summary>
-        ///   LA32: MULH.WU rd, rj, rk
+        ///   LA32/LA64: MULH.WU rd, rj, rk
         /// </summary>
         public static ulong MultiplyHigh(uint left, uint right) => MultiplyHigh(left, right);
 
         /// <summary>
-        ///   LA32: FSQRT.S fd, fj
+        ///   LA32/LA64: FSQRT.S fd, fj
         /// </summary>
         public static float SquareRoot(float value) => SquareRoot(value);
 
         /// <summary>
-        ///   LA32: FSQRT.D fd, fj
+        ///   LA32/LA64: FSQRT.D fd, fj
         /// </summary>
         public static double SquareRoot(double value) => SquareRoot(value);
 
         /// <summary>
-        ///   LA32: FRECIP.S fd, fj
+        ///   LA32/LA64: FRECIP.S fd, fj
         /// </summary>
         public static float Reciprocal(float value) => Reciprocal(value);
 
         /// <summary>
-        ///   LA32: FRECIP.D fd, fj
+        ///   LA32/LA64: FRECIP.D fd, fj
         /// </summary>
         public static double Reciprocal(double value) => Reciprocal(value);
 
         /// <summary>
-        ///   LA32: FRSQRT.S fd, fj
+        ///   LA32/LA64: FRSQRT.S fd, fj
         /// </summary>
         public static float ReciprocalSqrt(float value) => ReciprocalSqrt(value);
 
         /// <summary>
-        ///   LA32: FRSQRT.D fd, fj
+        ///   LA32/LA64: FRSQRT.D fd, fj
         /// </summary>
         public static double ReciprocalSqrt(double value) => ReciprocalSqrt(value);
+
+        /// <summary>
+        ///   LA32/LA64: FLOGB.S fd, fj
+        /// </summary>
+        public static float FloatLogarithm2(float value) => FloatLogarithm2(value);
+
+        /// <summary>
+        ///   LA32/LA64: FLOGB.D fd, fj
+        /// </summary>
+        public static double FloatLogarithm2(double value) => FloatLogarithm2(value);
+
+        /// <summary>
+        ///   LA32/LA64: FSCALEB.S fd, fj, fk
+        /// </summary>
+        public static float FloatScaleBinary(float value, int index) => FloatScaleBinary(value, index);
+
+        /// <summary>
+        ///   LA32/LA64: FSCALEB.D fd, fj, fk
+        /// </summary>
+        public static double FloatScaleBinary(double value, long index) => FloatScaleBinary(value, index);
+
+        /// <summary>
+        ///   LA32/LA64: FCOPYSIGN.S fd, fj, fk
+        /// </summary>
+        public static float FloatCopySign(float value, float sign) => FloatCopySign(value, sign);
+
+        /// <summary>
+        ///   LA32/LA64: FCOPYSIGN.D fd, fj, fk
+        /// </summary>
+        public static double FloatCopySign(double value, double sign) => FloatCopySign(value, sign);
+
+        /// <summary>
+        ///   LA32/LA64: FCLASS.S fd, fj
+        /// </summary>
+        public static float FloatClass(float value) => FloatClass(value);
+
+        /// <summary>
+        ///   LA32/LA64: FCLASS.S fd, fj
+        /// </summary>
+        public static double FloatClass(double value) => FloatClass(value);
+
     }
 }

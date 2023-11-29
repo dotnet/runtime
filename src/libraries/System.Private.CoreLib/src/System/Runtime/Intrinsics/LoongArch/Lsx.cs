@@ -2152,13 +2152,13 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// float32x4_t vflogb_s(float32x4_t a)
         ///   LSX: VFLOGB.S Vd.4S, Vj.4S
         /// </summary>
-        public static Vector128<float> Logarithm2(Vector128<float> value) => Logarithm2(value);
+        public static Vector128<float> FloatLogarithm2(Vector128<float> value) => FloatLogarithm2(value);
 
         /// <summary>
         /// float64x2_t vflogb_d(float64x2_t a)
         ///   LSX: VFLOGB.D Vd.2D, Vj.2D
         /// </summary>
-        public static Vector128<double> Logarithm2(Vector128<double> value) => Logarithm2(value);
+        public static Vector128<double> FloatLogarithm2(Vector128<double> value) => FloatLogarithm2(value);
 
         /// <summary>
         /// void vst(int8x16_t val, int8_t* addr, const short si12)
