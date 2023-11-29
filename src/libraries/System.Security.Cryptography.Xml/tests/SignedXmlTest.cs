@@ -2004,8 +2004,6 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData("Valid", true)]
         [InlineData("Tampered", false)]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/95390")]
-        // dotnet test src/libraries/System.Security.Cryptography.Xml/tests/ --framework net9.0
         public void CheckSignatureHandlesEnvelopedSignatureWithRootXpointerReference(string caseName, bool isValid)
         {
             XmlDocument xmlDoc = new ();
