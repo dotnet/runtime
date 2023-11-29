@@ -192,36 +192,38 @@ namespace System.Reflection.Emit
 
         private void WriteProperties(TypeBuilderImpl typeBuilder)
         {
-            if (typeBuilder._propertyDefinitions.Count > 0)
+            if (typeBuilder._propertyDefinitions.Count == 0)
             {
-                AddPropertyMap(typeBuilder._handle, typeBuilder._firstPropertyToken);
-                foreach (PropertyBuilderImpl property in typeBuilder._propertyDefinitions)
+                return;
+            }
+
+            AddPropertyMap(typeBuilder._handle, typeBuilder._firstPropertyToken);
+            foreach (PropertyBuilderImpl property in typeBuilder._propertyDefinitions)
+            {
+                PropertyDefinitionHandle propertyHandle = AddPropertyDefinition(property, MetadataSignatureHelper.PropertySignatureEncoder(property, this));
+                WriteCustomAttributes(property._customAttributes, propertyHandle);
+
+                if (property.GetMethod is MethodBuilderImpl gMb)
                 {
-                    PropertyDefinitionHandle propertyHandle = AddPropertyDefinition(property, MetadataSignatureHelper.PropertySignatureEncoder(property, this));
-                    WriteCustomAttributes(property._customAttributes, propertyHandle);
+                    AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Getter, gMb._handle);
+                }
 
-                    if (property.GetMethod is MethodBuilderImpl gMb)
-                    {
-                        AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Getter, gMb._handle);
-                    }
+                if (property.SetMethod is MethodBuilderImpl sMb)
+                {
+                    AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Setter, sMb._handle);
+                }
 
-                    if (property.SetMethod is MethodBuilderImpl sMb)
+                if (property._otherMethods != null)
+                {
+                    foreach (MethodBuilderImpl method in property._otherMethods)
                     {
-                        AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Setter, sMb._handle);
+                        AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Other, method._handle);
                     }
+                }
 
-                    if (property._otherMethods != null)
-                    {
-                        foreach (MethodBuilderImpl method in property._otherMethods)
-                        {
-                            AddMethodSemantics(propertyHandle, MethodSemanticsAttributes.Other, method._handle);
-                        }
-                    }
-
-                    if (property._defaultValue != DBNull.Value)
-                    {
-                        AddDefaultValue(propertyHandle, property._defaultValue);
-                    }
+                if (property._defaultValue != DBNull.Value)
+                {
+                    AddDefaultValue(propertyHandle, property._defaultValue);
                 }
             }
         }

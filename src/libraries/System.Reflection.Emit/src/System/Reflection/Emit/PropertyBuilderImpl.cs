@@ -51,7 +51,6 @@ namespace System.Reflection.Emit
         {
             _containingType.ThrowIfCreated();
             FieldBuilderImpl.ValidateDefaultValueType(defaultValue, _propertyType);
-
             _defaultValue = defaultValue;
         }
 

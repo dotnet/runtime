@@ -36,7 +36,6 @@ namespace System.Reflection.Emit
         {
             _typeBuilder.ThrowIfCreated();
             ValidateDefaultValueType(defaultValue, _fieldType);
-
             _defaultValue = defaultValue;
         }
 
