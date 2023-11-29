@@ -7932,24 +7932,6 @@ public:
     pointers) must be flagged as 'large' in GenTree::InitNodeSize().
  */
 
-// GenTreeClsVar: data address node (GT_CLS_VAR_ADDR).
-//
-struct GenTreeClsVar : public GenTree
-{
-    CORINFO_FIELD_HANDLE gtClsVarHnd;
-
-    GenTreeClsVar(var_types type, CORINFO_FIELD_HANDLE clsVarHnd)
-        : GenTree(GT_CLS_VAR_ADDR, type), gtClsVarHnd(clsVarHnd)
-    {
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeClsVar() : GenTree()
-    {
-    }
-#endif
-};
-
 /* gtPhiArg -- phi node rhs argument, var = phi(phiarg, phiarg, phiarg...); GT_PHI_ARG */
 struct GenTreePhiArg : public GenTreeLclVarCommon
 {

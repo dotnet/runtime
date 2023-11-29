@@ -324,7 +324,7 @@ CONFIG_INTEGER(EnableAVX512CD_VL,           W("EnableAVX512CD_VL"),         1) /
 CONFIG_INTEGER(EnableAVX512DQ,              W("EnableAVX512DQ"),            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512DQ_VL,           W("EnableAVX512DQ_VL"),         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512F,               W("EnableAVX512F"),             1) // Allows AVX512F+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI,            W("EnableAVX512VBMI"),          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI_VL,         W("EnableAVX512VBMI_VL"),       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
@@ -351,6 +351,7 @@ CONFIG_INTEGER(EnableArm64Dp,               W("EnableArm64Dp"),             1) /
 CONFIG_INTEGER(EnableArm64Rdm,              W("EnableArm64Rdm"),            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Sha1,             W("EnableArm64Sha1"),           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Sha256,           W("EnableArm64Sha256"),         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Sve,              W("EnableArm64Sve"),            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 #endif
 
 // clang-format on
@@ -655,7 +656,7 @@ CONFIG_INTEGER(JitEnableHeadTailMerge, W("JitEnableHeadTailMerge"), 1)
 CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
 // Enable cross-block local assertion prop
-CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 0)
+CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 // Create a runtimeconfig.json for the C++/CLI test library
                 new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))
-                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion))
+                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion))
                     .Save();
 
                 ManagedHostFixture_FrameworkDependent = new TestProjectFixture("ManagedHost", RepoDirectories)

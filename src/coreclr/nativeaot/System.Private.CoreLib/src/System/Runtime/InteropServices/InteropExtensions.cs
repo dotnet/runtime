@@ -13,13 +13,9 @@ using Internal.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    ///     Hooks for System.Private.Interop.dll code to access internal functionality in System.Private.CoreLib.dll.
-    ///
-    ///     Methods added to InteropExtensions should also be added to the System.Private.CoreLib.InteropServices contract
-    ///     in order to be accessible from System.Private.Interop.dll.
+    ///     Hooks for interop code to access internal functionality in System.Private.CoreLib.dll.
     /// </summary>
-    [CLSCompliant(false)]
-    public static class InteropExtensions
+    internal static class InteropExtensions
     {
         internal static bool MightBeBlittable(this EETypePtr eeType)
         {

@@ -1531,19 +1531,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
     if (lclNode->IsMultiReg())
     {
+        // This is the case of storing to a multi-reg local, currently supported
+        // only in ARM64 CodeGen. It may require HFA and SIMD features enabled.
         NYI_RISCV64("genCodeForStoreLclVar-----unimplemented on RISCV64 yet----");
-        regNumber    operandReg = genConsumeReg(data);
-        unsigned int regCount   = varDsc->lvFieldCnt;
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            regNumber varReg = lclNode->GetRegByIndex(i);
-            assert(varReg != REG_NA);
-            unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
-            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
-            assert(fieldVarDsc->TypeGet() == TYP_FLOAT);
-            GetEmitter()->emitIns_R_R_I(INS_sd, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
-        }
-        genProduceReg(lclNode);
     }
     else
     {
@@ -2798,13 +2788,9 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                     ins = INS_fdiv_d;
                 }
                 break;
-            case GT_NEG:
-                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
-                break;
 
             default:
-                NYI_RISCV64("Unhandled oper in genGetInsForOper() - float");
-                unreached();
+                NO_WAY("Unhandled oper in genGetInsForOper() - float");
                 break;
         }
     }
@@ -2914,14 +2900,6 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 {
                     ins = INS_mulw;
                 }
-                break;
-
-            case GT_NEG:
-                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
-                break;
-
-            case GT_NOT:
-                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
                 break;
 
             case GT_AND:
@@ -3050,8 +3028,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             default:
-                NYI_RISCV64("Unhandled oper in genGetInsForOper() - integer");
-                unreached();
+                NO_WAY("Unhandled oper in genGetInsForOper() - integer");
                 break;
         }
     }
@@ -3203,8 +3180,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 // Arguments:
 //    tree - the GT_SWAP node
 //
-void CodeGen::genCodeForSwap(GenTreeOp* tree)
+void CodeGen::genCodeForSwap(GenTreeOp*)
 {
+    // For now GT_SWAP handling is only (partially) supported in ARM64 and XARCH CodeGens.
     NYI_RISCV64("genCodeForSwap-----unimplemented/unused on RISCV64 yet----");
 }
 
@@ -3330,18 +3308,17 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     assert(treeNode->OperGet() == GT_CAST);
     assert(!treeNode->gtOverflow());
 
-    regNumber targetReg = treeNode->GetRegNum();
-    assert(genIsValidIntReg(targetReg));
+    assert(genIsValidIntReg(treeNode->GetRegNum())); // Must be a valid int reg.
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;
     assert(!op1->isContained());                  // Cannot be contained
-    assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid int reg.
+    assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid float reg.
 
     var_types dstType = treeNode->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
     assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
 
-    // We should never see a srcType whose size is neither EA_4BYTE or EA_8BYTE
+    // We should never see a dstType whose size is neither EA_4BYTE or EA_8BYTE
     emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
     noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
 
@@ -3352,44 +3329,58 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     {
         if (srcType == TYP_DOUBLE)
         {
-            ins = INS_fcvt_lu_d;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_wu_d;
+            }
+            else
+            {
+                ins = INS_fcvt_lu_d;
+            }
         }
         else
         {
             assert(srcType == TYP_FLOAT);
-            ins = INS_fcvt_lu_s;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_wu_s;
+            }
+            else
+            {
+                ins = INS_fcvt_lu_s;
+            }
         }
     }
     else
     {
         if (srcType == TYP_DOUBLE)
         {
-            ins = INS_fcvt_l_d;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_w_d;
+            }
+            else
+            {
+                ins = INS_fcvt_l_d;
+            }
         }
         else
         {
             assert(srcType == TYP_FLOAT);
-            ins = INS_fcvt_l_s;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_w_s;
+            }
+            else
+            {
+                ins = INS_fcvt_l_s;
+            }
         }
     }
 
     genConsumeOperands(treeNode->AsOp());
 
-    GetEmitter()->emitIns_R_R(ins, EA_8BYTE, treeNode->GetRegNum(), op1->GetRegNum());
-    if (dstSize == EA_4BYTE)
-
-    {
-        emitAttr attr = emitActualTypeSize(dstType);
-        if (isUnsigned)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_slli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
-            GetEmitter()->emitIns_R_R_I(INS_srli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_R_I(INS_addiw, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 0);
-        }
-    }
+    GetEmitter()->emitIns_R_R(ins, dstSize, treeNode->GetRegNum(), op1->GetRegNum());
 
     genProduceReg(treeNode);
 }
@@ -4042,6 +4033,23 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
     return callerSPtoSPdelta;
 }
 
+// Produce generic and unoptimized code for loading constant to register and dereferencing it
+// at the end
+static void emitLoadConstAtAddr(emitter* emit, regNumber dstRegister, ssize_t imm)
+{
+    ssize_t high = (imm >> 32) & 0xffffffff;
+    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (((high + 0x800) >> 12) & 0xfffff));
+    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, (high & 0xfff));
+
+    ssize_t low = imm & 0xffffffff;
+    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
+    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 21) & 0x7ff));
+
+    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
+    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 10) & 0x7ff));
+    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, dstRegister, dstRegister, (low & 0x3ff));
+}
+
 /*****************************************************************************
  *  Emit a call to a helper function.
  */
@@ -4084,17 +4092,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
         else
         {
-            ssize_t high = (((ssize_t)pAddr) >> 32) & 0xffffffff;
-            GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, callTarget, (((high + 0x800) >> 12) & 0xfffff));
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, (high & 0xfff));
-
-            ssize_t low = ((ssize_t)pAddr) & 0xffffffff;
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, callTarget, callTarget, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, ((low >> 21) & 0x7ff));
-
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, callTarget, callTarget, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, ((low >> 10) & 0x7ff));
-            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, callTarget, callTarget, (low & 0x3ff));
+            emitLoadConstAtAddr(GetEmitter(), callTarget, (ssize_t)pAddr);
         }
         regSet.verifyRegUsed(callTarget);
 
@@ -6086,14 +6084,6 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
 }
 
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    NYI_RISCV64("genCodeForLoadOffset-----unimplemented on RISCV64 yet----");
-}
-
 //------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
@@ -7210,9 +7200,23 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 
         if (addr == nullptr)
         {
-            NYI_RISCV64("part of genJumpToThrowHlpBlk_la-----unimplemented on RISCV64 yet----");
             callType   = emitter::EC_INDIR_R;
             callTarget = REG_DEFAULT_HELPER_CALL_TARGET;
+            if (compiler->opts.compReloc)
+            {
+                ssize_t imm = (3 + 1) << 2;
+                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+                emit->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
+            }
+            else
+            {
+                ssize_t imm = 9 << 2;
+                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+                // TODO-RISCV64-CQ: In the future we may consider using emitter::emitLoadImmediate instead,
+                // which is less straightforward but offers slightly better codegen.
+                emitLoadConstAtAddr(GetEmitter(), callTarget, (ssize_t)pAddr);
+            }
+            regSet.verifyRegUsed(callTarget);
         }
         else
         { // INS_OPTS_C

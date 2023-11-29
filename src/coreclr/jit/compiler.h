@@ -1957,6 +1957,197 @@ inline LoopFlags& operator&=(LoopFlags& a, LoopFlags b)
     return a = (LoopFlags)((unsigned short)a & (unsigned short)b);
 }
 
+// Represents a depth-first search tree of the flow graph.
+class FlowGraphDfsTree
+{
+    Compiler* m_comp;
+    BasicBlock** m_postOrder;
+    unsigned m_postOrderCount;
+
+public:
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount)
+        : m_comp(comp)
+        , m_postOrder(postOrder)
+        , m_postOrderCount(postOrderCount)
+    {
+    }
+
+    Compiler* GetCompiler() const
+    {
+        return m_comp;
+    }
+
+    BasicBlock** GetPostOrder() const
+    {
+        return m_postOrder;
+    }
+
+    unsigned GetPostOrderCount() const
+    {
+        return m_postOrderCount;
+    }
+
+    BitVecTraits PostOrderTraits() const
+    {
+        return BitVecTraits(m_postOrderCount, m_comp);
+    }
+
+    bool Contains(BasicBlock* block) const;
+    bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
+};
+
+class FlowGraphNaturalLoop
+{
+    friend class FlowGraphNaturalLoops;
+
+    const FlowGraphDfsTree* m_tree;
+    BasicBlock* m_header;
+    FlowGraphNaturalLoop* m_parent = nullptr;
+    // Bit vector of blocks in the loop; each index is the RPO index a block,
+    // with the head block's RPO index subtracted.
+    BitVec m_blocks;
+    unsigned m_blocksSize = 0;
+    jitstd::vector<FlowEdge*> m_backEdges;
+    jitstd::vector<FlowEdge*> m_entryEdges;
+    jitstd::vector<FlowEdge*> m_exitEdges;
+    unsigned m_index = 0;
+
+    FlowGraphNaturalLoop(const FlowGraphDfsTree* tree, BasicBlock* head);
+
+    unsigned LoopBlockBitVecIndex(BasicBlock* block);
+    bool TryGetLoopBlockBitVecIndex(BasicBlock* block, unsigned* pIndex);
+
+    BitVecTraits LoopBlockTraits();
+public:
+    BasicBlock* GetHeader() const
+    {
+        return m_header;
+    }
+
+    const FlowGraphDfsTree* GetDfsTree() const
+    {
+        return m_tree;
+    }
+
+    FlowGraphNaturalLoop* GetParent() const
+    {
+        return m_parent;
+    }
+
+    unsigned GetIndex() const
+    {
+        return m_index;
+    }
+
+    const jitstd::vector<FlowEdge*>& BackEdges()
+    {
+        return m_backEdges;
+    }
+
+    const jitstd::vector<FlowEdge*>& EntryEdges()
+    {
+        return m_entryEdges;
+    }
+
+    const jitstd::vector<FlowEdge*>& ExitEdges()
+    {
+        return m_exitEdges;
+    }
+
+    bool ContainsBlock(BasicBlock* block);
+
+    template<typename TFunc>
+    BasicBlockVisit VisitLoopBlocksReversePostOrder(TFunc func);
+
+    template<typename TFunc>
+    BasicBlockVisit VisitLoopBlocksPostOrder(TFunc func);
+
+    template<typename TFunc>
+    BasicBlockVisit VisitLoopBlocks(TFunc func);
+};
+
+class FlowGraphNaturalLoops
+{
+    const FlowGraphDfsTree* m_dfs;
+    jitstd::vector<FlowGraphNaturalLoop*> m_loops;
+    unsigned m_improperLoopHeaders = 0;
+
+    FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
+
+    static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, jitstd::list<BasicBlock*>& worklist);
+public:
+    size_t NumLoops()
+    {
+        return m_loops.size();
+    }
+
+    bool HaveNonNaturalLoopCycles()
+    {
+        return m_improperLoopHeaders > 0;
+    }
+
+    FlowGraphNaturalLoop* GetLoopFromHeader(BasicBlock* header);
+
+    bool IsLoopBackEdge(FlowEdge* edge);
+    bool IsLoopExitEdge(FlowEdge* edge);
+
+    class LoopsPostOrderIter
+    {
+        jitstd::vector<FlowGraphNaturalLoop*>* m_loops;
+
+    public:
+        LoopsPostOrderIter(jitstd::vector<FlowGraphNaturalLoop*>* loops)
+            : m_loops(loops)
+        {
+        }
+
+        jitstd::vector<FlowGraphNaturalLoop*>::reverse_iterator begin()
+        {
+            return m_loops->rbegin();
+        }
+
+        jitstd::vector<FlowGraphNaturalLoop*>::reverse_iterator end()
+        {
+            return m_loops->rend();
+        }
+    };
+
+    class LoopsReversePostOrderIter
+    {
+        jitstd::vector<FlowGraphNaturalLoop*>* m_loops;
+
+    public:
+        LoopsReversePostOrderIter(jitstd::vector<FlowGraphNaturalLoop*>* loops)
+            : m_loops(loops)
+        {
+        }
+
+        jitstd::vector<FlowGraphNaturalLoop*>::iterator begin()
+        {
+            return m_loops->begin();
+        }
+
+        jitstd::vector<FlowGraphNaturalLoop*>::iterator end()
+        {
+            return m_loops->end();
+        }
+    };
+
+    // Iterate the loops in post order (child loops before parent loops)
+    LoopsPostOrderIter InPostOrder()
+    {
+        return LoopsPostOrderIter(&m_loops);
+    }
+
+    // Iterate the loops in reverse post order (parent loops before child loops)
+    LoopsReversePostOrderIter InReversePostOrder()
+    {
+        return LoopsReversePostOrderIter(&m_loops);
+    }
+
+    static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
+};
+
 //  The following holds information about instr offsets in terms of generated code.
 
 enum class IPmappingDscKind
@@ -2052,6 +2243,7 @@ class Compiler
     friend class LocalsUseVisitor;
     friend class Promotion;
     friend class ReplaceVisitor;
+    friend class FlowGraphNaturalLoop;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
@@ -2253,12 +2445,6 @@ public:
 
     // Returns true if "block" is the start of a handler or filter region.
     bool bbIsHandlerBeg(BasicBlock* block);
-
-    // Returns true iff "block" is where control flows if an exception is raised in the
-    // try region, and sets "*regionIndex" to the index of the try for the handler.
-    // Differs from "IsHandlerBeg" in the case of filters, where this is true for the first
-    // block of the filter, but not for the filter's handler.
-    bool bbIsExFlowBlock(BasicBlock* block, unsigned* regionIndex);
 
     bool ehHasCallableHandlers();
 
@@ -4491,7 +4677,7 @@ public:
                                     // created.
     BasicBlockList* fgReturnBlocks; // list of BBJ_RETURN blocks
     unsigned        fgEdgeCount;    // # of control flow edges between the BBs
-    unsigned        fgBBcount;      // # of BBs in the method
+    unsigned        fgBBcount;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
 #ifdef DEBUG
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
@@ -4499,8 +4685,7 @@ public:
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
-    BasicBlock** fgSSAPostOrder;       // Blocks in postorder, computed during SSA
-    unsigned     fgSSAPostOrderCount;  // Number of blocks in fgSSAPostOrder
+    FlowGraphDfsTree* m_dfs;
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -4630,6 +4815,7 @@ public:
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
+    void fgUnlinkBlockForRemoval(BasicBlock* block);
 
 #ifdef FEATURE_JIT_METHOD_PERF
     unsigned fgMeasureIR();
@@ -4645,13 +4831,6 @@ public:
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    BlockSet fgAlwaysBlks; // Set of blocks which are BBJ_ALWAYS part  of BBJ_CALLFINALLY/BBJ_ALWAYS pair that should
-                           // never be removed due to a requirement to use the BBJ_ALWAYS for generating code and
-                           // not have "retless" blocks.
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
 #ifdef DEBUG
     bool fgReachabilitySetsValid; // Are the bbReach sets valid?
     bool fgEnterBlksSetValid;     // Is the fgEnterBlks set valid?
@@ -4750,17 +4929,6 @@ public:
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
-    PhaseStatus fgUpdateFinallyTargetFlags();
-
-    void fgClearAllFinallyTargetBits();
-
-    void fgAddFinallyTargetFlags();
-
-    void fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newBlock);
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
@@ -5051,7 +5219,7 @@ public:
     void fgResetForSsa();
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
-    bool     fgSsaChecksEnabled;   // True if SSA info can be cross-checked versus IR
+    bool     fgSsaValid;           // True if SSA info is valid and can be cross-checked versus IR
 
 #ifdef DEBUG
     void DumpSsaSummary();
@@ -5557,9 +5725,6 @@ public:
     BasicBlock* fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType);
 
 #if defined(FEATURE_EH_FUNCLETS)
-#if defined(TARGET_ARM)
-    void fgClearFinallyTargetBit(BasicBlock* block);
-#endif // defined(TARGET_ARM)
     bool fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block);
     bool fgAnyIntraHandlerPreds(BasicBlock* block);
     void fgInsertFuncletPrologBlock(BasicBlock* block);
@@ -5613,6 +5778,9 @@ public:
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
 
     PhaseStatus fgSetBlockOrder();
+    bool fgHasCycleWithoutGCSafePoint();
+
+    FlowGraphDfsTree* fgComputeDfs();
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
@@ -5620,13 +5788,8 @@ public:
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
 
-    // The following check for loops that don't execute calls
-    bool fgLoopCallMarked;
-
     void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
     void fgLoopCallMark();
-
-    void fgMarkLoopHead(BasicBlock* block);
 
     unsigned fgGetCodeEstimate(BasicBlock* block);
 
@@ -5655,6 +5818,9 @@ public:
     void fgDumpBlock(BasicBlock* block);
     void fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock);
 
+    void fgDumpBlockMemorySsaIn(BasicBlock* block);
+    void fgDumpBlockMemorySsaOut(BasicBlock* block);
+
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
     void               fgDebugCheckUpdate();
@@ -5670,6 +5836,7 @@ public:
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
 
+    void fgDebugCheckTypes(GenTree* tree);
     void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
@@ -5925,7 +6092,10 @@ private:
 
     bool fgIsThrow(GenTree* tree);
 
+public:
     bool fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2);
+
+private:
     bool fgIsBlockCold(BasicBlock* block);
 
     GenTree* fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* oper);
@@ -6505,7 +6675,7 @@ public:
         {
             if (lpHead->NextIs(lpEntry))
             {
-                assert(lpHead->bbFallsThrough());
+                assert(lpHead->bbFallsThrough() || lpHead->JumpsToNext());
                 assert(lpTop == lpEntry);
                 return true;
             }
@@ -7838,8 +8008,6 @@ public:
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
-
-    bool optReachWithoutCall(BasicBlock* srcBB, BasicBlock* dstBB);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -11218,7 +11386,6 @@ public:
 #endif // !FEATURE_EH_FUNCLETS
             case GT_PHI_ARG:
             case GT_JMPTABLE:
-            case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
             case GT_EMITNOP:
             case GT_PINVOKE_PROLOG:
