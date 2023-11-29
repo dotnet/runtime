@@ -3197,7 +3197,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybrid))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
@@ -5960,7 +5960,7 @@ namespace System.Tests
                 new KeyValuePair<char, char>('\u0130', '\u0130'),
                 new KeyValuePair<char, char>('\u0131', '\u0131'));
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybrid))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
