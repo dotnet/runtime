@@ -5538,7 +5538,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     break;
             }
         }
-        else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedJumpDest() && bSrc->JumpsToNext())
+        else if (bSrc->KindIs(BBJ_ALWAYS) && !bSrc->HasFlag(BBF_KEEP_BBJ_ALWAYS) && bSrc->HasInitializedJumpDest() &&
+                 bSrc->JumpsToNext())
         {
             bSrc->SetFlags(BBF_NONE_QUIRK);
         }
