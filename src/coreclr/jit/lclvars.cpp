@@ -4107,7 +4107,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
             if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
             {
-                bool bbInALoop  = block->CheckFlag(BBF_BACKWARD_JUMP);
+                bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
                 bool bbIsReturn = block->KindIs(BBJ_RETURN);
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
                 // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.

@@ -505,7 +505,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->CheckFlag(BBF_FUNCLET_BEG));
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -864,7 +864,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = block->CheckFlag(BBF_HAS_JMP);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 
@@ -1160,7 +1160,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     BasicBlock* const nextBlock = block->Next();
 
-    if (block->CheckFlag(BBF_RETLESS_CALL))
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
@@ -1202,7 +1202,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // jump target using bbJumpDest - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    if (!block->CheckFlag(BBF_RETLESS_CALL))
+    if (!block->HasFlag(BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
         block = nextBlock;
@@ -2586,7 +2586,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->CheckFlag(BBF_HAS_LABEL));
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 

@@ -86,14 +86,14 @@ void Compiler::fgDebugCheckUpdate()
     {
         /* no unreachable blocks */
 
-        if ((block->countOfInEdges() == 0) && !block->CheckFlag(BBF_DONT_REMOVE))
+        if ((block->countOfInEdges() == 0) && !block->HasFlag(BBF_DONT_REMOVE))
         {
             noway_assert(!"Unreachable block not removed!");
         }
 
         /* no empty blocks */
 
-        if (block->isEmpty() && !block->CheckFlag(BBF_DONT_REMOVE))
+        if (block->isEmpty() && !block->HasFlag(BBF_DONT_REMOVE))
         {
             switch (block->GetJumpKind())
             {
@@ -122,11 +122,11 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-imported blocks */
 
-        if (!block->CheckFlag(BBF_IMPORTED))
+        if (!block->HasFlag(BBF_IMPORTED))
         {
             /* internal blocks do not count */
 
-            if (!block->CheckFlag(BBF_INTERNAL))
+            if (!block->HasFlag(BBF_INTERNAL))
             {
                 noway_assert(!"Non IMPORTED block not removed!");
             }
@@ -156,7 +156,7 @@ void Compiler::fgDebugCheckUpdate()
 
         if (block->KindIs(BBJ_ALWAYS) && prevIsCallAlwaysPair)
         {
-            noway_assert(block->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
+            noway_assert(block->HasFlag(BBF_KEEP_BBJ_ALWAYS));
         }
 
         /* For a BBJ_CALLFINALLY block we make sure that we are followed by */
@@ -164,7 +164,7 @@ void Compiler::fgDebugCheckUpdate()
         /* or that it's a BBF_RETLESS_CALL */
         if (block->KindIs(BBJ_CALLFINALLY))
         {
-            assert(block->CheckFlag(BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
+            assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
         }
 
         /* no un-compacted blocks */
@@ -880,7 +880,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock = bbIsTryBeg(block);
 
                 if (isTryEntryBlock ||
-                    block->CheckFlags(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
+                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
                                       BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
@@ -889,23 +889,23 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         fprintf(fgxFile, "T");
                     }
-                    if (block->CheckFlag(BBF_FUNCLET_BEG))
+                    if (block->HasFlag(BBF_FUNCLET_BEG))
                     {
                         fprintf(fgxFile, "F");
                     }
-                    if (block->CheckFlag(BBF_RUN_RARELY))
+                    if (block->HasFlag(BBF_RUN_RARELY))
                     {
                         fprintf(fgxFile, "R");
                     }
-                    if (block->CheckFlag(BBF_LOOP_HEAD))
+                    if (block->HasFlag(BBF_LOOP_HEAD))
                     {
                         fprintf(fgxFile, "L");
                     }
-                    if (block->CheckFlag(BBF_LOOP_PREHEADER))
+                    if (block->HasFlag(BBF_LOOP_PREHEADER))
                     {
                         fprintf(fgxFile, "P");
                     }
-                    if (block->CheckFlag(BBF_LOOP_ALIGN))
+                    if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
                         fprintf(fgxFile, "A");
                     }
@@ -995,7 +995,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, ", shape = \"trapezium\"");
             }
-            else if (block->CheckFlag(BBF_INTERNAL))
+            else if (block->HasFlag(BBF_INTERNAL))
             {
                 fprintf(fgxFile, ", shape = \"note\"");
             }
@@ -1016,15 +1016,15 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            inHandler=\"%s\"", "true");
             }
-            if ((fgFirstBB->hasProfileWeight()) && !block->CheckFlag(BBF_COLD))
+            if ((fgFirstBB->hasProfileWeight()) && !block->HasFlag(BBF_COLD))
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
-            if (block->CheckFlag(BBF_HAS_NEWOBJ))
+            if (block->HasFlag(BBF_HAS_NEWOBJ))
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
-            if (block->CheckFlag(BBF_LOOP_HEAD))
+            if (block->HasFlag(BBF_LOOP_HEAD))
             {
                 fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
@@ -2926,7 +2926,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (fgFirstFuncletBB != nullptr)
         {
             assert(fgFirstFuncletBB->hasHndIndex() == true);
-            assert(fgFirstFuncletBB->CheckFlag(BBF_FUNCLET_BEG));
+            assert(fgFirstFuncletBB->HasFlag(BBF_FUNCLET_BEG));
         }
     }
 #endif // FEATURE_EH_FUNCLETS
@@ -2997,7 +2997,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // This may not be true for unimported blocks, if
         // we haven't run post-importation cleanup yet.
         //
-        if (compPostImportationCleanupDone || block->CheckFlag(BBF_IMPORTED))
+        if (compPostImportationCleanupDone || block->HasFlag(BBF_IMPORTED))
         {
             if (block->KindIs(BBJ_COND))
             {
@@ -3378,7 +3378,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             if (!fgGlobalMorphDone && call->CanTailCall() && gtIsRecursiveCall(call))
             {
                 assert(doesMethodHaveRecursiveTailcall());
-                assert(block->CheckFlag(BBF_RECURSIVE_TAILCALL));
+                assert(block->HasFlag(BBF_RECURSIVE_TAILCALL));
             }
 
             for (CallArg& arg : call->gtArgs.Args())
@@ -4761,7 +4761,7 @@ void Compiler::fgDebugCheckLoopTable()
     unsigned newBBnum = 1;
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->CheckFlag(BBF_REMOVED))
+        if (!block->HasFlag(BBF_REMOVED))
         {
             assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
             assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
@@ -4992,7 +4992,7 @@ void Compiler::fgDebugCheckLoopTable()
             ++preHeaderCount;
 
             BasicBlock* h = loop.lpHead;
-            assert(h->CheckFlag(BBF_LOOP_PREHEADER));
+            assert(h->HasFlag(BBF_LOOP_PREHEADER));
 
             // The pre-header can only be BBJ_ALWAYS and must enter the loop.
             BasicBlock* e = loop.lpEntry;
@@ -5117,7 +5117,7 @@ void Compiler::fgDebugCheckLoopTable()
             loopNum = optLoopTable[loopNum].lpParent;
         }
 
-        if (block->CheckFlag(BBF_LOOP_PREHEADER))
+        if (block->HasFlag(BBF_LOOP_PREHEADER))
         {
             // Note that the bbNatLoopNum will not point to the loop where this is a pre-header, since bbNatLoopNum
             // is only set on the blocks from `top` to `bottom`, and `head` is outside that.

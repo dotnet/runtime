@@ -1529,7 +1529,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
             if (block->KindIs(BBJ_RETURN))
             {
-                noway_assert(!block->CheckFlag(BBF_HAS_JMP));
+                noway_assert(!block->HasFlag(BBF_HAS_JMP));
                 JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
@@ -1948,7 +1948,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     CORINFO_METHOD_INFO* InlineeMethodInfo = InlineeCompiler->info.compMethodInfo;
 
     unsigned lclCnt     = InlineeMethodInfo->locals.numArgs;
-    bool     bbInALoop  = block->CheckFlag(BBF_BACKWARD_JUMP);
+    bool     bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
     bool     bbIsReturn = block->KindIs(BBJ_RETURN);
 
     // If the callee contains zero-init locals, we need to explicitly initialize them if we are

@@ -534,7 +534,7 @@ void Compiler::gsParamsToShadows()
                 continue;
             }
 
-            if (!block->CheckFlag(BBF_HAS_JMP))
+            if (!block->HasFlag(BBF_HAS_JMP))
             {
                 continue;
             }

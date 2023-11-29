@@ -2705,7 +2705,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 
         case BBJ_ALWAYS:
             // Fall-through successors are assumed correct and are not modified
-            if (blk->JumpsToNext() && blk->CheckFlag(BBF_NONE_QUIRK))
+            if (blk->JumpsToNext() && blk->HasFlag(BBF_NONE_QUIRK))
             {
                 break;
             }
@@ -2919,7 +2919,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
     // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
     // head block. See FindEntry() for the logic that allows this.
-    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && h->CheckFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && h->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         // Insert new head
 
@@ -3422,7 +3422,7 @@ bool Compiler::optLoopContains(unsigned l1, unsigned l2) const
 //
 BasicBlock* Compiler::optLoopEntry(BasicBlock* preHeader)
 {
-    assert(preHeader->CheckFlag(BBF_LOOP_PREHEADER));
+    assert(preHeader->HasFlag(BBF_LOOP_PREHEADER));
     assert(preHeader->KindIs(BBJ_ALWAYS));
     return preHeader->GetJumpDest();
 }
@@ -4542,7 +4542,7 @@ PhaseStatus Compiler::optUnrollLoops()
             // The loop will be removed, so no need to fix up the pre-header.
             if (loop.lpFlags & LPFLG_HAS_PREHEAD)
             {
-                assert(head->CheckFlag(BBF_LOOP_PREHEADER));
+                assert(head->HasFlag(BBF_LOOP_PREHEADER));
 
                 // For unrolled loops, all the unrolling preconditions require the pre-header block to fall
                 // through into TOP.
@@ -4706,7 +4706,7 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
 
             // Does this block contain a gc safe point?
 
-            if (curBB->CheckFlag(BBF_GC_SAFE_POINT))
+            if (curBB->HasFlag(BBF_GC_SAFE_POINT))
             {
                 // Will this block always execute on the way to botBB ?
                 //
@@ -4843,7 +4843,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Does the BB end with an unconditional jump?
 
-    if (!block->KindIs(BBJ_ALWAYS) || block->JumpsToNext() || block->CheckFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (!block->KindIs(BBJ_ALWAYS) || block->JumpsToNext() || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         // It can't be one of the ones we use for our exception magic
         return false;
@@ -8080,7 +8080,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             {
                 JITDUMP("   converting existing header " FMT_BB " into pre-header\n", head->bbNum);
                 loop.lpFlags |= LPFLG_HAS_PREHEAD;
-                assert(!head->CheckFlag(BBF_LOOP_PREHEADER)); // It isn't already a loop pre-header
+                assert(!head->HasFlag(BBF_LOOP_PREHEADER)); // It isn't already a loop pre-header
                 head->SetFlags(BBF_LOOP_PREHEADER);
                 INDEBUG(loop.lpValidatePreHeader());
                 INDEBUG(fgDebugCheckLoopTable());
@@ -8994,7 +8994,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->CheckFlag(BBF_MARKED);
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
         block->SetFlags(BBF_MARKED);
@@ -9118,7 +9118,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         if (tree->Data()->IsIntegralConst(0))
                         {
-                            bool bbInALoop  = block->CheckFlag(BBF_BACKWARD_JUMP);
+                            bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
                             bool bbIsReturn = block->KindIs(BBJ_RETURN);
 
                             if (!bbInALoop || bbIsReturn)
@@ -9196,7 +9196,7 @@ void Compiler::optRemoveRedundantZeroInits()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->CheckFlag(BBF_MARKED);
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->HasFlag(BBF_MARKED);
          block             = block->GetUniqueSucc())
     {
         block->RemoveFlags(BBF_MARKED);

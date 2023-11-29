@@ -735,7 +735,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || m_b2->CheckFlag(BBF_DONT_REMOVE))
+    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || m_b2->HasFlag(BBF_DONT_REMOVE))
     {
         // Conditions aren't in the same EH region or m_b2 can't be removed
         return false;
@@ -1901,7 +1901,7 @@ PhaseStatus Compiler::optOptimizeBools()
             }
 
             // The next block must not be marked as BBF_DONT_REMOVE
-            if (b2->CheckFlag(BBF_DONT_REMOVE))
+            if (b2->HasFlag(BBF_DONT_REMOVE))
             {
                 continue;
             }
@@ -1948,7 +1948,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 
-                if (b3->CheckFlag(BBF_DONT_REMOVE))
+                if (b3->HasFlag(BBF_DONT_REMOVE))
                 {
                     continue;
                 }

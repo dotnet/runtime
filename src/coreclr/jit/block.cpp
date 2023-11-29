@@ -463,143 +463,143 @@ void BasicBlock::dspBlockILRange() const
 //
 void BasicBlock::dspFlags()
 {
-    if (CheckFlag(BBF_MARKED))
+    if (HasFlag(BBF_MARKED))
     {
         printf("m ");
     }
-    if (CheckFlag(BBF_REMOVED))
+    if (HasFlag(BBF_REMOVED))
     {
         printf("del ");
     }
-    if (CheckFlag(BBF_DONT_REMOVE))
+    if (HasFlag(BBF_DONT_REMOVE))
     {
         printf("keep ");
     }
-    if (CheckFlag(BBF_IMPORTED))
+    if (HasFlag(BBF_IMPORTED))
     {
         printf("i ");
     }
-    if (CheckFlag(BBF_INTERNAL))
+    if (HasFlag(BBF_INTERNAL))
     {
         printf("internal ");
     }
-    if (CheckFlag(BBF_FAILED_VERIFICATION))
+    if (HasFlag(BBF_FAILED_VERIFICATION))
     {
         printf("failV ");
     }
-    if (CheckFlag(BBF_RUN_RARELY))
+    if (HasFlag(BBF_RUN_RARELY))
     {
         printf("rare ");
     }
-    if (CheckFlag(BBF_LOOP_HEAD))
+    if (HasFlag(BBF_LOOP_HEAD))
     {
         printf("Loop ");
     }
-    if (CheckFlag(BBF_LOOP_CALL0))
+    if (HasFlag(BBF_LOOP_CALL0))
     {
         printf("Loop0 ");
     }
-    if (CheckFlag(BBF_LOOP_CALL1))
+    if (HasFlag(BBF_LOOP_CALL1))
     {
         printf("Loop1 ");
     }
-    if (CheckFlag(BBF_HAS_LABEL))
+    if (HasFlag(BBF_HAS_LABEL))
     {
         printf("label ");
     }
-    if (CheckFlag(BBF_HAS_JMP))
+    if (HasFlag(BBF_HAS_JMP))
     {
         printf("jmp ");
     }
-    if (CheckFlag(BBF_HAS_CALL))
+    if (HasFlag(BBF_HAS_CALL))
     {
         printf("hascall ");
     }
-    if (CheckFlag(BBF_GC_SAFE_POINT))
+    if (HasFlag(BBF_GC_SAFE_POINT))
     {
         printf("gcsafe ");
     }
-    if (CheckFlag(BBF_FUNCLET_BEG))
+    if (HasFlag(BBF_FUNCLET_BEG))
     {
         printf("flet ");
     }
-    if (CheckFlag(BBF_HAS_IDX_LEN))
+    if (HasFlag(BBF_HAS_IDX_LEN))
     {
         printf("idxlen ");
     }
-    if (CheckFlag(BBF_HAS_MD_IDX_LEN))
+    if (HasFlag(BBF_HAS_MD_IDX_LEN))
     {
         printf("mdidxlen ");
     }
-    if (CheckFlag(BBF_HAS_NEWOBJ))
+    if (HasFlag(BBF_HAS_NEWOBJ))
     {
         printf("newobj ");
     }
-    if (CheckFlag(BBF_HAS_NULLCHECK))
+    if (HasFlag(BBF_HAS_NULLCHECK))
     {
         printf("nullcheck ");
     }
-    if (CheckFlag(BBF_BACKWARD_JUMP))
+    if (HasFlag(BBF_BACKWARD_JUMP))
     {
         printf("bwd ");
     }
-    if (CheckFlag(BBF_BACKWARD_JUMP_TARGET))
+    if (HasFlag(BBF_BACKWARD_JUMP_TARGET))
     {
         printf("bwd-target ");
     }
-    if (CheckFlag(BBF_BACKWARD_JUMP_SOURCE))
+    if (HasFlag(BBF_BACKWARD_JUMP_SOURCE))
     {
         printf("bwd-src ");
     }
-    if (CheckFlag(BBF_PATCHPOINT))
+    if (HasFlag(BBF_PATCHPOINT))
     {
         printf("ppoint ");
     }
-    if (CheckFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT))
+    if (HasFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT))
     {
         printf("pc-ppoint ");
     }
-    if (CheckFlag(BBF_RETLESS_CALL))
+    if (HasFlag(BBF_RETLESS_CALL))
     {
         printf("retless ");
     }
-    if (CheckFlag(BBF_LOOP_PREHEADER))
+    if (HasFlag(BBF_LOOP_PREHEADER))
     {
         printf("LoopPH ");
     }
-    if (CheckFlag(BBF_COLD))
+    if (HasFlag(BBF_COLD))
     {
         printf("cold ");
     }
-    if (CheckFlag(BBF_PROF_WEIGHT))
+    if (HasFlag(BBF_PROF_WEIGHT))
     {
         printf("IBC ");
     }
-    if (CheckFlag(BBF_IS_LIR))
+    if (HasFlag(BBF_IS_LIR))
     {
         printf("LIR ");
     }
-    if (CheckFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         printf("KEEP ");
     }
-    if (CheckFlag(BBF_CLONED_FINALLY_BEGIN))
+    if (HasFlag(BBF_CLONED_FINALLY_BEGIN))
     {
         printf("cfb ");
     }
-    if (CheckFlag(BBF_CLONED_FINALLY_END))
+    if (HasFlag(BBF_CLONED_FINALLY_END))
     {
         printf("cfe ");
     }
-    if (CheckFlag(BBF_LOOP_ALIGN))
+    if (HasFlag(BBF_LOOP_ALIGN))
     {
         printf("align ");
     }
-    if (CheckFlag(BBF_HAS_MDARRAYREF))
+    if (HasFlag(BBF_HAS_MDARRAYREF))
     {
         printf("mdarr ");
     }
-    if (CheckFlag(BBF_NEEDS_GCPOLL))
+    if (HasFlag(BBF_NEEDS_GCPOLL))
     {
         printf("gcpoll ");
     }
@@ -739,7 +739,7 @@ void BasicBlock::dspJumpKind()
             break;
 
         case BBJ_ALWAYS:
-            if (CheckFlag(BBF_KEEP_BBJ_ALWAYS))
+            if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
                 printf(" -> " FMT_BB " (ALWAYS)", bbJumpDest->bbNum);
             }
@@ -913,7 +913,7 @@ void BasicBlock::MakeLIR(GenTree* firstNode, GenTree* lastNode)
 bool BasicBlock::IsLIR() const
 {
     assert(isValid());
-    return CheckFlag(BBF_IS_LIR);
+    return HasFlag(BBF_IS_LIR);
 }
 
 //------------------------------------------------------------------------
@@ -1064,7 +1064,7 @@ bool BasicBlock::isEmpty() const
 //
 bool BasicBlock::isValid() const
 {
-    const bool isLIR = CheckFlag(BBF_IS_LIR);
+    const bool isLIR = HasFlag(BBF_IS_LIR);
     if (isLIR)
     {
         // Should not have statements in LIR.
@@ -1127,7 +1127,7 @@ bool BasicBlock::bbFallsThrough() const
             return true;
 
         case BBJ_CALLFINALLY:
-            return !CheckFlag(BBF_RETLESS_CALL);
+            return !HasFlag(BBF_RETLESS_CALL);
 
         default:
             assert(!"Unknown bbJumpKind in bbFallsThrough()");
@@ -1378,7 +1378,7 @@ void BasicBlock::InitVarSets(Compiler* comp)
 // Returns true if the basic block ends with GT_JMP
 bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
 {
-    if (comp->compJmpOpUsed && (bbJumpKind == BBJ_RETURN) && CheckFlag(BBF_HAS_JMP))
+    if (comp->compJmpOpUsed && (bbJumpKind == BBJ_RETURN) && HasFlag(BBF_HAS_JMP))
     {
         GenTree* lastNode = this->lastNode();
         assert(lastNode != nullptr);
@@ -1437,12 +1437,12 @@ bool BasicBlock::endsWithTailCall(Compiler* comp,
         if (fastTailCallsOnly || tailCallsConvertibleToLoopOnly)
         {
             // Only fast tail calls or only tail calls convertible to loops
-            result = CheckFlag(BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN);
+            result = HasFlag(BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN);
         }
         else
         {
             // Fast tail calls, tail calls convertible to loops, and tails calls dispatched via helper
-            result = (bbJumpKind == BBJ_THROW) || (CheckFlag(BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN));
+            result = (bbJumpKind == BBJ_THROW) || (HasFlag(BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN));
         }
 
         if (result)
@@ -1659,12 +1659,12 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, unsigned j
 //
 bool BasicBlock::isBBCallAlwaysPair() const
 {
-    if (this->KindIs(BBJ_CALLFINALLY) && !this->CheckFlag(BBF_RETLESS_CALL))
+    if (this->KindIs(BBJ_CALLFINALLY) && !this->HasFlag(BBF_RETLESS_CALL))
     {
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
         assert(!this->IsLast());
         assert(this->Next()->KindIs(BBJ_ALWAYS));
-        assert(this->Next()->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
+        assert(this->Next()->HasFlag(BBF_KEEP_BBJ_ALWAYS));
         assert(this->Next()->isEmpty());
 
         return true;
@@ -1712,7 +1712,7 @@ bool BasicBlock::hasEHBoundaryIn() const
     if (!returnVal)
     {
 #if FEATURE_EH_FUNCLETS
-        assert(!CheckFlag(BBF_FUNCLET_BEG));
+        assert(!HasFlag(BBF_FUNCLET_BEG));
 #endif // FEATURE_EH_FUNCLETS
     }
     return returnVal;

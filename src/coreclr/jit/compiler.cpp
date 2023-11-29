@@ -5281,7 +5281,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 
         // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
         if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail() &&
-            !block->CheckFlag(BBF_NONE_QUIRK))
+            !block->HasFlag(BBF_NONE_QUIRK))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5300,7 +5300,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             // Loop alignment is disabled for cold blocks
-            assert(!block->CheckFlag(BBF_COLD));
+            assert(!block->HasFlag(BBF_COLD));
             BasicBlock* const loopTop              = block->Next();
             bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
             bool              unmarkedLoopAlign    = false;

@@ -902,7 +902,7 @@ void SsaBuilder::AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock
     assert(block->HasPotentialEHSuccs(m_pCompiler));
 
     // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-    if (block->CheckFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
+    if (block->HasFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
     {
         return;
     }

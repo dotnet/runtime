@@ -285,7 +285,7 @@ bool Compiler::fgFirstBBisScratch()
     if (fgFirstBBScratch != nullptr)
     {
         assert(fgFirstBBScratch == fgFirstBB);
-        assert(fgFirstBBScratch->CheckFlag(BBF_INTERNAL));
+        assert(fgFirstBBScratch->HasFlag(BBF_INTERNAL));
         if (fgPredsComputed)
         {
             assert(fgFirstBBScratch->countOfInEdges() == 1);
@@ -850,7 +850,7 @@ BasicBlock* Compiler::fgLookupBB(unsigned addr)
 
         // We introduce internal blocks for BBJ_CALLFINALLY. Skip over these.
 
-        while (dsc->CheckFlag(BBF_INTERNAL))
+        while (dsc->HasFlag(BBF_INTERNAL))
         {
             dsc = dsc->Next();
             mid++;
@@ -1075,7 +1075,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         }
 
         // Determine if the call site is in a loop.
-        if (isInlining && impInlineInfo->iciBlock->CheckFlag(BBF_BACKWARD_JUMP))
+        if (isInlining && impInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP))
         {
             compInlineResult->Note(InlineObservation::CALLSITE_IN_LOOP);
         }
@@ -2879,7 +2879,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
 
     for (BasicBlock* const block : Blocks(targetBlock, sourceBlock))
     {
-        if (!block->CheckFlag(BBF_BACKWARD_JUMP) && !block->KindIs(BBJ_RETURN))
+        if (!block->HasFlag(BBF_BACKWARD_JUMP) && !block->KindIs(BBJ_RETURN))
         {
             block->SetFlags(BBF_BACKWARD_JUMP);
             compHasBackwardJump = true;
@@ -4012,7 +4012,7 @@ void Compiler::fgFindBasicBlocks()
 #ifdef DEBUG
             /* Note: the BB can't span the 'try' block */
 
-            if (!block->CheckFlag(BBF_INTERNAL))
+            if (!block->HasFlag(BBF_INTERNAL))
             {
                 noway_assert(tryBegOff <= block->bbCodeOffs);
                 noway_assert(tryEndOff >= block->bbCodeOffsEnd || tryEndOff == tryBegOff);
@@ -4156,7 +4156,7 @@ void Compiler::fgCheckForLoopsInHandlers()
     {
         if (blk->hasHndIndex())
         {
-            if (blk->CheckFlag(BBF_BACKWARD_JUMP_TARGET))
+            if (blk->HasFlag(BBF_BACKWARD_JUMP_TARGET))
             {
                 JITDUMP("\nHandler block " FMT_BB " is backward jump target; can't have patchpoints in this method\n",
                         blk->bbNum);
@@ -4230,7 +4230,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
     for (BasicBlock* const blk : Blocks())
     {
-        if (blk->CheckFlag(BBF_INTERNAL))
+        if (blk->HasFlag(BBF_INTERNAL))
         {
             continue;
         }
@@ -5199,7 +5199,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
 
-    assert(unreachable || !optLoopsRequirePreHeaders || !block->CheckFlag(BBF_LOOP_PREHEADER));
+    assert(unreachable || !optLoopsRequirePreHeaders || !block->HasFlag(BBF_LOOP_PREHEADER));
 
     // If we've cached any mappings from switch blocks to SwitchDesc's (which contain only the
     // *unique* successors of the switch block), invalidate that cache, since an entry in one of
@@ -5207,7 +5207,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     InvalidateUniqueSwitchSuccMap();
 
     noway_assert((block == fgFirstBB) || (bPrev && bPrev->NextIs(block)));
-    noway_assert(!block->CheckFlag(BBF_DONT_REMOVE));
+    noway_assert(!block->HasFlag(BBF_DONT_REMOVE));
 
     // Should never remove a genReturnBB, as we might have special hookups there.
     noway_assert(block != genReturnBB);
@@ -5432,7 +5432,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         {
             case BBJ_CALLFINALLY:
                 // If prev is a BBJ_CALLFINALLY it better be marked as RETLESS
-                noway_assert(bPrev->CheckFlag(BBF_RETLESS_CALL));
+                noway_assert(bPrev->HasFlag(BBF_RETLESS_CALL));
                 break;
 
             case BBJ_COND:
@@ -5586,7 +5586,7 @@ bool Compiler::fgRenumberBlocks()
 
     for (BasicBlock* block : Blocks())
     {
-        noway_assert(!block->CheckFlag(BBF_REMOVED));
+        noway_assert(!block->HasFlag(BBF_REMOVED));
 
         if (block->bbNum != num)
         {
@@ -6581,7 +6581,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         // Look for an insert location:
         // 1. We want blocks that don't end with a fall through,
         // 2. Also, when blk equals nearBlk we may want to insert here.
-        const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && blk->CheckFlag(BBF_NONE_QUIRK) && blk->JumpsToNext();
+        const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && blk->HasFlag(BBF_NONE_QUIRK) && blk->JumpsToNext();
         if ((!blk->bbFallsThrough() && !blkJumpsToNext) || (blk == nearBlk))
         {
             bool updateBestBlk = true; // We will probably update the bestBlk

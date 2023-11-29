@@ -701,20 +701,20 @@ private:
     BasicBlockFlags bbFlags;
 
 public:
-    BasicBlockFlags CheckFlag(const BasicBlockFlags flag) const
+    BasicBlockFlags HasFlag(const BasicBlockFlags flag) const
     {
         // Assert flag is not multiple BasicBlockFlags OR'd together
         // by checking if it is a power of 2
-        // (CheckFlag expects to check only one flag at a time)
+        // (HasFlag expects to check only one flag at a time)
         assert(isPow2(flag));
         return (bbFlags & flag);
     }
 
-    BasicBlockFlags CheckFlags(const BasicBlockFlags flags) const
+    BasicBlockFlags HasAnyFlag(const BasicBlockFlags flags) const
     {
         // Assert flag is multiple BasicBlockFlags OR'd together
         // by checking if it is not a power of 2
-        // (CheckFlags expects to check only one flag at a time)
+        // (HasAnyFlag expects to check only one flag at a time)
         assert(!isPow2(flags));
         return (bbFlags & flags);
     }
@@ -754,23 +754,23 @@ public:
 
     bool isRunRarely() const
     {
-        return CheckFlag(BBF_RUN_RARELY);
+        return HasFlag(BBF_RUN_RARELY);
     }
     bool isLoopHead() const
     {
-        return CheckFlag(BBF_LOOP_HEAD);
+        return HasFlag(BBF_LOOP_HEAD);
     }
 
     bool isLoopAlign() const
     {
-        return CheckFlag(BBF_LOOP_ALIGN);
+        return HasFlag(BBF_LOOP_ALIGN);
     }
 
     void unmarkLoopAlign(Compiler* comp DEBUG_ARG(const char* reason));
 
     bool hasAlign() const
     {
-        return CheckFlag(BBF_HAS_ALIGN);
+        return HasFlag(BBF_HAS_ALIGN);
     }
 
 #ifdef DEBUG
@@ -803,7 +803,7 @@ public:
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
     {
-        return this->CheckFlag(BBF_PROF_WEIGHT);
+        return this->HasFlag(BBF_PROF_WEIGHT);
     }
 
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
@@ -1561,7 +1561,7 @@ public:
 
     bool IsDominatedByExceptionalEntryFlag() const
     {
-        return CheckFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
+        return HasFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
     }
 
 #ifdef DEBUG

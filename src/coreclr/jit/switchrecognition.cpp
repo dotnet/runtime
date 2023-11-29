@@ -68,7 +68,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                              ssize_t*          cns          = nullptr)
 {
     // NOTE: caller is expected to check that a block has multiple statements or not
-    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && !block->CheckFlag(BBF_DONT_REMOVE))
+    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && !block->HasFlag(BBF_DONT_REMOVE))
     {
         const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));

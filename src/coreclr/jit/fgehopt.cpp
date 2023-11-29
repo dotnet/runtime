@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // keep always and have the sole finally block as a pred.
                 // Remove `leaveBlock` as a successor of the finally `lastBlock`, which also removes the predecessor
                 // edge in `leaveBlock` from the finally return.
-                assert(leaveBlock->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
+                assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                 nextBlock = leaveBlock->Next();
                 fgRemoveEhfSuccessor(lastBlock, leaveBlock);
                 leaveBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
@@ -462,7 +462,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const continuation = leave->GetJumpDest();
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
-        assert(leave->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
+        assert(leave->HasFlag(BBF_KEEP_BBJ_ALWAYS));
         leave->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // (3) Cleanup the continuation
@@ -1158,7 +1158,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     // Delete the leave block, which should be marked as
                     // keep always.
-                    assert(leaveBlock->CheckFlag(BBF_KEEP_BBJ_ALWAYS));
+                    assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                     nextBlock = leaveBlock->Next();
 
                     // All preds should be BBJ_EHFINALLYRETs from the finally.
@@ -1415,7 +1415,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
 
                 bool isJumpToClonedFinally = false;
 
-                if (succBlock->CheckFlag(BBF_CLONED_FINALLY_BEGIN))
+                if (succBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                 {
                     // case (b)
                     isJumpToClonedFinally = true;
@@ -1427,7 +1427,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                         // case (c)
                         BasicBlock* const succSuccBlock = succBlock->GetJumpDest();
 
-                        if (succSuccBlock->CheckFlag(BBF_CLONED_FINALLY_BEGIN))
+                        if (succSuccBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                         {
                             isJumpToClonedFinally = true;
                         }
@@ -1443,13 +1443,13 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // to the right finally -- but there are odd cases
                 // like orphaned second halves of callfinally pairs
                 // that we need to tolerate.
-                if (block->CheckFlag(BBF_KEEP_BBJ_ALWAYS))
+                if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
                 {
                     isReturnFromFinally = true;
                 }
 
                 // Case (f)
-                if (block->CheckFlag(BBF_CLONED_FINALLY_END))
+                if (block->HasFlag(BBF_CLONED_FINALLY_END))
                 {
                     isReturnFromFinally = true;
                 }

@@ -381,7 +381,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return block->CheckFlag(BBF_IMPORTED) && !block->CheckFlag(BBF_INTERNAL);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -467,7 +467,7 @@ void BlockCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        if (!block->CheckFlag(BBF_TAILCALL_SUCCESSOR))
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -633,14 +633,14 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
-    if (block->CheckFlag(BBF_TAILCALL_SUCCESSOR))
+    if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
         // This block probe needs to be relocated; instrument each predecessor.
         //
         bool first = true;
         for (BasicBlock* pred : block->PredBlocks())
         {
-            const bool isLivePred = ShouldProcess(pred) || pred->CheckFlag(BBF_MARKED);
+            const bool isLivePred = ShouldProcess(pred) || pred->HasFlag(BBF_MARKED);
             if (!isLivePred)
             {
                 continue;
@@ -1232,7 +1232,7 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
     // We'll use their bbNum in place of IL offset, and set
     // a high bit as a "flag"
     //
-    if (block->CheckFlag(BBF_INTERNAL))
+    if (block->HasFlag(BBF_INTERNAL))
     {
         key = block->bbNum | IS_INTERNAL_BLOCK;
     }
@@ -1366,7 +1366,7 @@ public:
     void Prepare(bool isPreImport) override;
     bool ShouldProcess(BasicBlock* block) override
     {
-        return block->CheckFlag(BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED);
     }
     bool ShouldInstrument(BasicBlock* block) override
     {
@@ -1632,7 +1632,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
         // Nothing to do unless the block is a tail call successor.
         //
-        if (!block->CheckFlag(BBF_TAILCALL_SUCCESSOR))
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -2202,7 +2202,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return block->CheckFlag(BBF_IMPORTED) && !block->CheckFlag(BBF_INTERNAL);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -2242,7 +2242,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 //
 void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if (!block->CheckFlag(BBF_HAS_HISTOGRAM_PROFILE))
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2271,7 +2271,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 //
 void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if (!block->CheckFlag(BBF_HAS_HISTOGRAM_PROFILE))
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -4550,7 +4550,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        while (firstILBlock->CheckFlag(BBF_INTERNAL))
+        while (firstILBlock->HasFlag(BBF_INTERNAL))
         {
             firstILBlock = firstILBlock->Next();
         }

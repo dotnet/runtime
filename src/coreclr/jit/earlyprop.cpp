@@ -26,9 +26,9 @@ bool Compiler::optDoEarlyPropForFunc()
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
-    // TODO-MDArray: bool bbHasMDArrayRef = block->CheckFlag(BBF_HAS_MID_IDX_LEN);
-    bool bbHasArrayRef  = block->CheckFlag(BBF_HAS_IDX_LEN);
-    bool bbHasNullCheck = block->CheckFlag(BBF_HAS_NULLCHECK);
+    // TODO-MDArray: bool bbHasMDArrayRef = block->HasFlag(BBF_HAS_MID_IDX_LEN);
+    bool bbHasArrayRef  = block->HasFlag(BBF_HAS_IDX_LEN);
+    bool bbHasNullCheck = block->HasFlag(BBF_HAS_NULLCHECK);
     return bbHasArrayRef || bbHasNullCheck;
 }
 
@@ -58,7 +58,7 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
         assert(false);
     }
 
-    if (!basicBlock->CheckFlag((BasicBlockFlags)bbFlag))
+    if (!basicBlock->HasFlag((BasicBlockFlags)bbFlag))
     {
         printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
                basicBlock->bbNum);
@@ -427,7 +427,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
                             compCurBB);
     }
 #else
-    if (!compCurBB->CheckFlag(BBF_HAS_NULLCHECK))
+    if (!compCurBB->HasFlag(BBF_HAS_NULLCHECK))
     {
         return false;
     }
@@ -441,7 +441,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     {
 #ifdef DEBUG
         // Make sure the transformation happens in debug, check, and release build.
-        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) && compCurBB->CheckFlag(BBF_HAS_NULLCHECK));
+        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) && compCurBB->HasFlag(BBF_HAS_NULLCHECK));
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");

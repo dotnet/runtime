@@ -39,7 +39,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     /* Check for overflow. If inlining, we may be using a bigger stack */
 
     if ((verCurrentState.esStackDepth >= info.compMaxStack) &&
-        (verCurrentState.esStackDepth >= impStkSize || !compCurBB->CheckFlag(BBF_IMPORTED)))
+        (verCurrentState.esStackDepth >= impStkSize || !compCurBB->HasFlag(BBF_IMPORTED)))
     {
         BADCODE("stack overflow");
     }
@@ -287,7 +287,7 @@ void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement
     block->bbStmtList = firstStmt;
 
     /* The block should not already be marked as imported */
-    assert(!block->CheckFlag(BBF_IMPORTED));
+    assert(!block->HasFlag(BBF_IMPORTED));
 
     block->SetFlags(BBF_IMPORTED);
 }
@@ -297,7 +297,7 @@ void Compiler::impEndTreeList(BasicBlock* block)
     if (impStmtList == nullptr)
     {
         // The block should not already be marked as imported.
-        assert(!block->CheckFlag(BBF_IMPORTED));
+        assert(!block->HasFlag(BBF_IMPORTED));
 
         // Empty block. Just mark it as imported.
         block->SetFlags(BBF_IMPORTED);
@@ -1937,7 +1937,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     // hit only under JIT stress. See if the block is the one we injected.
     // Note that EH canonicalization can inject internal blocks here. We might
     // be able to re-use such a block (but we don't, right now).
-    if (hndBlk->CheckFlags(BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE))
+    if (hndBlk->HasAnyFlag(BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE))
     {
         Statement* stmt = hndBlk->firstStmt();
 
@@ -5686,8 +5686,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 //
 bool Compiler::impBlockIsInALoop(BasicBlock* block)
 {
-    return (compIsForInlining() && impInlineInfo->iciBlock->CheckFlag(BBF_BACKWARD_JUMP)) ||
-           block->CheckFlag(BBF_BACKWARD_JUMP);
+    return (compIsForInlining() && impInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP)) ||
+           block->HasFlag(BBF_BACKWARD_JUMP);
 }
 
 #ifdef _PREFAST_
@@ -5778,7 +5778,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         // Patchpoints at backedge sources, if possible, otherwise targets.
                         //
-                        addPatchpoint           = block->CheckFlag(BBF_BACKWARD_JUMP_SOURCE);
+                        addPatchpoint           = block->HasFlag(BBF_BACKWARD_JUMP_SOURCE);
                         mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
                         break;
                     }
@@ -5793,7 +5793,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //
                         assert(!block->hasHndIndex());
                         addPatchpoint =
-                            block->CheckFlag(BBF_BACKWARD_JUMP_TARGET) && (verCurrentState.esStackDepth == 0);
+                            block->HasFlag(BBF_BACKWARD_JUMP_TARGET) && (verCurrentState.esStackDepth == 0);
                         break;
                     }
 
@@ -5805,14 +5805,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // otherwise at backedge sources, if possible. Note a block can be both; if so we
                         // just need one patchpoint.
                         //
-                        if (block->CheckFlag(BBF_BACKWARD_JUMP_TARGET))
+                        if (block->HasFlag(BBF_BACKWARD_JUMP_TARGET))
                         {
                             // We don't know backedge count, so just use ref count.
                             //
                             addPatchpoint = (block->bbRefs > 1) && (verCurrentState.esStackDepth == 0);
                         }
 
-                        if (!addPatchpoint && block->CheckFlag(BBF_BACKWARD_JUMP_SOURCE))
+                        if (!addPatchpoint && block->HasFlag(BBF_BACKWARD_JUMP_SOURCE))
                         {
                             addPatchpoint           = true;
                             mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
@@ -5848,11 +5848,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 // The succBlock had better agree it's a target.
                                 //
-                                assert(succBlock->CheckFlag(BBF_BACKWARD_JUMP_TARGET));
+                                assert(succBlock->HasFlag(BBF_BACKWARD_JUMP_TARGET));
 
                                 // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
-                                if (succBlock->CheckFlag(BBF_PATCHPOINT))
+                                if (succBlock->HasFlag(BBF_PATCHPOINT))
                                 {
                                     // In some cases the target may not be stack-empty at entry.
                                     // If so, we will bypass patchpoints for this backedge.
@@ -5890,7 +5890,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Should not see backward branch targets w/o backwards branches.
                 // So if !compHasBackwardsBranch, these flags should never be set.
                 //
-                assert(!block->CheckFlags(BBF_BACKWARD_JUMP_TARGET | BBF_BACKWARD_JUMP_SOURCE));
+                assert(!block->HasAnyFlag(BBF_BACKWARD_JUMP_TARGET | BBF_BACKWARD_JUMP_SOURCE));
             }
         }
 
@@ -5906,7 +5906,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryRandomOSR = randomOSR > 0;
 
         if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) &&
-            !block->hasHndIndex() && !block->CheckFlag(BBF_PATCHPOINT))
+            !block->hasHndIndex() && !block->HasFlag(BBF_PATCHPOINT))
         {
             // Block start can have a patchpoint. See if we should add one.
             //
@@ -5967,7 +5967,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         // Is this block a good place for partial compilation?
         //
         if ((block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
-            !block->CheckFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
+            !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
         {
             JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
             block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
@@ -6698,7 +6698,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Mark current bb as end of filter */
 
-                assert(compCurBB->CheckFlag(BBF_DONT_REMOVE));
+                assert(compCurBB->HasFlag(BBF_DONT_REMOVE));
                 assert(compCurBB->KindIs(BBJ_EHFILTERRET));
 
                 /* Mark catch handler as successor */
@@ -7545,7 +7545,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(block->KindIs(BBJ_ALWAYS));
-                        assert(block->CheckFlag(BBF_NONE_QUIRK));
+                        assert(block->HasFlag(BBF_NONE_QUIRK));
                     }
 
                     if (op1->gtFlags & GTF_GLOB_EFFECT)
@@ -11011,7 +11011,7 @@ void Compiler::impPoisonImplicitByrefsBeforeReturn()
 inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 {
 #ifdef DEBUG
-    if (verbose && block->CheckFlag(BBF_IMPORTED))
+    if (verbose && block->HasFlag(BBF_IMPORTED))
     {
         printf("\n" FMT_BB " will be reimported\n", block->bbNum);
     }
@@ -11043,7 +11043,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
         // Recursively process the handler block, if we haven't already done so.
         BasicBlock* hndBegBB = HBtab->ebdHndBeg;
 
-        if (!hndBegBB->CheckFlag(BBF_IMPORTED) && (impGetPendingBlockMember(hndBegBB) == 0))
+        if (!hndBegBB->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(hndBegBB) == 0))
         {
             //  Construct the proper verification stack state
             //   either empty or one that contains just
@@ -11087,7 +11087,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
         {
             BasicBlock* filterBB = HBtab->ebdFilter;
 
-            if (!filterBB->CheckFlag(BBF_IMPORTED) && (impGetPendingBlockMember(filterBB) == 0))
+            if (!filterBB->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(filterBB) == 0))
             {
                 verCurrentState.esStackDepth = 0;
 
@@ -11131,7 +11131,7 @@ void Compiler::impImportBlock(BasicBlock* block)
     // BBF_INTERNAL blocks only exist during importation due to EH canonicalization. We need to
     // handle them specially. In particular, there is no IL to import for them, but we do need
     // to mark them as imported and put their successors on the pending import list.
-    if (block->CheckFlag(BBF_INTERNAL))
+    if (block->HasFlag(BBF_INTERNAL))
     {
         JITDUMP("Marking BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", block->bbNum);
         block->SetFlags(BBF_IMPORTED);
@@ -11434,7 +11434,7 @@ SPILLSTACK:
     // We do *NOT* want to set it later than this because
     // impReimportSpillClique might clear it if this block is both a
     // predecessor and successor in the current spill clique
-    assert(block->CheckFlag(BBF_IMPORTED));
+    assert(block->HasFlag(BBF_IMPORTED));
 
     // If we had a int/native int, or float/double collision, we need to re-import
     if (reimportSpillClique)
@@ -11447,7 +11447,7 @@ SPILLSTACK:
 
         for (BasicBlock* const succ : block->Succs())
         {
-            if (!succ->CheckFlag(BBF_IMPORTED))
+            if (!succ->HasFlag(BBF_IMPORTED))
             {
                 impImportBlockPending(succ);
             }
@@ -11495,12 +11495,12 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // (When we're doing verification, we always attempt the merge to detect verification errors.)
 
     // If the block has not been imported, add to pending set.
-    bool addToPending = !block->CheckFlag(BBF_IMPORTED);
+    bool addToPending = !block->HasFlag(BBF_IMPORTED);
 
     // Initialize bbEntryState just the first time we try to add this block to the pending list
     // Just because bbEntryState is NULL, doesn't mean the pre-state wasn't previously set
     // We use NULL to indicate the 'common' state to avoid memory allocation
-    if ((block->bbEntryState == nullptr) && !block->CheckFlags(BBF_IMPORTED | BBF_FAILED_VERIFICATION) &&
+    if ((block->bbEntryState == nullptr) && !block->HasAnyFlag(BBF_IMPORTED | BBF_FAILED_VERIFICATION) &&
         (impGetPendingBlockMember(block) == 0))
     {
         verInitBBEntryState(block, &verCurrentState);
@@ -11601,7 +11601,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 {
     JITDUMP("\nimpReimportBlockPending for " FMT_BB, block->bbNum);
 
-    assert(block->CheckFlag(BBF_IMPORTED));
+    assert(block->HasFlag(BBF_IMPORTED));
 
     // OK, we must add to the pending list, if it's not already in it.
     if (impGetPendingBlockMember(block) != 0)
@@ -11756,14 +11756,14 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
     // and re-type it/add a cast, but that is complicated and hopefully very rare, so
     // just re-import the whole block (just like we do for successors)
 
-    if (!blk->CheckFlag(BBF_IMPORTED) && (m_pComp->impGetPendingBlockMember(blk) == 0))
+    if (!blk->HasFlag(BBF_IMPORTED) && (m_pComp->impGetPendingBlockMember(blk) == 0))
     {
         // If we haven't imported this block and we're not going to (because it isn't on
         // the pending list) then just ignore it for now.
 
         // This block has either never been imported (EntryState == NULL) or it failed
         // verification. Neither state requires us to force it to be imported now.
-        assert((blk->bbEntryState == nullptr) || !blk->CheckFlag(BBF_FAILED_VERIFICATION));
+        assert((blk->bbEntryState == nullptr) || !blk->HasFlag(BBF_FAILED_VERIFICATION));
         return;
     }
 
@@ -11782,7 +11782,7 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
 
         m_pComp->impImportBlockPending(blk);
     }
-    else if ((blk != m_pComp->compCurBB) && blk->CheckFlag(BBF_IMPORTED))
+    else if ((blk != m_pComp->compCurBB) && blk->HasFlag(BBF_IMPORTED))
     {
         // As described above, we are only visiting predecessors so they can
         // add the appropriate casts, since we have already done that for the current
@@ -12034,7 +12034,7 @@ void Compiler::impImport()
     //
     BasicBlock* entryBlock = fgFirstBB;
 
-    while (entryBlock->CheckFlag(BBF_INTERNAL))
+    while (entryBlock->HasFlag(BBF_INTERNAL))
     {
         JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", entryBlock->bbNum);
         entryBlock->SetFlags(BBF_IMPORTED);
@@ -12092,7 +12092,7 @@ void Compiler::impImport()
 
         /* Now import the block */
 
-        if (dsc->pdBB->CheckFlag(BBF_FAILED_VERIFICATION))
+        if (dsc->pdBB->HasFlag(BBF_FAILED_VERIFICATION))
         {
             verConvertBBToThrowVerificationException(dsc->pdBB DEBUGARG(true));
             impEndTreeList(dsc->pdBB);
@@ -12448,7 +12448,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     // No training data.  Look for loop-like things.
     // We consider a recursive call loop-like.  Do not give the inlining boost to the method itself.
     // However, give it to things nearby.
-    else if (pInlineInfo->iciBlock->CheckFlag(BBF_BACKWARD_JUMP) &&
+    else if (pInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP) &&
              (pInlineInfo->fncHandle != pInlineInfo->inlineCandidateInfo->ilCallerHandle))
     {
         frequency = InlineCallsiteFrequency::LOOP;

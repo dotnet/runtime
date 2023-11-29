@@ -5133,7 +5133,7 @@ AGAIN:
             }
 #endif // DEBUG
 
-            assert(jmp->idAddr()->iiaBBlabel->CheckFlag(BBF_HAS_LABEL));
+            assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
             assert(tgtIG);
 
             /* Record the bound target */
@@ -6490,7 +6490,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->CheckFlag(BBF_FUNCLET_BEG));
+            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));
