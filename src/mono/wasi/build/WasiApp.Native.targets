@@ -184,7 +184,7 @@
       <!--<_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />-->
 
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
-      <_WasmCommonCFlags Condition="'$(RunAOTCompilation)' == 'true'"      Include="-DENABLE_AOT=1" />
+      <_WasmCommonCFlags Condition="'$(_WasmShouldAOT)' == 'true'"         Include="-DENABLE_AOT=1" />
       <_WasmCommonCFlags Condition="'$(_DriverGenCNeeded)' == 'true'"      Include="-DDRIVER_GEN=1" />
       <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'"   Include="-DWASM_SINGLE_FILE=1" />
       <_WasmCommonCFlags Condition="'$(InvariantGlobalization)' == 'true'" Include="-DINVARIANT_GLOBALIZATION=1" />
