@@ -76,7 +76,6 @@ PhaseStatus StackLevelSetter::DoPhase()
         madeChanges = true;
     }
 
-    // Might want an "other" category for things like this...
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -156,6 +155,23 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         case GT_CKFINITE:
             SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
             break;
+
+        case GT_DIV:
+        case GT_UDIV:
+        {
+            ExceptionSetFlags exSetFlags = node->OperExceptions(comp);
+
+            if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+            {
+                SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
+            }
+
+            if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+            {
+                SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
+            }
+        }
+        break;
 
         default: // Other opers can target throw only due to overflow.
             break;
