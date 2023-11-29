@@ -3134,8 +3134,6 @@ public:
 
     GenTree* gtNewKeepAliveNode(GenTree* op);
 
-    GenTree* gtAddFakeSideEffect(GenTree* tree);
-
     GenTreeCast* gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
     GenTreeCast* gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);

@@ -1669,16 +1669,6 @@ inline GenTree* Compiler::gtNewKeepAliveNode(GenTree* op)
     return keepalive;
 }
 
-inline GenTree* Compiler::gtAddFakeSideEffect(GenTree* tree)
-{
-    // unsigned         lclNum            = lvaGrabTemp(true DEBUGARG("stress tmp"));
-    // GenTreeLclVar*   addr              = gtNewLclvNode(lclNum, TYP_BYREF);
-    // GenTreeStoreInd* fakeVolatileStore = gtNewStoreIndNode(TYP_INT, addr, gtNewTrue(), GTF_IND_VOLATILE);
-    // GenTree* comma = gtNewOperNode(GT_COMMA, tree->TypeGet(), fakeVolatileStore, tree);
-    // return comma;
-    return tree;
-}
-
 inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
 {
     GenTreeCast* cast = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);

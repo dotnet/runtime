@@ -499,6 +499,8 @@ enum GenTreeFlags : unsigned int
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
 
+    GTF_CAST_STRESS_KEEP        = 0x00400000, // GT_CAST    -- A recommendation to keep this cast (used by stress mode)
+
     GTF_MUL_64RSLT              = 0x40000000, // GT_MUL     -- produce 64-bit result
 
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?

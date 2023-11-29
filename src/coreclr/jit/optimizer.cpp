@@ -5995,6 +5995,11 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CAST:
             {
+                if ((tree->gtFlags & GTF_CAST_STRESS_KEEP) != 0)
+                {
+                    return false;
+                }
+
                 if ((tree->CastToType() != srct) || tree->gtOverflow())
                 {
                     return false;
