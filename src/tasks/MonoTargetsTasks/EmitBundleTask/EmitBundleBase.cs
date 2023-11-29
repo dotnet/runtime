@@ -188,8 +188,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             bundledResource.SetMetadata("DataLenSymbolValue", symbolDataLen[resourceDataSymbol].ToString());
         }
 
-        BundledResources = bundledResources.ToArray();
-
         if (!string.IsNullOrEmpty(BundleFile))
         {
             string resourceSymbols = GatherUniqueExportedResourceDataSymbols(bundledResources);
@@ -211,13 +209,21 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
 
+            string bundleFilePath = Path.Combine(OutputDirectory, BundleFile);
+
             // Generate source file to preallocate resources and register bundled resources
-            EmitBundleFile(Path.Combine(OutputDirectory, BundleFile), (outputStream) =>
+            EmitBundleFile(bundleFilePath, (outputStream) =>
             {
                 using var outputUtf8Writer = new StreamWriter(outputStream, Utf8NoBom);
                 GenerateBundledResourcePreallocationAndRegistration(resourceSymbols, BundleRegistrationFunctionName, files, outputUtf8Writer);
             });
+
+            TaskItem itemForBundleFile = new TaskItem(Path.Combine(OutputDirectory, BundleFile));
+            itemForBundleFile.SetMetadata("DestinationFile", bundleFilePath);
+            bundledResources.Add(itemForBundleFile);
         }
+
+        BundledResources = bundledResources.ToArray();
 
         return !Log.HasLoggedErrors;
     }
