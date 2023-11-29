@@ -318,7 +318,7 @@ namespace System
         {
             TChar* ret = MatchChars(p, pEnd, info.NegativeSignTChar<TChar>());
 
-            if ((ret is null) && info.AllowHyphenDuringParsing && (p < pEnd) && (TChar.CastToUInt32(*p) == '-'))
+            if ((ret is null) && GetAllowHyphenDuringParsing(info) && (p < pEnd) && (TChar.CastToUInt32(*p) == '-'))
             {
                 ret = p + 1;
             }
