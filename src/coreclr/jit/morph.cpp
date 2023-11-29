@@ -354,7 +354,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // +INF: 0b0000
             // -VAL: 0b1000: Saturate to Zero
             // +VAL: 0b0000
-            tbl->gtSimdVal.i32[0] = 0x08000000;
+            tbl->gtSimdVal.i32[0] = 0x08000088;
 
             // Generate first operand
             // The logic is that first and second operand are basically the same because we want 
