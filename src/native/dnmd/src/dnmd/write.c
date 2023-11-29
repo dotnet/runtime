@@ -34,7 +34,7 @@ static bool is_row_sorted_with_next_row(md_key_info_t const* keys, uint8_t count
     return true;
 }
 
-static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, mdToken* tk, mdcursor_t* cursor, uint32_t in_length)
+static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, mdToken const* tk, mdcursor_t const* cursor, uint32_t in_length)
 {
     assert(in_length != 0 && (tk != NULL || cursor != NULL));
 
@@ -170,21 +170,21 @@ static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_id
     return written;
 }
 
-int32_t md_set_column_value_as_token(mdcursor_t c, col_index_t col, uint32_t in_length, mdToken* tk)
+int32_t md_set_column_value_as_token(mdcursor_t c, col_index_t col, uint32_t in_length, mdToken const* tk)
 {
     if (tk == NULL || in_length == 0)
         return -1;
     return set_column_value_as_token_or_cursor(c, col_to_index(col, CursorTable(&c)), tk, NULL, in_length);
 }
 
-int32_t md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, uint32_t in_length, mdcursor_t* cursor)
+int32_t md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, uint32_t in_length, mdcursor_t const* cursor)
 {
     if (cursor == NULL || in_length == 0)
         return -1;
     return set_column_value_as_token_or_cursor(c, col_to_index(col, CursorTable(&c)), NULL, cursor, in_length);
 }
 
-int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t* constant)
+int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t const* constant)
 {
     if (in_length == 0)
         return 0;
@@ -322,7 +322,7 @@ int32_t set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint3
     return written;
 }
 
-int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char const** str)
+int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char const* const* str)
 {
     if (in_length == 0)
         return 0;
@@ -362,7 +362,7 @@ int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t 
     return written;
 }
 
-int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint8_t const** blob, uint32_t* blob_len)
+int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint8_t const* const* blob, uint32_t const* blob_len)
 {
     if (in_length == 0)
         return 0;
@@ -428,7 +428,7 @@ int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
     return written;
 }
 
-int32_t md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char16_t const** userstring)
+int32_t md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char16_t const* const* userstring)
 {
     if (in_length == 0)
         return 0;
