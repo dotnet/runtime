@@ -14,6 +14,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	{
 		readonly Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> GenericInstantiationPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
@@ -23,6 +24,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
 			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
+			GenericInstantiationPatterns = new Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
 			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
 			Lattice = lattice;
@@ -57,6 +59,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			FieldAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
+		public void Add (TrimAnalysisGenericInstantiationPattern pattern)
+		{
+			if (!GenericInstantiationPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				GenericInstantiationPatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			GenericInstantiationPatterns[pattern.Operation] = pattern.Merge (FeatureContextLattice, existingPattern);
+		}
+
 		public void Add (TrimAnalysisMethodCallPattern pattern)
 		{
 			if (!MethodCallPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
@@ -86,6 +98,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			foreach (var fieldAccessPattern in FieldAccessPatterns.Values) {
 				foreach (var diagnostic in fieldAccessPattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
+
+			foreach (var genericInstantiationPattern in GenericInstantiationPatterns.Values) {
+				foreach (var diagnostic in genericInstantiationPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 

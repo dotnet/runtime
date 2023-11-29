@@ -560,15 +560,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					targetMethodSymbol = lambda.Symbol;
 					break;
 				case IMethodReferenceOperation methodReference:
-					IMethodSymbol method = methodReference.Method.OriginalDefinition;
-					if (method.ContainingSymbol is IMethodSymbol) {
+					IMethodSymbol methodDefinition = methodReference.Method.OriginalDefinition;
+					if (methodDefinition.ContainingSymbol is IMethodSymbol) {
 						// Track references to local functions
-						var localFunction = method;
+						var localFunction = methodDefinition;
 						Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);
 						var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
 						InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
 					}
-					targetMethodSymbol = method;
+					targetMethodSymbol = methodReference.Method;
 					break;
 				case IMemberReferenceOperation:
 				case IInvocationOperation:
@@ -585,7 +585,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleDelegateCreation (targetMethodSymbol, operation, state.Current.Context);
 		}
 
-		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation, TContext context);
+		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation, in TContext context);
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{

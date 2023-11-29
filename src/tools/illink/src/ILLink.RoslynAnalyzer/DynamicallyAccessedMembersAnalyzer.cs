@@ -8,13 +8,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared;
-using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -106,85 +102,24 @@ namespace ILLink.RoslynAnalyzer
 				// Examine generic instantiations in base types and interface list
 				context.RegisterSymbolAction (context => {
 					var type = (INamedTypeSymbol) context.Symbol;
-					var location = GetPrimaryLocation (type.Locations);
 					// RUC on type doesn't silence DAM warnings about generic base/interface types.
 					// This knowledge lives in IsInRequiresUnreferencedCodeAttributeScope,
 					// which we still call for consistency here, but it is expected to return false.
 					if (type.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						return;
 
-					if (type.BaseType is INamedTypeSymbol baseType) {
-						foreach (var diagnostic in ProcessGenericParameters (baseType, location))
-							context.ReportDiagnostic (diagnostic);
-					}
+					var location = GetPrimaryLocation (type.Locations);
+					DiagnosticContext diagnosticContext = new (location);
 
-					foreach (var interfaceType in type.Interfaces) {
-						foreach (var diagnostic in ProcessGenericParameters (interfaceType, location))
-							context.ReportDiagnostic (diagnostic);
-					}
+					if (type.BaseType is INamedTypeSymbol baseType)
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, baseType);
+
+					foreach (var interfaceType in type.Interfaces)
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, interfaceType);
+
+					foreach (var diagnostic in diagnosticContext.Diagnostics)
+						context.ReportDiagnostic (diagnostic);
 				}, SymbolKind.NamedType);
-				// Examine generic instantiations in method return type and parameters.
-				// This includes property getters and setters.
-				context.RegisterSymbolAction (context => {
-					var method = (IMethodSymbol) context.Symbol;
-					if (method.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
-					var returnType = method.ReturnType;
-					foreach (var diagnostic in ProcessGenericParameters (returnType, GetPrimaryLocation (method.Locations)))
-						context.ReportDiagnostic (diagnostic);
-
-					foreach (var parameter in method.Parameters) {
-						foreach (var diagnostic in ProcessGenericParameters (parameter.Type, GetPrimaryLocation (parameter.Locations)))
-							context.ReportDiagnostic (diagnostic);
-					}
-				}, SymbolKind.Method);
-				// Examine generic instantiations in field type.
-				context.RegisterSymbolAction (context => {
-					var field = (IFieldSymbol) context.Symbol;
-					if (field.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
-					foreach (var diagnostic in ProcessGenericParameters (field.Type, GetPrimaryLocation (field.Locations)))
-						context.ReportDiagnostic (diagnostic);
-				}, SymbolKind.Field);
-				// Examine generic instantiations in invocations of generically instantiated methods,
-				// or methods on generically instantiated types.
-				context.RegisterOperationAction (context => {
-					if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
-					var invocation = (IInvocationOperation) context.Operation;
-					var methodSymbol = invocation.TargetMethod;
-					foreach (var diagnostic in ProcessMethodGenericParameters (methodSymbol, invocation.Syntax.GetLocation ()))
-						context.ReportDiagnostic (diagnostic);
-				}, OperationKind.Invocation);
-				// Examine generic instantiations in delegate creation of generically instantiated methods.
-				context.RegisterOperationAction (context => {
-					if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
-					var delegateCreation = (IDelegateCreationOperation) context.Operation;
-					if (delegateCreation.Target is not IMethodReferenceOperation methodReference)
-						return;
-
-					if (methodReference.Method is not IMethodSymbol methodSymbol)
-						return;
-					foreach (var diagnostic in ProcessMethodGenericParameters (methodSymbol, delegateCreation.Syntax.GetLocation()))
-						context.ReportDiagnostic (diagnostic);
-				}, OperationKind.DelegateCreation);
-				// Examine generic instantiations in object creation of generically instantiated types.
-				context.RegisterOperationAction (context => {
-					if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
-					var objectCreation = (IObjectCreationOperation) context.Operation;
-					if (objectCreation.Type is not ITypeSymbol typeSymbol)
-						return;
-
-					foreach (var diagnostic in ProcessGenericParameters (typeSymbol, objectCreation.Syntax.GetLocation()))
-						context.ReportDiagnostic (diagnostic);
-				}, OperationKind.ObjectCreation);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
 					VerifyDamOnPropertyAndAccessorMatch (context, (IMethodSymbol) context.Symbol);
@@ -200,66 +135,6 @@ namespace ILLink.RoslynAnalyzer
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
 				}, SymbolKind.Field);
 			});
-		}
-
-		static IEnumerable<Diagnostic> ProcessMethodGenericParameters (IMethodSymbol methodSymbol, Location location)
-		{
-			foreach (var diagnostic in ProcessGenericParameters (methodSymbol, location))
-				yield return diagnostic;
-
-			if (methodSymbol.IsStatic && methodSymbol.ContainingType is not null) {
-				foreach (var diagnostic in ProcessGenericParameters (methodSymbol.ContainingType, location))
-					yield return diagnostic;
-			}
-		}
-
-		static IEnumerable<Diagnostic> ProcessGenericParameters (ISymbol symbol, Location location)
-		{
-			// Avoid unnecessary execution if not NamedType or Method
-			if (symbol is not INamedTypeSymbol && symbol is not IMethodSymbol)
-				yield break;
-
-			ImmutableArray<ITypeParameterSymbol> typeParams = default;
-			ImmutableArray<ITypeSymbol> typeArgs = default;
-			switch (symbol) {
-			case INamedTypeSymbol type:
-				typeParams = type.TypeParameters;
-				typeArgs = type.TypeArguments;
-				break;
-			case IMethodSymbol targetMethod:
-				typeParams = targetMethod.TypeParameters;
-				typeArgs = targetMethod.TypeArguments;
-				break;
-			}
-
-			if (typeParams != null) {
-				Debug.Assert (typeParams.Length == typeArgs.Length);
-
-				for (int i = 0; i < typeParams.Length; i++) {
-					// Syntax like typeof (Foo<>) will have an ErrorType as the type argument.
-					// These uninstantiated generics should not produce warnings.
-					if (typeArgs[i].Kind == SymbolKind.ErrorType)
-						continue;
-					var sourceValue = SingleValueExtensions.FromTypeSymbol (typeArgs[i])!;
-					var targetValue = new GenericParameterValue (typeParams[i]);
-					foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, targetValue, location))
-						yield return diagnostic;
-				}
-			}
-		}
-
-		static List<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
-		{
-			// The target should always be an annotated value, but the visitor design currently prevents
-			// declaring this in the type system.
-			if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
-				throw new NotImplementedException ();
-
-			var diagnosticContext = new DiagnosticContext (location);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, default (ReflectionAccessAnalyzer));
-			requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
-
-			return diagnosticContext.Diagnostics;
 		}
 
 		static void VerifyMemberOnlyApplyToTypesOrStrings (SymbolAnalysisContext context, ISymbol member)
