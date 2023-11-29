@@ -9,6 +9,7 @@
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2004-2005, 2008 Novell, Inc (http://www.novell.com)
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -1994,17 +1995,25 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.False(subject.CheckSignature());
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95390")]
-        public void CheckSignatureHandlesEnvelopedSignatureWithRootXpointerReference()
+        private static Dictionary<string, string> EnvelopedSignatureWithRootXpointerReference = new ()
         {
-            const string EnvelopedSignatureWithRootXpointerReference = """<?xml version="1.0" encoding="UTF-8"?><hello><world>Hi</world><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" /><Reference URI="#xpointer(/)"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" /><DigestValue>SVaCE5w9iLXTVYTKP1t/yjjmPXvWovMYpgljGgpgz2Y=</DigestValue></Reference></SignedInfo><SignatureValue>dqcBmS1ZvDJNhmCEgobpAb+A2XaiuB69dfGIhisZvqoxaWqAqv/0w49jp38+usJ5t3wcq3aMC631QE8iln+lHWrarojDMDWLa00isv3oE3q9UgOIV9e6MUSoRTTvQkmlK/LSYV9T/SKx6h03vLLcIkUMXaTkC/n2kthlJTGkLbU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>t6qV1iTlkCPoaIeOTvnDczQv5pytUxMoyNXws5vaMQYxfJMKos47dvmiLtfWUDLYXFX3Yf/JMC14plJw2JA5jLrlHLnZj/vCjRtXckmWW/wGYewXUqrgR1CytStUeQKj9mNsi76erukua10UhzIrWG+H6YQ/qS4AMMJZU6jBvO0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></hello>""";
+            ["Valid"] = """<?xml version="1.0" encoding="UTF-8"?><hello><world>Hi</world><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" /><Reference URI="#xpointer(/)"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" /><DigestValue>SVaCE5w9iLXTVYTKP1t/yjjmPXvWovMYpgljGgpgz2Y=</DigestValue></Reference></SignedInfo><SignatureValue>dqcBmS1ZvDJNhmCEgobpAb+A2XaiuB69dfGIhisZvqoxaWqAqv/0w49jp38+usJ5t3wcq3aMC631QE8iln+lHWrarojDMDWLa00isv3oE3q9UgOIV9e6MUSoRTTvQkmlK/LSYV9T/SKx6h03vLLcIkUMXaTkC/n2kthlJTGkLbU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>t6qV1iTlkCPoaIeOTvnDczQv5pytUxMoyNXws5vaMQYxfJMKos47dvmiLtfWUDLYXFX3Yf/JMC14plJw2JA5jLrlHLnZj/vCjRtXckmWW/wGYewXUqrgR1CytStUeQKj9mNsi76erukua10UhzIrWG+H6YQ/qS4AMMJZU6jBvO0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></hello>""",
+            ["Tampered"] = """<?xml version="1.0" encoding="UTF-8"?><hello>Tempered world<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" /><Reference URI="#xpointer(/)"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" /><DigestValue>SVaCE5w9iLXTVYTKP1t/yjjmPXvWovMYpgljGgpgz2Y=</DigestValue></Reference></SignedInfo><SignatureValue>dqcBmS1ZvDJNhmCEgobpAb+A2XaiuB69dfGIhisZvqoxaWqAqv/0w49jp38+usJ5t3wcq3aMC631QE8iln+lHWrarojDMDWLa00isv3oE3q9UgOIV9e6MUSoRTTvQkmlK/LSYV9T/SKx6h03vLLcIkUMXaTkC/n2kthlJTGkLbU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>t6qV1iTlkCPoaIeOTvnDczQv5pytUxMoyNXws5vaMQYxfJMKos47dvmiLtfWUDLYXFX3Yf/JMC14plJw2JA5jLrlHLnZj/vCjRtXckmWW/wGYewXUqrgR1CytStUeQKj9mNsi76erukua10UhzIrWG+H6YQ/qS4AMMJZU6jBvO0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></hello>""",
+        };
+
+        [Theory]
+        [InlineData("Valid", true)]
+        [InlineData("Tampered", false)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/95390")]
+        // dotnet test src/libraries/System.Security.Cryptography.Xml/tests/ --framework net9.0
+        public void CheckSignatureHandlesEnvelopedSignatureWithRootXpointerReference(string caseName, bool isValid)
+        {
             XmlDocument xmlDoc = new ();
-            xmlDoc.LoadXml(EnvelopedSignatureWithRootXpointerReference);
+            xmlDoc.LoadXml(EnvelopedSignatureWithRootXpointerReference[caseName]);
             SignedXml signedXml = new (xmlDoc);
             signedXml.LoadXml(xmlDoc.GetElementsByTagName("Signature", SignedXml.XmlDsigNamespaceUrl)[0] as XmlElement);
 
-            Assert.True(signedXml.CheckSignature());
+            Assert.Equal(isValid, signedXml.CheckSignature());
         }
     }
 }
