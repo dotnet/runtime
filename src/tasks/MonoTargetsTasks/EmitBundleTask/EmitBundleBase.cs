@@ -150,34 +150,43 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         // Generate source file(s) containing each resource's byte data and size
         int allowedParallelism = Math.Max(Math.Min(bundledResources.Count, Environment.ProcessorCount), 1);
-        if (BuildEngine is IBuildEngine9 be9)
+        IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
+        if (be9 is not null)
             allowedParallelism = be9.RequestCores(allowedParallelism);
 
-        Parallel.For(0, remainingDestinationFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, (i, state) =>
+        try
         {
-            var group = remainingDestinationFilesToBundle[i];
-
-            var contentSourceFile = group.First();
-
-            var inputFile = contentSourceFile.ItemSpec;
-            var destinationFile = contentSourceFile.GetMetadata("DestinationFile");
-            var registeredName = contentSourceFile.GetMetadata(RegisteredName);
-
-            var count = Interlocked.Increment(ref verboseCount);
-            Log.LogMessage(MessageImportance.Low, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
-
-            Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, destinationFile);
-            var symbolName = _resourceDataSymbolDictionary[registeredName];
-            if (!EmitBundleFile(destinationFile, (codeStream) =>
+            Parallel.For(0, remainingDestinationFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, (i, state) =>
             {
-                using var inputStream = File.OpenRead(inputFile);
-                using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
-                BundleFileToCSource(symbolName, inputStream, outputUtf8Writer);
-            }))
-            {
-                state.Stop();
-            }
-        });
+                var group = remainingDestinationFilesToBundle[i];
+
+                var contentSourceFile = group.First();
+
+                var inputFile = contentSourceFile.ItemSpec;
+                var destinationFile = contentSourceFile.GetMetadata("DestinationFile");
+                var registeredName = contentSourceFile.GetMetadata(RegisteredName);
+
+                var count = Interlocked.Increment(ref verboseCount);
+                Log.LogMessage(MessageImportance.Low, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
+
+                Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, destinationFile);
+                var symbolName = _resourceDataSymbolDictionary[registeredName];
+                if (!EmitBundleFile(destinationFile, (codeStream) =>
+                {
+                    using var inputStream = File.OpenRead(inputFile);
+                    using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
+                    BundleFileToCSource(symbolName, inputStream, outputUtf8Writer);
+                }))
+                {
+                    state.Stop();
+                }
+            });
+        }
+        finally
+        {
+            // msbuild does not release cores between invocations if the task is batched
+            be9?.ReleaseCores(allowedParallelism);
+        }
 
         foreach (ITaskItem bundledResource in bundledResources)
         {
