@@ -63,6 +63,10 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     [Output]
     public ITaskItem[] BundledResources { get; set; } = default!;
 
+    // Set only if @BundleFile was set
+    [Output]
+    public string? BundleRegistrationFile { get; set; }
+
     public override bool Execute()
     {
         if (!Directory.Exists(OutputDirectory))
@@ -184,7 +188,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         }
         finally
         {
-            // msbuild does not release cores between invocations if the task is batched
             be9?.ReleaseCores(allowedParallelism);
         }
 
@@ -227,9 +230,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 GenerateBundledResourcePreallocationAndRegistration(resourceSymbols, BundleRegistrationFunctionName, files, outputUtf8Writer);
             });
 
-            TaskItem itemForBundleFile = new TaskItem(Path.Combine(OutputDirectory, BundleFile));
-            itemForBundleFile.SetMetadata("DestinationFile", bundleFilePath);
-            bundledResources.Add(itemForBundleFile);
+            BundleRegistrationFile = bundleFilePath;
         }
 
         BundledResources = bundledResources.ToArray();

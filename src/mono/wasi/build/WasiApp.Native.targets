@@ -387,11 +387,13 @@
                 BundleFile="@(_EmitBundleItemName->'%(BundleFile)')"
                 OutputDirectory="$(_WasmIntermediateOutputPath)">
                 <Output TaskParameter="BundledResources" ItemName="_EmitBundleOutputItem" />
+                <Output TaskParameter="BundleRegistrationFile" PropertyName="_EmitBundleRegistrationFile" />
     </EmitBundleObjectFiles>
 
     <ItemGroup>
       <_EmitBundleOutputFile Remove="@(_EmitBundleOutputFile)" />
       <_EmitBundleOutputFile Include="%(_EmitBundleOutputItem.DestinationFile)" />
+      <_EmitBundleOutputFile Include="$(_EmitBundleRegistrationFile)" />
 
       <_WasiObjectFilesForBundle Include="@(_EmitBundleOutputFile)" />
       <FileWrites Include="@(_EmitBundleOutputFile)" />
