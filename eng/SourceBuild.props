@@ -21,6 +21,9 @@
     <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
     <TargetArch>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetArch>
 
+    <_hostRidPlatformIndex>$(HostRid.LastIndexOf('-'))</_hostRidPlatformIndex>
+    <HostArch>$(HostRid.Substring($(_hostRidPlatformIndex)).TrimStart('-'))</HostArch>
+
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
 
@@ -31,6 +34,7 @@
            This allows to build the repository using './build.sh <args> /p:DotNetBuildFromSource=true'.
            Properties that control flags from source-build, and the expected output for source-build should be added to this file. -->
       <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetArch)</InnerBuildArgs>
+      <InnerBuildArgs Condition=" '$(TargetArch)' != '$(HostArch)' ">$(InnerBuildArgs) --cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
@@ -49,6 +53,7 @@
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) --usemonoruntime</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotnetBuildVertical) != ''">$(InnerBuildArgs) /p:DotnetBuildVertical=$(DotnetBuildVertical)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
@@ -71,7 +76,7 @@
       <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
         Category="Crossgen2Pack" />
-        
+
         <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;"
         Category="Crossgen2Archive" />

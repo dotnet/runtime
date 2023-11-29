@@ -9,6 +9,7 @@
 #include <pthread.h>
 
 #define SUCCESS 1
+#define UNUSED(X) (void)(X)
 
 static const EVP_MD* g_evpFetchMd5 = NULL;
 static pthread_once_t g_evpFetch = PTHREAD_ONCE_INIT;
@@ -133,6 +134,10 @@ int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t le
                 return EVP_DigestFinalXOF(ctx, md, len);
             }
         }
+    #else
+        UNUSED(ctx);
+        UNUSED(md);
+        UNUSED(len);
     #endif
 
     return 0;
