@@ -54,21 +54,6 @@ jobs:
       shouldContinueOnError: true
       alwaysRun: true
 
-  #ToDo: add AOT version when this is confirmed to work
-  #ToDo: confirm if adding it here is fine
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        - browser_wasm_win
-      nameSuffix: _HybridGlobalization
-      extraHelixArgs: /p:HybridGlobalization=true
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJS
-      alwaysRun: true
-
   # Disabled for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
     #parameters:
