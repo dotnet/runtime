@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_Default()
         {
-            var dotnet = sharedTestState.BuiltDotNet;
+            var dotnet = TestContext.BuiltDotNet;
             var appDll = sharedTestState.App.AppDll;
 
             dotnet.Exec(appDll)
@@ -46,15 +46,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             var app = sharedTestState.App.Copy();
 
-            var dotnet = sharedTestState.BuiltDotNet;
-
             // Change *.dll to *.exe
             var appDll = app.AppDll;
             var appExe = Path.ChangeExtension(appDll, ".exe");
             File.Copy(appDll, appExe, true);
             File.Delete(appDll);
 
-            dotnet.Exec("exec", appExe)
+            TestContext.BuiltDotNet.Exec("exec", appExe)
                 .CaptureStdErr()
                 .Execute(expectedToFail: true)
                 .Should().Fail()
@@ -64,10 +62,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_AltDirectorySeparatorChar()
         {
-            var dotnet = sharedTestState.BuiltDotNet;
             var appDll = sharedTestState.App.AppDll.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-            dotnet.Exec(appDll)
+            TestContext.BuiltDotNet.Exec(appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -86,10 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var runtimeConfig = Path.Combine(subdirectory, Path.GetFileName(app.RuntimeConfigJson));
             File.Move(app.RuntimeConfigJson, runtimeConfig, overwrite: true);
 
-            var dotnet = sharedTestState.BuiltDotNet;
-            var appDll = app.AppDll;
-
-            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
+            TestContext.BuiltDotNet.Exec("exec", "--runtimeconfig", runtimeConfig, app.AppDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -103,7 +96,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string appExe = sharedTestState.App.AppExe;
 
             // Get the framework location that was built
-            string builtDotnet = RepoDirectoriesProvider.Default.BuiltDotnet;
+            string builtDotnet = TestContext.BuiltDotNet.BinPath;
 
             // Verify running with the default working directory
             Command.Create(appExe)
@@ -138,7 +131,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string appExe = sharedTestState.App.AppExe;
 
             // Get the framework location that was built
-            string builtDotnet = TestContext.BuiltDotNet;
+            string builtDotnet = TestContext.BuiltDotNet.BinPath;
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
             {
@@ -198,7 +191,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 File.Copy(file, Path.Combine(newDir, Path.GetFileName(file)), true);
 
             Command.Create(appExe)
-                .DotNetRoot(TestContext.BuiltDotNet)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                 .EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
                 .Execute()
@@ -209,7 +202,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void ComputedTPA_NoTrailingPathSeparator()
         {
-            sharedTestState.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -225,11 +218,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(sharedTestState.MockApp.AppExe)
-                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
             }
             else
             {
-                command = sharedTestState.BuiltDotNet.Exec(sharedTestState.MockApp.AppDll);
+                command = TestContext.BuiltDotNet.Exec(sharedTestState.MockApp.AppDll);
             }
 
             command.EnableTracingAndCaptureOutputs()
@@ -253,11 +246,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(app.AppExe)
-                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
             }
             else
             {
-                command = sharedTestState.BuiltDotNet.Exec(app.AppDll);
+                command = TestContext.BuiltDotNet.Exec(app.AppDll);
             }
 
             command.EnableTracingAndCaptureOutputs()
@@ -289,7 +282,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 }
                 else
                 {
-                    invalidDotNet = new DotNetBuilder(invalidDotNet, TestContext.BuiltDotNet, "missingFramework")
+                    invalidDotNet = new DotNetBuilder(invalidDotNet, TestContext.BuiltDotNet.BinPath, "missingFramework")
                         .Build()
                         .BinPath;
 
@@ -330,7 +323,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 string expectedErrorCode;
                 string expectedUrlQuery;
-                invalidDotNet = new DotNetBuilder(invalidDotNet, TestContext.BuiltDotNet, "missingFramework")
+                invalidDotNet = new DotNetBuilder(invalidDotNet, TestContext.BuiltDotNet.BinPath, "missingFramework")
                     .Build()
                     .BinPath;
 
@@ -401,7 +394,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet, "mockhostfxrFrameworkMissingFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrFrameworkMissingFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0));
                 var dotnet = dotnetBuilder.Build();
@@ -450,15 +443,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public class SharedTestState : IDisposable
         {
             public TestApp App { get;  }
-
-            public DotNetCli BuiltDotNet { get; }
-
             public TestApp MockApp { get; }
 
             public SharedTestState()
             {
-                BuiltDotNet = new DotNetCli(TestContext.BuiltDotNet);
-
                 App = TestApp.CreateFromBuiltAssets("HelloWorld");
                 App.CreateAppHost();
 

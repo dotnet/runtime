@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             public DotNetBuilder DotNet(string name)
             {
-                return new DotNetBuilder(Location, TestContext.BuiltDotNet, name);
+                return new DotNetBuilder(Location, TestContext.BuiltDotNet.BinPath, name);
             }
 
             public TestApp CreateFrameworkReferenceApp(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)
