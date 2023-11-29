@@ -116,7 +116,6 @@ public class ManagedToNativeGenerator : Task
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
         {
-            var rspPath = Path.GetTempFileName();
             var rsp = new ExecuteArguments(
                 managedAssemblies.Select(Path.GetFullPath).ToArray(),
                 RuntimeIcallTableFile,
@@ -125,21 +124,8 @@ public class ManagedToNativeGenerator : Task
                 IcallOutputPath, InterpToNativeOutputPath,
                 CacheFilePath
             );
-            var rspText = JsonSerializer.Serialize(rsp);
-            File.WriteAllText(rspPath, rspText);
-            var dotnetPath = GetDotNetPathOrDefault();
 
-            (int exitCode, string output) = Utils.TryRunProcess(
-                Log,
-                dotnetPath,
-                $"{GetType().Assembly.Location} {rspPath}",
-                envVars: null,
-                workingDir: null,
-                silent: false,
-                logStdErrAsMessage: true
-            );
-            if (exitCode != 0)
-                logAdapter.Error("WASM0066", $"WasmAppBuilder external process failed with exit code {exitCode}!");
+            ExecuteInProcess(logAdapter, rsp);
         }
 
         List<string> fileWritesList = new() { PInvokeOutputPath, InterpToNativeOutputPath };
@@ -149,6 +135,40 @@ public class ManagedToNativeGenerator : Task
             fileWritesList.Add(CacheFilePath);
 
         FileWrites = fileWritesList.ToArray();
+    }
+
+    private static void ExecuteInProcess(LogAdapter logAdapter, ExecuteArguments rsp)
+    {
+        ExecuteForAssemblies(
+            logAdapter,
+            rsp.managedAssemblies,
+            rsp.runtimeIcallTableFile,
+            rsp.pInvokeModules,
+            rsp.pInvokeOutputPath,
+            rsp.icallOutputPath,
+            rsp.interpToNativeOutputPath,
+            rsp.cacheFilePath
+        );
+    }
+
+    private void ExecuteOutOfProcess(LogAdapter logAdapter, ExecuteArguments rsp)
+    {
+        var rspPath = Path.GetTempFileName();
+        var rspText = JsonSerializer.Serialize(rsp);
+        File.WriteAllText(rspPath, rspText);
+        var dotnetPath = GetDotNetPathOrDefault();
+
+        (int exitCode, string output) = Utils.TryRunProcess(
+            Log,
+            dotnetPath,
+            $"{GetType().Assembly.Location} {rspPath}",
+            envVars: null,
+            workingDir: null,
+            silent: false,
+            logStdErrAsMessage: true
+        );
+        if (exitCode != 0)
+            logAdapter.Error("WASM0066", $"WasmAppBuilder external process failed with exit code {exitCode}!");
     }
 
     internal readonly record struct ExecuteArguments (

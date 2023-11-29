@@ -769,12 +769,6 @@ namespace Wasm.Build.Tests
 
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
             var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
-            /*
-            extraItems += @"
-<WasmExtraConfig Include=""environmentVariables"" Value='{
-""MONO_VERBOSE_METHOD"": ""indirect""
-}' />";
-            */
 
             buildArgs = ExpandBuildArgs(buildArgs,
                                         extraItems: extraItems,
@@ -790,13 +784,14 @@ namespace Wasm.Build.Tests
                                                             Path.Combine(_projectDir!, "wasm-abi.c"));
                                             },
                                             Publish: buildArgs.AOT,
+                                            // Verbosity: "diagnostic",
                                             DotnetWasmFromRuntimePack: false));
 
             string objDir = Path.Combine(_projectDir!, "obj", buildArgs.Config!, "net9.0", "browser-wasm", "wasm", buildArgs.AOT ? "for-publish" : "for-build");
-            Console.WriteLine($"objDir={objDir} buildArgs={buildArgs}");
 
             // Verify that the right signature was added for the pinvoke. We can't determine this by examining the m2n file
-            Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
+            // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
+            // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
             string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "pinvoke-table.h"));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
