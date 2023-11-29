@@ -5259,7 +5259,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->Next(), checks);
             const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetJumpDest(), checks);
 
-            if (CheckFlag(checks, ProfileChecks::RAISE_ASSERT))
+            if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
             {
                 assert(nextProfileOk);
                 assert(jumpProfileOk);

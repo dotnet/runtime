@@ -13463,7 +13463,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         {
             GenTree* thisOp = call->gtArgs.GetArgByIndex(0)->GetNode();
             GenTree* flagOp = call->gtArgs.GetArgByIndex(1)->GetNode();
-            GenTree* result = gtOptimizeEnumCheckFlag(thisOp, flagOp);
+            GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
 
             if (result != nullptr)
             {
@@ -14811,7 +14811,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 //    If successful, may allocate new temps and modify connected
 //    statements.
 
-GenTree* Compiler::gtOptimizeEnumCheckFlag(GenTree* thisOp, GenTree* flagOp)
+GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
 {
     JITDUMP("Considering optimizing call to Enum.HasFlag....\n");
 

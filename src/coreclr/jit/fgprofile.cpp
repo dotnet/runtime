@@ -5077,10 +5077,10 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //   and/or
     // new likelyhood based weights.
     //
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && CheckFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = CheckFlag(checks, ProfileChecks::CHECK_LIKELY);
-    const bool assertOnFailure      = CheckFlag(checks, ProfileChecks::RAISE_ASSERT);
-    const bool checkAllBlocks       = CheckFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
+    const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -5254,8 +5254,8 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 //
 bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && CheckFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = CheckFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -5354,8 +5354,8 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 //
 bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && CheckFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = CheckFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {

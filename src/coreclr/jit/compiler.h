@@ -1626,7 +1626,7 @@ inline ProfileChecks& operator ^=(ProfileChecks& a, ProfileChecks b)
     return a = (ProfileChecks)((unsigned int)a ^ (unsigned int)b);
 }
 
-inline bool CheckFlag(const ProfileChecks& flagSet, const ProfileChecks& flag)
+inline bool hasFlag(const ProfileChecks& flagSet, const ProfileChecks& flag)
 {
     return ((flagSet & flag) == flag);
 }
@@ -3298,7 +3298,7 @@ public:
     };
 
     GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
-    GenTree* gtOptimizeEnumCheckFlag(GenTree* thisOp, GenTree* flagOp);
+    GenTree* gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp);
 
     //-------------------------------------------------------------------------
     // Get the handle for a ref type.
