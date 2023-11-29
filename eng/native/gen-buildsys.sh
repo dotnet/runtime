@@ -116,4 +116,6 @@ $cmake_command \
   $__UnprocessedCMakeArgs \
   "$1"
 
+cmake_exit_code=$?
 popd
+exit $cmake_exit_code
