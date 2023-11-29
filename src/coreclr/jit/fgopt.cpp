@@ -2881,6 +2881,13 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 break;
             }
 
+            // Don't remove the fgEntryBB
+            //
+            if (opts.IsOSR() && (block == fgEntryBB))
+            {
+                break;
+            }
+
 #if defined(FEATURE_EH_FUNCLETS)
             /* Don't remove an empty block that is in a different EH region
              * from its successor block, if the block is the target of a
