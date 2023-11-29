@@ -29,6 +29,45 @@ public class WasiTemplateTests : BuildTestBase
     // [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
     [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ true)]
     // [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    public void ConsoleBuild(string config, bool aot, bool singleFileBundle)
+    {
+        string id = $"{config}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectName = Path.GetFileNameWithoutExtension(projectFile);
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
+
+        var buildArgs = new BuildArgs(projectName, config, aot, id, null);
+        buildArgs = ExpandBuildArgs(buildArgs);
+
+        string extraProperties = "";
+        if (aot)
+            extraProperties = "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>";
+        if (singleFileBundle)
+            extraProperties += "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
+        if (!string.IsNullOrEmpty(extraProperties))
+        AddItemsPropertiesToProject(projectFile, extraProperties);
+
+        BuildProject(buildArgs,
+                    id: id,
+                    new BuildProjectOptions(
+                        DotnetWasmFromRuntimePack: true,
+                        CreateProject: false,
+                        Publish: false,
+                        TargetFramework: BuildTestBase.DefaultTargetFramework));
+
+        // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
+        int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
+    }
+
+    [Theory]
+    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ false)]
+    [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ false)]
+    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ false)]
+    [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ false)]
+    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ true)]
+    // [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ true)]
+    // [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
     public void ConsoleBuildThenPublish(string config, bool aot, bool singleFileBundle)
     {
         string id = $"{config}_{GetRandomId()}";
