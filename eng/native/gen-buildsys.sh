@@ -114,4 +114,4 @@ $cmake_command \
   -S "$1" \
   -B "$2"
 
-exit $?
+# don't add anything after this line so the cmake exit code gets propagated correctly
