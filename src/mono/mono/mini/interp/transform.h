@@ -346,7 +346,7 @@ typedef struct
 	guint optimized : 1;
 	guint has_invalid_code : 1;
 	guint has_inlined_one_call : 1;
-	guint need_ssa_retry : 1;
+	guint need_optimization_retry : 1;
 	guint disable_ssa : 1;
 	guint eh_vars_computed : 1;
 } TransformData;

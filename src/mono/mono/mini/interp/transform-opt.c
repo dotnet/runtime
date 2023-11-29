@@ -1502,7 +1502,7 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 			if (!td->vars [ins->sregs [0]].indirects) {
 				if (td->verbose_level)
 					g_print ("Remove bblock %d, var %d no longer indirect\n", bb->index, ins->sregs [0]);
-				td->need_ssa_retry = TRUE;
+				td->need_optimization_retry = TRUE;
 			}
 		}
 	}
@@ -1849,7 +1849,7 @@ retry:
 						if (!td->vars [ins->sregs [0]].indirects) {
 							if (td->verbose_level)
 								g_print ("Kill ldloca, var %d no longer indirect\n", ins->sregs [0]);
-							td->need_ssa_retry = TRUE;
+							td->need_optimization_retry = TRUE;
 						}
 					}
 
@@ -2493,7 +2493,8 @@ interp_cprop (TransformData *td)
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
-			if (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER)
+			// LIVENESS_MARKER is set only for non-eh bblocks
+			if (bb->dfs_index >= td->bblocks_count || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
 				current_liveness++;
 
 			if (interp_ins_is_nop (ins))
@@ -3506,12 +3507,29 @@ interp_super_instructions (TransformData *td)
 	}
 }
 
+static void
+interp_prepare_no_ssa_opt (TransformData *td)
+{
+	for (unsigned int i = 0; i < td->vars_size; i++) {
+		td->vars [i].no_ssa = TRUE;
+		td->vars [i].has_indirects = (td->vars [i].indirects > 0) ? TRUE : FALSE;
+	}
+
+	if (!td->bblocks)
+		td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+
+	int i = 0;
+	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		td->bblocks [i] = bb;
+		i++;
+	}
+	td->bblocks_count = 0;
+	td->bblocks_count_eh = i;
+}
+
 void
 interp_optimize_code (TransformData *td)
 {
-	if (td->disable_ssa)
-		return;
-
 	// Give up on huge methods. We can easily work around this if decide to care.
 	if (td->bb_count > ((1 << INTERP_LIVENESS_BB_INDEX_BITS) - 1))
 		return;
@@ -3519,10 +3537,16 @@ interp_optimize_code (TransformData *td)
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
 
-ssa_retry:
-	td->need_ssa_retry = FALSE;
+	if (!(mono_interp_opt & INTERP_OPT_SSA))
+		td->disable_ssa = TRUE;
 
-	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_time, interp_compute_ssa (td));
+optimization_retry:
+	td->need_optimization_retry = FALSE;
+
+	if (td->disable_ssa)
+		interp_prepare_no_ssa_opt (td);
+	else
+		MONO_TIME_TRACK (mono_interp_stats.ssa_compute_time, interp_compute_ssa (td));
 
 	if (mono_interp_opt & INTERP_OPT_CPROP)
 		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
@@ -3535,15 +3559,16 @@ ssa_retry:
 			(mono_interp_opt & INTERP_OPT_CPROP))
 		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
 
-	interp_exit_ssa (td);
+	if (!td->disable_ssa)
+		interp_exit_ssa (td);
 
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
 
-	if (td->need_ssa_retry) {
+	if (td->need_optimization_retry) {
 		if (td->verbose_level)
 			g_print ("Retry method %s\n", mono_method_full_name (td->method, 1));
-		goto ssa_retry;
+		goto optimization_retry;
 	}
 
 	if (td->verbose_level) {
