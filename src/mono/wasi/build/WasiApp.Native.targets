@@ -367,6 +367,7 @@
     <PropertyGroup>
       <_WasmAssembliesBundleObjectFile>wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
       <_WasmIcuBundleObjectFile>wasi_bundled_icu.o</_WasmIcuBundleObjectFile>
+      <_WasmRuntimeConfigBundleFile>wasi_runtime_config_bin.o</_WasmRuntimeConfigBundleFile>
     </PropertyGroup>
     <!-- TODO make this incremental compilation -->
     <EmitBundleObjectFiles
@@ -403,13 +404,28 @@
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
       <_WasiObjectFilesForBundle Include="%(BundledWasmIcu.DestinationFile)" />
-    </ItemGroup>
 
-    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
       <WasmBundleFileToDelete Remove="%(BundledWasmIcu.DestinationFile)" />
     </ItemGroup>
 
+    <!-- runtimeconfig.bin -->
+    <EmitBundleObjectFiles
+      FilesToBundle="$(_ParsedRuntimeConfigFilePath)"
+      ClangExecutable="$(WasiClang)"
+      BundleRegistrationFunctionName="mono_register_runtimeconfig_bin"
+      BundleFile="$(_WasmRuntimeConfigBundleFile)"
+      OutputDirectory="$(_WasmIntermediateOutputPath)">
+      <Output TaskParameter="BundledResources" ItemName="_BundledRuntimeConfigBin" />
+    </EmitBundleObjectFiles>
+
+    <ItemGroup>
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmRuntimeConfigBundleFile)" />
+      <_WasiObjectFilesForBundle Include="%(_BundledRuntimeConfigBin.DestinationFile)" />
+
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmRuntimeConfigBundleFile)" />
+      <WasmBundleFileToDelete Remove="%(_BundledRuntimeConfigBin.DestinationFile)" />
+    </ItemGroup>
     <Delete Files="@(WasmBundleFileToDelete)" />
   </Target>
 
