@@ -69,12 +69,9 @@
 EXTERN_C uint32_t _tls_index;
 #endif
 
-#ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-#else
+#ifndef _MSC_VER
 extern "C" void* __tls_get_addr(void* ti);
-EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
-#endif // _MSC_VER
+#endif // !_MSC_VER
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
