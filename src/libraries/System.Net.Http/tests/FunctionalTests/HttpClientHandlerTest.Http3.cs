@@ -1013,6 +1013,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task EchoServerStreaming_DifferentMessageSize_Success(int messageSize)
         {
+            // Disable failing test in 6.0 branch, see https://github.com/dotnet/runtime/issues/95158
+            // The mock tests don't exist in newer releases -> no need to keep an active issue.
+            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             int iters = 5;
             var message = new byte[messageSize];
             var readBuffer = new byte[5 * messageSize]; // bigger than message
