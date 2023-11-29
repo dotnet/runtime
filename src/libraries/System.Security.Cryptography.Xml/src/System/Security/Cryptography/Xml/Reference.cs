@@ -275,11 +275,7 @@ namespace System.Security.Cryptography.Xml
                             // Resolve the reference to get starting point for position calculation.
                             // This needs to match the way CalculateSignature resolves URI references.
                             XmlNode? referenceTarget = null;
-                            if (_uri == null)
-                            {
-                                referenceTarget = transformElement.OwnerDocument;
-                            }
-                            else if (_uri.Length == 0)
+                            if (_uri == null || _uri.Length == 0)
                             {
                                 referenceTarget = transformElement.OwnerDocument;
                             }
