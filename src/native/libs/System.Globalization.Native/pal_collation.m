@@ -310,9 +310,11 @@ int32_t GlobalizationNative_GetSortKeyNative(
     @autoreleasepool {
         if (cwStrLength == 0)
         {
-            if (sortKey == NULL)
-                sortKey = malloc(1);
-            sortKey[0] = '\0';
+            if (sortKey != NULL)
+            {
+                //sortKey = malloc(1);
+                sortKey[0] = '\0';
+            }
             return 1;
         }
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
@@ -332,17 +334,19 @@ int32_t GlobalizationNative_GetSortKeyNative(
             utf8Length = [transformedString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
             dataToUse = [NSData dataWithBytes:utf8Bytes length:utf8Length];
         }
-        // else {
-        //     // Convert the string to UTF-16 representation
-        //     dataToUse = [transformedString dataUsingEncoding:NSUTF16StringEncoding];
-        //     utf8Length = ([dataToUse length] / sizeof(uint16_t)) * 2;
-        // }
+        else {
+            // Convert the string to UTF-16 representation
+            dataToUse = [transformedString dataUsingEncoding:NSUTF16StringEncoding];            
+            utf8Length = ([dataToUse length] / sizeof(uint16_t)) * 2;
+        }
 
         if (dataToUse != nil) {
             const uint8_t *bytesToCopy = (const uint8_t *)[dataToUse bytes];
-            if (sortKey == NULL)
-                sortKey = (uint8_t *)malloc(utf8Length);
-            memcpy(sortKey, bytesToCopy, utf8Length);
+            if (sortKey != NULL)
+            {
+                //sortKey = (uint8_t *)malloc(utf8Length);
+                memcpy(sortKey, bytesToCopy, utf8Length);
+            }
             return utf8Length;
         }
 
