@@ -228,6 +228,10 @@ jobs:
       - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/wasi/build/*
+      - src/mono/wasi/runtime/*
+      - src/mono/wasi/testassets/*
+      - src/mono/wasi/Wasi.Build.Tests/*
       - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
