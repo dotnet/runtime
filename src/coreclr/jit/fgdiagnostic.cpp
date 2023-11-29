@@ -2576,8 +2576,8 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     *pTree              = pComp->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
 
     // To ensure optNarrowTree() doesn't fold back to the original tree.
-    tree->gtGetOp1()->gtFlags |= GTF_CAST_STRESS_KEEP;
-    tree->gtGetOp2()->gtFlags |= GTF_CAST_STRESS_KEEP;
+    tree->gtGetOp1()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+    tree->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
 
     JITDUMP("STRESS_64RSLT_MUL after:\n")
     DISPTREE(*pTree)

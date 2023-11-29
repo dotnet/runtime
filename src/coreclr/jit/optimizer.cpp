@@ -5995,10 +5995,12 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CAST:
             {
-                if ((tree->gtFlags & GTF_CAST_STRESS_KEEP) != 0)
+#ifdef DEBUG
+                if ((tree->gtDebugFlags & GTF_DEBUG_CAST_DONT_FOLD) != 0)
                 {
                     return false;
                 }
+#endif
 
                 if ((tree->CastToType() != srct) || tree->gtOverflow())
                 {
