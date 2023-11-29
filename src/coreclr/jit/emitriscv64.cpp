@@ -3822,7 +3822,7 @@ void emitter::emitDispIns(
     if (pCode == nullptr)
         return;
 
-    const BYTE* instr = pCode + writeableOffset;
+    const BYTE* instr = pCode + writeableOffset + offset;
     size_t instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize)
     {
