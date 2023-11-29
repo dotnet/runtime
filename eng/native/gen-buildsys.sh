@@ -114,3 +114,4 @@ $cmake_command \
   -S "$1" \
   -B "$2"
 
+exit $?
