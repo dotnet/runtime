@@ -7927,6 +7927,8 @@ interp_parse_options (const char *options)
 			else if (strncmp (arg, "jiterp", 6) == 0)
 				opt = INTERP_OPT_JITERPRETER;
 #endif
+			else if (strncmp (arg, "ssa", 3) == 0)
+				opt = INTERP_OPT_SSA;
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 
