@@ -180,7 +180,6 @@ jobs:
         - normal
 
   # Hybrid Globalization tests
-  # ToDo: add AOT version when this is confirmed to work
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
@@ -188,6 +187,24 @@ jobs:
         - browser_wasm_win
       nameSuffix: _HybridGlobalization
       extraHelixArgs: /p:HybridGlobalization=true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJS
+
+  # Hybrid Globalization AOT tests
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      nameSuffix: _HybridGlobalization_AOT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraHelixArgs: /p:HybridGlobalization=true
+      runAOT: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
