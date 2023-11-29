@@ -2879,7 +2879,7 @@ static const char* const RegNames[] =
 
 //----------------------------------------------------------------------------------------
 // Disassemble the given instruction.
-// The `emitter::emitDisInsName` is focused on the most important for debugging.
+// The `emitter::emitDispInsName` is focused on the most important for debugging.
 // So it implemented as far as simply and independently which is very useful for
 // porting easily to the release mode.
 //
@@ -2892,9 +2892,9 @@ static const char* const RegNames[] =
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDisInsName(code_t code, BYTE* addr, bool doffs, unsigned offset, instrDesc* id)
+void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned offset, instrDesc* id)
 {
-    BYTE* insAdr = addr - writeableOffset;
+    const BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
     assert((opcode & 0x3) == 0x3);
@@ -3822,14 +3822,14 @@ void emitter::emitDispIns(
     if (pCode == nullptr)
         return;
 
-    BYTE* instr = pCode + writeableOffset;
+    const BYTE* instr = pCode + writeableOffset;
     size_t instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize)
     {
         instrSize = sizeof(code_t);
         code_t instruction;
         memcpy(&instruction, instr, instrSize);
-        emitDisInsName(instruction, instr, doffs, offset, id);
+        emitDispInsName(instruction, instr, doffs, offset, id);
     }
 }
 

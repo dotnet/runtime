@@ -1542,7 +1542,7 @@ void emitter::appendToCurIG(instrDesc* id)
  *  Display (optionally) an instruction offset.
  */
 
-void emitter::emitDispInsAddr(BYTE* code)
+void emitter::emitDispInsAddr(const BYTE* code)
 {
 #ifdef DEBUG
     if (emitComp->opts.disAddr)
