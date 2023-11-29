@@ -3568,6 +3568,10 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add->acdStkLvlInit = false;
 #endif // !FEATURE_FIXED_OUT_ARGS
 
+    // This gets set true in the stack level setter
+    // if there's still a need for this helper
+    add->acdUsed = false;
+
     fgAddCodeList = add;
 
     // Defer creating of the blocks until later.

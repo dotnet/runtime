@@ -6295,6 +6295,7 @@ public:
         BasicBlock*     acdDstBlk; // block  to  which we jump
         unsigned        acdData;
         SpecialCodeKind acdKind; // what kind of a special block is this?
+        bool            acdUsed; // do we need to keep this helper block?
 #if !FEATURE_FIXED_OUT_ARGS
         bool     acdStkLvlInit; // has acdStkLvl value been already set?
         unsigned acdStkLvl;     // stack level in stack slots.

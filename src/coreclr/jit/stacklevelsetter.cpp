@@ -14,9 +14,9 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
     , maxStackLevel(0)
     , memAllocator(compiler->getAllocator(CMK_CallArgs))
     , putArgNumSlots(memAllocator)
+    , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks() && comp->compUsesThrowHelper)
 #if !FEATURE_FIXED_OUT_ARGS
     , framePointerRequired(compiler->codeGen->isFramePointerRequired())
-    , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks() && comp->compUsesThrowHelper)
 #endif // !FEATURE_FIXED_OUT_ARGS
 {
     // The constructor reads this value to skip iterations that could set it if it is already set.
@@ -59,8 +59,25 @@ PhaseStatus StackLevelSetter::DoPhase()
     comp->fgSetPtrArgCntMax(maxStackLevel);
     CheckArgCnt();
 
+    // Check if there are any unused throw helper blocks, and if so, remove them.
+    bool madeChanges = false;
+
+    for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
+    {
+        if (add->acdUsed)
+        {
+            continue;
+        }
+
+        BasicBlock* const block = add->acdDstBlk;
+        JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
+        block->bbFlags &= ~BBF_DONT_REMOVE;
+        comp->fgRemoveBlock(block, /* unreachable */ true);
+        madeChanges = true;
+    }
+
     // Might want an "other" category for things like this...
-    return PhaseStatus::MODIFIED_NOTHING;
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -89,16 +106,10 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             SubStackLevel(numSlots);
         }
 
-#if !FEATURE_FIXED_OUT_ARGS
-        // Set throw blocks incoming stack depth for x86.
-        if (throwHelperBlocksUsed && !framePointerRequired)
+        if (throwHelperBlocksUsed && node->OperMayThrow(comp))
         {
-            if (node->OperMayThrow(comp))
-            {
-                SetThrowHelperBlocks(node, block);
-            }
+            SetThrowHelperBlocks(node, block);
         }
-#endif // !FEATURE_FIXED_OUT_ARGS
 
         if (node->IsCall())
         {
@@ -112,7 +123,6 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
     assert(currentStackLevel == 0);
 }
 
-#if !FEATURE_FIXED_OUT_ARGS
 //------------------------------------------------------------------------
 // SetThrowHelperBlocks: Set throw helper blocks incoming stack levels targeted
 //                       from the node.
@@ -171,6 +181,11 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
 {
     Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, comp->bbThrowIndex(block));
     assert(add != nullptr);
+    // We expect we'll actually need this helper.
+    add->acdUsed = true;
+
+#if !FEATURE_FIXED_OUT_ARGS
+
     if (add->acdStkLvlInit)
     {
         // If different range checks happen at different stack levels,
@@ -217,9 +232,8 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
 #endif // Debug
         add->acdStkLvl = currentStackLevel;
     }
-}
-
 #endif // !FEATURE_FIXED_OUT_ARGS
+}
 
 //------------------------------------------------------------------------
 // PopArgumentsFromCall: Calculate the number of stack arguments that are used by the call.
