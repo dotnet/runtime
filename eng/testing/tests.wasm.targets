@@ -2,6 +2,7 @@
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>
+    <WasmSharedPath>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'shared'))</WasmSharedPath>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <ArchiveTests Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</ArchiveTests>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
@@ -71,8 +72,8 @@
 
   <PropertyGroup>
     <!-- non-library tests have IsWasmProject==false -->
-    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
-    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
 
     <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
          $(Run*) without running any targets -->
@@ -107,7 +108,7 @@
       <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish\%(WasmAssembliesToBundle.RecursiveDir)" />
       <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
 
-      <BundleFiles Include="$(MonoProjectRoot)\wasm\data\aot-tests\*" TargetDir="publish" />
+      <BundleFiles Include="$(WasmSharedPath)data\aot-tests\*"  TargetDir="publish" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">

@@ -7,8 +7,8 @@
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <SdkBandVersion>9.0.100</SdkBandVersion>
-    <PackageVersionNet8>8.0.0-rc.2.23469.22</PackageVersionNet8>
-    <PackageVersionNet7>7.0.8</PackageVersionNet7>
+    <PackageVersionNet8>8.0.0</PackageVersionNet8>
+    <PackageVersionNet7>7.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet8)').Build),14))</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet7)').Build),11))</PackageVersionNet6>
     <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
@@ -82,22 +82,22 @@
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>9.0.100-alpha.1.23551.3</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetBuildTasksFeedVersion>9.0.0-beta.23572.2</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>9.0.0-beta.23572.2</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>9.0.0-beta.23572.2</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>9.0.0-beta.23572.2</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitAssertVersion>9.0.0-beta.23572.2</MicrosoftDotNetXUnitAssertVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>9.0.0-beta.23572.2</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.3-beta.23572.2</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>9.0.0-beta.23572.2</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>9.0.0-beta.23572.2</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>9.0.0-beta.23572.2</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>9.0.0-beta.23572.2</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
-    <MicrosoftDotNetBuildTasksTemplatingVersion>9.0.0-beta.23572.2</MicrosoftDotNetBuildTasksTemplatingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>9.0.0-beta.23572.2</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>9.0.0-beta.23572.2</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>9.0.0-beta.23572.2</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>9.0.0-beta.23572.2</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>9.0.0-beta.23577.2</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>9.0.0-beta.23577.2</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>9.0.0-beta.23577.2</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>9.0.0-beta.23577.2</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitAssertVersion>9.0.0-beta.23577.2</MicrosoftDotNetXUnitAssertVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>9.0.0-beta.23577.2</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.3-beta.23577.2</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>9.0.0-beta.23577.2</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>9.0.0-beta.23577.2</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>9.0.0-beta.23577.2</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>9.0.0-beta.23577.2</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
+    <MicrosoftDotNetBuildTasksTemplatingVersion>9.0.0-beta.23577.2</MicrosoftDotNetBuildTasksTemplatingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>9.0.0-beta.23577.2</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>9.0.0-beta.23577.2</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>9.0.0-beta.23577.2</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetPackageTestingVersion>9.0.0-beta.23577.2</MicrosoftDotNetPackageTestingVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
@@ -138,20 +138,20 @@
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>9.0.0-alpha.1.23576.6</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.23577.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.23577.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>9.0.0-beta.23577.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>9.0.0-beta.23577.1</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>9.0.0-beta.23577.1</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>9.0.0-beta.23577.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>9.0.0-beta.23577.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>9.0.0-beta.23577.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>9.0.0-beta.23577.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>9.0.0-beta.23577.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>9.0.0-beta.23577.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>9.0.0-beta.23577.1</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>9.0.0-beta.23577.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>9.0.0-beta.23577.1</MicrosoftDotNetCilStripSourcesVersion>
+    <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.23577.2</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.23577.2</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>9.0.0-beta.23577.2</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>9.0.0-beta.23577.2</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>9.0.0-beta.23577.2</SystemFormatsTarTestDataVersion>
+    <SystemIOCompressionTestDataVersion>9.0.0-beta.23577.2</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>9.0.0-beta.23577.2</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>9.0.0-beta.23577.2</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>9.0.0-beta.23577.2</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>9.0.0-beta.23577.2</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>9.0.0-beta.23577.2</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemTextRegularExpressionsTestDataVersion>9.0.0-beta.23577.2</SystemTextRegularExpressionsTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>9.0.0-beta.23577.2</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>9.0.0-beta.23577.2</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.23573.2</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.23573.2</optimizationwindows_ntx86MIBCRuntimeVersion>
@@ -178,10 +178,10 @@
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.1.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>9.0.0-prerelease.23570.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>9.0.0-prerelease.23570.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>9.0.0-prerelease.23570.2</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>9.0.0-alpha.0.23570.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>9.0.0-prerelease.23577.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>9.0.0-prerelease.23577.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>9.0.0-prerelease.23577.1</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>9.0.0-alpha.0.23577.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnitTestAdapterVersion>4.1.0</NUnitTestAdapterVersion>
     <CoverletCollectorVersion>6.0.0</CoverletCollectorVersion>
@@ -207,7 +207,7 @@
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>9.0.0-alpha.1.23576.6</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-alpha.1.23570.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-alpha.1.23577.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.2.3</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>8.0.0-alpha.1.23180.2</SystemNetMsQuicTransportVersion>
@@ -230,9 +230,9 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.0-alpha.1.23572.3</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.0-alpha.1.23577.1</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
-    <MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>9.0.0-alpha.1.23572.3</MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>9.0.0-alpha.1.23577.1</MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
@@ -249,7 +249,7 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- installer version, for testing workloads -->
-    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.23564.26</MicrosoftDotnetSdkInternalVersion>
+    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.23577.17</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
   </PropertyGroup>
 </Project>
