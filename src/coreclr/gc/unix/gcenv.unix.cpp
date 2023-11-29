@@ -1089,7 +1089,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 
 #if HAVE_PROCFS_STATM
 // Return the size of the user-mode portion of the virtual address space of this process.
-size_t GetCurrentVirtualMemorySize()
+static size_t GetCurrentVirtualMemorySize()
 {
     size_t result = (size_t)-1;
     size_t linelen;
