@@ -880,8 +880,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         8/12 bits
-        // amd64:       7/12 bits
+        // x86:         10/14 bits
+        // amd64:       9/14 bits
         // arm:         10/14 bits
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
@@ -1545,6 +1545,7 @@ protected:
 
         void idSetEvexbContext(insOpts instOptions)
         {
+            assert(_idEvexbContext == 0);
             if (instOptions == INS_OPTS_EVEX_eb_er_rn)
             {
                 _idEvexbContext = 1;

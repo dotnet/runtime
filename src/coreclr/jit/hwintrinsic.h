@@ -201,10 +201,10 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is a PermuteVar2x intrinsic
     HW_Flag_PermuteVar2x = 0x4000000,
 
-    // The intrinsic is an embedded broadcast compatiable intrinsic
+    // The intrinsic is an embedded broadcast compatible intrinsic
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
 
-    // The intrinsic is an embedded rounding compatiable intrinsic
+    // The intrinsic is an embedded rounding compatible intrinsic
     HW_Flag_EmbRoundingCompatible = 0x10000000
 #endif // TARGET_XARCH
 };

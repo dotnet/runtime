@@ -338,6 +338,25 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 }
 
 //------------------------------------------------------------------------
+// SetEvexBroadcastIfNeeded: set embedded broadcast if needed.
+//
+// Arguments:
+//    id - instruction descriptor
+//    instOptions - emit options
+void SetEvexBroadcastIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if((instOptions & INS_OPTS_b_MASK) == INS_OPTS_EVEX_eb_er_rn)
+    {
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
+    }
+    else
+    {
+        assert(instOptions == 0);
+    }
+}
+
+//------------------------------------------------------------------------
 // AddSimdPrefixIfNeeded: Add the correct SIMD prefix.
 // Check if the prefix already exists befpre adding.
 //

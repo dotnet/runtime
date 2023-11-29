@@ -1372,6 +1372,10 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
                 unreached();
             }
         }
+        else
+        {
+            assert(id->idGetEvexbContext() == 1);
+        }
     }
 
     regNumber maskReg = REG_NA;
@@ -6785,11 +6789,7 @@ void emitter::emitIns_R_R_A(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    if (instOptions == INS_OPTS_EVEX_eb_er_rn)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext(instOptions);
-    }
+    SetEvexBroadcastIfNeeded(id, instOptions);
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
@@ -6914,11 +6914,8 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
-    if (instOptions == INS_OPTS_EVEX_eb_er_rn)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext(instOptions);
-    }
+    SetEvexBroadcastIfNeeded(id, instOptions);
+
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6945,7 +6942,7 @@ void emitter::emitIns_R_R_R(
     id->idReg2(reg1);
     id->idReg3(reg2);
 
-    if (instOptions != INS_OPTS_NONE)
+    if ((instOptions & INS_OPTS_b_MASK) != INS_OPTS_NONE)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
         assert(UseEvexEncoding());
@@ -6972,12 +6969,8 @@ void emitter::emitIns_R_R_S(
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+    SetEvexBroadcastIfNeeded(id, instOptions);
 
-    if (instOptions == INS_OPTS_EVEX_eb_er_rn)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext(instOptions);
-    }
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
