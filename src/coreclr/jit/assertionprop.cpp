@@ -4358,6 +4358,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     op2->AsIntCon()->gtIconVal = foldResult;
     op2->gtType                = TYP_INT;
+    op2->ClearIconHandleMask();
 
     return optAssertionProp_Update(op2, tree, stmt);
 }
