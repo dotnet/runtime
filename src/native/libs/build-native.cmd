@@ -102,10 +102,8 @@ echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Bu
 
 :: Regenerate the VS solution
 
-pushd "%__IntermediatesDir%"
 call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
-popd
 
 :BuildNativeProj
 :: Build the project created by Cmake

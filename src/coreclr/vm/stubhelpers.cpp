@@ -326,13 +326,17 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-FCIMPL2(void, StubHelpers::ObjectMarshaler__ConvertToNative, Object* pSrcUNSAFE, VARIANT* pDest)
+extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_1(pSrc);
+    GCX_COOP();
+
+    OBJECTREF pSrc = pSrcUNSAFE.Get();
+    GCPROTECT_BEGIN(pSrc);
+
     if (pDest->vt & VT_BYREF)
     {
         OleVariant::MarshalOleRefVariantForObject(&pSrc, pDest);
@@ -341,34 +345,32 @@ FCIMPL2(void, StubHelpers::ObjectMarshaler__ConvertToNative, Object* pSrcUNSAFE,
     {
         OleVariant::MarshalOleVariantForObject(&pSrc, pDest);
     }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
-FCIMPL1(Object*, StubHelpers::ObjectMarshaler__ConvertToManaged, VARIANT* pSrc)
+    GCPROTECT_END();
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall::ObjectHandleOnStack retObject)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     OBJECTREF retVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(retVal);
-    // The IL stub is going to call ObjectMarshaler__ClearNative() afterwards.
+    GCPROTECT_BEGIN(retVal);
+
+    // The IL stub is going to call ObjectMarshaler.ClearNative() afterwards.
     // If it doesn't it's a bug in ILObjectMarshaler.
     OleVariant::MarshalObjectForOleVariant(pSrc, &retVal);
-    HELPER_METHOD_FRAME_END();
+    retObject.Set(retVal);
 
-    return OBJECTREFToObject(retVal);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
-
-FCIMPL1(void, StubHelpers::ObjectMarshaler__ClearNative, VARIANT* pSrc)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-    SafeVariantClear(pSrc);
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
 #include <optsmallperfcritical.h>
 FCIMPL4(IUnknown*, StubHelpers::InterfaceMarshaler__ConvertToNative, Object* pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags)
@@ -624,7 +626,7 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
     {
         IErrorInfo *pErrInfo = NULL;
 
-        if (pErrInfo == NULL && pMD != NULL)
+        if (pMD != NULL)
         {
             // Retrieve the interface method table.
             MethodTable *pItfMT = ComPlusCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;

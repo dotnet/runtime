@@ -32,7 +32,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
         public void RemoteIdentity_ThrowsOnUnauthenticated()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -66,7 +65,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
         public void Package_Unsupported()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "INVALID", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -98,7 +96,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Windows, "The test is specific to GSSAPI / Managed implementations of NegotiateAuthentication")]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
         public void DefaultNetworkCredentials_NTLM_DoesNotThrow()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = CredentialCache.DefaultNetworkCredentials, TargetName = "HTTP/foo" };
@@ -169,7 +166,7 @@ namespace System.Net.Security.Tests
             yield return new object[] { new NetworkCredential("rightusername", "rightpassword") };
             yield return new object[] { new NetworkCredential("rightusername", "rightpassword", "rightdomain") };
             yield return new object[] { new NetworkCredential("rightusername@rightdomain.com", "rightpassword") };
-        } 
+        }
 
         [ConditionalTheory(nameof(IsNtlmAvailable))]
         [MemberData(nameof(TestCredentials))]
