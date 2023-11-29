@@ -2840,9 +2840,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
 #if DUMP_GC_TABLES
         bool dspOffs = emitComp->opts.dspGCtbls;
-#else // DUMP_GC_TABLES
+#else // !DUMP_GC_TABLES
         bool dspOffs = !emitComp->opts.disDiffable;
-#endif // DUMP_GC_TABLES
+#endif // !DUMP_GC_TABLES
         emitDispIns(id, false, dspOffs, true, 0, *dp, (dstRW - odstRW), ig);
     }
 
@@ -2855,7 +2855,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(!"JitBreakEmitOutputInstr reached");
         }
     }
-#endif
+#else // !DEBUG
+    if (emitComp->opts.disAsm)
+    {
+        emitDispIns(id, false, false, true, 0, *dp, (dstRW - odstRW), ig);
+    }
+#endif // !DEBUG
 
     /* All instructions are expected to generate code */
 
