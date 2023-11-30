@@ -439,12 +439,6 @@ HRESULT EEConfig::sync()
     else
         iGCHoardVM = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCRetainVM);
 
-    if (!iGCLOHThreshold)
-    {
-        iGCLOHThreshold = Configuration::GetKnobDWORDValue(W("System.GC.LOHThreshold"), CLRConfig::EXTERNAL_GCLOHThreshold);
-        iGCLOHThreshold = max (iGCLOHThreshold, LARGE_OBJECT_SIZE);
-    }
-
 #ifdef FEATURE_CONSERVATIVE_GC
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC

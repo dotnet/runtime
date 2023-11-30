@@ -14389,9 +14389,6 @@ gc_heap::init_semi_shared()
     loh_compaction_mode = loh_compaction_default;
 #endif //FEATURE_LOH_COMPACTION
 
-    loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
-    assert (loh_size_threshold >= LARGE_OBJECT_SIZE);
-
 #ifdef BGC_SERVO_TUNING
     memset (bgc_tuning::gen_calc, 0, sizeof (bgc_tuning::gen_calc));
     memset (bgc_tuning::gen_stats, 0, sizeof (bgc_tuning::gen_stats));
@@ -48186,6 +48183,12 @@ HRESULT GCHeap::Initialize()
     {
         return E_OUTOFMEMORY;
     }
+
+    loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
+    loh_size_threshold = max (loh_size_threshold, LARGE_OBJECT_SIZE);
+    loh_size_threshold = min (loh_size_threshold, gc_region_size);
+    GCConfig::SetLOHThreshold(loh_size_threshold);
+
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
@@ -51835,6 +51838,11 @@ void GCHeap::DiagScanHandles (handle_scan_fn fn, int gen_number, ScanContext* co
 void GCHeap::DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanContext* context)
 {
     GCScan::GcScanDependentHandlesForProfilerAndETW (gen_number, context, fn);
+}
+
+uint64_t GCHeap::GetLOHThreshold()
+{
+    return (uint64_t)loh_size_threshold;
 }
 
 void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)

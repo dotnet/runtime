@@ -871,6 +871,9 @@ void EEStartupHelper()
         // requires write barriers to have been set up on x86, which happens as part
         // of InitJITHelpers1.
         hr = g_pGCHeap->Initialize();
+
+        g_pConfig->SetGCLOHThreshold((DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold());
+
         if (FAILED(hr))
         {
             LogErrorToHost("GC heap initialization failed with error 0x%08X", hr);
