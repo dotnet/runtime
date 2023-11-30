@@ -644,6 +644,12 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         case INS_st_h:
         case INS_stx_b:
         case INS_stx_h:
+#ifdef FEATURE_SIMD
+        case INS_vst:
+        case INS_vstx:
+        case INS_xvst:
+        case INS_xvstx:
+#endif
             break;
 
         default:
@@ -694,8 +700,11 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     code_t code = emitInsCode(ins);
     code |= (code_t)(reg1 & 0x1f);
     code |= (code_t)reg2 << 5;
-    if ((ins == INS_stx_d) || (ins == INS_stx_w) || (ins == INS_stx_h) || (ins == INS_stx_b) || (ins == INS_fstx_d) ||
-        (ins == INS_fstx_s))
+    if ((ins == INS_stx_d) || (ins == INS_stx_w) || (ins == INS_stx_h) || (ins == INS_stx_b) ||
+#ifdef FEATURE_SIMD
+        (ins == INS_vstx) || (ins == INS_xvstx) ||
+#endif
+        (ins == INS_fstx_s) || (ins == INS_fstx_d))
     {
         code |= (code_t)reg3 << 10;
     }
@@ -736,6 +745,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_ld_d:
         case INS_fld_d:
+
+#ifdef FEATURE_SIMD
+        case INS_vld:
+        case INS_xvld:
+#endif
 
             break;
 
@@ -948,6 +962,43 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= reg;      // rd
             code |= imm << 5; // cc
             break;
+
+#ifdef FEATURE_SIMD
+        case INS_vldi:
+        case INS_xvldi:
+            assert(isVectorRegister(reg));
+            assert((imm >> 13) == 0);
+            code |= (reg & 0x1f); // vd/xd
+            code |= imm << 5;     // si13
+            break;
+        case INS_vseteqz_v:
+        case INS_vsetnez_v:
+        case INS_vsetanyeqz_b:
+        case INS_vsetanyeqz_h:
+        case INS_vsetanyeqz_w:
+        case INS_vsetanyeqz_d:
+        case INS_vsetallnez_b:
+        case INS_vsetallnez_h:
+        case INS_vsetallnez_w:
+        case INS_vsetallnez_d:
+        case INS_xvseteqz_v:
+        case INS_xvsetnez_v:
+        case INS_xvsetanyeqz_b:
+        case INS_xvsetanyeqz_h:
+        case INS_xvsetanyeqz_w:
+        case INS_xvsetanyeqz_d:
+        case INS_xvsetallnez_b:
+        case INS_xvsetallnez_h:
+        case INS_xvsetallnez_w:
+        case INS_xvsetallnez_d:
+            assert(isVectorRegister(reg));
+            assert((imm >> 3) == 0);
+
+            code |= imm;               // cc
+            code |= (reg & 0x1f) << 5; // vj/xj
+            break;
+#endif
+
         default:
             unreached();
             break;
@@ -981,10 +1032,36 @@ void emitter::emitIns_Mov(
 
     if (!canSkip || (dstReg != srcReg))
     {
-        if ((EA_4BYTE == attr) && (INS_mov == ins))
-            emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
+#ifdef FEATURE_SIMD
+        // This include dstReg is Float/SIMD type.
+        if (isVectorRegister(dstReg))
+        {
+            assert(size <= EA_32BYTE);
+            if (isVectorRegister(srcReg))
+            {
+                ins = size == EA_32BYTE ? INS_xvbsll_v : INS_vbsll_v;
+                emitIns_R_R_I(ins, size, dstReg, srcReg, 0);
+            }
+            else
+            {
+                assert((INS_vreplgr2vr_b <= ins && ins <= INS_vreplgr2vr_d) ||
+                       (INS_xvreplgr2vr_b <= ins && ins <= INS_xvreplgr2vr_d) ||
+                       (INS_movgr2fr_w <= ins && ins <= INS_movgr2fr_d));
+                emitIns_R_R(ins, attr, dstReg, srcReg);
+            }
+        }
         else
-            emitIns_R_R(ins, attr, dstReg, srcReg);
+#endif
+        {
+            if ((EA_4BYTE == attr) && (INS_mov == ins))
+            {
+                emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
+            }
+            else
+            {
+                emitIns_R_R(ins, attr, dstReg, srcReg);
+            }
+        }
     }
 }
 
@@ -1163,6 +1240,25 @@ void emitter::emitIns_R_R(
         code |= reg1;      // rd
         code |= reg2 << 5; // rj
     }
+#ifdef FEATURE_SIMD
+    else if (((INS_vreplgr2vr_b <= ins) && (ins <= INS_vreplgr2vr_d)) ||
+             ((INS_xvreplgr2vr_b <= ins) && (ins <= INS_xvreplgr2vr_d)))
+    {
+        // [x]vreplgr2vr.{b/h/w/d} xd, rj
+        assert(isVectorRegister(reg1));      // vd(xd)
+        assert(isGeneralRegisterOrR0(reg2)); // rj
+        code |= (reg1 & 0x1f);               // xd , the bit field in the instruction is between 0 and 31.
+        code |= reg2 << 5;                   // rj
+    }
+    else if (((INS_vclo_b <= ins) && (ins <= INS_vextl_qu_du)) || ((INS_xvclo_b <= ins) && (ins <= INS_xvextl_qu_du)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+
+        code |= (reg1 & 0x1f);      // vd(xd)
+        code |= (reg2 & 0x1f) << 5; // vj(xj)
+    }
+#endif // FEATURE_SIMD
     else
     {
         unreached();
@@ -1444,6 +1540,229 @@ void emitter::emitIns_R_R_I(
         code |= reg2 << 5;            // rj
         code |= (imm & 0xffff) << 10; // offs16
     }
+#ifdef FEATURE_SIMD
+    else if (((INS_vseqi_b <= ins) && (ins <= INS_vmini_d)) || ((INS_xvseqi_b <= ins) && (ins <= INS_xvmin_d)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+        assert((-16 <= imm) && (imm <= 15));
+
+        code |= reg1 & 0x1f;        // vd/xd
+        code |= (reg2 & 0x1f) << 5; // vj/xj
+        code |= (imm & 0x1f) << 10; // si5
+    }
+    else if ((INS_vldrepl_d == ins) || (INS_xvldrepl_d == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-256 <= imm) && (imm <= 255));
+        code |= reg1 & 0x1f;         // vd/xd
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0x1ff) << 10; // si9
+    }
+    else if ((INS_vldrepl_w == ins) || (INS_xvldrepl_w == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-512 <= imm) && (imm <= 511));
+        code |= reg1 & 0x1f;         // vd/xd
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0x3ff) << 10; // si10
+    }
+    else if ((INS_vldrepl_h == ins) || (INS_xvldrepl_h == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-1024 <= imm) && (imm <= 1023));
+        code |= reg1 & 0x1f;         // vd/xd
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0x7ff) << 10; // si11
+    }
+    else if (((INS_vld <= ins) && (ins <= INS_vst)) || ((INS_xvld <= ins) && (ins <= INS_xvst)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-2048 <= imm) && (imm <= 2047));
+
+        code |= reg1 & 0x1f;         // vd(xd)
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0xfff) << 10; // si12
+    }
+    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vreplvei_d)) || (INS_xvrepl128vei_d == ins))
+    {
+#ifdef DEBUG
+        if (INS_vinsgr2vr_d == ins)
+        {
+            assert(isVectorRegister(reg1));      // xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_vreplvei_d == ins) || (INS_xvrepl128vei_d == ins))
+        {
+            assert(isVectorRegister(reg1)); // vd/xd
+            assert(isVectorRegister(reg2)); // vj/xj
+        }
+        else
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        assert((0 <= imm) && (imm <= 1));
+#endif
+
+        code |= reg1 & 0x1f;
+        code |= (reg2 & 0x1f) << 5;
+        code |= (imm & 0x1) << 10; // ui1
+    }
+    else if (((INS_vinsgr2vr_w <= ins) && (ins <= INS_vreplvei_w)) ||
+             ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve2gr_du)))
+    {
+#ifdef DEBUG
+        if (INS_vinsgr2vr_w == ins)
+        {
+            assert(isVectorRegister(reg1));      // vd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_vpickve2gr_w <= ins) && (ins <= INS_vpickve2gr_wu))
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj
+        }
+        else if (INS_vreplvei_w == ins)
+        {
+            assert(isVectorRegister(reg1)); // vd
+            assert(isVectorRegister(reg2)); // vj
+        }
+        else if ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve_d))
+        {
+            assert(isVectorRegister(reg1)); // xd
+            assert(isVectorRegister(reg2)); // xj
+        }
+        else if (INS_xvinsgr2vr_d == ins)
+        {
+            assert(isVectorRegister(reg1));      // xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_xvpickve2gr_d <= ins) && (ins <= INS_xvpickve2gr_du))
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // xj
+        }
+        else
+        {
+            assert(isVectorRegister(reg1)); // xd/vd
+            assert(isVectorRegister(reg2)); // xj/vj
+        }
+#endif
+        assert((0 <= imm) && (imm <= 3));
+
+        code |= reg1 & 0x1f;        // xd/vd/rd
+        code |= (reg2 & 0x1f) << 5; // xj/vj/rj
+        code |= (imm & 0x3) << 10;  // ui2
+    }
+    else if (((INS_vslli_b <= ins) && (ins <= INS_vreplvei_h)) || ((INS_xvslli_b <= ins) && (ins <= INS_xvsat_bu)))
+    {
+#ifdef DEBUG
+        if ((INS_vinsgr2vr_h == ins) || (INS_xvinsgr2vr_w == ins))
+        {
+            // vd/xd, rj, ui3
+            assert(isVectorRegister(reg1));      // vd/xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_vpickve2gr_h == ins) || (INS_vpickve2gr_hu == ins) || (INS_xvpickve2gr_w == ins) ||
+                 (INS_xvpickve2gr_wu == ins))
+        {
+            // rd, vj/xj, ui3
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        else
+        {
+            assert(isVectorRegister(reg1)); // vd/xd
+            assert(isVectorRegister(reg2)); // vj/xj
+        }
+#endif
+        assert((0 <= imm) && (imm <= 7));
+
+        code |= reg1 & 0x1f;        // vd(xd)
+        code |= (reg2 & 0x1f) << 5; // vj(xj)
+        code |= (imm & 0x7) << 10;  // ui3
+    }
+    else if (((INS_vslli_h <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
+    {
+#ifdef DEBUG
+        if (INS_vinsgr2vr_b == ins)
+        {
+            assert(isVectorRegister(reg1));      // vd/xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if (INS_vpickve2gr_b == ins)
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        else if (INS_vpickve2gr_bu == ins)
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        else
+        {
+            assert(isVectorRegister(reg1)); // vd/xd
+            assert(isVectorRegister(reg2)); // vj/xj
+        }
+#endif
+        assert((0 <= imm) && (imm <= 15));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0xf) << 10;  // ui4
+    }
+    else if (((INS_vslei_bu <= ins) && (ins <= INS_vsat_wu)) || ((INS_xvslei_bu <= ins) && (ins <= INS_xvsat_wu)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 31));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0x1f) << 10; // ui5
+    }
+    else if (((INS_vslli_d <= ins) && (ins <= INS_vsat_du)) || ((INS_xvslli_d <= ins) && (ins <= INS_xvsat_du)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 63));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0x3f) << 10; // ui6
+    }
+    else if (((INS_vsrlni_d_q <= ins) && (ins <= INS_vssrarni_du_q)) ||
+             ((INS_xvsrlni_d_q <= ins) && (ins <= INS_xvssrarni_du_q)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 127));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0x7f) << 10; // ui7
+    }
+    else if (((INS_vextrins_d <= ins) && (ins <= INS_vpermi_w)) || ((INS_xvextrins_d <= ins) && (ins <= INS_xvpermi_q)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 255));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0xff) << 10; // ui8
+    }
+#endif
     else
     {
         unreached();
@@ -1548,6 +1867,32 @@ void emitter::emitIns_R_R_R(
             case INS_stle_w:
             case INS_stle_d:
 
+            case INS_crc_w_b_w:
+            case INS_crc_w_h_w:
+            case INS_crc_w_w_w:
+            case INS_crc_w_d_w:
+            case INS_crcc_w_b_w:
+            case INS_crcc_w_h_w:
+            case INS_crcc_w_w_w:
+            case INS_crcc_w_d_w:
+                break;
+            default:
+                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --1!");
+        }
+#endif
+        assert(isGeneralRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isGeneralRegisterOrR0(reg3));
+
+        code |= (reg1 /*& 0x1f*/);       // rd
+        code |= (reg2 /*& 0x1f*/) << 5;  // rj
+        code |= (reg3 /*& 0x1f*/) << 10; // rk
+    }
+    else if ((INS_amswap_w <= ins) && (ins <= INS_ammin_db_du))
+    {
+#ifdef DEBUG
+        switch (ins)
+        {
             case INS_amswap_w:
             case INS_amswap_d:
             case INS_amswap_db_w:
@@ -1584,27 +1929,19 @@ void emitter::emitIns_R_R_R(
             case INS_ammin_du:
             case INS_ammin_db_wu:
             case INS_ammin_db_du:
-
-            case INS_crc_w_b_w:
-            case INS_crc_w_h_w:
-            case INS_crc_w_w_w:
-            case INS_crc_w_d_w:
-            case INS_crcc_w_b_w:
-            case INS_crcc_w_h_w:
-            case INS_crcc_w_w_w:
-            case INS_crcc_w_d_w:
                 break;
             default:
-                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --1!");
+                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --am!");
         }
 #endif
+
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegisterOrR0(reg2));
         assert(isGeneralRegisterOrR0(reg3));
 
         code |= (reg1 /*& 0x1f*/);       // rd
-        code |= (reg2 /*& 0x1f*/) << 5;  // rj
-        code |= (reg3 /*& 0x1f*/) << 10; // rk
+        code |= (reg2 /*& 0x1f*/) << 10; // rk
+        code |= (reg3 /*& 0x1f*/) << 5;  // rj
     }
     else if ((INS_fadd_s <= ins) && (ins <= INS_fcopysign_d))
     {
@@ -1675,6 +2012,38 @@ void emitter::emitIns_R_R_R(
         code |= reg2 << 5;   // rj
         code |= reg3 << 10;  // rk
     }
+#ifdef FEATURE_SIMD
+    else if ((INS_vldx == ins) || (INS_vstx == ins) || (INS_xvldx == ins) || (INS_xvstx == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isGeneralRegisterOrR0(reg3));
+
+        code |= reg1 & 0x1f; // vd(xd)
+        code |= reg2 << 5;   // rj
+        code |= reg3 << 10;  // rk
+    }
+    else if (((INS_vreplve_b <= ins) && (ins <= INS_vreplve_d)) || ((INS_xvreplve_b <= ins) && (ins <= INS_xvreplve_d)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+        assert(isGeneralRegisterOrR0(reg3));
+
+        code |= (reg1 & 0x1f);      // vd(xd)
+        code |= (reg2 & 0x1f) << 5; // vj(xj)
+        code |= reg3 << 10;         // rk
+    }
+    else if (((INS_vfcmp_caf_s <= ins) && (ins <= INS_vshuf_d)) || ((INS_xvfcmp_caf_s <= ins) && (ins <= INS_xvperm_w)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+        assert(isVectorRegister(reg3));
+
+        code |= (reg1 & 0x1f);       // vd(xd)
+        code |= (reg2 & 0x1f) << 5;  // vj(xj)
+        code |= (reg3 & 0x1f) << 10; // vk(xk)
+    }
+#endif
     else
     {
         NYI_LOONGARCH64("Unsupported instruction in emitIns_R_R_R");
@@ -1803,6 +2172,52 @@ void emitter::emitIns_R_R_I_I(
             code |= (imm1 & 0x3f) << 16; // msbd
             code |= (imm2 & 0x3f) << 10; // lsbd
             break;
+#ifdef FEATURE_SIMD
+        case INS_vstelm_d:
+        case INS_vstelm_w:
+        case INS_vstelm_h:
+        case INS_vstelm_b:
+        case INS_xvstelm_d:
+        case INS_xvstelm_w:
+        case INS_xvstelm_h:
+        case INS_xvstelm_b:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrR0(reg2));
+            assert((-128 <= imm1) && (imm1 <= 127)); // si8, without left shift
+            code |= reg1 & 0x1f;                     // vd/xd
+            code |= reg2 << 5;                       // rj
+            code |= (imm1 & 0xff) << 10;             // si8
+            if (INS_vstelm_d == ins)
+            {
+                assert((0 <= imm2) && (imm2 <= 1)); // 1 bit
+                code |= (imm2 & 0x1) << 18;         // idx(1 bit)
+            }
+            else if ((INS_vstelm_w == ins) || (INS_xvstelm_d == ins))
+            {
+                assert((0 <= imm2) && (imm2 <= 3)); // 2 bit
+                code |= (imm2 & 0x3) << 18;         // idx(2 bit)
+            }
+            else if ((INS_vstelm_h == ins) || (INS_xvstelm_w == ins))
+            {
+                assert((0 <= imm2) && (imm2 <= 7)); // 3 bit
+                code |= (imm2 & 0x7) << 18;         // idx(3 bit)
+            }
+            else if ((INS_vstelm_b == ins) || (INS_xvstelm_h == ins))
+            {
+                assert((0 <= imm2) && (imm2 <= 15)); // 4 bit
+                code |= (imm2 & 0xf) << 18;          // idx(4 bit)
+            }
+            else if (INS_xvstelm_b == ins)
+            {
+                assert((0 <= imm2) && (imm2 <= 31)); // 5 bit
+                code |= (imm2 & 0x1f) << 18;         // idx(5 bit)
+            }
+            else
+            {
+                unreached();
+            }
+            break;
+#endif
         default:
             unreached();
     }
@@ -1838,6 +2253,29 @@ void emitter::emitIns_R_R_R_R(
         case INS_fnmadd_d:
         case INS_fnmsub_s:
         case INS_fnmsub_d:
+#ifdef FEATURE_SIMD
+        case INS_vfmadd_s:
+        case INS_vfmadd_d:
+        case INS_vfmsub_s:
+        case INS_vfmsub_d:
+        case INS_vfnmadd_s:
+        case INS_vfnmadd_d:
+        case INS_vfnmsub_s:
+        case INS_vfnmsub_d:
+        case INS_vbitsel_v:
+        case INS_vshuf_b:
+
+        case INS_xvfmadd_s:
+        case INS_xvfmadd_d:
+        case INS_xvfmsub_s:
+        case INS_xvfmsub_d:
+        case INS_xvfnmadd_s:
+        case INS_xvfnmadd_d:
+        case INS_xvfnmsub_s:
+        case INS_xvfnmsub_d:
+        case INS_xvbitsel_v:
+        case INS_xvshuf_b:
+#endif
             assert(isFloatReg(reg1));
             assert(isFloatReg(reg2));
             assert(isFloatReg(reg3));
@@ -3810,6 +4248,30 @@ static const char* const RegNames[] =
     #define REGDEF(name, rnum, mask, sname) sname,
     #include "register.h"
 };
+
+#ifdef FEATURE_SIMD
+static const char * const  vRegNames[] =
+{
+    "vr0",  "vr1",  "vr2",  "vr3",  "vr4",
+    "vr5",  "vr6",  "vr7",  "vr8",  "vr9",
+    "vr10", "vr11", "vr12", "vr13", "vr14",
+    "vr15", "vr16", "vr17", "vr18", "vr19",
+    "vr20", "vr21", "vr22", "vr23", "vr24",
+    "vr25", "vr26", "vr27", "vr28", "vr29",
+    "vr30", "vr31"
+};
+
+static const char * const  xRegNames[] =
+{
+    "xr0",  "xr1",  "xr2",  "xr3",  "xr4",
+    "xr5",  "xr6",  "xr7",  "xr8",  "xr9",
+    "xr10", "xr11", "xr12", "xr13", "xr14",
+    "xr15", "xr16", "xr17", "xr18", "xr19",
+    "xr20", "xr21", "xr22", "xr23", "xr24",
+    "xr25", "xr26", "xr27", "xr28", "xr29",
+    "xr30", "xr31"
+};
+#endif
 // clang-format on
 
 //----------------------------------------------------------------------------------------
@@ -3831,8 +4293,9 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 {
     const BYTE*       insAdr      = addr - writeableOffset;
     const char* const CFregName[] = {"fcc0", "fcc1", "fcc2", "fcc3", "fcc4", "fcc5", "fcc6", "fcc7"};
+    const char* const FcsrName[]  = {"fcsr0", "fcsr1", "fcsr2", "fcsr3"};
 
-    unsigned int opcode = (code >> 26) & 0x3f;
+    instruction ins = id->idIns();
 
     bool disOpcode = !emitComp->opts.disDiffable;
     bool disAddr   = emitComp->opts.disAddr;
@@ -3848,30 +4311,54 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         printf("%08X  ", code);
     }
 
+    // General registers
+    const char* rd = RegNames[code & 0x1f];
+    const char* rj = RegNames[(code >> 5) & 0x1f];
+    const char* rk = RegNames[(code >> 10) & 0x1f];
+    // Float registers
+    const char* fd = RegNames[(code & 0x1f) + 32];
+    const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
+    const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
+    const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
+
+#ifdef FEATURE_SIMD
+    // LSX registers
+    const char* vd = vRegNames[code & 0x1f];
+    const char* vj = vRegNames[(code >> 5) & 0x1f];
+    const char* vk = vRegNames[(code >> 10) & 0x1f];
+    const char* va = vRegNames[(code >> 15) & 0x1f];
+    // LASX registers
+    const char* xd = xRegNames[code & 0x1f];
+    const char* xj = xRegNames[(code >> 5) & 0x1f];
+    const char* xk = xRegNames[(code >> 10) & 0x1f];
+    const char* xa = xRegNames[(code >> 15) & 0x1f];
+#endif
+
+    unsigned int opcode = (code >> 26) & 0x3f;
     // bits: 31-26,MSB6
     switch (opcode)
     {
         case 0x0:
-        {
             goto Label_OPCODE_0;
-        }
         case 0x2:
-        {
             goto Label_OPCODE_2;
-        }
         case 0x3:
-        {
             goto Label_OPCODE_3;
-        }
         case 0xe:
-        {
             goto Label_OPCODE_E;
-        }
+#ifdef FEATURE_SIMD
+        case 0xb:
+            goto Label_OPCODE_B;
+        case 0xc:
+            goto Label_OPCODE_C;
+        case 0x1c:
+            goto Label_OPCODE_1C;
+        case 0x1d:
+            goto Label_OPCODE_1D;
+#endif
         case LA_2RI16_ADDU16I_D: // 0x4
         {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si16 = (code >> 10) & 0xffff;
+            short si16 = (code >> 10) & 0xffff;
             printf("addu16i.d    %s, %s, %d\n", rd, rj, si16);
             return;
         }
@@ -3881,7 +4368,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             // bits: 31-25,MSB7
             unsigned int inscode = (code >> 25) & 0x7f;
-            const char*  rd      = RegNames[code & 0x1f];
             unsigned int si20    = (code >> 5) & 0xfffff;
             switch (inscode)
             {
@@ -3901,10 +4387,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     printf("pcaddu12i    %s, 0x%x\n", rd, si20);
                     return;
                 case LA_1RI20_PCADDU18I:
-                {
                     printf("pcaddu18i    %s, 0x%x\n", rd, si20);
                     return;
-                }
                 default:
                     printf("LOONGARCH illegal instruction: %08X\n", code);
                     return;
@@ -3916,8 +4400,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             // bits: 31-24,MSB8
             unsigned int inscode = (code >> 24) & 0xff;
-            const char*  rd      = RegNames[code & 0x1f];
-            const char*  rj      = RegNames[(code >> 5) & 0x1f];
             short        si14    = ((code >> 10) & 0x3fff) << 2;
             si14 >>= 2;
             switch (inscode)
@@ -3956,9 +4438,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             // bits: 31-24,MSB8
             unsigned int inscode = (code >> 22) & 0x3ff;
-            const char*  rd      = RegNames[code & 0x1f];
-            const char*  rj      = RegNames[(code >> 5) & 0x1f];
-            const char*  fd      = RegNames[(code & 0x1f) + 32];
             short        si12    = ((code >> 10) & 0xfff) << 4;
             si12 >>= 4;
             switch (inscode)
@@ -4019,16 +4498,14 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         }
         case LA_1RI21_BEQZ: // 0x10
         {
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
+            int offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             offs21 >>= 9;
             printf("beqz         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
             return;
         }
         case LA_1RI21_BNEZ: // 0x11
         {
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
+            int offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             offs21 >>= 9;
             printf("bnez         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
             return;
@@ -4043,25 +4520,20 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             if (0 == ((code >> 8) & 0x3))
             {
                 printf("bceqz        %s, 0x%llx\n", cj, (int64_t)insAdr + offs21);
-                return;
             }
             else if (1 == ((code >> 8) & 0x3))
             {
                 printf("bcnez        %s, 0x%llx\n", cj, (int64_t)insAdr + offs21);
-                return;
             }
             else
             {
                 printf("LOONGARCH illegal instruction: %08X\n", code);
-                return;
             }
             return;
         }
         case LA_2RI16_JIRL: // 0x13
         {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             if (id->idDebugOnlyInfo()->idMemCookie)
             {
@@ -4087,59 +4559,58 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             int offs26 = (((code >> 10) & 0xffff) | ((code & 0x3ff) << 16)) << 6;
             offs26 >>= 4;
-            printf("bl           0x%llx\n", (int64_t)insAdr + offs26);
+            printf("bl           0x%llx", (int64_t)insAdr + offs26);
+            if (id->idDebugOnlyInfo()->idMemCookie)
+            {
+                assert(0 < id->idDebugOnlyInfo()->idMemCookie);
+                const char* methodName;
+                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+                printf("  # %s\n", methodName);
+            }
+            else
+            {
+                printf("\n");
+            }
             return;
         }
         case LA_2RI16_BEQ: // 0x16
         {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             printf("beq          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
             return;
         }
         case LA_2RI16_BNE: // 0x17
         {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             printf("bne          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
             return;
         }
         case LA_2RI16_BLT: // 0x18
         {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             printf("blt          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
             return;
         }
         case LA_2RI16_BGE: // 0x19
         {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             printf("bge          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
             return;
         }
         case LA_2RI16_BLTU: // 0x1a
         {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             printf("bltu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
             return;
         }
         case LA_2RI16_BGEU: // 0x1b
         {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             printf("bgeu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
             return;
@@ -4172,8 +4643,6 @@ Label_OPCODE_0:
                         {
                             // bits:31-10,MSB22
                             unsigned int inscode3 = (code >> 10) & 0x3fffff;
-                            const char*  rd       = RegNames[code & 0x1f];
-                            const char*  rj       = RegNames[(code >> 5) & 0x1f];
                             switch (inscode3)
                             {
                                 case LA_2R_CLO_W:
@@ -4257,15 +4726,11 @@ Label_OPCODE_0:
                         }
                         case LA_2R_ASRTLE_D:
                         {
-                            const char* rj = RegNames[(code >> 5) & 0x1f];
-                            const char* rk = RegNames[(code >> 10) & 0x1f];
                             printf("asrtle.d     %s, %s\n", rj, rk);
                             return;
                         }
                         case LA_2R_ASRTGT_D:
                         {
-                            const char* rj = RegNames[(code >> 5) & 0x1f];
-                            const char* rk = RegNames[(code >> 10) & 0x1f];
                             printf("asrtgt.d     %s, %s\n", rj, rk);
                             return;
                         }
@@ -4279,41 +4744,29 @@ Label_OPCODE_0:
                 {
                     // LA_OP_ALSL_W
                     // LA_OP_ALSL_WU
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
                     unsigned int sa2 = (code >> 15) & 0x3;
                     if (0 == ((code >> 17) & 0x1))
                     {
                         printf("alsl.w       %s, %s, %s, %d\n", rd, rj, rk, (sa2 + 1));
-                        return;
                     }
                     else if (1 == ((code >> 17) & 0x1))
                     {
                         printf("alsl.wu      %s, %s, %s, %d\n", rd, rj, rk, (sa2 + 1));
-                        return;
                     }
                     else
                     {
                         printf("LOONGARCH illegal instruction: %08X\n", code);
-                        return;
                     }
                     return;
                 }
                 case LA_OP_BYTEPICK_W: // 0x2
                 {
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
                     unsigned int sa2 = (code >> 15) & 0x3;
                     printf("bytepick.w   %s, %s, %s, %d\n", rd, rj, rk, sa2);
                     return;
                 }
                 case LA_OP_BYTEPICK_D: // 0x3
                 {
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
                     unsigned int sa3 = (code >> 15) & 0x7;
                     printf("bytepick.d   %s, %s, %s, %d\n", rd, rj, rk, sa3);
                     return;
@@ -4327,9 +4780,6 @@ Label_OPCODE_0:
                 {
                     // bits: 31-15,MSB17
                     unsigned int inscode2 = (code >> 15) & 0x1ffff;
-                    const char*  rd       = RegNames[code & 0x1f];
-                    const char*  rj       = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk       = RegNames[(code >> 10) & 0x1f];
 
                     switch (inscode2)
                     {
@@ -4499,9 +4949,6 @@ Label_OPCODE_0:
                 }
                 case LA_OP_ALSL_D: // 0xb
                 {
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
                     unsigned int sa2 = (code >> 15) & 0x3;
                     printf("alsl.d       %s, %s, %s, %d\n", rd, rj, rk, (sa2 + 1));
                     return;
@@ -4518,25 +4965,21 @@ Label_OPCODE_0:
             {
                 // LA_OP_BSTRINS_W
                 // LA_OP_BSTRPICK_W
-                const char*  rd   = RegNames[code & 0x1f];
-                const char*  rj   = RegNames[(code >> 5) & 0x1f];
                 unsigned int lsbw = (code >> 10) & 0x1f;
                 unsigned int msbw = (code >> 16) & 0x1f;
                 if (!(code & 0x8000))
                 {
                     printf("bstrins.w    %s, %s, %d, %d\n", rd, rj, msbw, lsbw);
-                    return;
                 }
                 else if (code & 0x8000)
                 {
                     printf("bstrpick.w   %s, %s, %d, %d\n", rd, rj, msbw, lsbw);
-                    return;
                 }
                 else
                 {
                     printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
                 }
+                return;
             }
             else
             {
@@ -4548,24 +4991,19 @@ Label_OPCODE_0:
                     {
                         // LA_OP_SLLI_W:
                         // LA_OP_SLLI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
                         if (1 == ((code >> 15) & 0x7))
                         {
                             unsigned int ui5 = (code >> 10) & 0x1f;
                             printf("slli.w       %s, %s, %d\n", rd, rj, ui5);
-                            return;
                         }
                         else if (1 == ((code >> 16) & 0x3))
                         {
                             unsigned int ui6 = (code >> 10) & 0x3f;
                             printf("slli.d       %s, %s, %d\n", rd, rj, ui6);
-                            return;
                         }
                         else
                         {
                             printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
                         }
                         return;
                     }
@@ -4573,24 +5011,19 @@ Label_OPCODE_0:
                     {
                         // LA_OP_SRLI_W:
                         // LA_OP_SRLI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
                         if (1 == ((code >> 15) & 0x7))
                         {
                             unsigned int ui5 = (code >> 10) & 0x1f;
                             printf("srli.w       %s, %s, %d\n", rd, rj, ui5);
-                            return;
                         }
                         else if (1 == ((code >> 16) & 0x3))
                         {
                             unsigned int ui6 = (code >> 10) & 0x3f;
                             printf("srli.d      %s, %s, %d\n", rd, rj, ui6);
-                            return;
                         }
                         else
                         {
                             printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
                         }
                         return;
                     }
@@ -4598,24 +5031,19 @@ Label_OPCODE_0:
                     {
                         // LA_OP_SRAI_W:
                         // LA_OP_SRAI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
                         if (1 == ((code >> 15) & 0x7))
                         {
                             unsigned int ui5 = (code >> 10) & 0x1f;
                             printf("srai.w       %s, %s, %d\n", rd, rj, ui5);
-                            return;
                         }
                         else if (1 == ((code >> 16) & 0x3))
                         {
                             unsigned int ui6 = (code >> 10) & 0x3f;
                             printf("srai.d       %s, %s, %d\n", rd, rj, ui6);
-                            return;
                         }
                         else
                         {
                             printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
                         }
                         return;
                     }
@@ -4623,24 +5051,19 @@ Label_OPCODE_0:
                     {
                         // LA_OP_ROTRI_W:
                         // LA_OP_ROTRI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
                         if (1 == ((code >> 15) & 0x7))
                         {
                             unsigned int ui5 = (code >> 10) & 0x1f;
                             printf("rotri.w      %s, %s, %d\n", rd, rj, ui5);
-                            return;
                         }
                         else if (1 == ((code >> 16) & 0x3))
                         {
                             unsigned int ui6 = (code >> 10) & 0x3f;
                             printf("rotri.d      %s, %s, %d\n", rd, rj, ui6);
-                            return;
                         }
                         else
                         {
                             printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
                         }
                         return;
                     }
@@ -4654,8 +5077,6 @@ Label_OPCODE_0:
         }
         case LA_OP_BSTRINS_D:
         {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
             unsigned int lsbd = (code >> 10) & 0x3f;
             unsigned int msbd = (code >> 16) & 0x3f;
             printf("bstrins.d    %s, %s, %d, %d\n", rd, rj, msbd, lsbd);
@@ -4663,8 +5084,6 @@ Label_OPCODE_0:
         }
         case LA_OP_BSTRPICK_D:
         {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
             unsigned int lsbd = (code >> 10) & 0x3f;
             unsigned int msbd = (code >> 16) & 0x3f;
             printf("bstrpick.d   %s, %s, %d, %d\n", rd, rj, msbd, lsbd);
@@ -4674,11 +5093,6 @@ Label_OPCODE_0:
         {
             // bits: 31-15,MSB17
             unsigned int inscode1 = (code >> 15) & 0x1ffff;
-            const char*  fd       = RegNames[(code & 0x1f) + 32];
-            const char*  fj       = RegNames[((code >> 5) & 0x1f) + 32];
-            const char*  fk       = RegNames[((code >> 10) & 0x1f) + 32];
-            const char*  rd       = RegNames[code & 0x1f];
-            const char*  rj       = RegNames[(code >> 5) & 0x1f];
 
             switch (inscode1)
             {
@@ -4822,11 +5236,17 @@ Label_OPCODE_0:
                             printf("movfrh2gr.s  %s, %s\n", rd, fj);
                             return;
                         case LA_2R_MOVGR2FCSR:
-                            NYI_LOONGARCH64("unused instr LA_2R_MOVGR2FCSR");
+                        {
+                            const char* fcsr = FcsrName[code & 0x1f];
+                            printf("movgr2fcsr   %s, %s\n", fcsr, rj);
                             return;
+                        }
                         case LA_2R_MOVFCSR2GR:
-                            NYI_LOONGARCH64("unused instr LA_2R_MOVFCSR2GR");
+                        {
+                            const char* fcsr = FcsrName[(code >> 5) & 0x1f];
+                            printf("movfcsr2gr   %s, %s\n", rd, fcsr);
                             return;
+                        }
                         case LA_2R_MOVFR2CF:
                         {
                             const char* cd = CFregName[code & 0x7];
@@ -4950,44 +5370,34 @@ Label_OPCODE_0:
         }
         case LA_2RI12_SLTI: // 0x8
         {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
+            short si12 = ((code >> 10) & 0xfff) << 4;
             si12 >>= 4;
             printf("slti         %s, %s, %d\n", rd, rj, si12);
             return;
         }
         case LA_2RI12_SLTUI: // 0x9
         {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
+            short si12 = ((code >> 10) & 0xfff) << 4;
             si12 >>= 4;
             printf("sltui        %s, %s, %d\n", rd, rj, si12);
             return;
         }
         case LA_2RI12_ADDI_W: // 0xa
         {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
+            short si12 = ((code >> 10) & 0xfff) << 4;
             si12 >>= 4;
             printf("addi.w       %s, %s, %d\n", rd, rj, si12);
             return;
         }
         case LA_2RI12_ADDI_D: // 0xb
         {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
+            short si12 = ((code >> 10) & 0xfff) << 4;
             si12 >>= 4;
             printf("addi.d       %s, %s, %ld\n", rd, rj, si12);
             return;
         }
         case LA_2RI12_LU52I_D: // 0xc
         {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
             unsigned int si12 = (code >> 10) & 0xfff;
             printf("lu52i.d      %s, %s, 0x%x\n", rd, rj, si12);
             return;
@@ -5000,8 +5410,6 @@ Label_OPCODE_0:
             }
             else
             {
-                const char*  rd   = RegNames[code & 0x1f];
-                const char*  rj   = RegNames[(code >> 5) & 0x1f];
                 unsigned int ui12 = ((code >> 10) & 0xfff);
                 printf("andi         %s, %s, 0x%x\n", rd, rj, ui12);
             }
@@ -5009,16 +5417,12 @@ Label_OPCODE_0:
         }
         case LA_2RI12_ORI: // 0xe
         {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
             unsigned int ui12 = ((code >> 10) & 0xfff);
             printf("ori          %s, %s, 0x%x\n", rd, rj, ui12);
             return;
         }
         case LA_2RI12_XORI: // 0xf
         {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
             unsigned int ui12 = ((code >> 10) & 0xfff);
             printf("xori         %s, %s, 0x%x\n", rd, rj, ui12);
             return;
@@ -5029,10 +5433,6 @@ Label_OPCODE_0:
             return;
     }
 
-// Label_OPCODE_1:
-//    opcode = (code >> 24) & 0xff;
-//    //bits: 31-24,MSB8
-
 Label_OPCODE_2:
     opcode = (code >> 20) & 0xfff;
 
@@ -5040,77 +5440,80 @@ Label_OPCODE_2:
     switch (opcode)
     {
         case LA_4R_FMADD_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fmadd.s      %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
         case LA_4R_FMADD_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fmadd.d      %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
         case LA_4R_FMSUB_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fmsub.s      %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
         case LA_4R_FMSUB_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fmsub.d      %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
         case LA_4R_FNMADD_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fnmadd.s     %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
         case LA_4R_FNMADD_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fnmadd.d     %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
         case LA_4R_FNMSUB_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fnmsub.s     %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
         case LA_4R_FNMSUB_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
             printf("fnmsub.d     %s, %s, %s, %s\n", fd, fj, fk, fa);
             return;
-        }
+
+#ifdef FEATURE_SIMD
+        case 0x91:
+            printf("vfmadd.s     %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0x92:
+            printf("vfmadd.d     %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0x95:
+            printf("vfmsub.s     %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0x96:
+            printf("vfmsub.d     %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0x99:
+            printf("vfnmadd.s    %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0x9a:
+            printf("vfnmadd.d    %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0x9d:
+            printf("vfnmsub.s    %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0x9e:
+            printf("vfnmsub.d    %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0xa1:
+            printf("xvfmadd.s    %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xa2:
+            printf("xcfmadd.d    %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xa5:
+            printf("xvfmsub.s    %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xa6:
+            printf("xvfmsub.d    %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xa9:
+            printf("xvfnmadd.s   %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xaa:
+            printf("xvfnmadd.d   %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xad:
+            printf("xvfnmsub.s   %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xae:
+            printf("xvfnmsub.d   %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+#endif
         default:
             printf("LOONGARCH illegal instruction: %08X\n", code);
             return;
@@ -5127,8 +5530,6 @@ Label_OPCODE_3:
             // bits:19-15,cond
             unsigned int cond = (code >> 15) & 0x1f;
             const char*  cd   = CFregName[code & 0x7];
-            const char*  fj   = RegNames[((code >> 5) & 0x1f) + 32];
-            const char*  fk   = RegNames[((code >> 10) & 0x1f) + 32];
             switch (cond)
             {
                 case 0x0:
@@ -5207,8 +5608,6 @@ Label_OPCODE_3:
             // bits:19-15,cond
             unsigned int cond = (code >> 15) & 0x1f;
             const char*  cd   = CFregName[code & 0x7];
-            const char*  fj   = RegNames[((code >> 5) & 0x1f) + 32];
-            const char*  fk   = RegNames[((code >> 10) & 0x1f) + 32];
             switch (cond)
             {
                 case 0x0:
@@ -5284,13 +5683,333 @@ Label_OPCODE_3:
         }
         case LA_4R_FSEL:
         {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
             const char* ca = CFregName[(code >> 15) & 0x7];
             printf("fsel         %s, %s, %s, %s\n", fd, fj, fk, ca);
             return;
         }
+#ifdef FEATURE_SIMD
+        case 0xd1:
+            printf("vbitsel.v    %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0xd5:
+            printf("vshuf.b      %s, %s, %s, %s\n", vd, vj, vk, va);
+            return;
+        case 0xc5:
+        {
+            // bits:19-15,cond
+            unsigned int cond = (code >> 15) & 0x1f;
+            switch (cond)
+            {
+                case 0x0:
+                    printf("vfcmp.caf.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x1:
+                    printf("vfcmp.saf.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x2:
+                    printf("vfcmp.clt.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x3:
+                    printf("vfcmp.slt.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x4:
+                    printf("vfcmp.ceq.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x5:
+                    printf("vfcmp.seq.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x6:
+                    printf("vfcmp.cle.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x7:
+                    printf("vfcmp.sle.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x8:
+                    printf("vfcmp.cun.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x9:
+                    printf("vfcmp.sun.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xA:
+                    printf("vfcmp.cult.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xB:
+                    printf("vfcmp.sult.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xC:
+                    printf("vfcmp.cueq.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xD:
+                    printf("vfcmp.sueq.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xE:
+                    printf("vfcmp.cule.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xF:
+                    printf("vfcmp.sule.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x10:
+                    printf("vfcmp.cne.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x11:
+                    printf("vfcmp.sne.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x14:
+                    printf("vfcmp.cor.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x15:
+                    printf("vfcmp.sor.s  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x18:
+                    printf("vfcmp.cune.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x19:
+                    printf("vfcmp.sune.s %s, %s, %s\n", vd, vj, vk);
+                    return;
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+        }
+        case 0xc6:
+        {
+            // bits:19-15,cond
+            unsigned int cond = (code >> 15) & 0x1f;
+            switch (cond)
+            {
+                case 0x0:
+                    printf("vfcmp.caf.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x1:
+                    printf("vfcmp.saf.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x2:
+                    printf("vfcmp.clt.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x3:
+                    printf("vfcmp.slt.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x4:
+                    printf("vfcmp.ceq.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x5:
+                    printf("vfcmp.seq.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x6:
+                    printf("vfcmp.cle.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x7:
+                    printf("vfcmp.sle.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x8:
+                    printf("vfcmp.cun.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x9:
+                    printf("vfcmp.sun.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xA:
+                    printf("vfcmp.cult.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xB:
+                    printf("vfcmp.sult.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xC:
+                    printf("vfcmp.cueq.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xD:
+                    printf("vfcmp.sueq.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xE:
+                    printf("vfcmp.cule.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0xF:
+                    printf("vfcmp.sule.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x10:
+                    printf("vfcmp.cne.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x11:
+                    printf("vfcmp.sne.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x14:
+                    printf("vfcmp.cor.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x15:
+                    printf("vfcmp.sor.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x18:
+                    printf("vfcmp.cune.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                case 0x19:
+                    printf("vfcmp.sune.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+        }
+
+        case 0xd2:
+            printf("xvbitsel.v   %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xd6:
+            printf("xvshuf.b     %s, %s, %s, %s\n", xd, xj, xk, xa);
+            return;
+        case 0xc9:
+        {
+            // bits:19-15,cond
+            unsigned int cond = (code >> 15) & 0x1f;
+            switch (cond)
+            {
+                case 0x0:
+                    printf("xvfcmp.caf.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x1:
+                    printf("xvfcmp.saf.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x2:
+                    printf("xvfcmp.clt.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x3:
+                    printf("xvfcmp.slt.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x4:
+                    printf("xvfcmp.ceq.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x5:
+                    printf("xvfcmp.seq.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x6:
+                    printf("xvfcmp.cle.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x7:
+                    printf("xvfcmp.sle.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x8:
+                    printf("xvfcmp.cun.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x9:
+                    printf("xvfcmp.sun.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xA:
+                    printf("xvfcmp.cult.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xB:
+                    printf("xvfcmp.sult.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xC:
+                    printf("xvfcmp.cueq.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xD:
+                    printf("xvfcmp.sueq.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xE:
+                    printf("xvfcmp.cule.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xF:
+                    printf("xvfcmp.sule.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x10:
+                    printf("xvfcmp.cne.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x11:
+                    printf("xvfcmp.sne.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x14:
+                    printf("xvfcmp.cor.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x15:
+                    printf("xvfcmp.sor.s %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x18:
+                    printf("xvfcmp.cune.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x19:
+                    printf("xvfcmp.sune.s  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+        }
+        case 0xca:
+        {
+            // bits:19-15,cond
+            unsigned int cond = (code >> 15) & 0x1f;
+            switch (cond)
+            {
+                case 0x0:
+                    printf("xvfcmp.caf.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x1:
+                    printf("xvfcmp.saf.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x2:
+                    printf("xvfcmp.clt.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x3:
+                    printf("xvfcmp.slt.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x4:
+                    printf("xvfcmp.ceq.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x5:
+                    printf("xvfcmp.seq.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x6:
+                    printf("xvfcmp.cle.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x7:
+                    printf("xvfcmp.sle.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x8:
+                    printf("xvfcmp.cun.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x9:
+                    printf("xvfcmp.sun.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xA:
+                    printf("xvfcmp.cult.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xB:
+                    printf("xvfcmp.sult.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xC:
+                    printf("xvfcmp.cueq.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xD:
+                    printf("xvfcmp.sueq.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xE:
+                    printf("xvfcmp.cule.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0xF:
+                    printf("xvfcmp.sule.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x10:
+                    printf("xvfcmp.cne.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x11:
+                    printf("xvfcmp.sne.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x14:
+                    printf("xvfcmp.cor.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x15:
+                    printf("xvfcmp.sor.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x18:
+                    printf("xvfcmp.cune.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                case 0x19:
+                    printf("xvfcmp.sune.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+        }
+#endif
         default:
             printf("LOONGARCH illegal instruction: %08X\n", code);
             return;
@@ -5303,416 +6022,161 @@ Label_OPCODE_E:
     switch (opcode)
     {
         case LA_3R_LDX_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldx.b        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDX_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldx.h        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDX_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldx.w        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDX_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldx.d        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STX_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stx.b        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STX_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stx.h        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STX_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stx.w        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STX_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stx.d        %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDX_BU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldx.bu       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDX_HU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldx.hu       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDX_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldx.wu       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_PRELDX:
             NYI_LOONGARCH64("unused instr LA_3R_PRELDX");
             return;
         case LA_3R_FLDX_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fldx.s       %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FLDX_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fldx.d       %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FSTX_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fstx.s       %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FSTX_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fstx.d       %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_AMSWAP_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap.w     %s, %s, %s\n", rd, rj, rk);
+            printf("amswap.w     %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMSWAP_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap.d     %s, %s, %s\n", rd, rj, rk);
+            printf("amswap.d     %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMADD_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd.w      %s, %s, %s\n", rd, rj, rk);
+            printf("amadd.w      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMADD_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd.d      %s, %s, %s\n", rd, rj, rk);
+            printf("amadd.d      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMAND_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand.w      %s, %s, %s\n", rd, rj, rk);
+            printf("amand.w      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMAND_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand.d      %s, %s, %s\n", rd, rj, rk);
+            printf("amand.d      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMOR_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor.w       %s, %s, %s\n", rd, rj, rk);
+            printf("amor.w       %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMOR_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor.d       %s, %s, %s\n", rd, rj, rk);
+            printf("amor.d       %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMXOR_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor.w      %s, %s, %s\n", rd, rj, rk);
+            printf("amxor.w      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMXOR_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor.d      %s, %s, %s\n", rd, rj, rk);
+            printf("amxor.d      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.w      %s, %s, %s\n", rd, rj, rk);
+            printf("ammax.w      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.d      %s, %s, %s\n", rd, rj, rk);
+            printf("ammax.d      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.w      %s, %s, %s\n", rd, rj, rk);
+            printf("ammin.w      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.d      %s, %s, %s\n", rd, rj, rk);
+            printf("ammin.d      %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.wu     %s, %s, %s\n", rd, rj, rk);
+            printf("ammax.wu     %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.du     %s, %s, %s\n", rd, rj, rk);
+            printf("ammax.du     %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.wu     %s, %s, %s\n", rd, rj, rk);
+            printf("ammin.wu     %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.du     %s, %s, %s\n", rd, rj, rk);
+            printf("ammin.du     %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMSWAP_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap_db.w  %s, %s, %s\n", rd, rj, rk);
+            printf("amswap_db.w  %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMSWAP_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap_db.d  %s, %s, %s\n", rd, rj, rk);
+            printf("amswap_db.d  %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMADD_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd_db.w   %s, %s, %s\n", rd, rj, rk);
+            printf("amadd_db.w   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMADD_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd_db.d   %s, %s, %s\n", rd, rj, rk);
+            printf("amadd_db.d   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMAND_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand_db.w   %s, %s, %s\n", rd, rj, rk);
+            printf("amand_db.w   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMAND_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand_db.d   %s, %s, %s\n", rd, rj, rk);
+            printf("amand_db.d   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMOR_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor_db.w    %s, %s, %s\n", rd, rj, rk);
+            printf("amor_db.w    %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMOR_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor_db.d    %s, %s, %s\n", rd, rj, rk);
+            printf("amor_db.d    %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMXOR_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor_db.w   %s, %s, %s\n", rd, rj, rk);
+            printf("amxor_db.w   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMXOR_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor_db.d   %s, %s, %s\n", rd, rj, rk);
+            printf("amxor_db.d   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.w   %s, %s, %s\n", rd, rj, rk);
+            printf("ammax_db.w   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.d   %s, %s, %s\n", rd, rj, rk);
+            printf("ammax_db.d   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.w   %s, %s, %s\n", rd, rj, rk);
+            printf("ammin_db.w   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.d   %s, %s, %s\n", rd, rj, rk);
+            printf("ammin_db.d   %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_DB_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.wu  %s, %s, %s\n", rd, rj, rk);
+            printf("ammax_db.wu  %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMAX_DB_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.du  %s, %s, %s\n", rd, rj, rk);
+            printf("ammax_db.du  %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_DB_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.wu  %s, %s, %s\n", rd, rj, rk);
+            printf("ammin_db.wu  %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_3R_AMMIN_DB_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.du  %s, %s, %s\n", rd, rj, rk);
+            printf("ammin_db.du  %s, %s, %s\n", rd, rk, rj);
             return;
-        }
         case LA_OP_DBAR:
         {
             unsigned int hint = code & 0x7fff;
@@ -5726,201 +6190,7713 @@ Label_OPCODE_E:
             return;
         }
         case LA_3R_FLDGT_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fldgt.s      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FLDGT_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fldgt.d      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FLDLE_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fldle.s      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FLDLE_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fldle.d      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FSTGT_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fstgt.s      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FSTGT_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fstgt.d      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FSTLE_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fstle.s      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_FSTLE_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("fstle.d      %s, %s, %s\n", fd, rj, rk);
             return;
-        }
         case LA_3R_LDGT_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldgt.b       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDGT_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldgt.h       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDGT_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldgt.w       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDGT_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldgt.d       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDLE_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldle.b       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDLE_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldle.h       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDLE_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldle.w       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_LDLE_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("ldle.d       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STGT_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stgt.b       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STGT_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stgt.h       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STGT_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stgt.w       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STGT_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stgt.d       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STLE_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stle.b       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STLE_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stle.h       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STLE_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stle.w       %s, %s, %s\n", rd, rj, rk);
             return;
-        }
         case LA_3R_STLE_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
             printf("stle.d       %s, %s, %s\n", rd, rj, rk);
+            return;
+
+#ifdef FEATURE_SIMD
+        case 0x7080:
+            printf("vldx         %s, %s, %s\n", vd, rj, rk);
+            return;
+        case 0x7088:
+            printf("vstx         %s, %s, %s\n", vd, rj, rk);
+            return;
+        case 0x7090:
+            printf("xvldx        %s, %s, %s\n", xd, rj, rk);
+            return;
+        case 0x7098:
+            printf("xvstx        %s, %s, %s\n", xd, rj, rk);
+            return;
+#endif
+
+        default:
+            printf("LOONGARCH illegal instruction: %08X\n", code);
+            return;
+    }
+
+#ifdef FEATURE_SIMD
+Label_OPCODE_B:
+    opcode = (code >> 22) & 0x3ff;
+
+    // bits: 31-22,MSB10
+    switch (opcode)
+    {
+        case 0xb0:
+        {
+            short si12 = ((code >> 10) & 0xfff) << 4;
+            si12 >>= 4;
+            printf("vld          %s, %s, %d\n", vd, rj, si12);
+            return;
+        }
+        case 0xb1:
+        {
+            short si12 = ((code >> 10) & 0xfff) << 4;
+            si12 >>= 4;
+            printf("vst          %s, %s, %d\n", vd, rj, si12);
+            return;
+        }
+        case 0xb2:
+        {
+            short si12 = ((code >> 10) & 0xfff) << 4;
+            si12 >>= 4;
+            printf("xvld         %s, %s, %d\n", xd, rj, si12);
+            return;
+        }
+        case 0xb3:
+        {
+            short si12 = ((code >> 10) & 0xfff) << 4;
+            si12 >>= 4;
+            printf("xvst         %s, %s, %d\n", xd, rj, si12);
+            return;
+        }
+
+        default:
+            printf("LOONGARCH illegal instruction: %08X\n", code);
+            return;
+    }
+
+Label_OPCODE_C:
+    opcode = code >> 23;
+    switch (opcode)
+    {
+        case 0x60:
+        {
+            opcode = code >> 19;
+            if ((opcode & 0xf) == 0x2)
+            {
+                short si9 = ((code >> 10) & 0x1ff) << 7;
+                si9 >>= 7;
+                assert((-256 <= si9) && (si9 <= 255));
+                printf("vldrepl.d    %s, %s, %d\n", vd, rj, si9);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x4)
+            {
+                short si10 = ((code >> 10) & 0x3ff) << 6;
+                si10 >>= 6;
+                assert((-512 <= si10) && (si10 <= 511));
+                printf("vldrepl.w    %s, %s, %d\n", vd, rj, si10);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x8)
+            {
+                short si11 = ((code >> 10) & 0x7ff) << 5;
+                si11 >>= 5;
+                assert((-1024 <= si11) && (si11 <= 1023));
+                printf("vldrepl.h    %s, %s, %d\n", vd, rj, si11);
+                return;
+            }
+            else
+            {
+                printf("LOONGARCH illegal instruction: %08X\n", code);
+                return;
+            }
+        }
+        case 0x61:
+        {
+            opcode = code >> 22;
+            if ((opcode & 0x1) == 0x0)
+            {
+                short si12 = ((code >> 10) & 0xfff) << 4;
+                si12 >>= 4;
+                assert((-2048 <= si12) && (si12 <= 2047));
+                printf("vldrepl.b    %s, %s, %d\n", vd, rj, si12);
+                return;
+            }
+            else
+            {
+                printf("LOONGARCH illegal instruction: %08X\n", code);
+                return;
+            }
+        }
+        case 0x62:
+        {
+            opcode = code >> 19;
+            if ((opcode & 0xf) == 0x2)
+            {
+                char           si8 = (code >> 10) & 0xff;
+                unsigned short idx = (code >> 18) & 0x1;
+                printf("vstelm.d     %s, %s, %d, %d\n", vd, rj, si8 << 3, idx);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x4)
+            {
+                char           si8 = (code >> 10) & 0xff;
+                unsigned short idx = (code >> 18) & 0x3;
+                printf("vstelm.w     %s, %s, %d, %d\n", vd, rj, si8 << 2, idx);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x8)
+            {
+                char           si8 = (code >> 10) & 0xff;
+                unsigned short idx = (code >> 18) & 0x7;
+                printf("vstelm.h     %s, %s, %d, %d\n", vd, rj, si8 << 1, idx);
+                return;
+            }
+            else
+            {
+                printf("LOONGARCH illegal instruction: %08X\n", code);
+                return;
+            }
+        }
+        case 0x63:
+        {
+            opcode = code >> 22;
+            if ((opcode & 0x1) == 0x0)
+            {
+                char           si8 = (code >> 10) & 0xff;
+                unsigned short idx = (code >> 18) & 0xf;
+                printf("vstelm.b     %s, %s, %d, %d\n", vd, rj, si8, idx);
+                return;
+            }
+            else
+            {
+                printf("LOONGARCH illegal instruction: %08X\n", code);
+                return;
+            }
+        }
+        case 0x64:
+        {
+            opcode = code >> 19;
+            if ((opcode & 0xf) == 0x2)
+            {
+                short si9 = ((code >> 10) & 0x1ff) << 7;
+                si9 >>= 7;
+                assert((-256 <= si9) && (si9 <= 255));
+                printf("xvldrepl.d   %s, %s, %d\n", xd, rj, si9);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x4)
+            {
+                short si10 = ((code >> 10) & 0x3ff) << 6;
+                si10 >>= 6;
+                assert((-512 <= si10) && (si10 <= 511));
+                printf("xvldrepl.w   %s, %s, %d\n", xd, rj, si10);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x8)
+            {
+                short si11 = ((code >> 10) & 0x7ff) << 5;
+                si11 >>= 5;
+                assert((-1024 <= si11) && (si11 <= 1023));
+                printf("xvldrepl.h   %s, %s, %d\n", xd, rj, si11);
+                return;
+            }
+            else
+            {
+                printf("LOONGARCH illegal instruction: %08X\n", code);
+                return;
+            }
+        }
+        case 0x65:
+        {
+            opcode = code >> 22;
+            if ((opcode & 0x1) == 0x0)
+            {
+                short si12 = ((code >> 10) & 0xfff) << 4;
+                si12 >>= 4;
+                assert((-2048 <= si12) && (si12 <= 2047));
+                printf("xvldrepl.b   %s, %s, %d\n", xd, rj, si12);
+                return;
+            }
+            else
+            {
+                printf("LOONGARCH illegal instruction: %08X\n", code);
+                return;
+            }
+        }
+        case 0x66:
+        {
+            opcode = code >> 20;
+            if ((opcode & 0x7) == 0x1)
+            {
+                char           si8 = (code >> 10) & 0xff;
+                unsigned short idx = (code >> 18) & 0x3;
+                printf("xvstelm.d    %s, %s, %d, %d\n", xd, rj, si8 << 3, idx);
+                return;
+            }
+            else if ((opcode & 0x6) == 0x2)
+            {
+                char           si8 = (code >> 10) & 0xff;
+                unsigned short idx = (code >> 18) & 0x7;
+                printf("xvstelm.w    %s, %s, %d, %d\n", xd, rj, si8 << 2, idx);
+                return;
+            }
+            else if ((opcode & 0x4) == 0x4)
+            {
+                char           si8 = (code >> 10) & 0xff;
+                unsigned short idx = (code >> 18) & 0xf;
+                printf("xvstelm.h    %s, %s, %d, %d\n", xd, rj, si8 << 1, idx);
+                return;
+            }
+            else
+            {
+                printf("LOONGARCH illegal instruction: %08X\n", code);
+                return;
+            }
+        }
+        case 0x67:
+        {
+            char           si8 = (code >> 10) & 0xff;
+            unsigned short idx = (code >> 18) & 0x1f;
+            printf("xvstelm.b    %s, %s, %d, %d\n", xd, rj, si8, idx);
             return;
         }
         default:
             printf("LOONGARCH illegal instruction: %08X\n", code);
             return;
     }
+
+Label_OPCODE_1C:
+    opcode = (code >> 18) & 0xff; // MSB14
+    switch (opcode)
+    {
+        case 0 ... 0xa6:
+            opcode = (code >> 15) & 0x7ff;
+            switch (opcode)
+            {
+                case 0x0:
+                {
+                    printf("vseq.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1:
+                {
+                    printf("vseq.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x2:
+                {
+                    printf("vseq.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x3:
+                {
+                    printf("vseq.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x4:
+                {
+                    printf("vsle.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x5:
+                {
+                    printf("vsle.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x6:
+                {
+                    printf("vsle.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x7:
+                {
+                    printf("vsle.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x8:
+                {
+                    printf("vsle.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x9:
+                {
+                    printf("vsle.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xa:
+                {
+                    printf("vsle.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb:
+                {
+                    printf("vsle.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc:
+                {
+                    printf("vslt.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd:
+                {
+                    printf("vslt.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe:
+                {
+                    printf("vslt.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xf:
+                {
+                    printf("vslt.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x10:
+                {
+                    printf("vslt.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x11:
+                {
+                    printf("vslt.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x12:
+                {
+                    printf("vslt.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x13:
+                {
+                    printf("vslt.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x14:
+                {
+                    printf("vadd.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x15:
+                {
+                    printf("vadd.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x16:
+                {
+                    printf("vadd.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x17:
+                {
+                    printf("vadd.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x18:
+                {
+                    printf("vsub.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x19:
+                {
+                    printf("vsub.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1a:
+                {
+                    printf("vsub.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1b:
+                {
+                    printf("vsub.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x3c:
+                {
+                    printf("vaddwev.h.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x3d:
+                {
+                    printf("vaddwev.w.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x3e:
+                {
+                    printf("vaddwev.d.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x3f:
+                {
+                    printf("vaddwev.q.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x40:
+                {
+                    printf("vsubwev.h.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x41:
+                {
+                    printf("vsubwev.w.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x42:
+                {
+                    printf("vsubwev.d.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x43:
+                {
+                    printf("vsubwev.q.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x44:
+                {
+                    printf("vaddwod.h.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x45:
+                {
+                    printf("vaddwod.w.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x46:
+                {
+                    printf("vaddwod.d.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x47:
+                {
+                    printf("vaddwod.q.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x48:
+                {
+                    printf("vsubwod.h.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x49:
+                {
+                    printf("vsubwod.w.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x4a:
+                {
+                    printf("vsubwod.d.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x4b:
+                {
+                    printf("vsubwod.q.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x5c:
+                {
+                    printf("vaddwev.h.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x5d:
+                {
+                    printf("vaddwev.w.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x5e:
+                {
+                    printf("vaddwev.d.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x5f:
+                {
+                    printf("vaddwev.q.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x60:
+                {
+                    printf("vsubwev.h.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x61:
+                {
+                    printf("vsubwev.w.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x62:
+                {
+                    printf("vsubwev.d.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x63:
+                {
+                    printf("vsubwev.q.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x64:
+                {
+                    printf("vaddwod.h.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x65:
+                {
+                    printf("vaddwod.w.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x66:
+                {
+                    printf("vaddwod.d.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x67:
+                {
+                    printf("vaddwod.q.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x68:
+                {
+                    printf("vsubwod.h.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x69:
+                {
+                    printf("vsubwod.w.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x6a:
+                {
+                    printf("vsubwod.d.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x6b:
+                {
+                    printf("vsubwod.q.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x7c:
+                {
+                    printf("vaddwev.h.bu.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x7d:
+                {
+                    printf("vaddwev.w.hu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x7e:
+                {
+                    printf("vaddwev.d.wu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x7f:
+                {
+                    printf("vaddwev.q.du.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x80:
+                {
+                    printf("vaddwod.h.bu.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x81:
+                {
+                    printf("vaddwod.w.hu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x82:
+                {
+                    printf("vaddwod.d.wu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x83:
+                {
+                    printf("vaddwod.q.du.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x8c:
+                {
+                    printf("vsadd.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x8d:
+                {
+                    printf("vsadd.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x8e:
+                {
+                    printf("vsadd.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x8f:
+                {
+                    printf("vsadd.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x90:
+                {
+                    printf("vssub.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x91:
+                {
+                    printf("vssub.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x92:
+                {
+                    printf("vssub.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x93:
+                {
+                    printf("vssub.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x94:
+                {
+                    printf("vsadd.bu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x95:
+                {
+                    printf("vsadd.hu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x96:
+                {
+                    printf("vsadd.wu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x97:
+                {
+                    printf("vsadd.du     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x98:
+                {
+                    printf("vssub.bu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x99:
+                {
+                    printf("vssub.hu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x9a:
+                {
+                    printf("vssub.wu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x9b:
+                {
+                    printf("vssub.du     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xa8:
+                {
+                    printf("vhaddw.h.b   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xa9:
+                {
+                    printf("vhaddw.w.h   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xaa:
+                {
+                    printf("vhaddw.d.w   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xab:
+                {
+                    printf("vhaddw.q.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xac:
+                {
+                    printf("vhsubw.h.b   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xad:
+                {
+                    printf("vhsubw.w.h   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xae:
+                {
+                    printf("vhsubw.d.w   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xaf:
+                {
+                    printf("vhsubw.q.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb0:
+                {
+                    printf("vhaddw.hu.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb1:
+                {
+                    printf("vhaddw.wu.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb2:
+                {
+                    printf("vhaddw.du.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb3:
+                {
+                    printf("vhaddw.qu.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb4:
+                {
+                    printf("vhsubw.hu.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb5:
+                {
+                    printf("vhsubw.wu.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb6:
+                {
+                    printf("vhsubw.du.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb7:
+                {
+                    printf("vhsubw.qu.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb8:
+                {
+                    printf("vadda.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xb9:
+                {
+                    printf("vadda.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xba:
+                {
+                    printf("vadda.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xbb:
+                {
+                    printf("vadda.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc0:
+                {
+                    printf("vabsd.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc1:
+                {
+                    printf("vabsd.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc2:
+                {
+                    printf("vabsd.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc3:
+                {
+                    printf("vabsd.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc4:
+                {
+                    printf("vabsd.bu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc5:
+                {
+                    printf("vabsd.hu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc6:
+                {
+                    printf("vabsd.wu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc7:
+                {
+                    printf("vabsd.du     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc8:
+                {
+                    printf("vavg.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xc9:
+                {
+                    printf("vavg.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xca:
+                {
+                    printf("vavg.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xcb:
+                {
+                    printf("vavg.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xcc:
+                {
+                    printf("vavg.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xcd:
+                {
+                    printf("vavg.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xce:
+                {
+                    printf("vavg.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xcf:
+                {
+                    printf("vavg.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd0:
+                {
+                    printf("vavgr.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd1:
+                {
+                    printf("vavgr.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd2:
+                {
+                    printf("vavgr.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd3:
+                {
+                    printf("vavgr.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd4:
+                {
+                    printf("vavgr.bu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd5:
+                {
+                    printf("vavgr.hu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd6:
+                {
+                    printf("vavgr.wu     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xd7:
+                {
+                    printf("vavgr.du     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe0:
+                {
+                    printf("vmax.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe1:
+                {
+                    printf("vmax.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe2:
+                {
+                    printf("vmax.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe3:
+                {
+                    printf("vmax.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe4:
+                {
+                    printf("vmin.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe5:
+                {
+                    printf("vmin.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe6:
+                {
+                    printf("vmin.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe7:
+                {
+                    printf("vmin.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe8:
+                {
+                    printf("vmax.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xe9:
+                {
+                    printf("vmax.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xea:
+                {
+                    printf("vmax.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xeb:
+                {
+                    printf("vmax.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xec:
+                {
+                    printf("vmin.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xed:
+                {
+                    printf("vmin.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xee:
+                {
+                    printf("vmin.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0xef:
+                {
+                    printf("vmin.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x108:
+                {
+                    printf("vmul.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x109:
+                {
+                    printf("vmul.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x10a:
+                {
+                    printf("vmul.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x10b:
+                {
+                    printf("vmul.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x10c:
+                {
+                    printf("vmuh.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x10d:
+                {
+                    printf("vmuh.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x10e:
+                {
+                    printf("vmuh.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x10f:
+                {
+                    printf("vmuh.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x110:
+                {
+                    printf("vmuh.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x111:
+                {
+                    printf("vmuh.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x112:
+                {
+                    printf("vmuh.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x113:
+                {
+                    printf("vmuh.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x120:
+                {
+                    printf("vmulwev.h.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x121:
+                {
+                    printf("vmulwev.w.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x122:
+                {
+                    printf("vmulwev.d.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x123:
+                {
+                    printf("vmulwev.q.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x124:
+                {
+                    printf("vmulwod.h.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x125:
+                {
+                    printf("vmulwod.w.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x126:
+                {
+                    printf("vmulwod.d.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x127:
+                {
+                    printf("vmulwod.q.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x130:
+                {
+                    printf("vmulwev.h.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x131:
+                {
+                    printf("vmulwev.w.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x132:
+                {
+                    printf("vmulwev.d.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x133:
+                {
+                    printf("vmulwev.q.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x134:
+                {
+                    printf("vmulwod.h.bu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x135:
+                {
+                    printf("vmulwod.w.hu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x136:
+                {
+                    printf("vmulwod.d.wu %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x137:
+                {
+                    printf("vmulwod.q.du %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x140:
+                {
+                    printf("vmulwev.h.bu.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x141:
+                {
+                    printf("vmulwev.w.hu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x142:
+                {
+                    printf("vmulwev.d.wu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x143:
+                {
+                    printf("vmulwev.q.du.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x144:
+                {
+                    printf("vmulwod.h.bu.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x145:
+                {
+                    printf("vmulwod.w.hu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x146:
+                {
+                    printf("vmulwod.d.wu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x147:
+                {
+                    printf("vmulwod.q.du.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x150:
+                {
+                    printf("vmadd.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x151:
+                {
+                    printf("vmadd.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x152:
+                {
+                    printf("vmadd.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x153:
+                {
+                    printf("vmadd.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x154:
+                {
+                    printf("vmsub.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x155:
+                {
+                    printf("vmsub.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x156:
+                {
+                    printf("vmsub.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x157:
+                {
+                    printf("vmsub.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x158:
+                {
+                    printf("vmaddwev.h.b %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x159:
+                {
+                    printf("vmaddwev.w.h %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x15a:
+                {
+                    printf("vmaddwev.d.w %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x15b:
+                {
+                    printf("vmaddwev.q.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x15c:
+                {
+                    printf("vmaddwod.h.b %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x15d:
+                {
+                    printf("vmaddwod.w.h %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x15e:
+                {
+                    printf("vmaddwod.d.w %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x15f:
+                {
+                    printf("vmaddwod.q.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x168:
+                {
+                    printf("vmaddwev.h.bu  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x169:
+                {
+                    printf("vmaddwev.w.hu  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x16a:
+                {
+                    printf("vmaddwev.d.wu  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x16b:
+                {
+                    printf("vmaddwev.q.du  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x16c:
+                {
+                    printf("vmaddwod.h.bu  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x16d:
+                {
+                    printf("vmaddwod.w.hu  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x16e:
+                {
+                    printf("vmaddwod.d.wu  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x16f:
+                {
+                    printf("vmaddwod.q.du  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x178:
+                {
+                    printf("vmaddwev.h.bu.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x179:
+                {
+                    printf("vmaddwev.w.hu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x17a:
+                {
+                    printf("vmaddwev.d.wu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x17b:
+                {
+                    printf("vmaddwev.q.du.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x17c:
+                {
+                    printf("vmaddwod.h.bu.b  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x17d:
+                {
+                    printf("vmaddwod.w.hu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x17e:
+                {
+                    printf("vmaddwod.d.wu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x17f:
+                {
+                    printf("vmaddwod.q.du.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c0:
+                {
+                    printf("vdiv.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c1:
+                {
+                    printf("vdiv.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c2:
+                {
+                    printf("vdiv.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c3:
+                {
+                    printf("vdiv.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c4:
+                {
+                    printf("vmod.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c5:
+                {
+                    printf("vmod.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c6:
+                {
+                    printf("vmod.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c7:
+                {
+                    printf("vmod.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c8:
+                {
+                    printf("vdiv.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1c9:
+                {
+                    printf("vdiv.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1ca:
+                {
+                    printf("vdiv.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1cb:
+                {
+                    printf("vdiv.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1cc:
+                {
+                    printf("vmod.bu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1cd:
+                {
+                    printf("vmod.hu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1ce:
+                {
+                    printf("vmod.wu      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1cf:
+                {
+                    printf("vmod.du      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d0:
+                {
+                    printf("vsll.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d1:
+                {
+                    printf("vsll.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d2:
+                {
+                    printf("vsll.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d3:
+                {
+                    printf("vsll.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d4:
+                {
+                    printf("vsrl.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d5:
+                {
+                    printf("vsrl.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d6:
+                {
+                    printf("vsrl.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d7:
+                {
+                    printf("vsrl.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d8:
+                {
+                    printf("vsra.b       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1d9:
+                {
+                    printf("vsra.h       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1da:
+                {
+                    printf("vsra.w       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1db:
+                {
+                    printf("vsra.d       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1dc:
+                {
+                    printf("vrotr.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1dd:
+                {
+                    printf("vrotr.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1de:
+                {
+                    printf("vrotr.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1df:
+                {
+                    printf("vrotr.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e0:
+                {
+                    printf("vsrlr.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e1:
+                {
+                    printf("vsrlr.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e2:
+                {
+                    printf("vsrlr.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e3:
+                {
+                    printf("vsrlr.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e4:
+                {
+                    printf("vsrar.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e5:
+                {
+                    printf("vsrar.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e6:
+                {
+                    printf("vsrar.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e7:
+                {
+                    printf("vsrar.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1e9:
+                {
+                    printf("vsrln.b.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1ea:
+                {
+                    printf("vsrln.h.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1eb:
+                {
+                    printf("vsrln.w.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1ed:
+                {
+                    printf("vsran.b.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1ee:
+                {
+                    printf("vsran.h.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1ef:
+                {
+                    printf("vsran.w.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1f1:
+                {
+                    printf("vsrlrn.b.h   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1f2:
+                {
+                    printf("vsrlrn.h.w   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1f3:
+                {
+                    printf("vsrlrn.w.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1f5:
+                {
+                    printf("vsrarn.b.h   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1f6:
+                {
+                    printf("vsrarn.h.w   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1f7:
+                {
+                    printf("vsrarn.w.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1f9:
+                {
+                    printf("vssrln.b.h   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1fa:
+                {
+                    printf("vssrln.h.w   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1fb:
+                {
+                    printf("vssrln.w.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1fd:
+                {
+                    printf("vssran.b.h   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1fe:
+                {
+                    printf("vssran.h.w   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x1ff:
+                {
+                    printf("vssran.w.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x201:
+                {
+                    printf("vssrlrn.b.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x202:
+                {
+                    printf("vssrlrn.h.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x203:
+                {
+                    printf("vssrlrn.w.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x205:
+                {
+                    printf("vssrarn.b.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x206:
+                {
+                    printf("vssrarn.h.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x207:
+                {
+                    printf("vssrarn.w.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x209:
+                {
+                    printf("vssrln.bu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x20a:
+                {
+                    printf("vssrln.hu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x20b:
+                {
+                    printf("vssrln.wu.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x20d:
+                {
+                    printf("vssran.bu.h  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x20e:
+                {
+                    printf("vssran.hu.w  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x20f:
+                {
+                    printf("vssran.wu.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x211:
+                {
+                    printf("vssrlrn.bu.h %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x212:
+                {
+                    printf("vssrlrn.hu.w %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x213:
+                {
+                    printf("vssrlrn.wu.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x215:
+                {
+                    printf("vssrarn.bu.h %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x216:
+                {
+                    printf("vssrarn.hu.w %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x217:
+                {
+                    printf("vssrarn.wu.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x218:
+                {
+                    printf("vbitclr.b    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x219:
+                {
+                    printf("vbitclr.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x21a:
+                {
+                    printf("vbitclr.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x21b:
+                {
+                    printf("vbitclr.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x21c:
+                {
+                    printf("vbitset.b    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x21d:
+                {
+                    printf("vbitset.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x21e:
+                {
+                    printf("vbitset.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x21f:
+                {
+                    printf("vbitset.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x220:
+                {
+                    printf("vbitrev.b    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x221:
+                {
+                    printf("vbitrev.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x222:
+                {
+                    printf("vbitrev.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x223:
+                {
+                    printf("vbitrev.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x22c:
+                {
+                    printf("vpackev.b    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x22d:
+                {
+                    printf("vpackev.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x22e:
+                {
+                    printf("vpackev.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x22f:
+                {
+                    printf("vpackev.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x230:
+                {
+                    printf("vpackod.b    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x231:
+                {
+                    printf("vpackod.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x232:
+                {
+                    printf("vpackod.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x233:
+                {
+                    printf("vpackod.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x234:
+                {
+                    printf("vilvl.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x235:
+                {
+                    printf("vilvl.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x236:
+                {
+                    printf("vilvl.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x237:
+                {
+                    printf("vilvl.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x238:
+                {
+                    printf("vilvh.b      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x239:
+                {
+                    printf("vilvh.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x23a:
+                {
+                    printf("vilvh.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x23b:
+                {
+                    printf("vilvh.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x23c:
+                {
+                    printf("vpickev.b    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x23d:
+                {
+                    printf("vpickev.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x23e:
+                {
+                    printf("vpickev.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x23f:
+                {
+                    printf("vpickev.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x240:
+                {
+                    printf("vpickod.b    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x241:
+                {
+                    printf("vpickod.h    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x242:
+                {
+                    printf("vpickod.w    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x243:
+                {
+                    printf("vpickod.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x244:
+                {
+                    printf("vreplve.b    %s, %s, %s\n", vd, vj, rk);
+                    return;
+                }
+                case 0x245:
+                {
+                    printf("vreplve.h    %s, %s, %s\n", vd, vj, rk);
+                    return;
+                }
+                case 0x246:
+                {
+                    printf("vreplve.w    %s, %s, %s\n", vd, vj, rk);
+                    return;
+                }
+                case 0x247:
+                {
+                    printf("vreplve.d    %s, %s, %s\n", vd, vj, rk);
+                    return;
+                }
+                case 0x24c:
+                {
+                    printf("vand.v       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x24d:
+                {
+                    printf("vor.v        %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x24e:
+                {
+                    printf("vxor.v       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x24f:
+                {
+                    printf("vnor.v       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x250:
+                {
+                    printf("vandn.v      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x251:
+                {
+                    printf("vorn.v       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x256:
+                {
+                    printf("vfrstp.b     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x257:
+                {
+                    printf("vfrstp.h     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x25a:
+                {
+                    printf("vadd.q       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x25b:
+                {
+                    printf("vsub.q       %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x25c:
+                {
+                    printf("vsigncov.b   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x25d:
+                {
+                    printf("vsigncov.h   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x25e:
+                {
+                    printf("vsigncov.w   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x25f:
+                {
+                    printf("vsigncov.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x261:
+                {
+                    printf("vfadd.s      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x262:
+                {
+                    printf("vfadd.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x265:
+                {
+                    printf("vfsub.s      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x266:
+                {
+                    printf("vfsub.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x271:
+                {
+                    printf("vfmul.s      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x272:
+                {
+                    printf("vfmul.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x275:
+                {
+                    printf("vfdiv.s      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x276:
+                {
+                    printf("vfdiv.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x279:
+                {
+                    printf("vfmax.s      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x27a:
+                {
+                    printf("vfmax.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x27d:
+                {
+                    printf("vfmin.s      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x27e:
+                {
+                    printf("vfmin.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x281:
+                {
+                    printf("vfmaxa.s     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x282:
+                {
+                    printf("vfmaxa.d     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x285:
+                {
+                    printf("vfmina.s     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x286:
+                {
+                    printf("vfmina.d     %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x28c:
+                {
+                    printf("vfcvt.h.s    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x28d:
+                {
+                    printf("vfcvt.s.d    %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x290:
+                {
+                    printf("vffint.s.l   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x293:
+                {
+                    printf("vftint.w.d   %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x294:
+                {
+                    printf("vftintrm.w.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x295:
+                {
+                    printf("vftintrp.w.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x296:
+                {
+                    printf("vftintrz.w.d %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x297:
+                {
+                    printf("vftintrne.w.d  %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x2f5:
+                {
+                    printf("vshuf.h      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x2f6:
+                {
+                    printf("vshuf.w      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x2f7:
+                {
+                    printf("vshuf.d      %s, %s, %s\n", vd, vj, vk);
+                    return;
+                }
+                case 0x500:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vseqi.b      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x501:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vseqi.h      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x502:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vseqi.w      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x503:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vseqi.d      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x504:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslei.b      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x505:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslei.h      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x506:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslei.w      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x507:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslei.d      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x508:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vslei.bu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x509:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vslei.hu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x50a:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vslei.wu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x50b:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vslei.du     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x50c:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslti.b      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x50d:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslti.h      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x50e:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslti.w      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x50f:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslti.d      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x510:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vslti.bu     %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x511:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vslti.hu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x512:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vslti.wu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x513:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vslti.du     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x514:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vaddi.bu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x515:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vaddi.hu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x516:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vaddi.wu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x517:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vaddi.du     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x518:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vsubi.bu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x519:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vsubi.hu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x51a:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vsubi.wu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x51b:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vsubi.du     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x51c:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vbsll.v      %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x51d:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vbsrl.v      %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x520:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmaxi.b      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x521:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmaxi.h      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x522:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmaxi.w      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x523:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmaxi.d      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x524:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmini.b      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x525:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmini.h      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x526:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmini.w      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x527:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("vmini.d      %s, %s, %d\n", vd, vj, si5);
+                    return;
+                }
+                case 0x528:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmaxi.bu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x529:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmaxi.hu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x52a:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmaxi.wu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x52b:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmaxi.du     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x52c:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmini.bu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x52d:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmini.hu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x52e:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmini.wu     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x52f:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vmini.du     %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x534:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vfrstpi.b    %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                case 0x535:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("vfrstpi.h    %s, %s, %d\n", vd, vj, ui5);
+                    return;
+                }
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+            break;
+        case 0xa7:
+        {
+            opcode = (code >> 10) & 0xff;
+            switch (opcode)
+            {
+                case 0x0:
+                {
+                    printf("vclo.b       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x1:
+                {
+                    printf("vclo.h       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x2:
+                {
+                    printf("vclo.w       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x3:
+                {
+                    printf("vclo.d       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x4:
+                {
+                    printf("vclz.b       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x5:
+                {
+                    printf("vclz.h       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x6:
+                {
+                    printf("vclz.w       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x7:
+                {
+                    printf("vclz.d       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x8:
+                {
+                    printf("vpcnt.b      %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x9:
+                {
+                    printf("vpcnt.h      %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa:
+                {
+                    printf("vpcnt.w      %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xb:
+                {
+                    printf("vpcnt.d      %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xc:
+                {
+                    printf("vneg.b       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xd:
+                {
+                    printf("vneg.h       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xe:
+                {
+                    printf("vneg.w       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xf:
+                {
+                    printf("vneg.d       %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x10:
+                {
+                    printf("vmskltz.b    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x11:
+                {
+                    printf("vmskltz.h    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x12:
+                {
+                    printf("vmskltz.w    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x13:
+                {
+                    printf("vmskltz.d    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x14:
+                {
+                    printf("vmskgez.b    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x18:
+                {
+                    printf("vmsknz.b     %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x26:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vseteqz.v    %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x27:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetnez.v    %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x28:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetanyeqz.b %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x29:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetanyeqz.h %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x2a:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetanyeqz.w %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x2b:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetanyeqz.d %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x2c:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetallnez.b %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x2d:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetallnez.h %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x2e:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetallnez.w %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x2f:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("vsetallnez.d %s, %s\n", cd, vj);
+                    return;
+                }
+                case 0x31:
+                {
+                    printf("vflogb.s     %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x32:
+                {
+                    printf("vflogb.d     %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x35:
+                {
+                    printf("vfclass.s    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x36:
+                {
+                    printf("vfclass.d    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x39:
+                {
+                    printf("vfsqrt.s     %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x3a:
+                {
+                    printf("vfsqrt.d     %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x3d:
+                {
+                    printf("vfrecip.s    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x3e:
+                {
+                    printf("vfrecip.d    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x41:
+                {
+                    printf("vfrsqrt.s    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x42:
+                {
+                    printf("vfrsqrt.d    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x4d:
+                {
+                    printf("vfrint.s     %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x4e:
+                {
+                    printf("vfrint.d     %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x51:
+                {
+                    printf("vfrintrm.s   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x52:
+                {
+                    printf("vfrintrm.d   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x55:
+                {
+                    printf("vfrintrp.s   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x56:
+                {
+                    printf("vfrintrp.d   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x59:
+                {
+                    printf("vfrintrz.s   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x5a:
+                {
+                    printf("vfrintrz.d   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x5d:
+                {
+                    printf("vfrintrne.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x5e:
+                {
+                    printf("vfrintrne.d  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x7a:
+                {
+                    printf("vfcvtl.s.h   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x7b:
+                {
+                    printf("vfcvth.s.h   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x7c:
+                {
+                    printf("vfcvtl.d.s   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x7d:
+                {
+                    printf("vfcvth.d.s   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x80:
+                {
+                    printf("vffint.s.w   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x81:
+                {
+                    printf("vffint.s.wu  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x82:
+                {
+                    printf("vffint.d.l   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x83:
+                {
+                    printf("vffint.d.lu  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x84:
+                {
+                    printf("vffintl.d.w  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x85:
+                {
+                    printf("vffinth.d.w  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x8c:
+                {
+                    printf("vftint.w.s   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x8d:
+                {
+                    printf("vftint.l.d   %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x8e:
+                {
+                    printf("vftintrm.w.s %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x8f:
+                {
+                    printf("vftintrm.l.d %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x90:
+                {
+                    printf("vftintrp.w.s %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x91:
+                {
+                    printf("vftintrp.l.d %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x92:
+                {
+                    printf("vftintrz.w.s %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x93:
+                {
+                    printf("vftintrz.l.d %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x94:
+                {
+                    printf("vftintrne.w.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x95:
+                {
+                    printf("vftintrne.l.d  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x96:
+                {
+                    printf("vftint.wu.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x97:
+                {
+                    printf("vftint.lu.d  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x9c:
+                {
+                    printf("vftintrz.wu.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0x9d:
+                {
+                    printf("vftintrz.lu.d  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa0:
+                {
+                    printf("vftintl.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa1:
+                {
+                    printf("vftinth.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa2:
+                {
+                    printf("vftintrml.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa3:
+                {
+                    printf("vftintrmh.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa4:
+                {
+                    printf("vftintrpl.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa5:
+                {
+                    printf("vftintrph.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa6:
+                {
+                    printf("vftintrzl.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa7:
+                {
+                    printf("vftintrzh.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa8:
+                {
+                    printf("vftintrnel.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xa9:
+                {
+                    printf("vftintrneh.l.s  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xb8:
+                {
+                    printf("vexth.h.b    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xb9:
+                {
+                    printf("vexth.w.h    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xba:
+                {
+                    printf("vexth.d.w    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xbb:
+                {
+                    printf("vexth.q.d    %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xbc:
+                {
+                    printf("vexth.hu.bu  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xbd:
+                {
+                    printf("vexth.wu.hu  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xbe:
+                {
+                    printf("vexth.du.wu  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xbf:
+                {
+                    printf("vexth.qu.du  %s, %s\n", vd, vj);
+                    return;
+                }
+                case 0xc0:
+                {
+                    printf("vreplgr2vr.b %s, %s\n", vd, rj);
+                    return;
+                }
+                case 0xc1:
+                {
+                    printf("vreplgr2vr.h %s, %s\n", vd, rj);
+                    return;
+                }
+                case 0xc2:
+                {
+                    printf("vreplgr2vr.w %s, %s\n", vd, rj);
+                    return;
+                }
+                case 0xc3:
+                {
+                    printf("vreplgr2vr.d %s, %s\n", vd, rj);
+                    return;
+                }
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+            break;
+        }
+        case 0xa8:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vrotri.b     %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vrotri.h     %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vrotri.w     %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vrotri.d     %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xa9:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsrlri.b     %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrlri.h     %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrlri.w     %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrlri.d     %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xaa:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsrari.b     %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrari.h     %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrari.w     %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrari.d     %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xba:
+        {
+            opcode = code >> 11;
+            if ((opcode & 0x78) == 0x70)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vinsgr2vr.b  %s, %s, %d\n", vd, rj, ui4);
+                return;
+            }
+            else if ((opcode & 0x7c) == 0x78)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vinsgr2vr.h  %s, %s, %d\n", vd, rj, ui3);
+                return;
+            }
+            else if ((opcode & 0x7e) == 0x7c)
+            {
+                unsigned short ui2 = (code >> 10) & 0x3;
+                assert((0 <= ui2) && (ui2 <= 3));
+                printf("vinsgr2vr.w  %s, %s, %d\n", vd, rj, ui2);
+                return;
+            }
+            else if ((opcode & 0x7f) == 0x7e)
+            {
+                unsigned short ui1 = (code >> 10) & 0x1;
+                printf("vinsgr2vr.d  %s, %s, %d\n", vd, rj, ui1);
+                return;
+            }
+            break;
+        }
+        case 0xbb:
+        {
+            opcode = code >> 11;
+            if ((opcode & 0x78) == 0x70)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vpickve2gr.b %s, %s, %d\n", rd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x7c) == 0x78)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vpickve2gr.h %s, %s, %d\n", rd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x7e) == 0x7c)
+            {
+                unsigned short ui2 = (code >> 10) & 0x3;
+                printf("vpickve2gr.w %s, %s, %d\n", rd, vj, ui2);
+                return;
+            }
+            else if ((opcode & 0x7f) == 0x7e)
+            {
+                unsigned short ui1 = (code >> 10) & 0x1;
+                printf("vpickve2gr.d %s, %s, %d\n", rd, vj, ui1);
+                return;
+            }
+            break;
+        }
+        case 0xbc:
+        {
+            opcode = code >> 11;
+            if ((opcode & 0x78) == 0x70)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vpickve2gr.bu  %s, %s, %d\n", rd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x7c) == 0x78)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vpickve2gr.hu  %s, %s, %d\n", rd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x7e) == 0x7c)
+            {
+                unsigned short ui2 = (code >> 10) & 0x3;
+                printf("vpickve2gr.wu  %s, %s, %d\n", rd, vj, ui2);
+                return;
+            }
+            else if ((opcode & 0x7f) == 0x7e)
+            {
+                unsigned short ui1 = (code >> 10) & 0x1;
+                printf("vpickve2gr.du  %s, %s, %d\n", rd, vj, ui1);
+                return;
+            }
+            break;
+        }
+        case 0xbd:
+        {
+            opcode = code >> 11;
+            if ((opcode & 0x78) == 0x70)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vreplvei.b   %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x7c) == 0x78)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vreplvei.h   %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x7e) == 0x7c)
+            {
+                unsigned short ui2 = (code >> 10) & 0x3;
+                assert((0 <= ui2) && (ui2 <= 3));
+                printf("vreplvei.w   %s, %s, %d\n", vd, vj, ui2);
+                return;
+            }
+            else if ((opcode & 0x7f) == 0x7e)
+            {
+                unsigned short ui1 = (code >> 10) & 0x1;
+                printf("vreplvei.d   %s, %s, %d\n", rd, vj, ui1);
+                return;
+            }
+            break;
+        }
+        case 0xc2:
+        {
+            opcode = code >> 10;
+            if ((opcode & 0xf8) == 0x8)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsllwil.h.b  %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0xf0) == 0x10)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsllwil.w.h  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe0) == 0x20)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsllwil.d.w  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xff) == 0x40)
+            {
+                printf("vextl.q.d    %s, %s\n", vd, vj);
+                return;
+            }
+            break;
+        }
+        case 0xc3:
+        {
+            opcode = code >> 10;
+            if ((opcode & 0xf8) == 0x8)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsllwil.hu.bu  %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0xf0) == 0x10)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsllwil.wu.hu  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe0) == 0x20)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsllwil.du.wu  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xff) == 0x40)
+            {
+                printf("vextl.qu.du  %s, %s\n", vd, vj);
+                return;
+            }
+            break;
+        }
+        case 0xc4:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vbitclri.b   %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vbitclri.h   %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vbitclri.w   %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vbitclri.d   %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xc5:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vbitseti.b   %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vbitseti.h   %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vbitseti.w   %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vbitseti.d   %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xc6:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vbitrevi.b   %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vbitrevi.h   %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vbitrevi.w   %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vbitrevi.d   %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xc9:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsat.b       %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsat.h       %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsat.w       %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsat.d       %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xca:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsat.bu      %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsat.hu      %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsat.wu      %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsat.du      %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xcb:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vslli.b      %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vslli.h      %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vslli.w      %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vslli.d      %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xcc:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsrli.b      %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrli.h      %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrli.w      %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrli.d      %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xcd:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("vsrai.b      %s, %s, %d\n", vd, vj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrai.h      %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrai.w      %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrai.d      %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xd0:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrlni.b.h   %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrlni.h.w   %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrlni.w.d   %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vsrlni.d.q   %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd1:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrlrni.b.h  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrlrni.h.w  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrlrni.w.d  %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vsrlrni.d.q  %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd2:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrlni.b.h  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrlni.h.w  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrlni.w.d  %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrlni.d.q  %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd3:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrlni.bu.h %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrlni.hu.w %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrlni.wu.d %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrlni.du.q %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd4:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrlrni.b.h %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrlrni.h.w %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrlrni.w.d %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrlrni.d.q %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd5:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrlrni.bu.h  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrlrni.hu.w  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrlrni.wu.d  %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrlrni.du.q  %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd6:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrani.b.h   %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrani.h.w   %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrani.w.d   %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vsrani.d.q   %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd7:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vsrarni.b.h  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vsrarni.h.w  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vsrarni.w.d  %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vsrarni.d.q  %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd8:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrani.b.h  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrani.h.w  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrani.w.d  %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrani.d.q  %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd9:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrani.bu.h %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrani.hu.w %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrani.wu.d %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrani.du.q %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xda:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrarni.b.h %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrarni.h.w %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrarni.w.d %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrarni.d.q %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xdb:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("vssrarni.bu.h  %s, %s, %d\n", vd, vj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("vssrarni.hu.w  %s, %s, %d\n", vd, vj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("vssrarni.wu.d  %s, %s, %d\n", vd, vj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("vssrarni.du.q  %s, %s, %d\n", vd, vj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xe0:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vextrins.d   %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xe1:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vextrins.w   %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xe2:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vextrins.h   %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xe3:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vextrins.b   %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xe4:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vshuf4i.b    %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xe5:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vshuf4i.h    %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xe6:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vshuf4i.w    %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xe7:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vshuf4i.d    %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xf1:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vbitseli.b   %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xf4:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vandi.b      %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xf5:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vori.b       %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xf6:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vxori.b      %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xf7:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("vnori.b      %s, %s, %d\n", vd, vj, ui8);
+            return;
+        }
+        case 0xf8:
+        {
+            short i13 = (code >> 5) & 0x1fff;
+            printf("vldi         %s, 0x%x\n", vd, i13);
+            return;
+        }
+        case 0xf9:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvpermi.w    %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        default:
+            printf("LOONGARCH illegal instruction: %08X\n", code);
+            return;
+    }
+    printf("LOONGARCH illegal instruction: %08X\n", code);
+    return;
+
+Label_OPCODE_1D:
+    opcode = (code >> 18) & 0xff; // MSB14
+    switch (opcode)
+    {
+        case 0 ... 0xa6:
+            opcode = (code >> 15) & 0x7ff;
+            switch (opcode)
+            {
+                case 0x0:
+                {
+                    printf("xvseq.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1:
+                {
+                    printf("xvseq.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x2:
+                {
+                    printf("xvseq.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x3:
+                {
+                    printf("xvseq.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x4:
+                {
+                    printf("xvsle.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x5:
+                {
+                    printf("xvsle.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x6:
+                {
+                    printf("xvsle.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x7:
+                {
+                    printf("xvsle.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x8:
+                {
+                    printf("xvsle.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x9:
+                {
+                    printf("xvsle.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xa:
+                {
+                    printf("xvsle.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb:
+                {
+                    printf("xvsle.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc:
+                {
+                    printf("xvslt.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd:
+                {
+                    printf("xvslt.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe:
+                {
+                    printf("xvslt.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xf:
+                {
+                    printf("xvslt.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x10:
+                {
+                    printf("xvslt.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x11:
+                {
+                    printf("xvslt.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x12:
+                {
+                    printf("xvslt.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x13:
+                {
+                    printf("xvslt.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x14:
+                {
+                    printf("xvadd.b        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x15:
+                {
+                    printf("xvadd.h        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x16:
+                {
+                    printf("xvadd.w        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x17:
+                {
+                    printf("xvadd.d        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x18:
+                {
+                    printf("xvsub.b        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x19:
+                {
+                    printf("xvsub.h        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1a:
+                {
+                    printf("xvsub.w        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1b:
+                {
+                    printf("xvsub.d        %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x3c:
+                {
+                    printf("xvaddwev.h.b %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x3d:
+                {
+                    printf("xvaddwev.w.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x3e:
+                {
+                    printf("xvaddwev.d.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x3f:
+                {
+                    printf("xvaddwev.q.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x40:
+                {
+                    printf("xvsubwev.h.b %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x41:
+                {
+                    printf("xvsubwev.w.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x42:
+                {
+                    printf("xvsubwev.d.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x43:
+                {
+                    printf("xvsubwev.q.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x44:
+                {
+                    printf("xvaddwod.h.b %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x45:
+                {
+                    printf("xvaddwod.w.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x46:
+                {
+                    printf("xvaddwod.d.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x47:
+                {
+                    printf("xvaddwod.q.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x48:
+                {
+                    printf("xvsubwod.h.b %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x49:
+                {
+                    printf("xvsubwod.w.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x4a:
+                {
+                    printf("xvsubwod.d.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x4b:
+                {
+                    printf("xvsubwod.q.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x5c:
+                {
+                    printf("xvaddwev.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x5d:
+                {
+                    printf("xvaddwev.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x5e:
+                {
+                    printf("xvaddwev.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x5f:
+                {
+                    printf("xvaddwev.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x60:
+                {
+                    printf("xvsubwev.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x61:
+                {
+                    printf("xvsubwev.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x62:
+                {
+                    printf("xvsubwev.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x63:
+                {
+                    printf("xvsubwev.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x64:
+                {
+                    printf("xvaddwod.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x65:
+                {
+                    printf("xvaddwod.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x66:
+                {
+                    printf("xvaddwod.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x67:
+                {
+                    printf("xvaddwod.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x68:
+                {
+                    printf("xvsubwod.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x69:
+                {
+                    printf("xvsubwod.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x6a:
+                {
+                    printf("xvsubwod.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x6b:
+                {
+                    printf("xvsubwod.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x7c:
+                {
+                    printf("xvaddwev.h.bu.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x7d:
+                {
+                    printf("xvaddwev.w.hu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x7e:
+                {
+                    printf("xvaddwev.d.wu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x7f:
+                {
+                    printf("xvaddwev.q.du.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x80:
+                {
+                    printf("xvaddwod.h.bu.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x81:
+                {
+                    printf("xvaddwod.w.hu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x82:
+                {
+                    printf("xvaddwod.d.wu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x83:
+                {
+                    printf("xvaddwod.q.du.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x8c:
+                {
+                    printf("xvsadd.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x8d:
+                {
+                    printf("xvsadd.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x8e:
+                {
+                    printf("xvsadd.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x8f:
+                {
+                    printf("xvsadd.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x90:
+                {
+                    printf("xvssub.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x91:
+                {
+                    printf("xvssub.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x92:
+                {
+                    printf("xvssub.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x93:
+                {
+                    printf("xvssub.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x94:
+                {
+                    printf("xvsadd.bu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x95:
+                {
+                    printf("xvsadd.hu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x96:
+                {
+                    printf("xvsadd.wu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x97:
+                {
+                    printf("xvsadd.du    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x98:
+                {
+                    printf("xvssub.bu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x99:
+                {
+                    printf("xvssub.hu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x9a:
+                {
+                    printf("xvssub.wu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x9b:
+                {
+                    printf("xvssub.du    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xa8:
+                {
+                    printf("xvhaddw.h.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xa9:
+                {
+                    printf("xvhaddw.w.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xaa:
+                {
+                    printf("xvhaddw.d.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xab:
+                {
+                    printf("xvhaddw.q.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xac:
+                {
+                    printf("xvhsubw.h.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xad:
+                {
+                    printf("xvhsubw.w.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xae:
+                {
+                    printf("xvhsubw.d.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xaf:
+                {
+                    printf("xvhsubw.q.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb0:
+                {
+                    printf("xvhaddw.hu.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb1:
+                {
+                    printf("xvhaddw.wu.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb2:
+                {
+                    printf("xvhaddw.du.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb3:
+                {
+                    printf("xvhaddw.qu.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb4:
+                {
+                    printf("xvhsubw.hu.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb5:
+                {
+                    printf("xvhsubw.wu.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb6:
+                {
+                    printf("xvhsubw.du.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb7:
+                {
+                    printf("xvhsubw.qu.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb8:
+                {
+                    printf("xvadda.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xb9:
+                {
+                    printf("xvadda.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xba:
+                {
+                    printf("xvadda.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xbb:
+                {
+                    printf("xvadda.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc0:
+                {
+                    printf("xvabsd.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc1:
+                {
+                    printf("xvabsd.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc2:
+                {
+                    printf("xvabsd.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc3:
+                {
+                    printf("xvabsd.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc4:
+                {
+                    printf("xvabsd.bu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc5:
+                {
+                    printf("xvabsd.hu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc6:
+                {
+                    printf("xvabsd.wu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc7:
+                {
+                    printf("xvabsd.du    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc8:
+                {
+                    printf("xvavg.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xc9:
+                {
+                    printf("xvavg.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xca:
+                {
+                    printf("xvavg.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xcb:
+                {
+                    printf("xvavg.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xcc:
+                {
+                    printf("xvavg.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xcd:
+                {
+                    printf("xvavg.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xce:
+                {
+                    printf("xvavg.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xcf:
+                {
+                    printf("xvavg.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd0:
+                {
+                    printf("xvavgr.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd1:
+                {
+                    printf("xvavgr.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd2:
+                {
+                    printf("xvavgr.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd3:
+                {
+                    printf("xvavgr.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd4:
+                {
+                    printf("xvavgr.bu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd5:
+                {
+                    printf("xvavgr.hu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd6:
+                {
+                    printf("xvavgr.wu    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xd7:
+                {
+                    printf("xvavgr.du    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe0:
+                {
+                    printf("xvmax.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe1:
+                {
+                    printf("xvmax.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe2:
+                {
+                    printf("xvmax.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe3:
+                {
+                    printf("xvmax.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe4:
+                {
+                    printf("xvmin.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe5:
+                {
+                    printf("xvmin.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe6:
+                {
+                    printf("xvmin.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe7:
+                {
+                    printf("xvmin.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe8:
+                {
+                    printf("xvmax.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xe9:
+                {
+                    printf("xvmax.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xea:
+                {
+                    printf("xvmax.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xeb:
+                {
+                    printf("xvmax.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xec:
+                {
+                    printf("xvmin.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xed:
+                {
+                    printf("xvmin.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xee:
+                {
+                    printf("xvmin.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0xef:
+                {
+                    printf("xvmin.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x108:
+                {
+                    printf("xvmul.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x109:
+                {
+                    printf("xvmul.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x10a:
+                {
+                    printf("xvmul.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x10b:
+                {
+                    printf("xvmul.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x10c:
+                {
+                    printf("xvmuh.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x10d:
+                {
+                    printf("xvmuh.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x10e:
+                {
+                    printf("xvmuh.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x10f:
+                {
+                    printf("xvmuh.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x110:
+                {
+                    printf("xvmuh.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x111:
+                {
+                    printf("xvmuh.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x112:
+                {
+                    printf("xvmuh.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x113:
+                {
+                    printf("xvmuh.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x120:
+                {
+                    printf("xvmulwev.h.b %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x121:
+                {
+                    printf("xvmulwev.w.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x122:
+                {
+                    printf("xvmulwev.d.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x123:
+                {
+                    printf("xvmulwev.q.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x124:
+                {
+                    printf("xvmulwod.h.b %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x125:
+                {
+                    printf("xvmulwod.w.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x126:
+                {
+                    printf("xvmulwod.d.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x127:
+                {
+                    printf("xvmulwod.q.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x130:
+                {
+                    printf("xvmulwev.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x131:
+                {
+                    printf("xvmulwev.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x132:
+                {
+                    printf("xvmulwev.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x133:
+                {
+                    printf("xvmulwev.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x134:
+                {
+                    printf("xvmulwod.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x135:
+                {
+                    printf("xvmulwod.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x136:
+                {
+                    printf("xvmulwod.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x137:
+                {
+                    printf("xvmulwod.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x140:
+                {
+                    printf("xvmulwev.h.bu.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x141:
+                {
+                    printf("xvmulwev.w.hu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x142:
+                {
+                    printf("xvmulwev.d.wu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x143:
+                {
+                    printf("xvmulwev.q.du.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x144:
+                {
+                    printf("xvmulwod.h.bu.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x145:
+                {
+                    printf("xvmulwod.w.hu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x146:
+                {
+                    printf("xvmulwod.d.wu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x147:
+                {
+                    printf("xvmulwod.q.du.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x150:
+                {
+                    printf("xvmadd.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x151:
+                {
+                    printf("xvmadd.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x152:
+                {
+                    printf("xvmadd.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x153:
+                {
+                    printf("xvmadd.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x154:
+                {
+                    printf("xvmsub.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x155:
+                {
+                    printf("xvmsub.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x156:
+                {
+                    printf("xvmsub.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x157:
+                {
+                    printf("xvmsub.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x158:
+                {
+                    printf("xvmaddwev.h.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x159:
+                {
+                    printf("xvmaddwev.w.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x15a:
+                {
+                    printf("xvmaddwev.d.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x15b:
+                {
+                    printf("xvmaddwev.q.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x15c:
+                {
+                    printf("xvmaddwod.h.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x15d:
+                {
+                    printf("xvmaddwod.w.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x15e:
+                {
+                    printf("xvmaddwod.d.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x15f:
+                {
+                    printf("xvmaddwod.q.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x168:
+                {
+                    printf("xvmaddwev.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x169:
+                {
+                    printf("xvmaddwev.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x16a:
+                {
+                    printf("xvmaddwev.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x16b:
+                {
+                    printf("xvmaddwev.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x16c:
+                {
+                    printf("xvmaddwod.h.bu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x16d:
+                {
+                    printf("xvmaddwod.w.hu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x16e:
+                {
+                    printf("xvmaddwod.d.wu  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x16f:
+                {
+                    printf("xvmaddwod.q.du  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x178:
+                {
+                    printf("xvmaddwev.h.bu.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x179:
+                {
+                    printf("xvmaddwev.w.hu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x17a:
+                {
+                    printf("xvmaddwev.d.wu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x17b:
+                {
+                    printf("xvmaddwev.q.du.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x17c:
+                {
+                    printf("xvmaddwod.h.bu.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x17d:
+                {
+                    printf("xvmaddwod.w.hu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x17e:
+                {
+                    printf("xvmaddwod.d.wu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x17f:
+                {
+                    printf("xvmaddwod.q.du.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c0:
+                {
+                    printf("xvdiv.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c1:
+                {
+                    printf("xvdiv.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c2:
+                {
+                    printf("xvdiv.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c3:
+                {
+                    printf("xvdiv.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c4:
+                {
+                    printf("xvmod.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c5:
+                {
+                    printf("xvmod.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c6:
+                {
+                    printf("xvmod.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c7:
+                {
+                    printf("xvmod.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c8:
+                {
+                    printf("xvdiv.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1c9:
+                {
+                    printf("xvdiv.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1ca:
+                {
+                    printf("xvdiv.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1cb:
+                {
+                    printf("xvdiv.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1cc:
+                {
+                    printf("xvmod.bu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1cd:
+                {
+                    printf("xvmod.hu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1ce:
+                {
+                    printf("xvmod.wu     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1cf:
+                {
+                    printf("xvmod.du     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d0:
+                {
+                    printf("xvsll.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d1:
+                {
+                    printf("xvsll.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d2:
+                {
+                    printf("xvsll.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d3:
+                {
+                    printf("xvsll.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d4:
+                {
+                    printf("xvsrl.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d5:
+                {
+                    printf("xvsrl.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d6:
+                {
+                    printf("xvsrl.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d7:
+                {
+                    printf("xvsrl.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d8:
+                {
+                    printf("xvsra.b      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1d9:
+                {
+                    printf("xvsra.h      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1da:
+                {
+                    printf("xvsra.w      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1db:
+                {
+                    printf("xvsra.d      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1dc:
+                {
+                    printf("xvrotr.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1dd:
+                {
+                    printf("xvrotr.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1de:
+                {
+                    printf("xvrotr.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1df:
+                {
+                    printf("xvrotr.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e0:
+                {
+                    printf("xvsrlr.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e1:
+                {
+                    printf("xvsrlr.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e2:
+                {
+                    printf("xvsrlr.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e3:
+                {
+                    printf("xvsrlr.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e4:
+                {
+                    printf("xvsrar.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e5:
+                {
+                    printf("xvsrar.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e6:
+                {
+                    printf("xvsrar.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e7:
+                {
+                    printf("xvsrar.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1e9:
+                {
+                    printf("xvsrln.b.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1ea:
+                {
+                    printf("xvsrln.h.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1eb:
+                {
+                    printf("xvsrln.w.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1ed:
+                {
+                    printf("xvsran.b.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1ee:
+                {
+                    printf("xvsran.h.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1ef:
+                {
+                    printf("xvsran.w.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1f1:
+                {
+                    printf("xvsrlrn.b.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1f2:
+                {
+                    printf("xvsrlrn.h.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1f3:
+                {
+                    printf("xvsrlrn.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1f5:
+                {
+                    printf("xvsrarn.b.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1f6:
+                {
+                    printf("xvsrarn.h.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1f7:
+                {
+                    printf("xvsrarn.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1f9:
+                {
+                    printf("xvssrln.b.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1fa:
+                {
+                    printf("xvssrln.h.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1fb:
+                {
+                    printf("xvssrln.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1fd:
+                {
+                    printf("xvssran.b.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1fe:
+                {
+                    printf("xvssran.h.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x1ff:
+                {
+                    printf("xvssran.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x201:
+                {
+                    printf("xvssrlrn.b.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x202:
+                {
+                    printf("xvssrlrn.h.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x203:
+                {
+                    printf("xvssrlrn.w.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x205:
+                {
+                    printf("xvssrarn.b.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x206:
+                {
+                    printf("xvssrarn.h.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x207:
+                {
+                    printf("xvssrarn.w.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x209:
+                {
+                    printf("xvssrln.bu.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x20a:
+                {
+                    printf("xvssrln.hu.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x20b:
+                {
+                    printf("xvssrln.wu.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x20d:
+                {
+                    printf("xvssran.bu.h %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x20e:
+                {
+                    printf("xvssran.hu.w %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x20f:
+                {
+                    printf("xvssran.wu.d %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x211:
+                {
+                    printf("xvssrlrn.bu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x212:
+                {
+                    printf("xvssrlrn.hu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x213:
+                {
+                    printf("xvssrlrn.wu.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x215:
+                {
+                    printf("xvssrarn.bu.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x216:
+                {
+                    printf("xvssrarn.hu.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x217:
+                {
+                    printf("xvssrarn.wu.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x218:
+                {
+                    printf("xvbitclr.b   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x219:
+                {
+                    printf("xvbitclr.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x21a:
+                {
+                    printf("xvbitclr.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x21b:
+                {
+                    printf("xvbitclr.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x21c:
+                {
+                    printf("xvbitset.b   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x21d:
+                {
+                    printf("xvbitset.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x21e:
+                {
+                    printf("xvbitset.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x21f:
+                {
+                    printf("xvbitset.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x220:
+                {
+                    printf("xvbitrev.b   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x221:
+                {
+                    printf("xvbitrev.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x222:
+                {
+                    printf("xvbitrev.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x223:
+                {
+                    printf("xvbitrev.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x22c:
+                {
+                    printf("xvpackev.b   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x22d:
+                {
+                    printf("xvpackev.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x22e:
+                {
+                    printf("xvpackev.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x22f:
+                {
+                    printf("xvpackev.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x230:
+                {
+                    printf("xvpackod.b   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x231:
+                {
+                    printf("xvpackod.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x232:
+                {
+                    printf("xvpackod.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x233:
+                {
+                    printf("xvpackod.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x234:
+                {
+                    printf("xvilvl.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x235:
+                {
+                    printf("xvilvl.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x236:
+                {
+                    printf("xvilvl.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x237:
+                {
+                    printf("xvilvl.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x238:
+                {
+                    printf("xvilvh.b     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x239:
+                {
+                    printf("xvilvh.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x23a:
+                {
+                    printf("xvilvh.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x23b:
+                {
+                    printf("xvilvh.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x23c:
+                {
+                    printf("xvpickev.b   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x23d:
+                {
+                    printf("xvpickev.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x23e:
+                {
+                    printf("xvpickev.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x23f:
+                {
+                    printf("xvpickev.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x240:
+                {
+                    printf("xvpickod.b   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x241:
+                {
+                    printf("xvpickod.h   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x242:
+                {
+                    printf("xvpickod.w   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x243:
+                {
+                    printf("xvpickod.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x244:
+                {
+                    printf("xvreplve.b   %s, %s, %s\n", xd, xj, rk);
+                    return;
+                }
+                case 0x245:
+                {
+                    printf("xvreplve.h   %s, %s, %s\n", xd, xj, rk);
+                    return;
+                }
+                case 0x246:
+                {
+                    printf("xvreplve.w   %s, %s, %s\n", xd, xj, rk);
+                    return;
+                }
+                case 0x247:
+                {
+                    printf("xvreplve.d   %s, %s, %s\n", xd, xj, rk);
+                    return;
+                }
+                case 0x24c:
+                {
+                    printf("xvand.v      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x24d:
+                {
+                    printf("xvor.v       %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x24e:
+                {
+                    printf("xvxor.v      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x24f:
+                {
+                    printf("xvnor.v      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x250:
+                {
+                    printf("xvandn.v     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x251:
+                {
+                    printf("xvorn.v      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x256:
+                {
+                    printf("xvfrstp.b    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x257:
+                {
+                    printf("xvfrstp.h    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x25a:
+                {
+                    printf("xvadd.q      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x25b:
+                {
+                    printf("xvsub.q      %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x25c:
+                {
+                    printf("xvsigncov.b  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x25d:
+                {
+                    printf("xvsigncov.h  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x25e:
+                {
+                    printf("xvsigncov.w  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x25f:
+                {
+                    printf("xvsigncov.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x261:
+                {
+                    printf("xvfadd.s     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x262:
+                {
+                    printf("xvfadd.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x265:
+                {
+                    printf("xvfsub.s     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x266:
+                {
+                    printf("xvfsub.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x271:
+                {
+                    printf("xvfmul.s     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x272:
+                {
+                    printf("xvfmul.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x275:
+                {
+                    printf("xvfdiv.s     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x276:
+                {
+                    printf("xvfdiv.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x279:
+                {
+                    printf("xvfmax.s     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x27a:
+                {
+                    printf("xvfmax.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x27d:
+                {
+                    printf("xvfmin.s     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x27e:
+                {
+                    printf("xvfmin.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x281:
+                {
+                    printf("xvfmaxa.s    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x282:
+                {
+                    printf("xvfmaxa.d    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x285:
+                {
+                    printf("xvfmina.s    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x286:
+                {
+                    printf("xvfmina.d    %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x28c:
+                {
+                    printf("xvfcvt.h.s   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x28d:
+                {
+                    printf("xvfcvt.s.d   %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x290:
+                {
+                    printf("xvffint.s.l  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x293:
+                {
+                    printf("xvftint.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x294:
+                {
+                    printf("xvftintrm.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x295:
+                {
+                    printf("xvftintrp.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x296:
+                {
+                    printf("xvftintrz.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x297:
+                {
+                    printf("xvftintrne.w.d  %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x2f5:
+                {
+                    printf("xvshuf.h     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x2f6:
+                {
+                    printf("xvshuf.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x2f7:
+                {
+                    printf("xvshuf.d     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x2fa:
+                {
+                    printf("xvperm.w     %s, %s, %s\n", xd, xj, xk);
+                    return;
+                }
+                case 0x500:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvseqi.b     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x501:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvseqi.h     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x502:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvseqi.w     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x503:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvseqi.d     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x504:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslei.b     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x505:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslei.h     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x506:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslei.w     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x507:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslei.d     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x508:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslei.bu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x509:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslei.hu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x50a:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslei.wu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x50b:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslei.du    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x50c:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslti.b     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x50d:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslti.h     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x50e:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslti.w     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x50f:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvslti.d     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x510:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslti.bu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x511:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslti.hu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x512:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslti.wu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x513:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvslti.du    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x514:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvaddi.bu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x515:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvaddi.hu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x516:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvaddi.wu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x517:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvaddi.du    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x518:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvsubi.bu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x519:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvsubi.hu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x51a:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvsubi.wu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x51b:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvsubi.du    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x51c:
+                {
+                    unsigned int ui5 = (code >> 10) & 0x1f;
+                    printf("xvbsll.v     %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x51d:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvbsrl.v     %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x520:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmaxi.b     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x521:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmaxi.h     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x522:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmaxi.w     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x523:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmaxi.d     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x524:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmini.b     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x525:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmini.h     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x526:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmini.w     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x527:
+                {
+                    short si5 = ((code >> 10) & 0x1f) << 11;
+                    si5 >>= 11;
+                    assert((-16 <= si5) && (si5 <= 15));
+                    printf("xvmini.d     %s, %s, %d\n", xd, xj, si5);
+                    return;
+                }
+                case 0x528:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmaxi.bu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x529:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmaxi.hu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x52a:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmaxi.wu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x52b:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmaxi.du    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x52c:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmini.bu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x52d:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmini.hu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x52e:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmini.wu    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x52f:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvmini.du    %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x534:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvfrstpi.b   %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                case 0x535:
+                {
+                    unsigned short ui5 = (code >> 10) & 0x1f;
+                    printf("xvfrstpi.h   %s, %s, %d\n", xd, xj, ui5);
+                    return;
+                }
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+            break;
+        case 0xa7:
+        {
+            opcode = (code >> 10) & 0xff;
+            switch (opcode)
+            {
+                case 0x0:
+                {
+                    printf("xvclo.b      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x1:
+                {
+                    printf("xvclo.h      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x2:
+                {
+                    printf("xvclo.w      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x3:
+                {
+                    printf("xvclo.d      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x4:
+                {
+                    printf("xvclz.b      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x5:
+                {
+                    printf("xvclz.h      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x6:
+                {
+                    printf("xvclz.w      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x7:
+                {
+                    printf("xvclz.d      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x8:
+                {
+                    printf("xvpcnt.b     %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x9:
+                {
+                    printf("xvpcnt.h     %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa:
+                {
+                    printf("xvpcnt.w     %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xb:
+                {
+                    printf("xvpcnt.d     %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xc:
+                {
+                    printf("xvneg.b      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xd:
+                {
+                    printf("xvneg.h      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xe:
+                {
+                    printf("xvneg.w      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xf:
+                {
+                    printf("xvneg.d      %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x10:
+                {
+                    printf("xvmskltz.b   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x11:
+                {
+                    printf("xvmskltz.h   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x12:
+                {
+                    printf("xvmskltz.w   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x13:
+                {
+                    printf("xvmskltz.d   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x14:
+                {
+                    printf("xvmskgez.b   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x18:
+                {
+                    printf("xvmsknz.b    %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x26:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvseteqz.v   %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x27:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetnez.v   %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x28:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetanyeqz.b  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x29:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetanyeqz.h  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x2a:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetanyeqz.w  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x2b:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetanyeqz.d  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x2c:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetallnez.b  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x2d:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetallnez.h  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x2e:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetallnez.w  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x2f:
+                {
+                    const char* cd = CFregName[code & 0x7];
+                    printf("xvsetallnez.d  %s, %s\n", cd, xj);
+                    return;
+                }
+                case 0x31:
+                {
+                    printf("xvflogb.s    %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x32:
+                {
+                    printf("xvflogb.d    %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x35:
+                {
+                    printf("xvfclass.s   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x36:
+                {
+                    printf("xvfclass.d   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x39:
+                {
+                    printf("xvfsqrt.s    %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x3a:
+                {
+                    printf("xvfsqrt.d    %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x3d:
+                {
+                    printf("xvfrecip.s   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x3e:
+                {
+                    printf("xvfrecip.d   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x41:
+                {
+                    printf("xvfrsqrt.s   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x42:
+                {
+                    printf("xvfrsqrt.d   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x4d:
+                {
+                    printf("xvfrint.s    %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x4e:
+                {
+                    printf("xvfrint.d    %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x51:
+                {
+                    printf("xvfrintrm.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x52:
+                {
+                    printf("xvfrintrm.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x55:
+                {
+                    printf("xvfrintrp.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x56:
+                {
+                    printf("xvfrintrp.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x59:
+                {
+                    printf("xvfrintrz.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x5a:
+                {
+                    printf("xvfrintrz.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x5d:
+                {
+                    printf("xvfrintrne.s %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x5e:
+                {
+                    printf("xvfrintrne.d %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x7a:
+                {
+                    printf("xvfcvtl.s.h  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x7b:
+                {
+                    printf("xvfcvth.s.h  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x7c:
+                {
+                    printf("xvfcvtl.d.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x7d:
+                {
+                    printf("xvfcvth.d.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x80:
+                {
+                    printf("xvffint.s.w  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x81:
+                {
+                    printf("xvffint.s.wu %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x82:
+                {
+                    printf("xvffint.d.l  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x83:
+                {
+                    printf("xvffint.d.lu %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x84:
+                {
+                    printf("xvffintl.d.w %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x85:
+                {
+                    printf("xvffinth.d.w %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x8c:
+                {
+                    printf("xvftint.w.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x8d:
+                {
+                    printf("xvftint.l.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x8e:
+                {
+                    printf("xvftintrm.w.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x8f:
+                {
+                    printf("xvftintrm.l.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x90:
+                {
+                    printf("xvftintrp.w.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x91:
+                {
+                    printf("xvftintrp.l.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x92:
+                {
+                    printf("xvftintrz.w.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x93:
+                {
+                    printf("xvftintrz.l.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x94:
+                {
+                    printf("xvftintrne.w.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x95:
+                {
+                    printf("xvftintrne.l.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x96:
+                {
+                    printf("xvftint.wu.s %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x97:
+                {
+                    printf("xvftint.lu.d %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x9c:
+                {
+                    printf("xvftintrz.wu.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0x9d:
+                {
+                    printf("xvftintrz.lu.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa0:
+                {
+                    printf("xvftintl.l.s %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa1:
+                {
+                    printf("xvftinth.l.s %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa2:
+                {
+                    printf("xvftintrml.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa3:
+                {
+                    printf("xvftintrmh.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa4:
+                {
+                    printf("xvftintrpl.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa5:
+                {
+                    printf("xvftintrph.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa6:
+                {
+                    printf("xvftintrzl.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa7:
+                {
+                    printf("xvftintrzh.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa8:
+                {
+                    printf("xvftintrnel.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xa9:
+                {
+                    printf("xvftintrneh.l.s  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xb8:
+                {
+                    printf("xvexth.h.b   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xb9:
+                {
+                    printf("xvexth.w.h   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xba:
+                {
+                    printf("xvexth.d.w   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xbb:
+                {
+                    printf("xvexth.q.d   %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xbc:
+                {
+                    printf("xvexth.hu.bu %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xbd:
+                {
+                    printf("xvexth.wu.hu %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xbe:
+                {
+                    printf("xvexth.du.wu %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xbf:
+                {
+                    printf("xvexth.qu.du %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xc0:
+                {
+                    printf("xvreplgr2vr.b  %s, %s\n", xd, rj);
+                    return;
+                }
+                case 0xc1:
+                {
+                    printf("xvreplgr2vr.h  %s, %s\n", xd, rj);
+                    return;
+                }
+                case 0xc2:
+                {
+                    printf("xvreplgr2vr.w  %s, %s\n", xd, rj);
+                    return;
+                }
+                case 0xc3:
+                {
+                    printf("xvreplgr2vr.d  %s, %s\n", xd, rj);
+                    return;
+                }
+                case 0xc4:
+                {
+                    printf("vext2xv.h.b  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xc5:
+                {
+                    printf("vext2xv.w.b  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xc6:
+                {
+                    printf("vext2xv.d.b  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xc7:
+                {
+                    printf("vext2xv.w.h  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xc8:
+                {
+                    printf("vext2xv.d.h  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xc9:
+                {
+                    printf("vext2xv.d.w  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xca:
+                {
+                    printf("vext2xv.hu.bu  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xcb:
+                {
+                    printf("vext2xv.wu.bu  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xcc:
+                {
+                    printf("vext2xv.du.bu  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xcd:
+                {
+                    printf("vext2xv.wu.hu  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xce:
+                {
+                    printf("vext2xv.du.hu  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xcf:
+                {
+                    printf("vext2xv.du.wu  %s, %s\n", xd, xj);
+                    return;
+                }
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+            break;
+        }
+        case 0xa8:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvrotri.b    %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvrotri.h    %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvrotri.w    %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvrotri.d    %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xa9:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrlri.b    %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsrlri.h    %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrlri.w    %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrlri.d    %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xaa:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrari.b    %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsrari.h    %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrari.w    %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrari.d    %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xba:
+        {
+            opcode = code >> 12;
+            if ((opcode & 0x3e) == 0x3c)
+            {
+                unsigned int ui3 = (code >> 10) & 0x7;
+                printf("xvinsgr2vr.w %s, %s, %d\n", xd, rj, ui3);
+                return;
+            }
+            else if ((opcode & 0x3f) == 0x3e)
+            {
+                unsigned int ui2 = (code >> 10) & 0x3;
+                printf("xvinsgr2vr.d %s, %s, %d\n", xd, rj, ui2);
+                return;
+            }
+            break;
+        }
+        case 0xbb:
+        {
+            opcode = code >> 12;
+            if ((opcode & 0x3e) == 0x3c)
+            {
+                unsigned int ui3 = (code >> 10) & 0x7;
+                printf("xvpickve2gr.w  %s, %s, %d\n", rd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x3f) == 0x3e)
+            {
+                unsigned int ui2 = (code >> 10) & 0x3;
+                printf("xvpickve2gr.d  %s, %s, %d\n", rd, xj, ui2);
+                return;
+            }
+            break;
+        }
+        case 0xbc:
+        {
+            opcode = code >> 12;
+            if ((opcode & 0x3e) == 0x3c)
+            {
+                unsigned int ui3 = (code >> 10) & 0x7;
+                printf("xvpickve2gr.wu  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x3f) == 0x3e)
+            {
+                unsigned int ui2 = (code >> 10) & 0x3;
+                printf("xvpickve2gr.du  %s, %s, %d\n", rd, xj, ui2);
+                return;
+            }
+            break;
+        }
+        case 0xbd:
+        {
+            opcode = code >> 11;
+            if ((opcode & 0x78) == 0x70)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvrepl128vei.b  %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x7c) == 0x78)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvrepl128vei.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x7e) == 0x7c)
+            {
+                unsigned short ui2 = (code >> 10) & 0x3;
+                assert((0 <= ui2) && (ui2 <= 3));
+                printf("xvrepl128vei.w  %s, %s, %d\n", xd, xj, ui2);
+                return;
+            }
+            else if ((opcode & 0x7f) == 0x7e)
+            {
+                unsigned short ui1 = (code >> 10) & 0x1;
+                printf("xvrepl128vei.d  %s, %s, %d\n", xd, xj, ui1);
+                return;
+            }
+            break;
+        }
+        case 0xbf:
+        {
+            opcode = code >> 12;
+            if ((opcode & 0x3e) == 0x3c)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvinsve0.w   %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x3f) == 0x3e)
+            {
+                unsigned short ui2 = (code >> 10) & 0x3;
+                assert((0 <= ui2) && (ui2 <= 3));
+                printf("xvinsve0.d   %s, %s, %d\n", xd, xj, ui2);
+                return;
+            }
+            break;
+        }
+        case 0xc0:
+        {
+            opcode = code >> 12;
+            if ((opcode & 0x3e) == 0x3c)
+            {
+                unsigned int ui3 = (code >> 10) & 0x7;
+                printf("xvpickve.w   %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x3f) == 0x3e)
+            {
+                unsigned int ui2 = (code >> 10) & 0x3;
+                printf("xvpickve.d   %s, %s, %d\n", xd, xj, ui2);
+                return;
+            }
+            break;
+        }
+        case 0xc1:
+        {
+            opcode = (code >> 10) & 0xff;
+            switch (opcode)
+            {
+                case 0xc0:
+                {
+                    printf("xvreplve0.b  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xe0:
+                {
+                    printf("xvreplve0.h  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xf0:
+                {
+                    printf("xvreplve0.w  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xf8:
+                {
+                    printf("xvreplve0.d  %s, %s\n", xd, xj);
+                    return;
+                }
+                case 0xfc:
+                {
+                    printf("xvreplve0.q  %s, %s\n", xd, xj);
+                    return;
+                }
+                default:
+                    printf("LOONGARCH illegal instruction: %08X\n", code);
+                    return;
+            }
+        }
+        case 0xc2:
+        {
+            opcode = code >> 10;
+            if ((opcode & 0xf8) == 0x8)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsllwil.h.b %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xf0) == 0x10)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsllwil.w.h %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe0) == 0x20)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsllwil.d.w %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xff) == 0x40)
+            {
+                printf("xvextl.q.d   %s, %s\n", xd, xj);
+                return;
+            }
+            break;
+        }
+        case 0xc3:
+        {
+            opcode = code >> 10;
+            if ((opcode & 0xf8) == 0x8)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsllwil.hu.bu  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xf0) == 0x10)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsllwil.wu.hu  %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0xe0) == 0x20)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsllwil.du.wu  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xff) == 0x40)
+            {
+                printf("xvextl.qu.du %s, %s\n", xd, xj);
+                return;
+            }
+            break;
+        }
+        case 0xc4:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvbitclri.b  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvbitclri.h  %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvbitclri.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvbitclri.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xc5:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvbitseti.b  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvbitseti.h  %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvbitseti.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvbitseti.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xc6:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvbitrevi.b  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvbitrevi.h  %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvbitrevi.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvbitrevi.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xc9:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsat.b      %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsat.h      %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsat.w      %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsat.d      %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xca:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsat.bu     %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsat.hu     %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsat.wu     %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsat.du     %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xcb:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvslli.b     %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvslli.h     %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvslli.w     %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvslli.d     %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xcc:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrli.b     %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsrli.h     %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrli.w     %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrli.d     %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xcd:
+        {
+            opcode = code >> 13;
+            if ((opcode & 0x1f) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrai.b     %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0x1e) == 0x2)
+            {
+                unsigned short ui4 = (code >> 10) & 0xf;
+                printf("xvsrai.h     %s, %s, %d\n", xd, xj, ui4);
+                return;
+            }
+            else if ((opcode & 0x1c) == 0x4)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrai.w     %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0x18) == 0x8)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrai.d     %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            break;
+        }
+        case 0xd0:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrlni.b.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrlni.h.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrlni.w.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvsrlni.d.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd1:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrlrni.b.h %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrlrni.h.w %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrlrni.w.d %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvsrlrni.d.q %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd2:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrlni.b.h %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrlni.h.w %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrlni.w.d %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrlni.d.q %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd3:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrlni.bu.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrlni.hu.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrlni.wu.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrlni.du.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd4:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrlrni.b.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrlrni.h.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrlrni.w.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrlrni.d.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd5:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrlrni.bu.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrlrni.hu.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrlrni.wu.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrlrni.du.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd6:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrani.b.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrani.h.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrani.w.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvsrani.d.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd7:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvsrarni.b.h %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvsrarni.h.w %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvsrarni.w.d %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvsrarni.d.q %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd8:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrani.b.h %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrani.h.w %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrani.w.d %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrani.d.q %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xd9:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrani.bu.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrani.hu.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrani.wu.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrani.du.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xda:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrarni.b.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrarni.h.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrarni.w.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrarni.d.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xdb:
+        {
+            opcode = code >> 14;
+            if ((opcode & 0xf) == 0x1)
+            {
+                unsigned short ui3 = (code >> 10) & 0x7;
+                printf("xvssrarni.bu.h  %s, %s, %d\n", xd, xj, ui3);
+                return;
+            }
+            else if ((opcode & 0xe) == 0x2)
+            {
+                unsigned short ui5 = (code >> 10) & 0x1f;
+                printf("xvssrarni.hu.w  %s, %s, %d\n", xd, xj, ui5);
+                return;
+            }
+            else if ((opcode & 0xc) == 0x4)
+            {
+                unsigned short ui6 = (code >> 10) & 0x3f;
+                printf("xvssrarni.wu.d  %s, %s, %d\n", xd, xj, ui6);
+                return;
+            }
+            else if ((opcode & 0x8) == 0x8)
+            {
+                unsigned short ui7 = (code >> 10) & 0x7f;
+                printf("xvssrarni.du.q  %s, %s, %d\n", xd, xj, ui7);
+                return;
+            }
+            break;
+        }
+        case 0xe0:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvextrins.d  %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xe1:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvextrins.w  %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xe2:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvextrins.h  %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xe3:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvextrins.b  %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xe4:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvshuf4i.b   %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xe5:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvshuf4i.h   %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xe6:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvshuf4i.w   %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xe7:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvshuf4i.d   %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xf1:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvbitseli.b  %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xf4:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvandi.b     %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xf5:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvori.b      %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xf6:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvxori.b     %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xf7:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvnori.b     %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xf8:
+        {
+            short i13 = (code >> 5) & 0x1fff;
+            printf("xvldi        %s, 0x%x\n", xd, i13);
+            return;
+        }
+        case 0xf9:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvpermi.w    %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xfa:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvpermi.d    %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        case 0xfb:
+        {
+            unsigned short ui8 = (code >> 10) & 0xff;
+            printf("xvpermi.q    %s, %s, %d\n", xd, xj, ui8);
+            return;
+        }
+        default:
+            printf("LOONGARCH illegal instruction: %08X\n", code);
+            return;
+    }
+    printf("LOONGARCH illegal instruction: %08X\n", code);
+    return;
+#endif
 }
 
 /*****************************************************************************
@@ -6701,4 +14677,102 @@ bool emitter::IsMovInstruction(instruction ins)
         }
     }
 }
+
+#ifdef FEATURE_SIMD
+// For the given 'size' and 'index' returns true if it specifies a valid index for a vector register of 'size'
+bool emitter::isValidVectorIndex(emitAttr datasize, emitAttr elemsize, ssize_t index)
+{
+    assert(isValidVectorDatasize(datasize));
+    assert(isValidVectorElemsize(elemsize));
+
+    bool result = false;
+    if (index >= 0)
+    {
+        if (datasize == EA_8BYTE)
+        {
+            switch (elemsize)
+            {
+                case EA_1BYTE:
+                    result = (index < 8);
+                    break;
+                case EA_2BYTE:
+                    result = (index < 4);
+                    break;
+                case EA_4BYTE:
+                    result = (index < 2);
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+        }
+        else if (datasize == EA_16BYTE)
+        {
+            switch (elemsize)
+            {
+                case EA_1BYTE:
+                    result = (index < 16);
+                    break;
+                case EA_2BYTE:
+                    result = (index < 8);
+                    break;
+                case EA_4BYTE:
+                    result = (index < 4);
+                    break;
+                case EA_8BYTE:
+                    result = (index < 2);
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+        }
+        else if (datasize == EA_32BYTE)
+        {
+            switch (elemsize)
+            {
+                case EA_1BYTE:
+                    result = (index < 32);
+                    break;
+                case EA_2BYTE:
+                    result = (index < 16);
+                    break;
+                case EA_4BYTE:
+                    result = (index < 8);
+                    break;
+                case EA_8BYTE:
+                    result = (index < 4);
+                    break;
+                case EA_16BYTE:
+                    result = (index < 2);
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+        }
+    }
+    return result;
+}
+
+void emitter::emitIns_S_R_SIMD12(regNumber reg, int varx, int offs)
+{
+    bool FPbased;
+    int  base = emitComp->lvaFrameAddress(varx, &FPbased);
+    int  imm  = base + offs + 8;
+
+    emitIns_S_R(INS_fst_d, EA_8BYTE, reg, varx, offs);
+    if (imm < 512)
+    {
+        assert(imm >= 0);
+        regNumber reg1 = FPbased ? REG_FPBASE : REG_SPBASE;
+        emitIns_R_R_I_I(INS_vstelm_w, EA_4BYTE, reg, reg1, (imm >> 2), 2);
+    }
+    else
+    {
+        emitIns_R_R_I(INS_xvpickve_w, EA_4BYTE, REG_SCRATCH_FLT, reg, 2);
+        emitIns_S_R(INS_fst_s, EA_4BYTE, REG_SCRATCH_FLT, varx, offs + 8);
+    }
+}
+#endif
 #endif // defined(TARGET_LOONGARCH64)
