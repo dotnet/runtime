@@ -152,7 +152,7 @@ struct RelopImplicationRule
     bool   reverse;
 };
 
-enum Range2Status
+enum RelopResult
 {
     Unknown,
     AlwaysFalse,
@@ -160,7 +160,7 @@ enum Range2Status
 };
 
 //------------------------------------------------------------------------
-// IsRange2ImpliedByRange1: given two constant range checks:
+// IsCmp2ImpliedByCmp1: given two constant range checks:
 //
 //   if (X oper1 bound1)
 //   {
@@ -180,7 +180,7 @@ enum Range2Status
 //   AlwaysFalse - the second check is implied by the first one and is always false
 //   AlwaysTrue  - the second check is implied by the first one and is always true
 //
-Range2Status IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
+RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
 {
     struct IntegralRange
     {
@@ -255,7 +255,7 @@ Range2Status IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOp
             // if (x >= 100)
             //    if (x <= 10) // always false
             //
-            return Range2Status::AlwaysFalse;
+            return RelopResult::AlwaysFalse;
         }
 
         // If range1 is a subset of range2, then the 2nd range is always "true"
@@ -271,10 +271,10 @@ Range2Status IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOp
             // if (x >= 100)
             //    if (x >= 10) // always true
             //
-            return Range2Status::AlwaysTrue;
+            return RelopResult::AlwaysTrue;
         }
     }
-    return Range2Status::Unknown;
+    return RelopResult::Unknown;
 }
 
 //------------------------------------------------------------------------
@@ -510,22 +510,22 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 // BB4:
                 //   return;
 
-                Range2Status treeOperStatus   = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
-                bool         canInferFromTrue = true;
-                if (treeOperStatus == Range2Status::Unknown)
+                RelopResult treeOperStatus   = IsCmp2ImpliedByCmp1(domOper, domCns, treeOper, treeCns);
+                bool        canInferFromTrue = true;
+                if (treeOperStatus == RelopResult::Unknown)
                 {
                     // Try again for "canInferFromFalse" case - can we infer "treeOper" if "domOper" is false?
                     canInferFromTrue = false;
-                    treeOperStatus = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                    treeOperStatus   = IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
                 }
 
-                if (treeOperStatus != Range2Status::Unknown)
+                if (treeOperStatus != RelopResult::Unknown)
                 {
                     rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     rii->canInferFromTrue  = canInferFromTrue;
                     rii->canInferFromFalse = !canInferFromTrue;
-                    rii->reverseSense      = treeOperStatus == Range2Status::AlwaysTrue;
+                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
                     return;
                 }
             }
