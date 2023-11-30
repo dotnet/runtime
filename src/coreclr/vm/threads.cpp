@@ -7708,15 +7708,23 @@ void Thread::DeleteThreadStaticData()
     CONTRACTL_END;
 
     m_ThreadLocalBlock.FreeTable();
-    
-    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-    delete[] t_ThreadStatics.GCThreadStaticBlocks;
+
+    t_NonGCThreadStaticBlocksSize = 0;
+    t_GCThreadStaticBlocksSize = 0;
 
     t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
     t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
 
-    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
-    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
+    if (t_ThreadStatics.NonGCThreadStaticBlocks != nullptr)
+    {
+        delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
+        t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
+    }
+    if (t_ThreadStatics.GCThreadStaticBlocks != nullptr)
+    {
+        delete[] t_ThreadStatics.GCThreadStaticBlocks;
+        t_ThreadStatics.GCThreadStaticBlocks = nullptr;
+    }
 }
 
 //+----------------------------------------------------------------------------
