@@ -1183,6 +1183,8 @@ namespace System.Net
                     request.Headers.ConnectionClose = true;
                 }
 
+                request.Headers.ExpectContinue = _servicePoint?.Expect100Continue ?? true;
+
                 request.Version = ProtocolVersion;
 
                 _sendRequestTask = async ?
