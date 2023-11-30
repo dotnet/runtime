@@ -32,7 +32,7 @@ namespace System.IO.Compression
         [Theory]
         [InlineData((CompressionLevel)(-1))]
         [InlineData((CompressionLevel)4)]
-        public void Ctor_ArgumentValidation_InvalidCompressionLevel(CompressionLevel compressionLevel)
+        public void Ctor_ArgumentValidation_InvalidCompressionLevel_Enum(CompressionLevel compressionLevel)
         {
             Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
         }
@@ -40,7 +40,7 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(-1)]
         [InlineData(12)]
-        public void Ctor_ArgumentValidation_InvalidCompressionLevel(int compressionLevel)
+        public void Ctor_ArgumentValidation_InvalidCompressionLevel_Int(int compressionLevel)
         {
             Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
         }
@@ -49,7 +49,7 @@ namespace System.IO.Compression
         [InlineData(0)]
         [InlineData(11)]
         [InlineData(5)]
-        public void Ctor_ArgumentValidation_ValidCompressionLevel(int compressionLevel)
+        public void Ctor_ArgumentValidation_ValidCompressionLevel_Int(int compressionLevel)
         {
             _ = new BrotliStream(new MemoryStream(), compressionLevel);
         }
