@@ -1044,7 +1044,10 @@ public:
     static VNFunc SwapRelop(VNFunc vnf);
 
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
-    static bool VNFuncIsComparison(VNFunc vnf, bool* isUnsigned = nullptr);
+    static bool VNFuncIsComparison(VNFunc vnf);
+
+    // Returns "true" iff "vnf" is a signed comparison (and thus binary) operator.
+    static bool VNFuncIsSignedComparison(VNFunc vnf);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
@@ -2082,28 +2085,26 @@ inline bool ValueNumStore::VNFuncIsCommutative(VNFunc vnf)
     return (s_vnfOpAttribs[vnf] & VNFOA_Commutative) != 0;
 }
 
-inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf, bool* isUnsigned)
+inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
 {
     if (vnf >= VNF_Boundary)
     {
         // For integer types we have unsigned comparisons, and
         // for floating point types these are the unordered variants.
         //
-        if (((vnf == VNF_LT_UN) || (vnf == VNF_LE_UN) || (vnf == VNF_GE_UN) || (vnf == VNF_GT_UN)))
-        {
-            if (isUnsigned != nullptr)
-            {
-                *isUnsigned = true;
-            }
-            return true;
-        }
+        return ((vnf == VNF_LT_UN) || (vnf == VNF_LE_UN) || (vnf == VNF_GE_UN) || (vnf == VNF_GT_UN));
+    }
+    genTreeOps gtOp = genTreeOps(vnf);
+    return GenTree::OperIsCompare(gtOp) != 0;
+}
+
+inline bool ValueNumStore::VNFuncIsSignedComparison(VNFunc vnf)
+{
+    if (vnf >= VNF_Boundary)
+    {
         return false;
     }
-    if (isUnsigned != nullptr)
-    {
-        *isUnsigned = false;
-    }
-    return GenTree::OperIsCompare(static_cast<genTreeOps>(vnf)) != 0;
+    return GenTree::OperIsCompare(genTreeOps(vnf)) != 0;
 }
 
 template <>

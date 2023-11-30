@@ -430,9 +430,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     //
     VNFunc const domFunc = domApp.m_func;
     VNFuncApp    treeApp;
-    bool         domFuncIsUnsignedCmp = false;
-    if (inRange && ValueNumStore::VNFuncIsComparison(domFunc, &domFuncIsUnsignedCmp) &&
-        vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
+    if (inRange && ValueNumStore::VNFuncIsComparison(domFunc) && vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
     {
         if (((treeApp.m_args[0] == domApp.m_args[0]) && (treeApp.m_args[1] == domApp.m_args[1])) ||
             ((treeApp.m_args[0] == domApp.m_args[1]) && (treeApp.m_args[1] == domApp.m_args[0])))
@@ -471,9 +469,8 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[1])))
         {
             // We currently don't handle VNF_relop_UN funcs here
-            bool treeFuncIsUnsignedCmp = false;
-            if (!domFuncIsUnsignedCmp && ValueNumStore::VNFuncIsComparison(treeApp.m_func, &treeFuncIsUnsignedCmp) &&
-                !treeFuncIsUnsignedCmp)
+            if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
+                ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
             {
                 // Dominating "X relop CNS"
                 const genTreeOps domOper = static_cast<genTreeOps>(domApp.m_func);
