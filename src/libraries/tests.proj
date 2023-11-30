@@ -523,8 +523,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
-    <!-- This test doesn't run with TestReadyToRun. It fails before starting saying it can't find .NET -->
+
+    <!-- These tests don't run with TestReadyToRun. They fail before starting saying they can't find .NET -->
+    <!-- Tracking Issue: https://github.com/dotnet/runtime/issues/95474 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
+
   </ItemGroup>
 
   <ItemGroup>
