@@ -388,10 +388,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
 			{
-				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				static TypeWithPublicMethods<TUnknown> _field1;
 				static TypeWithPublicMethods<TPublicMethods> _field2;
-				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				static TypeWithPublicMethods<TUnknown> _field3;
 			}
 
@@ -399,8 +399,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
 			{
-				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				static IWithTwo<TPublicFields, TPublicMethods> _field;
 			}
 
