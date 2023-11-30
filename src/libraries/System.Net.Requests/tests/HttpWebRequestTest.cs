@@ -2077,7 +2077,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task SendHttpGetRequest_WithContinueTimeout_And_BodyWillNotSentByClient()
+        public async Task SendHttpPostRequest_WithContinueTimeout_And_BodyWillNotSentByClient()
         {
             await LoopbackServer.CreateServerAsync(
             async (server, uri) =>
@@ -2103,7 +2103,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true, 1000)]
         [InlineData(false, 30000)]
-        public async Task SendHttpGetRequest_WithContinueTimeout_And_BodyWillSentByClient(bool expect100Continue, int continueTimeout)
+        public async Task SendHttpPostRequest_WithContinueTimeout_And_BodyWillSentByClient(bool expect100Continue, int continueTimeout)
         {
             await LoopbackServer.CreateServerAsync(
             async (server, uri) =>
