@@ -38,7 +38,7 @@ namespace System.IO.Compression
         }
 
         [Theory]
-        [InlineData((CompressionLevel)(0))]
+        [InlineData((CompressionLevel)0)]
         [InlineData((CompressionLevel)11)]
         [InlineData((CompressionLevel)5)]
         public void Ctor_ArgumentValidation_ValidCompressionLevel(CompressionLevel compressionLevel)
