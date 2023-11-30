@@ -1024,6 +1024,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            imm = emitGetInsSC(id);
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // nnnn
+            assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(isValidUimm16(imm));             // iiii
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -7272,6 +7280,15 @@ void emitter::emitIns_R_R_I(
             // Load single structure and replicate  post-indexed by an immediate
             reg2 = encodingSPtoZR(reg2);
             fmt  = IF_LS_2E;
+            break;
+
+        case INS_sve_sqrshrn:
+        case INS_sve_sqrshrun:
+        case INS_sve_uqrshrn:
+            assert(isVectorRegister(reg1)); // nnnn
+            assert(isVectorRegister(reg2)); // ddddd
+            assert(isValidUimm16(imm));     // iiii
+            fmt = IF_SVE_GA_2A;
             break;
 
         default:
@@ -13971,6 +13988,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            imm = emitGetInsSC(id);
+            assert(isValidUimm16(imm));
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_9_to_6(id->idReg1()); // nnnn
+            code |= insEncodeReg_V_4_to_0(id->idReg2()); // ddddd
+            code |= code |= ((code_t)imm << 4);          // iiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -16216,6 +16243,12 @@ void emitter::emitDispInsHelp(
             emitDispLowPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
             emitDispReg(id->idReg1(), size, true);                       // ddddd
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);         // mmmmm
+            break;
+
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // nnnn
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // ddddd
+            emitDispImm(emitGetInsSC(id), false);               // iiii
             break;
 
         default:
@@ -18510,6 +18543,31 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_sve_fscale:
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            switch (ins)
+            {
+                case INS_sve_sqrshrn:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+
+                case INS_sve_sqrshrun:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+
+                case INS_sve_uqrshrn:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
                     break;
 
                 default:

@@ -5436,7 +5436,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #define ALL_ARM64_EMITTER_UNIT_TESTS
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+#define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
 #if defined(DEBUG)
 void CodeGen::genArm64EmitterUnitTests()
@@ -10336,6 +10336,14 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_S); /* FSUB    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fsubr, EA_SCALABLE, REG_V6, REG_P4, REG_V29,
                               INS_OPTS_SCALABLE_D); /* FSUBR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_GA_2A
+    theEmitter->emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE, REG_V0, REG_V0, 5,
+                              INS_OPTS_SCALABLE_B); // SQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqrshrun, EA_SCALABLE, REG_V0, REG_V0, 5,
+                              INS_OPTS_SCALABLE_B); // SQRSHRUN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V0, REG_V0, 5,
+                              INS_OPTS_SCALABLE_B); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const> 
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
