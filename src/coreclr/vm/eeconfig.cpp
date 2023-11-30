@@ -175,6 +175,8 @@ HRESULT EEConfig::Init()
     fEnableFullDebug = false;
 #endif
 
+    fTypeLoadSummary = false;
+
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
@@ -608,6 +610,8 @@ HRESULT EEConfig::sync()
 
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
 #endif
+
+    fTypeLoadSummary = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TypeLoadSummary) != 0);
 
 #ifdef FEATURE_COMINTEROP
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_LogCCWRefCountChange, (LPWSTR*)&pszLogCCWRefCountChange));

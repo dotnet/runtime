@@ -343,8 +343,11 @@ public:
 
     inline bool EnableFullDebug() const
     {LIMITED_METHOD_CONTRACT;  return fEnableFullDebug; }
-
 #endif
+
+    inline bool TypeLoadSummary() const
+    {LIMITED_METHOD_CONTRACT;  return fTypeLoadSummary; }
+
 #ifdef ENABLE_STARTUP_DELAY
     inline int StartupDelayMS()
     { LIMITED_METHOD_CONTRACT; return iStartupDelayMS; }
@@ -531,6 +534,8 @@ private: //----------------------------------------------------------------
 
     bool fEnableFullDebug;
 #endif // _DEBUG
+
+    bool   fTypeLoadSummary;            // Dump type loads to standard output
 
 #ifdef FEATURE_COMINTEROP
     bool bLogCCWRefCountChange;           // Is CCW logging on
