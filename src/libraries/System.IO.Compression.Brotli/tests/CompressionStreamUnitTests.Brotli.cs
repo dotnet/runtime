@@ -37,6 +37,23 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(12)]
+        public void Ctor_ArgumentValidation_InvalidCompressionLevel(int compressionLevel)
+        {
+            Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(11)]
+        [InlineData(5)]
+        public void Ctor_ArgumentValidation_ValidCompressionLevel(int compressionLevel)
+        {
+            _ = new BrotliStream(new MemoryStream(), compressionLevel);
+        }
+
         [Fact]
         public void InvalidQuality()
         {

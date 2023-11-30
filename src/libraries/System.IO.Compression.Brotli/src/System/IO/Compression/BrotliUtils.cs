@@ -22,5 +22,10 @@ namespace System.IO.Compression
                 CompressionLevel.SmallestSize => Quality_Max,
                 _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(compressionLevel))
             };
+
+        internal static int ValidateCompressionLevel(int compressionLevel) =>
+            compressionLevel is >= Quality_Min and <= Quality_Max
+                ? compressionLevel
+                : throw new ArgumentException(SR.Format(SR.BrotliEncoder_Quality, Quality_Min.ToString(), Quality_Max.ToString()));
     }
 }
