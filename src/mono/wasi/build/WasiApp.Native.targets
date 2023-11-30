@@ -326,7 +326,6 @@
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(UsingWasiRuntimeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
   <Target Name="_GetNativeFilesForLinking" DependsOnTargets="_WasmSelectRuntimeComponentsForLinking" Returns="@(_WasmNativeFileForLinking)">
-    <Message Text="MicrosoftNetCoreAppRuntimePackRidNativeDir: $(MicrosoftNetCoreAppRuntimePackRidNativeDir)" Importance="High" />
     <PropertyGroup>
       <!-- FIXME: eh case -->
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
