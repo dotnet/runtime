@@ -101,6 +101,25 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #endif // TARGET_X86
 
+// thread local struct to store the "thread static blocks"
+struct ThreadStaticBlockInfo
+{
+    uint32_t NonGCMaxThreadStaticBlocks;
+    void** NonGCThreadStaticBlocks;
+
+    uint32_t GCMaxThreadStaticBlocks;
+    void** GCThreadStaticBlocks;
+};
+
+#ifdef _MSC_VER
+EXTERN_C __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+EXTERN_C __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+EXTERN_C __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
+#else
+EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
+EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
+EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
+#endif // _MSC_VER
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
