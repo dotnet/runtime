@@ -461,10 +461,11 @@ internal sealed class PInvokeTableGenerator
                     log.Warning("WASM0062", "Type {0} is not blittable: Field {1} is not blittable", type, ft.Name);
                     return false;
                 }
-                // HACK: Skip tricky cases
-                // TODO: Do we need to support InitOnly for readonly structs? The callee could mutate them
-                if (ft.IsInitOnly || ft.IsLiteral) {
-                    log.Warning("WASM0063", "Type {0} is not blittable: Field {1} is initonly/literal", type, ft.Name);
+                // HACK: Skip literals since they're complicated
+                // Ideally we would block initonly fields too since the callee could mutate them, but
+                //  we rely on being able to pass types like System.Guid which are readonly
+                if (ft.IsLiteral) {
+                    log.Warning("WASM0063", "Type {0} is not blittable: Field {1} is literal", type, ft.Name);
                     return false;
                 }
             }
