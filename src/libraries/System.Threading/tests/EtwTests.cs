@@ -50,7 +50,7 @@ namespace System.Threading.Tests
 
                 List<object[]> startPayloads = new();
                 List<object[]> stopPayloads = new();
-                const int waitCount = 10;
+                const int waitCount = 100;
 
                 using TestEventListener listener = new();
                 listener.AddSource(providerName, EventLevel.Verbose, waitHandleKeyword);
@@ -89,7 +89,8 @@ namespace System.Threading.Tests
                     Assert.True(set, $"Not enough WaitHandleWait events were collected ({startPayloads.Count} + {stopPayloads.Count})");
                 });
 
-                Assert.True(startPayloads.Count is >= waitCount and <= waitCount + 1, $"Unexpected number of start events ({startPayloads.Count})"); // +1 for the mres start
+                // Avoid exact equality because some random thread could be waiting and so sending events.
+                Assert.True(startPayloads.Count >= waitCount, $"Unexpected number of start events ({startPayloads.Count})");
                 foreach (object[] payload in startPayloads)
                 {
                     Assert.Equal(3, payload.Length);
@@ -99,7 +100,7 @@ namespace System.Threading.Tests
                     Assert.IsType<ushort>(payload[2]);
                 }
 
-                Assert.True(stopPayloads.Count is >= waitCount and <= waitCount + 1, $"Unexpected number of stop events ({stopPayloads.Count})"); // +1 for the mres stop
+                Assert.True(stopPayloads.Count >= waitCount, $"Unexpected number of stop events ({stopPayloads.Count})");
                 foreach (object[] payload in stopPayloads)
                 {
                     Assert.Equal(1, payload.Length);
