@@ -23,7 +23,7 @@ namespace AppHost.Bundle.Tests
 
         private void RunTheApp(string path, bool selfContained)
         {
-            RunTheApp(path, selfContained ? null : TestContext.BuiltDotNet)
+            RunTheApp(path, selfContained ? null : TestContext.BuiltDotNet.BinPath)
                 .Should().Pass()
                 .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
@@ -63,7 +63,7 @@ namespace AppHost.Bundle.Tests
             using (new TestArtifact(dotnetWithMockHostFxr))
             {
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet, "mockhostfxrFrameworkMissingFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrFrameworkMissingFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0));
                 var dotnet = dotnetBuilder.Build();
@@ -93,7 +93,7 @@ namespace AppHost.Bundle.Tests
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet, "mockhostfxrBundleVersionFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrBundleVersionFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(5, 0, 0));
                 var dotnet = dotnetBuilder.Build();
