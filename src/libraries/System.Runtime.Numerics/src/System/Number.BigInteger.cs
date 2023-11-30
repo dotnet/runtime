@@ -572,93 +572,108 @@ namespace System
                 goto FailExit;
             }
 
-            int totalDigitCount = value.Length;
-            int partialDigitCount;
+            const int BitsPerDigit = 1;
+            const int DigitsPerBlock = sizeof(uint) * 8 / BitsPerDigit;
 
-            (int blockCount, int remainder) = int.DivRem(totalDigitCount, BigInteger.kcbitUint);
-            if (remainder == 0)
+            // Handle small values first
+            if (value.Length <= DigitsPerBlock)
             {
-                partialDigitCount = 0;
+                if (!int.TryParse(value, NumberStyles.AllowBinarySpecifier, null, out int smallValue))
+                {
+                    goto FailExit;
+                }
+
+                result = smallValue; // Defer to implicit operator to handle int.MinValue
+                return ParsingStatus.OK;
+            }
+
+            // Trim unnecessary leading 0/1's
+            // Remember the sign before trimming
+            if (!HexConverter.IsHexChar(value[0])) goto FailExit;
+            bool isNegative = HexConverter.FromChar(value[0]) >= 8;
+            value = isNegative ? value.TrimStart('1') : value.TrimStart('0');
+
+            // Corner case: the value fits in int after trimming
+            if (value.Length <= DigitsPerBlock)
+            {
+                if (!int.TryParse(value, NumberStyles.AllowBinarySpecifier, null, out int smallValue))
+                {
+                    goto FailExit;
+                }
+
+                if (isNegative)
+                {
+                    // Fill leading bits of negative value to 1
+                    smallValue |= -1 << (value.Length * BitsPerDigit);
+                }
+
+                // If the sign differs with int (01xxxxxxx or 10xxxxxxx),
+                // or if the value is int.MinValue, store the value in _bits
+                if ((smallValue & int.MinValue) != (isNegative ? int.MinValue : 0)
+                    || smallValue == int.MinValue)
+                {
+                    result = new BigInteger(isNegative ? -1 : 1, [(uint)smallValue]);
+                    return ParsingStatus.OK;
+                }
+
+                // Otherwise it fits in _sign
+                result = new BigInteger(smallValue, null);
+                return ParsingStatus.OK;
+            }
+
+            // Now the size of bits array can be definitely calculated
+            (int wholeBlockCount, int leadingBitsCount) = Math.DivRem(value.Length, DigitsPerBlock);
+            int totalUIntCount = leadingBitsCount != 0 ? wholeBlockCount + 1 : wholeBlockCount;
+
+            // Early out for too large input
+            if (totalUIntCount > BigInteger.MaxLength)
+            {
+                result = default;
+                return ParsingStatus.Overflow;
+            }
+
+            uint[] bits = new uint[totalUIntCount];
+            ref char finalWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(value), value.Length - DigitsPerBlock); // value[^DigitsPerBlock]
+
+            // TODO: Vectorized parsing for whole uints
+            for (int i = 0; i < wholeBlockCount; i++)
+            {
+                if (!uint.TryParse(
+                    MemoryMarshal.CreateSpan(ref Unsafe.Subtract(ref finalWholeBlockStart, i * DigitsPerBlock), DigitsPerBlock),
+                    NumberStyles.AllowBinarySpecifier, null, out bits[i]))
+                {
+                    goto FailExit;
+                }
+            }
+
+            // Parse the leading uint
+            if (leadingBitsCount != 0)
+            {
+                if (!uint.TryParse(value[0..leadingBitsCount], NumberStyles.AllowBinarySpecifier, null, out bits[^1]))
+                {
+                    goto FailExit;
+                }
+
+                // Fill leading sign bits
+                if (isNegative)
+                {
+                    bits[^1] |= (uint)(-1 << (leadingBitsCount * BitsPerDigit));
+                }
+            }
+
+            if (isNegative)
+            {
+                // For negative values, negate the whole array
+                NumericsHelpers.DangerousMakeTwosComplement(bits);
+
+                result = new BigInteger(-1, bits);
+                return ParsingStatus.OK;
             }
             else
             {
-                blockCount++;
-                partialDigitCount = BigInteger.kcbitUint - remainder;
-            }
-
-            if (value[0] is not ('0' or '1')) goto FailExit;
-            bool isNegative = value[0] == '1';
-            uint currentBlock = isNegative ? 0xFF_FF_FF_FFu : 0x0;
-
-            uint[]? arrayFromPool = null;
-            Span<uint> buffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
-                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
-
-            int bufferPos = blockCount - 1;
-
-            try
-            {
-                for (int i = 0; i < value.Length; i++)
-                {
-                    char digitChar = value[i];
-
-                    if (digitChar is not ('0' or '1')) goto FailExit;
-                    currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
-                    partialDigitCount++;
-
-                    if (partialDigitCount == BigInteger.kcbitUint)
-                    {
-                        buffer[bufferPos--] = currentBlock;
-                        partialDigitCount = 0;
-
-                        // we do not need to reset currentBlock now, because it should always set all its bits by left shift in subsequent iterations
-                    }
-                }
-
-                Debug.Assert(partialDigitCount == 0 && bufferPos == -1);
-
-                buffer = buffer.TrimEnd(0u);
-
-                int sign;
-                uint[]? bits;
-
-                if (buffer.IsEmpty)
-                {
-                    sign = 0;
-                    bits = null;
-                }
-                else if (buffer.Length == 1)
-                {
-                    sign = (int)buffer[0];
-                    bits = null;
-
-                    if ((!isNegative && sign < 0) || sign == int.MinValue)
-                    {
-                        bits = new[] { (uint)sign };
-                        sign = isNegative ? -1 : 1;
-                    }
-                }
-                else
-                {
-                    sign = isNegative ? -1 : 1;
-                    bits = buffer.ToArray();
-
-                    if (isNegative)
-                    {
-                        NumericsHelpers.DangerousMakeTwosComplement(bits);
-                    }
-                }
-
-                result = new BigInteger(sign, bits);
+                // For positive values, it's done
+                result = new BigInteger(1, bits);
                 return ParsingStatus.OK;
-            }
-            finally
-            {
-                if (arrayFromPool is not null)
-                {
-                    ArrayPool<uint>.Shared.Return(arrayFromPool);
-                }
             }
 
         FailExit:
