@@ -60,7 +60,7 @@ static void GetParent(const char* localeID, char* parent, int32_t parentCapacity
     int32_t i;
 
     if (localeID == NULL)
-        localeID = [NSLocale systemLocale].localeIdentifier.UTF8String;
+        localeID = [NSLocale currentLocale].localeIdentifier.UTF8String;//[NSLocale systemLocale].localeIdentifier.UTF8String;
 
     lastUnderscore = strrchr(localeID, '-');
     if (lastUnderscore != NULL)
@@ -89,7 +89,7 @@ static void GetParent(const char* localeID, char* parent, int32_t parentCapacity
 
     // terminate chars 
     if (i >= 0 && i < parentCapacity)
-       parent[i] = 0;
+       parent[i] = '\0';
 }
 
 /**
