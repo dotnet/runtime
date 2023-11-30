@@ -1,8 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.8.34309.116
-MinimumVisualStudioVersion = 10.0.40219.1
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamConformanceTests", "..\Common\tests\StreamConformanceTests\StreamConformanceTests.csproj", "{63AD8D26-8FFD-4D44-92E8-3ECD2D84F418}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{5C5E6836-8622-4C60-921C-F7B7286CD894}"
@@ -41,11 +37,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D7FE73BB-2F9
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{4F867226-2107-455D-B378-2FC08BD3F064}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{F5CDB2C5-3D4F-4052-8B52-6F5517F18F11}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "tools\gen", "{F5CDB2C5-3D4F-4052-8B52-6F5517F18F11}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A2F25D23-BC0D-436B-B2DA-6AE556B0EE2E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "tools\src", "{A2F25D23-BC0D-436B-B2DA-6AE556B0EE2E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{CE9B9491-BCA2-4DA3-9C1F-94DAF7511C2D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "tools\ref", "{CE9B9491-BCA2-4DA3-9C1F-94DAF7511C2D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{0BBA414F-EA56-4805-A3E6-7AE68FBB574E}"
 EndProject
