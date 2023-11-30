@@ -6875,7 +6875,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // See what we know about the type of 'this' in the call.
     assert(call->gtArgs.HasThisPointer());
     CallArg*             thisArg      = call->gtArgs.GetThisArg();
-    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal(false);
+    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal();
     bool                 isExact      = false;
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
