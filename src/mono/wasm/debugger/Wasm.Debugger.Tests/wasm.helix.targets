@@ -34,6 +34,7 @@
         <Timeout>$(_DebuggerTestsWorkItemTimeout)</Timeout>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TEST_ARGS=--filter category^^!=failing^&amp;FullyQualifiedName~$(TestName)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TEST_ARGS=--filter category!=failing&amp;FullyQualifiedName~$(TestName)&quot;</PreCommands>
+        <PostCommands Condition="'$(OS)' != 'Windows_NT'">dmesg</PostCommands>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
