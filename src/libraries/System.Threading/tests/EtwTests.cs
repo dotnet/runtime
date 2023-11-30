@@ -97,7 +97,7 @@ namespace System.Threading.Tests
                     Assert.Equal(3, payload.Length);
                     Assert.IsType<byte>(payload[0]);
                     Assert.IsType<nint>(payload[1]);
-                    Assert.NotEqual(0, payload[1], "Start event had no associated object");
+                    Assert.NotEqual(0, payload[1]);
                     Assert.IsType<ushort>(payload[2]);
                 }
 
