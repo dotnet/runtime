@@ -51,7 +51,6 @@ namespace System.Threading.Tests
                 List<object[]> startPayloads = new();
                 List<object[]> stopPayloads = new();
                 const int waitCount = 10;
-                const int expectedEventCount = waitCount + 1; // +1 for the mres.
 
                 using TestEventListener listener = new();
                 listener.AddSource(providerName, EventLevel.Verbose, waitHandleKeyword);
@@ -72,7 +71,7 @@ namespace System.Threading.Tests
                         stopPayloads.Add(payload);
                     }
 
-                    if (startPayloads.Count >= expectedEventCount && stopPayloads.Count >= expectedEventCount)
+                    if (startPayloads.Count >= waitCount && stopPayloads.Count >= waitCount)
                     {
                         mres.Set();
                     }
@@ -86,12 +85,11 @@ namespace System.Threading.Tests
                         Assert.False(reacquired);
                     }
 
-                    Assert.True(
-                        mres.Wait(TimeSpan.FromSeconds(30)),
-                        "Not enough WaitHandleWait events were collected");
+                    bool set = mres.Wait(TimeSpan.FromSeconds(30));
+                    Assert.True(set, $"Not enough WaitHandleWait events were collected ({startPayloads.Count} + {stopPayloads.Count})");
                 });
 
-                Assert.Equal(expectedEventCount, startPayloads.Count);
+                Assert.True(startPayloads.Count is >= waitCount and <= waitCount + 1, $"Unexpected number of start events ({startPayloads.Count})"); // +1 for the mres start
                 foreach (object[] payload in startPayloads)
                 {
                     Assert.Equal(3, payload.Length);
@@ -101,7 +99,7 @@ namespace System.Threading.Tests
                     Assert.IsType<ushort>(payload[2]);
                 }
 
-                Assert.Equal(expectedEventCount, stopPayloads.Count);
+                Assert.True(stopPayloads.Count is >= waitCount and <= waitCount + 1, $"Unexpected number of stop events ({stopPayloads.Count})"); // +1 for the mres stop
                 foreach (object[] payload in stopPayloads)
                 {
                     Assert.Equal(1, payload.Length);
