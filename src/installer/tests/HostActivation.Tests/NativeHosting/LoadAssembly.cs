@@ -154,7 +154,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
 
                 Application = TestApp.CreateEmpty("App");
-                Application.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion);
+                Application.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
 
                 SelfContainedApplication = TestApp.CreateEmpty("SelfContainedApp");
                 SelfContainedApplication.PopulateSelfContained(TestApp.MockedComponent.None);

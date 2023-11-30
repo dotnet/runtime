@@ -45,10 +45,6 @@ public:
 #ifdef FEATURE_COMINTEROP
     static FCDECL4(IUnknown*,       GetCOMIPFromRCW,                    Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget, CLR_BOOL* pfNeedsRelease);
 
-    static FCDECL2(void,            ObjectMarshaler__ConvertToNative, Object* pSrcUNSAFE, VARIANT* pDest);
-    static FCDECL1(Object*,         ObjectMarshaler__ConvertToManaged, VARIANT* pSrc);
-    static FCDECL1(void,            ObjectMarshaler__ClearNative,      VARIANT* pSrc);
-
     static FCDECL4(IUnknown*,       InterfaceMarshaler__ConvertToNative, Object* pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags);
     static FCDECL4(Object*,         InterfaceMarshaler__ConvertToManaged, IUnknown **ppUnk, MethodTable *pItfMT, MethodTable *pClsMT, DWORD dwFlags);
     static FCDECL1(Object *,        InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative);
@@ -64,8 +60,6 @@ public:
 #ifdef FEATURE_COMINTEROP
     static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
 #endif // FEATURE_COMINTEROP
-
-    static FCDECL3(void*,           CreateCustomMarshalerHelper, MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
 
     static FCDECL3(void,            FmtClassUpdateNativeInternal, Object* pObjUNSAFE, BYTE* pbNative, OBJECTREF *ppCleanupWorkListOnStack);
     static FCDECL2(void,            FmtClassUpdateCLRInternal, Object* pObjUNSAFE, BYTE* pbNative);
@@ -98,7 +92,12 @@ public:
     static FCDECL0(void*,           NextCallReturnAddress);
 };
 
+extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
+
 #ifdef FEATURE_COMINTEROP
+extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest);
+extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall::ObjectHandleOnStack retObject);
+
 extern "C" void QCALLTYPE InterfaceMarshaler__ClearNative(IUnknown * pUnk);
 #endif
 

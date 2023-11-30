@@ -12,9 +12,6 @@ try {
     const { getAssemblyExports, runMain } = await dotnet
         //.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
         //.withDiagnosticTracing(true)
-        .withConfig({
-            pthreadPoolSize: 6,
-        })
         .withElementOnExit()
         .withExitCodeLogging()
         .create();

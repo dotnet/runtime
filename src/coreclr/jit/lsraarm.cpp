@@ -698,7 +698,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_LCL_ADDR:
         case GT_PHYSREG:
-        case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
         case GT_LABEL:
         case GT_PINVOKE_PROLOG:

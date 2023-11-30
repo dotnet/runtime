@@ -464,10 +464,10 @@ namespace System.IO
         private static void SetFileTime(
             string fullPath,
             bool asDirectory,
-            long creationTime = -1,
-            long lastAccessTime = -1,
-            long lastWriteTime = -1,
-            long changeTime = -1,
+            long creationTime = 0,
+            long lastAccessTime = 0,
+            long lastWriteTime = 0,
+            long changeTime = 0,
             uint fileAttributes = 0)
         {
             using SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory);
@@ -477,10 +477,10 @@ namespace System.IO
         private static unsafe void SetFileTime(
             SafeFileHandle fileHandle,
             string? fullPath = null,
-            long creationTime = -1,
-            long lastAccessTime = -1,
-            long lastWriteTime = -1,
-            long changeTime = -1,
+            long creationTime = 0,
+            long lastAccessTime = 0,
+            long lastWriteTime = 0,
+            long changeTime = 0,
             uint fileAttributes = 0)
         {
             var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO

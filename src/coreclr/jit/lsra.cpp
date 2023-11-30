@@ -6891,7 +6891,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         }
         else
         {
-            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
+            assert(block->KindIs(BBJ_ALWAYS));
             blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdUpperRestore));
         }
     }
@@ -7840,7 +7840,7 @@ void LinearScan::insertSwap(
         }
         else
         {
-            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
+            assert(block->KindIs(BBJ_ALWAYS));
             blockRange.InsertAtEnd(std::move(swapRange));
         }
     }

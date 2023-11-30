@@ -3,6 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
@@ -18,7 +19,7 @@ import {
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
-import { stringToMonoStringRoot } from "./strings";
+import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
@@ -229,12 +230,20 @@ function _marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
 }
 
 function _marshal_string_to_cs_impl(arg: JSMarshalerArgument, value: string) {
-    const root = get_string_root(arg);
-    try {
-        stringToMonoStringRoot(value, root);
-    }
-    finally {
-        root.release();
+    if (WasmEnableJsInteropByValue) {
+        const bufferLen = value.length * 2;
+        const buffer = Module._malloc(bufferLen);
+        stringToUTF16(buffer as any, buffer as any + bufferLen, value);
+        set_arg_intptr(arg, buffer);
+        set_arg_length(arg, value.length);
+    } else {
+        const root = get_string_root(arg);
+        try {
+            stringToMonoStringRoot(value, root);
+        }
+        finally {
+            root.release();
+        }
     }
 }
 
@@ -505,7 +514,9 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
         if (element_type == MarshalerType.String) {
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
-            cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            if (!WasmEnableJsInteropByValue) {
+                cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);
                 _marshal_string_to_cs(element_arg, value[index]);
@@ -514,7 +525,9 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
         else if (element_type == MarshalerType.Object) {
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
-            cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            if (!WasmEnableJsInteropByValue) {
+                cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);
                 _marshal_cs_object_to_cs(element_arg, value[index]);
