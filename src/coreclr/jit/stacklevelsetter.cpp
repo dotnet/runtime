@@ -59,21 +59,26 @@ PhaseStatus StackLevelSetter::DoPhase()
     comp->fgSetPtrArgCntMax(maxStackLevel);
     CheckArgCnt();
 
-    // Check if there are any unused throw helper blocks, and if so, remove them.
+    // When optimizing, check if there are any unused throw helper blocks,
+    // and if so, remove them.
+    //
     bool madeChanges = false;
 
-    for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
+    if (comp->opts.OptimizationEnabled())
     {
-        if (add->acdUsed)
+        for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
         {
-            continue;
-        }
+            if (add->acdUsed)
+            {
+                continue;
+            }
 
-        BasicBlock* const block = add->acdDstBlk;
-        JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
-        block->bbFlags &= ~BBF_DONT_REMOVE;
-        comp->fgRemoveBlock(block, /* unreachable */ true);
-        madeChanges = true;
+            BasicBlock* const block = add->acdDstBlk;
+            JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
+            block->bbFlags &= ~BBF_DONT_REMOVE;
+            comp->fgRemoveBlock(block, /* unreachable */ true);
+            madeChanges = true;
+        }
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -86,6 +91,9 @@ PhaseStatus StackLevelSetter::DoPhase()
 //   Block starts and ends with an empty outgoing stack.
 //   Nodes in blocks are iterated in the reverse order to memorize GT_PUTARG_STK
 //   and GT_PUTARG_SPLIT stack sizes.
+//
+//   Also note which (if any) throw helper blocks might end up being used by
+//   codegen.
 //
 // Arguments:
 //   block - the block to process.
@@ -105,11 +113,6 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             SubStackLevel(numSlots);
         }
 
-        if (throwHelperBlocksUsed && node->OperMayThrow(comp))
-        {
-            SetThrowHelperBlocks(node, block);
-        }
-
         if (node->IsCall())
         {
             GenTreeCall* call                = node->AsCall();
@@ -117,6 +120,41 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 #if defined(UNIX_X86_ABI)
             call->gtArgs.SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
 #endif // UNIX_X86_ABI
+        }
+
+        if (!throwHelperBlocksUsed)
+        {
+            continue;
+        }
+
+        // When optimizing we want to know what throw helpers might be used
+        // so we can remove the ones that aren't needed.
+        //
+        // If we're not optimizing then the helper requests made in
+        // morph are likely still accurate, so we don't bother checking
+        // if helpers are indeed used.
+        //
+        bool checkForHelpers = comp->opts.OptimizationEnabled();
+
+#if !FEATURE_FIXED_OUT_ARGS
+        // Even if not optimizing, if we have a moving SP frame, a shared helper may
+        // be reached with mixed stack depths and so force this method to use
+        // a frame pointer. Once we see that the method will need a frame
+        // pointer we no longer need to check for this case.
+        //
+        checkForHelpers |= !framePointerRequired;
+#endif
+
+        if (checkForHelpers)
+        {
+            if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(comp))
+            {
+                SetThrowHelperBlocks(node, block);
+            }
+            else
+            {
+                // assert(((node->gtFlags & GTF_CALL) != 0) || !node->OperMayThrow(comp));
+            }
         }
     }
     assert(currentStackLevel == 0);
