@@ -2076,6 +2076,56 @@ namespace System.Net.Tests
             });
         }
 
+        [Fact]
+        public async Task SendHttpGetRequest_WithContinueTimeout_And_BodyWillNotSentByClient()
+        {
+            await LoopbackServer.CreateServerAsync(
+            async (server, uri) =>
+            {
+                Task connection = server.AcceptConnectionAsync(async (client) => 
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    await client.ReadRequestHeaderAsync();
+                    // This should time out, because we're expecting the body itself but we'll get it after 30 sec.
+                    await Assert.ThrowsAsync<TimeoutException>(() => client.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(3)));
+                });
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.Method = "POST";
+                request.ServicePoint.Expect100Continue = true;
+                request.ContinueTimeout = 30000;
+                Stream requestStream = await request.GetRequestStreamAsync();
+                requestStream.Write("aaaa\r\n\r\n"u8);
+                var _ = request.GetResponseAsync();
+                await connection;
+            }).WaitAsync(TimeSpan.FromSeconds(40));
+        }
+
+        [Theory]
+        [InlineData(true, 1000)]
+        [InlineData(false, 30000)]
+        public async Task SendHttpGetRequest_WithContinueTimeout_And_BodyWillSentByClient(bool expect100Continue, int continueTimeout)
+        {
+            await LoopbackServer.CreateServerAsync(
+            async (server, uri) =>
+            {
+                Task connection = server.AcceptConnectionAsync(async (client) => 
+                {
+                    await client.ReadRequestHeaderAsync();
+                    // This should not time out, because we're expecting the body itself and we should get it after 1 sec.
+                    string data = await client.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(3));
+                    Assert.StartsWith("aaaa", data);
+                });
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.Method = "POST";
+                request.ServicePoint.Expect100Continue = expect100Continue;
+                request.ContinueTimeout = continueTimeout;
+                Stream requestStream = await request.GetRequestStreamAsync();
+                requestStream.Write("aaaa\r\n\r\n"u8);
+                var _ = request.GetResponseAsync();
+                await connection;
+            }).WaitAsync(TimeSpan.FromSeconds(40));
+        }
+
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
         {
             RequestState state = (RequestState)asynchronousResult.AsyncState;
