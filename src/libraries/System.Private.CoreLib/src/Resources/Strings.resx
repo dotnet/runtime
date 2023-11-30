@@ -2091,7 +2091,7 @@
     <value>Channel {0} has a value of {1} which is outside the legal range (16-254).</value>
   </data>
   <data name="EventSource_EventIdReused" xml:space="preserve">
-    <value>Event {0} has ID {1} which is already in use by event {2}.</value>
+    <value>Event {0} has ID {1} which is already in use.</value>
   </data>
   <data name="EventSource_EventMustHaveTaskIfNonDefaultOpcode" xml:space="preserve">
     <value>Event {0} (with ID {1}) has a non-default opcode but not a task.</value>

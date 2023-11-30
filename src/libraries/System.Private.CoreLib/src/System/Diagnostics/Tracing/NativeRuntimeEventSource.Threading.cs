@@ -17,7 +17,6 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
             public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
             public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
-            public const EventKeywords WaitHandleKeyword = (EventKeywords)0x40000000000;
         }
 
         private static partial class Messages
@@ -33,8 +32,6 @@ namespace System.Diagnostics.Tracing
             public const string IOEnqueue = "NativeOverlapped={0};\nOverlapped={1};\nMultiDequeues={2};\nClrInstanceID={3}";
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
-            public const string WaitHandleWaitStart = "WaitSource={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
-            public const string WaitHandleWaitStop = "ClrInstanceID={0}";
         }
 
         // The task definitions for the ETW manifest
@@ -46,7 +43,6 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPool = (EventTask)23;
             public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
             public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
-            public const EventTask WaitHandleWait = (EventTask)39;
         }
 
         public static partial class Opcodes // this name and visibility is important for EventSource
@@ -78,12 +74,6 @@ namespace System.Diagnostics.Tracing
             Starvation,
             ThreadTimedOut,
             CooperativeBlocking,
-        }
-
-        public enum WaitHandleWaitSourceMap : byte
-        {
-            Unknown,
-            MonitorWait,
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
@@ -513,41 +503,6 @@ namespace System.Diagnostics.Tracing
             data[4].Size = sizeof(ushort);
             data[4].Reserved = 0;
             WriteEventCore(59, 5, data);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
-        [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
-        public unsafe void WaitHandleWaitStart(
-            WaitHandleWaitSourceMap WaitSource,
-            nint AssociatedObjectID,
-            ushort ClrInstanceID = DefaultClrInstanceId)
-        {
-            Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
-
-            EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (nint)(&WaitSource);
-            data[0].Size = sizeof(WaitHandleWaitSourceMap);
-            data[0].Reserved = 0;
-            data[1].DataPointer = (nint)(&AssociatedObjectID);
-            data[1].Size = nint.Size;
-            data[1].Reserved = 0;
-            data[2].DataPointer = (nint)(&ClrInstanceID);
-            data[2].Size = sizeof(ushort);
-            data[2].Reserved = 0;
-            WriteEventCore(301, 3, data);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
-        [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
-        public unsafe void WaitHandleWaitStop(ushort ClrInstanceID = DefaultClrInstanceId)
-        {
-            Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
-
-            EventData* data = stackalloc EventData[1];
-            data[0].DataPointer = (nint)(&ClrInstanceID);
-            data[0].Size = sizeof(ushort);
-            data[0].Reserved = 0;
-            WriteEventCore(302, 1, data);
         }
     }
 }

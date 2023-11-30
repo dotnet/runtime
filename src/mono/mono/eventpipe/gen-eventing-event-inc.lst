@@ -59,6 +59,4 @@ ThreadPoolIOPack
 ThreadTerminated
 TypeLoadStart
 TypeLoadStop
-WaitHandleWaitStart
-WaitHandleWaitStop
 Microsoft-DotNETRuntimeMonoProfiler:*
