@@ -85,6 +85,15 @@ namespace System.Buffers.Text
                             goto DoneExit;
                     }
 
+                    end = srcMax - 48;
+                    if (AdvSimd.Arm64.IsSupported && (end >= src))
+                    {
+                        NeonEncode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+
+                        if (src == srcEnd)
+                            goto DoneExit;
+                    }
+
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
@@ -478,6 +487,60 @@ namespace System.Buffers.Text
 
             srcBytes = src + 4;
             destBytes = dest;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        private static unsafe void NeonEncode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            // C# implementatino of https://github.com/aklomp/base64/blob/e516d769a2a432c08404f1981e73b431566057be/lib/arch/neon64/enc_loop.c
+            // If we have Neon support, pick off 48 bytes at a time for as long as we can.
+            byte* src = srcBytes;
+            byte* dest = destBytes;
+
+            Vector128<byte> str1;
+            Vector128<byte> str2;
+            Vector128<byte> str3;
+
+            Vector128<byte> res1;
+            Vector128<byte> res2;
+            Vector128<byte> res3;
+            Vector128<byte> res4;
+
+            Vector128<byte> tbl_enc = Vector128.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8).AsByte();
+            do
+            {
+                // Load 48 bytes and deinterleave:
+                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
+                (str1, str2, str3) = AdvSimd.Arm64.LoadVector128x3(src);
+
+                // Divide bits of three input bytes over four output bytes:
+                res1 = AdvSimd.ShiftRightLogical(str1, 2);
+                res2 = AdvSimd.ShiftRightLogical(str2, 4) | AdvSimd.ShiftLeftLogical(str1, 4);
+                res3 = AdvSimd.ShiftRightLogical(str3, 6) | AdvSimd.ShiftLeftLogical(str2, 2);
+                res4 = str3;
+
+                // Clear top two bits:
+                res1 &= AdvSimd.DuplicateToVector128(0x3F).AsByte();
+                res2 &= AdvSimd.DuplicateToVector128(0x3F).AsByte();
+                res3 &= AdvSimd.DuplicateToVector128(0x3F).AsByte();
+                res4 &= AdvSimd.DuplicateToVector128(0x3F).AsByte();
+
+                // The bits have now been shifted to the right locations;
+                // translate their values 0..63 to the Base64 alphabet.
+                // Use a 64-byte table lookup:
+                res1 = AdvSimd.Arm64.VectorTableLookup(tbl_enc, res1);
+                res2 = AdvSimd.Arm64.VectorTableLookup(tbl_enc, res2);
+                res3 = AdvSimd.Arm64.VectorTableLookup(tbl_enc, res3);
+                res4 = AdvSimd.Arm64.VectorTableLookup(tbl_enc, res4);
+
+                // Interleave and store result:
+                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (res1, res2, res3, res4));
+
+                src += 48;
+                dest += 64;
+            } while (src <= srcEnd);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
