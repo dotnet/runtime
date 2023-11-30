@@ -184,10 +184,21 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps ope
 {
     struct IntegralRange
     {
-        ssize_t startIncl;
-        ssize_t endIncl;
+        ssize_t startIncl; // inclusive
+        ssize_t endIncl;   // inclusive
+
+        bool Intersects(const IntegralRange other) const
+        {
+            return (startIncl <= other.endIncl) && (other.startIncl <= endIncl);
+        }
+
+        bool Contains(const IntegralRange other) const
+        {
+            return (startIncl <= other.startIncl) && (other.endIncl <= endIncl);
+        }
     };
 
+    // Start with the widest possible ranges
     IntegralRange range1 = {SSIZE_T_MIN, SSIZE_T_MAX};
     IntegralRange range2 = {SSIZE_T_MIN, SSIZE_T_MAX};
 
@@ -226,13 +237,12 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps ope
                 return true;
 
             case GT_EQ:
+            case GT_NE:
                 // x == cns -> [cns, cns]
+                // NE is special-cased below
                 range->startIncl = bound;
                 range->endIncl   = bound;
                 return true;
-
-            // TODO: re-think this function in order to handle GT_NE
-            // and unsigned comparisons.
 
             default:
                 // unsupported operator
@@ -242,13 +252,43 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps ope
 
     if (setRange(oper1, bound1, &range1) && setRange(oper2, bound2, &range2))
     {
+        // Special handling of GT_NE:
+        if ((oper1 == GT_NE) || (oper2 == GT_NE))
+        {
+            // if (x != 100)
+            //    if (x != 100) // always true
+            if (oper1 == oper2)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysTrue : RelopResult::Unknown;
+            }
+
+            // if (x == 100)
+            //    if (x != 100) // always false
+            //
+            // if (x == 100)
+            //    if (x != 101) // always true
+            if (oper1 == GT_EQ)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysFalse : RelopResult::AlwaysTrue;
+            }
+
+            // if (x > 100)
+            //    if (x != 10) // always true
+            if ((oper2 == GT_NE) && !range1.Intersects(range2))
+            {
+                return AlwaysTrue;
+            }
+
+            return RelopResult::Unknown;
+        }
+
         // If ranges never intersect, then the 2nd range is never "true"
-        if ((range1.startIncl > range2.endIncl) || (range2.startIncl > range1.endIncl))
+        if (!range1.Intersects(range2))
         {
             // E.g.:
             //
-            // range1: [100     .. INT_MAX]
-            // range2: [INT_MIN .. 10]
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [SSIZE_T_MIN ..  10]
             //
             // or in other words:
             //
@@ -259,12 +299,12 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps ope
         }
 
         // If range1 is a subset of range2, then the 2nd range is always "true"
-        if ((range1.startIncl >= range2.startIncl) && (range1.endIncl <= range2.endIncl))
+        if (range2.Contains(range1))
         {
             // E.g.:
             //
-            // range1: [100 .. INT_MAX]
-            // range2: [10  .. INT_MAX]
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [10  .. SSIZE_T_MAX]
             //
             // or in other words:
             //
