@@ -159,6 +159,27 @@ enum Range2Status
     AlwaysTrue
 };
 
+//------------------------------------------------------------------------
+// IsRange2ImpliedByRange1: given two constant range checks:
+//
+//   if (X oper1 bound1)
+//   {
+//        if (X oper2 bound2)
+//        {
+//
+// determine if the second range check is implied by the dominating first one.
+//
+// Arguments:
+//   oper1  - the first comparison operator
+//   bound1 - the first constant bound
+//   oper2  - the second comparison operator
+//   bound2 - the second constant bound
+//
+// Returns:
+//   Unknown     - the second check is not implied by the first one
+//   AlwaysFalse - the second check is implied by the first one and is always false
+//   AlwaysTrue  - the second check is implied by the first one and is always true
+//
 Range2Status IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
 {
     struct IntegralRange
@@ -210,39 +231,49 @@ Range2Status IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOp
                 range->endIncl   = bound;
                 return true;
 
+            // TODO: re-think this function in order to handle GT_NE
+            // and unsigned comparisons.
+
             default:
                 // unsupported operator
                 return false;
         }
     };
 
-    const bool success1 = setRange(oper1, bound1, &range1);
-    const bool success2 = setRange(oper2, bound2, &range2);
-    if (!success1 || !success2)
+    if (setRange(oper1, bound1, &range1) && setRange(oper2, bound2, &range2))
     {
-        return Range2Status::Unknown;
-    }
+        // If ranges never intersect, then the 2nd range is never "true"
+        if ((range1.startIncl > range2.endIncl) || (range2.startIncl > range1.endIncl))
+        {
+            // E.g.:
+            //
+            // range1: [100     .. INT_MAX]
+            // range2: [INT_MIN .. 10]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x <= 10) // always false
+            //
+            return Range2Status::AlwaysFalse;
+        }
 
-    // If ranges never intersect, then the 2nd range is never "true"
-    if ((range1.startIncl > range2.endIncl) || (range2.startIncl > range1.endIncl))
-    {
-        // E.g.:
-        //
-        // range1: [100     .. INT_MAX]
-        // range2: [INT_MIN .. 10]
-        return Range2Status::AlwaysFalse;
+        // If range1 is a subset of range2, then the 2nd range is always "true"
+        if ((range1.startIncl >= range2.startIncl) && (range1.endIncl <= range2.endIncl))
+        {
+            // E.g.:
+            //
+            // range1: [100 .. INT_MAX]
+            // range2: [10  .. INT_MAX]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x >= 10) // always true
+            //
+            return Range2Status::AlwaysTrue;
+        }
     }
-
-    // If range1 is a subset of range2, then the 2nd range is always "true"
-    if ((range1.startIncl >= range2.startIncl) && (range1.endIncl <= range2.endIncl))
-    {
-        // E.g.:
-        //
-        // range1: [100 .. INT_MAX]
-        // range2: [0   .. INT_MAX]
-        return Range2Status::AlwaysTrue;
-    }
-
     return Range2Status::Unknown;
 }
 
@@ -434,6 +465,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         }
 
         // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+        // We assume cns1 and cns2 are always on the RHS of the compare.
         if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
             vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
             varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[1])))
@@ -443,22 +475,56 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             if (!domFuncIsUnsignedCmp && ValueNumStore::VNFuncIsComparison(treeApp.m_func, &treeFuncIsUnsignedCmp) &&
                 !treeFuncIsUnsignedCmp)
             {
-                const ssize_t    domCns   = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
-                const ssize_t    treeCns  = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
-                const genTreeOps domOper  = static_cast<genTreeOps>(domApp.m_func);
-                const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
+                // Dominating "X relop CNS"
+                const genTreeOps domOper = static_cast<genTreeOps>(domApp.m_func);
+                const ssize_t    domCns  = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
 
-                // We only handle "canInferFromFalse" here, so we need to reverse domOper so then when it's "false" we
-                // check whether
-                // we can check whether treeOper is always "true" or "false" (or bail out if it's unknown).
-                Range2Status treeOperStatus =
-                    IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                // Dominated "X relop CNS"
+                const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
+                const ssize_t    treeCns  = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
+
+                // Example:
+                //
+                // void Test(int x)
+                // {
+                //     if (x > 100)
+                //         if (x > 10)
+                //             Console.WriteLine("Taken!");
+                // }
+                //
+
+                // Corresponding BB layout:
+                //
+                // BB1:
+                //   if (x <= 100)
+                //       goto BB4
+                //
+                // BB2:
+                //   // x is known to be > 100 here
+                //   if (x <= 10) // never true
+                //       goto BB4
+                //
+                // BB3:
+                //   Console.WriteLine("Taken!");
+                //
+                // BB4:
+                //   return;
+
+                Range2Status treeOperStatus   = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
+                bool         canInferFromTrue = true;
+                if (treeOperStatus == Range2Status::Unknown)
+                {
+                    // Try again for "canInferFromFalse" case - can we infer "treeOper" if "domOper" is false?
+                    canInferFromTrue = false;
+                    treeOperStatus = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                }
+
                 if (treeOperStatus != Range2Status::Unknown)
                 {
                     rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    rii->canInferFromTrue  = false;
-                    rii->canInferFromFalse = true;
+                    rii->canInferFromTrue  = canInferFromTrue;
+                    rii->canInferFromFalse = !canInferFromTrue;
                     rii->reverseSense      = treeOperStatus == Range2Status::AlwaysTrue;
                     return;
                 }
