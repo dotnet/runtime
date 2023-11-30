@@ -412,7 +412,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedSign, Math.Sign(SortKey.Compare(sk1, sk2)));
             Assert.Equal(expectedSign == 0, sk1.Equals(sk2));
 
-            if (!WindowsVersionHasTheCompareStringRegression && IsNotHybridGlobalization)
+            if (!WindowsVersionHasTheCompareStringRegression && PlatformDetection.IsNotHybridGlobalizationOnOSX)
             {
                 Assert.Equal(Math.Sign(compareInfo.Compare(string1, string2, options)), Math.Sign(SortKey.Compare(sk1, sk2)));
             }
