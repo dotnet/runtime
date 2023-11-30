@@ -362,38 +362,36 @@
   <Target Name="_GenerateObjectFilesForSingleFileBundle" Returns="@(_WasiObjectFilesForBundle)" Condition="'$(WasmSingleFileBundle)' == 'true'">
     <ItemGroup>
       <_EmitBundleItemName
-                Include="_WasmAssembliesInternal"
+                Include="@(_WasmAssembliesInternal)"
                 BundleRegistrationFunctionName="mono_register_assemblies_bundle"
                 BundleFile="wasi_bundled_assemblies.o" />
 
-      <_IcuFilesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat" />
       <_EmitBundleItemName
-                Include="_IcuFilesToBundle"
+                Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
                 BundleRegistrationFunctionName="mono_register_icu_bundle"
                 BundleFile="wasi_bundled_icu.o" />
 
-      <_RuntimeConfigBinToBundle Include="$(_ParsedRuntimeConfigFilePath)" />
       <_EmitBundleItemName
-                Include="_RuntimeConfigBinToBundle"
+                Include="$(_ParsedRuntimeConfigFilePath)"
                 BundleRegistrationFunctionName="mono_register_runtimeconfig_bin"
                 BundleFile="wasi_bundled_runtimeconfig_bin.o" />
     </ItemGroup>
 
-    <!-- If it's an item name -->
+    <!-- batched on .BundleRegistrationFunctionName+.BundleFile -->
     <EmitBundleObjectFiles
-                FilesToBundle="@(%(_EmitBundleItemName.Identity))"
+                FilesToBundle="@(_EmitBundleItemName)"
                 ClangExecutable="$(WasiClang)"
-                BundleRegistrationFunctionName="@(_EmitBundleItemName->'%(BundleRegistrationFunctionName)')"
-                BundleFile="@(_EmitBundleItemName->'%(BundleFile)')"
+                BundleRegistrationFunctionName="%(_EmitBundleItemName.BundleRegistrationFunctionName)"
+                BundleFile="%(_EmitBundleItemName.BundleFile)"
                 OutputDirectory="$(_WasmIntermediateOutputPath)">
                 <Output TaskParameter="BundledResources" ItemName="_EmitBundleOutputItem" />
-                <Output TaskParameter="BundleRegistrationFile" PropertyName="_EmitBundleRegistrationFile" />
+                <Output TaskParameter="BundleRegistrationFile" ItemName="_EmitBundleRegistrationFile" />
     </EmitBundleObjectFiles>
 
     <ItemGroup>
       <_EmitBundleOutputFile Remove="@(_EmitBundleOutputFile)" />
       <_EmitBundleOutputFile Include="%(_EmitBundleOutputItem.DestinationFile)" />
-      <_EmitBundleOutputFile Include="$(_EmitBundleRegistrationFile)" />
+      <_EmitBundleOutputFile Include="@(_EmitBundleRegistrationFile)" />
 
       <_WasiObjectFilesForBundle Include="@(_EmitBundleOutputFile)" />
       <FileWrites Include="@(_EmitBundleOutputFile)" />
