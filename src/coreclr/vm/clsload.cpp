@@ -3371,6 +3371,8 @@ public:
     }
 };
 
+static uint32_t TypeLoadIndex = 0;
+
 //---------------------------------------------------------------------------------------
 //
 TypeHandle
@@ -3547,6 +3549,8 @@ retry:
     {
         PendingTypeLoadHolder ptlh(pLoadingEntry);
 
+        bool logTypeLoad = (typeHnd.IsNull() && g_pConfig->TypeLoadSummary());
+
         TRIGGERS_TYPELOAD();
 
         while (currentLevel < targetLevel)
@@ -3561,6 +3565,15 @@ retry:
         }
 
         _ASSERTE(!typeHnd.IsNull());
+
+        if (logTypeLoad)
+        {
+            uint32_t index = InterlockedIncrement(&TypeLoadIndex);
+            SString typeName;
+            typeHnd.GetName(typeName);
+            printf("%u: %s\n", index, typeName.GetUTF8());
+        }
+
         pLoadingEntry->SetResult(typeHnd);
     }
     EX_HOOK
