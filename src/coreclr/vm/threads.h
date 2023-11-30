@@ -3823,7 +3823,6 @@ public:
     // Called during AssemblyLoadContext teardown to clean up all structures
     // associated with thread statics for the specific Module
     void DeleteThreadStaticData(ModuleIndex index);
-    void DeleteThreadLocalMemory();
 
 private:
 
