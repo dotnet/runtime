@@ -18,7 +18,7 @@
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
       <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
       <WorkloadManifestWasiTargetsPath>$(IntermediateOutputPath)WorkloadManifest.Wasi.targets</WorkloadManifestWasiTargetsPath>
-      <WorklaodManifestWasmFeaturesPath>$(IntermediateOutputPath)WasmFeatures.props</WorklaodManifestWasmFeaturesPath>
+      <WorkloadManifestWasmFeaturesPath>$(IntermediateOutputPath)WasmFeatures.props</WorkloadManifestWasmFeaturesPath>
       <WorkloadManifestTelemetryTargetsPath>$(MSBuildThisFileDirectory)WorkloadTelemetry.targets</WorkloadManifestTelemetryTargetsPath>
     </PropertyGroup>
 
@@ -26,7 +26,7 @@
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestWasiTargetsPath)" TargetPath="data" />
-      <PackageFile Include="$(WorklaodManifestWasmFeaturesPath)" TargetPath="data" />
+      <PackageFile Include="$(WorkloadManifestWasmFeaturesPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTelemetryTargetsPath)" TargetPath="data" />
     </ItemGroup>
 

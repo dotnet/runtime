@@ -39,8 +39,8 @@
     <WasmNativeWorkload>$(WasmNativeWorkloadAvailable)</WasmNativeWorkload>
 
     <!-- Runtime feature defaults to trim unnecessary code -->
-    <Import Project="WasmFeatures.props" />
   </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)WasmFeatures.props" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Keep in sync with WasmApp.Native.targets -->
