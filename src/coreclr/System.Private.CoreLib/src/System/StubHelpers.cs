@@ -538,14 +538,37 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
     internal static partial class InterfaceMarshaler
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
+        internal static IntPtr ConvertToNative(object? objSrc, IntPtr itfMT, IntPtr classMT, int flags)
+        {
+            if (objSrc == null)
+                return IntPtr.Zero;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
+            return ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), itfMT, classMT, flags);
+        }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
-        internal static partial void ClearNative(IntPtr pUnk);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToNative")]
+        private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag);
+
+        internal static object? ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags)
+        {
+            if (ppUnk == IntPtr.Zero)
+                return null;
+
+            object? retObject = null;
+            ConvertToManaged(ref ppUnk, itfMT, classMT, flags, ObjectHandleOnStack.Create(ref retObject));
+            return retObject;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToManaged")]
+        private static partial void ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags, ObjectHandleOnStack retObject);
+
+        internal static void ClearNative(IntPtr pUnk)
+        {
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 
