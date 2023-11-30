@@ -198,7 +198,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void InvokeJSImpl(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
+        internal static unsafe void InvokeJSFunction(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
             ObjectDisposedException.ThrowIf(jsFunction.IsDisposed, jsFunction);
 #if FEATURE_WASM_THREADS
@@ -220,6 +220,19 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
+            if (signature.IsAsync)
+            {
+                // pre-allocate the result handle and Task
+#if FEATURE_WASM_THREADS
+                JSSynchronizationContext.AssertWebWorkerContext();
+                var holder = new JSHostImplementation.PromiseHolder(JSSynchronizationContext.CurrentJSSynchronizationContext!);
+#else
+                var holder = new JSHostImplementation.PromiseHolder();
+#endif
+                arguments[1].slot.Type = MarshalerType.Task;
+                arguments[1].slot.GCHandle = holder.GCHandle;
+            }
+
             fixed (JSMarshalerArgument* ptr = arguments)
             {
                 Interop.Runtime.InvokeJSImport(signature.ImportHandle, ptr);
@@ -227,6 +240,15 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
                     JSHostImplementation.ThrowException(ref exceptionArg);
+                }
+            }
+            if (signature.IsAsync)
+            {
+                // if js synchronously returned null
+                if (arguments[1].slot.Type == MarshalerType.None)
+                {
+                    var holderHandle = (GCHandle)arguments[1].slot.GCHandle;
+                    holderHandle.Free();
                 }
             }
         }

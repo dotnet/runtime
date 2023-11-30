@@ -19,7 +19,7 @@
 //JS funcs
 extern void mono_wasm_release_cs_owned_object (int js_handle);
 extern void mono_wasm_bind_js_import(void *signature, int *is_exception, MonoObject **result);
-extern void mono_wasm_invoke_bound_function(int function_js_handle, void *args);
+extern void mono_wasm_invoke_js_function(int function_js_handle, void *args);
 extern void mono_wasm_invoke_js_import(int function_handle, void *args);
 extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
 extern void mono_wasm_resolve_or_reject_promise(void *data);
@@ -62,7 +62,7 @@ void bindings_initialize_internals (void)
 {
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSImport", mono_wasm_invoke_js_import);
 	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function);
 	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromise", mono_wasm_resolve_or_reject_promise);
