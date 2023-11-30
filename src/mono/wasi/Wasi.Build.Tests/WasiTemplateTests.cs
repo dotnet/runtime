@@ -182,40 +182,61 @@ public class WasiTemplateTests : BuildTestBase
                         UseCache: false));
     }
 
-    public static TheoryData<string, bool, bool> TestDataForConsoleTimezonesSingleFile()
+    public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRunForSingleFileBundle(bool propertyValue, bool aot)
     {
         var data = new TheoryData<string, bool, bool>();
-        data.Add("Debug", false, false);
-        data.Add("Debug", true, true);
-        data.Add("Release", false, false); // Release relinks by default
+        data.Add("Debug", propertyValue, aot);
+        data.Add("Release", propertyValue, aot);
         return data;
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-    [MemberData(nameof(TestDataForConsoleTimezonesSingleFile))]
-    public void ConsoleWithTimezonesPublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { false, false })]
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { true, false })]
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { false, true })]
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { true, true })]
+    public void ConsolePublishAndRunForSingleFileBundle_InvariantTimeZone(string config, bool invariantTimezone, bool aot)
     {
+        string extraProperties = invariantTimezone ? "<InvariantTimezone>true</InvariantTimezone>" : "";
+        CommandResult res = ConsolePublishAndRunForSingleFileBundleInternal(config, "InvariantTimezones.cs", aot, extraProperties: extraProperties);
+        if(invariantTimezone)
+            Assert.Contains("Could not find Asia/Tokyo", res.Output);
+        else
+            Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", res.Output);
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { false, false })]
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { true, false })]
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { false, true })]
+    [MemberData(nameof(TestDataForConsolePublishAndRunForSingleFileBundle), parameters: new object[] { true, true })]
+    public void ConsolePublishAndRunForSingleFileBundle_InvariantGlobalization(string config, bool invariantGlobalization, bool aot)
+    {
+        string extraProperties = invariantGlobalization ? "<InvariantGlobalization>true</InvariantGlobalization>" : "";
+        CommandResult res = ConsolePublishAndRunForSingleFileBundleInternal(config, "InvariantGlobalization.cs", aot, extraProperties: extraProperties);
+        Assert.Contains("Number: 1", res.Output);
+    }
+
+    private CommandResult ConsolePublishAndRunForSingleFileBundleInternal(string config, string programFileName, bool aot, string extraProperties = "")
+    {
+        if (string.IsNullOrEmpty(programFileName))
+            throw new ArgumentException("Cannot be empty", nameof(programFileName));
+
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Timezones.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, programFileName), Path.Combine(_projectDir!, "Program.cs"), true);
 
-        string extraProperties = "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
-        if (relinking)
-            extraProperties += "<WasmBuildNative>true</WasmBuildNative>";
-        if (invariantTimezone)
-            extraProperties += "<InvariantTimezone>true</InvariantTimezone>";
-
+        extraProperties += "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
         AddItemsPropertiesToProject(projectFile, extraProperties);
 
-        var buildArgs = new BuildArgs(projectName, config, /*aot*/false, id, null);
+        var buildArgs = new BuildArgs(projectName, config, aot, id, null);
         buildArgs = ExpandBuildArgs(buildArgs);
 
-        bool expectRelinking = config == "Release" || relinking;
         BuildProject(buildArgs,
                     id: id,
                     new BuildProjectOptions(
-                        DotnetWasmFromRuntimePack: !expectRelinking,
+                        DotnetWasmFromRuntimePack: false, // singlefilebundle will always relink
                         CreateProject: false,
                         Publish: true,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
@@ -234,14 +255,8 @@ public class WasiTemplateTests : BuildTestBase
         Assert.Contains("args[0] = x", res.Output);
         Assert.Contains("args[1] = y", res.Output);
         Assert.Contains("args[2] = z", res.Output);
-        if(invariantTimezone)
-        {
-            Assert.Contains("Could not find Asia/Tokyo", res.Output);
-        }
-        else
-        {
-            Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", res.Output);
-        }
+
+        return res;
     }
 
     [Theory]

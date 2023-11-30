@@ -68,8 +68,9 @@ extern void mono_register_timezones_bundle (void);
 #endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 extern void mono_register_assemblies_bundle (void);
-#ifndef INVARIANT_GLOBALIZATION
+extern void mono_register_runtimeconfig_bin (void);
 extern bool mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
+#ifndef INVARIANT_GLOBALIZATION
 extern void mono_register_icu_bundle (void);
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
@@ -398,6 +399,44 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+static void
+load_runtimeconfig()
+{
+#ifdef WASM_SINGLE_FILE
+	mono_register_runtimeconfig_bin ();
+
+	const uint8_t *buffer = NULL;
+	uint32_t data_len = 0;
+	if (!mono_bundled_resources_get_data_resource_values (RUNTIMECONFIG_BIN_FILE, &buffer, &data_len)) {
+		printf("Could not load " RUNTIMECONFIG_BIN_FILE " from the bundle\n");
+		assert(buffer);
+	}
+
+	MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+	arg->kind = 1; // kind: image pointer
+	arg->runtimeconfig.data.data = buffer;
+	arg->runtimeconfig.data.data_len = data_len;
+	monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
+#else
+	const char *file_name = RUNTIMECONFIG_BIN_FILE;
+	int str_len = strlen (file_name) + 1; // +1 is for the "/"
+	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
+	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
+	struct stat buffer;
+
+	assert (num_char > 0 && num_char == str_len);
+
+	if (stat (file_path, &buffer) == 0) {
+		MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+		arg->kind = 0;
+		arg->runtimeconfig.name.path = file_path;
+		monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+	} else {
+		free (file_path);
+	}
+#endif
+}
+
 void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
@@ -432,23 +471,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	appctx_values [0] = "/";
 	appctx_values [1] = "wasi-wasm";
 
-	const char *file_name = RUNTIMECONFIG_BIN_FILE;
-	int str_len = strlen (file_name) + 1; // +1 is for the "/"
-	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
-	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
-	struct stat buffer;
-
-	assert (num_char > 0 && num_char == str_len);
-
-	if (stat (file_path, &buffer) == 0) {
-		MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-		arg->kind = 0;
-		arg->runtimeconfig.name.path = file_path;
-		monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
-	} else {
-		free (file_path);
-	}
-
+	load_runtimeconfig();
 	monovm_initialize (2, appctx_keys, appctx_values);
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
