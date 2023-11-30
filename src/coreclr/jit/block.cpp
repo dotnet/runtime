@@ -292,16 +292,12 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if the peephole optimization is enabled,
-//    and block is a BBJ_ALWAYS to the next block that we can fall through into
+//    true if block is a BBJ_ALWAYS to the next block that we can fall into
 //
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
 {
     assert(KindIs(BBJ_ALWAYS));
-    const bool tryJumpOpt = !compiler->opts.compDbgCode || ((bbFlags & BBF_NONE_QUIRK) != 0);
-    const bool skipJump =
-        tryJumpOpt && JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbJumpDest);
-    return skipJump;
+    return (JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbJumpDest));
 }
 
 //------------------------------------------------------------------------
