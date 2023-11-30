@@ -34,7 +34,7 @@
         <Timeout>$(_DebuggerTestsWorkItemTimeout)</Timeout>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TEST_ARGS=--filter category^^!=failing^&amp;FullyQualifiedName~$(TestName)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TEST_ARGS=--filter category!=failing&amp;FullyQualifiedName~$(TestName)&quot;</PreCommands>
-        <PostCommands Condition="'$(OS)' != 'Windows_NT'">dmesg;gzip %24HELIX_WORKITEM_UPLOAD_ROOT/xharness-output/proxy*</PostCommands>
+        <PostCommands Condition="'$(OS)' != 'Windows_NT'">dmesg;gzip %24HELIX_WORKITEM_UPLOAD_ROOT/xharness-output/logs/proxy*</PostCommands>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
