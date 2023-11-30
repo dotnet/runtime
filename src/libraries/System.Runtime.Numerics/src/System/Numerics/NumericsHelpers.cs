@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -97,23 +99,58 @@ namespace System.Numerics
         // a mutation and needs to be used with care for immutable types.
         public static void DangerousMakeTwosComplement(Span<uint> d)
         {
-            if (d.Length > 0)
+            // Given a number:
+            //     XXXXXXXXXXXY00000
+            // where Y is non-zero,
+            // The result of two's complement is
+            //     AAAAAAAAAAAB00000
+            // where A = ~X and B = -Y
+
+            // Trim trailing 0s (at the first in little endian array)
+            d = d.TrimStart(0u);
+
+            if (d.IsEmpty)
             {
-                d[0] = unchecked(~d[0] + 1);
-
-                int i = 1;
-
-                // first do complement and +1 as long as carry is needed
-                for (; d[i - 1] == 0 && i < d.Length; i++)
-                {
-                    d[i] = unchecked(~d[i] + 1);
-                }
-                // now ones complement is sufficient
-                for (; i < d.Length; i++)
-                {
-                    d[i] = ~d[i];
-                }
+                return;
             }
+
+            // Make one's complement for every element
+            int offset = 0;
+
+            ref uint start = ref MemoryMarshal.GetReference(d);
+
+            while (Vector512.IsHardwareAccelerated && d.Length - offset >= Vector512<uint>.Count)
+            {
+                Vector512<uint> vector = Vector512.LoadUnsafe(ref start, (nuint)offset);
+                Vector512<uint> complement = Vector512.OnesComplement(vector);
+                Vector512.StoreUnsafe(complement, ref start, (nuint)offset);
+                offset += Vector512<uint>.Count;
+            }
+
+            while (Vector256.IsHardwareAccelerated && d.Length - offset >= Vector256<uint>.Count)
+            {
+                Vector256<uint> vector = Vector256.LoadUnsafe(ref start, (nuint)offset);
+                Vector256<uint> complement = Vector256.OnesComplement(vector);
+                Vector256.StoreUnsafe(complement, ref start, (nuint)offset);
+                offset += Vector256<uint>.Count;
+            }
+
+            while (Vector128.IsHardwareAccelerated && d.Length - offset >= Vector128<uint>.Count)
+            {
+                Vector128<uint> vector = Vector128.LoadUnsafe(ref start, (nuint)offset);
+                Vector128<uint> complement = Vector128.OnesComplement(vector);
+                Vector128.StoreUnsafe(complement, ref start, (nuint)offset);
+                offset += Vector128<uint>.Count;
+            }
+
+            for (; offset < d.Length; offset++)
+            {
+                d[offset] = ~d[offset];
+            }
+
+            // Adjust the first non-zero element to be two's complement
+            Debug.Assert(d[0] != uint.MaxValue);
+            d[0]++;
         }
 
         public static ulong MakeUInt64(uint uHi, uint uLo)
