@@ -218,6 +218,10 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
 function reject_promises(ws: WebSocketExtension, error: Error) {
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     const open_promise_used = ws[wasm_ws_pending_open_promise_used];
+
+    // when `open_promise_used` is false, we should not reject it,
+    // because it would be unhandled rejection. Nobody is subscribed yet.
+    // The subscription comes on the next call, which is `ws_wasm_open`, but cancelation/abort could happen in the meantime.
     if (open_promise_control && open_promise_used) {
         open_promise_control.reject(error);
     }
