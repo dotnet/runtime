@@ -152,7 +152,14 @@ struct RelopImplicationRule
     bool   reverse;
 };
 
-bool IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
+enum Range2Status
+{
+    Unknown,
+    AlwaysFalse,
+    AlwaysTrue
+};
+
+Range2Status IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
 {
     struct IntegralRange
     {
@@ -213,7 +220,7 @@ bool IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2,
     const bool success2 = setRange(oper2, bound2, &range2);
     if (!success1 || !success2)
     {
-        return false;
+        return Range2Status::Unknown;
     }
 
     // If ranges never intersect, then the 2nd range is never "true"
@@ -223,10 +230,20 @@ bool IsRange2ImpliedByRange1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2,
         //
         // range1: [100     .. INT_MAX]
         // range2: [INT_MIN .. 10]
-        return true;
+        return Range2Status::AlwaysFalse;
     }
 
-    return false;
+    // If range1 is a subset of range2, then the 2nd range is always "true"
+    if ((range1.startIncl >= range2.startIncl) && (range1.endIncl <= range2.endIncl))
+    {
+        // E.g.:
+        //
+        // range1: [100 .. INT_MAX]
+        // range2: [0   .. INT_MAX]
+        return Range2Status::AlwaysTrue;
+    }
+
+    return Range2Status::Unknown;
 }
 
 //------------------------------------------------------------------------
@@ -431,14 +448,18 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 const genTreeOps domOper  = static_cast<genTreeOps>(domApp.m_func);
                 const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
 
-                bool implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
-                if (implied)
+                // We only handle "canInferFromFalse" here, so we need to reverse domOper so then when it's "false" we
+                // check whether
+                // we can check whether treeOper is always "true" or "false" (or bail out if it's unknown).
+                Range2Status treeOperStatus =
+                    IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                if (treeOperStatus != Range2Status::Unknown)
                 {
                     rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     rii->canInferFromTrue  = false;
                     rii->canInferFromFalse = true;
-                    rii->reverseSense      = false;
+                    rii->reverseSense      = treeOperStatus == Range2Status::AlwaysTrue;
                     return;
                 }
             }
