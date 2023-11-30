@@ -3557,6 +3557,13 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 
     assert(!fgRngChkThrowAdded);
 
+    // If the mapping table isn't set up yet, set it up now.
+    //
+    if (fgAddCodeDscMap == nullptr)
+    {
+        fgAddCodeDscMap = new AddCodeDscMap(getAllocator(CMK_Unknown));
+    }
+
     // Allocate a new entry and prepend it to the list
     //
     add          = new (this, CMK_Unknown) AddCodeDsc;
@@ -3577,6 +3584,11 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     // Defer creating of the blocks until later.
     //
     add->acdDstBlk = srcBlk;
+
+    // Add to map
+    //
+    AddCodeDscKey key(kind, refData);
+    fgAddCodeDscMap->Set(key, add);
 }
 
 //------------------------------------------------------------------------
@@ -3764,35 +3776,25 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
 //    descriptor exists
 //
-// Notes:
-//   We maintain a cache of one AddCodeDsc for each kind, to make searching fast.
-//
-//   Each block in an EH region uses the same (maybe shared) block as the jump target for
-//   this exception kind.
-//
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
+    AddCodeDsc* add = nullptr;
 
-    if (!(fgExcptnTargetCache[kind] && // Try the cached value first
-          fgExcptnTargetCache[kind]->acdData == refData))
+    if (fgAddCodeDscMap != nullptr)
     {
-        // Too bad, have to search for the jump target for the exception
-
-        AddCodeDsc* add = nullptr;
-
-        for (add = fgAddCodeList; add != nullptr; add = add->acdNext)
-        {
-            if (add->acdData == refData && add->acdKind == kind)
-            {
-                break;
-            }
-        }
-
-        fgExcptnTargetCache[kind] = add;
+        AddCodeDscKey key(kind, refData);
+        fgAddCodeDscMap->Lookup(key, &add);
     }
 
-    return fgExcptnTargetCache[kind];
+    if (add == nullptr)
+    {
+        // We should't be asking for these blocks late in compilation
+        // unless we know there are entries to be found.
+        assert(!fgRngChkThrowAdded);
+    }
+
+    return add;
 }
 
 //------------------------------------------------------------------------
