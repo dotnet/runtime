@@ -51,6 +51,7 @@ namespace System.Threading.Tests
                 List<object[]> startPayloads = new();
                 List<object[]> stopPayloads = new();
                 const int waitCount = 10;
+                const int expectedEventCount = waitCount + 1; // +1 for the mres.
 
                 using TestEventListener listener = new();
                 listener.AddSource(providerName, EventLevel.Verbose, waitHandleKeyword);
@@ -71,7 +72,7 @@ namespace System.Threading.Tests
                         stopPayloads.Add(payload);
                     }
 
-                    if (startPayloads.Count >= waitCount && stopPayloads.Count >= waitCount)
+                    if (startPayloads.Count >= expectedEventCount && stopPayloads.Count >= expectedEventCount)
                     {
                         mres.Set();
                     }
@@ -90,14 +91,13 @@ namespace System.Threading.Tests
                         "Not enough WaitHandleWait events were collected");
                 });
 
-                int expectedEventCount = waitCount + 1; // +1 for the mres.
-
                 Assert.Equal(expectedEventCount, startPayloads.Count);
                 foreach (object[] payload in startPayloads)
                 {
                     Assert.Equal(3, payload.Length);
                     Assert.IsType<byte>(payload[0]);
                     Assert.IsType<nint>(payload[1]);
+                    Assert.NotEqual(0, payload[1], "Start event had no associated object");
                     Assert.IsType<ushort>(payload[2]);
                 }
 
