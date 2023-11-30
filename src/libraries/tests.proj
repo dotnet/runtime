@@ -522,6 +522,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <!-- This test doesn't run with TestReadyToRun. It fails before starting saying it can't find .NET -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectExclusions Condition="'$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(RunAOTCompilation)' == 'true'"
                        Include="@(HighAOTResourceRequiringProject)" />
