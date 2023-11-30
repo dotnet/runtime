@@ -306,7 +306,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
             return 1;
         }
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
-        NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString);
+        NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString).precomposedStringWithCanonicalMapping;;
 
         NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
         NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options);
