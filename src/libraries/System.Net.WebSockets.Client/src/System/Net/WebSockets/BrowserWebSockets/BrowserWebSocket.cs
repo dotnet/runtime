@@ -130,7 +130,7 @@ namespace System.Net.WebSockets
                 }
             }, null);
 
-            return JSHost.CurrentOrMainJSSynchronizationContext.Send(() =>
+            return JSHost.CurrentOrMainJSSynchronizationContext.Post(() =>
             {
                 return ConnectAsyncCore(cancellationToken);
             });
@@ -167,7 +167,7 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task promise;
                 lock (_thisLock)
@@ -200,7 +200,7 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task<WebSocketReceiveResult> promise;
                 lock (_thisLock)
@@ -228,7 +228,7 @@ namespace System.Net.WebSockets
             }
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task promise;
                 lock (_thisLock)
@@ -240,7 +240,7 @@ namespace System.Net.WebSockets
                     {
                         throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, state, "Connecting, Open, CloseSent, Aborted"));
                     }
-                    if(state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.Aborted)
+                    if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.Aborted)
                     {
                         return Task.CompletedTask;
                     }
@@ -268,7 +268,7 @@ namespace System.Net.WebSockets
             }
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task promise;
                 lock (_thisLock)
