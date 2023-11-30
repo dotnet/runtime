@@ -3374,7 +3374,10 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     }
 
     genConsumeOperands(treeNode->AsOp());
+
+    treeNode->gtRsvdRegs ^= genRegMask(treeNode->GetRegNum());
     regNumber tmpReg = treeNode->ExtractTempReg(RBM_ALLINT);
+    treeNode->gtRsvdRegs |= genRegMask(treeNode->GetRegNum());
 
     GetEmitter()->emitIns_R_R(ins, EA_8BYTE, treeNode->GetRegNum(), op1->GetRegNum());
 
