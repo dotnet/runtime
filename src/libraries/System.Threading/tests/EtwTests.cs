@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Microsoft.DotNet.RemoteExecutor;
@@ -32,6 +33,78 @@ namespace System.Threading.Tests
                         });
                     Assert.Equal(ExpectedInvocations, delegateInvocations);
                     Assert.Equal(ExpectedInvocations, eventsRaised);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void WaitHandleWaitEventTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                const string providerName = "Microsoft-Windows-DotNETRuntime";
+                const EventKeywords waitHandleKeyword = (EventKeywords)0x40000000000;
+                const int waitHandleWaitStartEventId = 301;
+                const int waitHandleWaitStopEventId = 302;
+
+                List<object[]> startPayloads = new();
+                List<object[]> stopPayloads = new();
+                const int waitCount = 10;
+
+                using TestEventListener listener = new();
+                listener.AddSource(providerName, EventLevel.Verbose, waitHandleKeyword);
+
+                ManualResetEventSlim mres = new(false);
+
+                listener.RunWithCallback(eventData =>
+                {
+                    var payload = new object[eventData.Payload!.Count];
+                    eventData.Payload.CopyTo(payload, 0);
+
+                    if (eventData.EventId == waitHandleWaitStartEventId)
+                    {
+                        startPayloads.Add(payload);
+                    }
+                    else if (eventData.EventId == waitHandleWaitStopEventId)
+                    {
+                        stopPayloads.Add(payload);
+                    }
+
+                    if (startPayloads.Count >= waitCount && stopPayloads.Count >= waitCount)
+                    {
+                        mres.Set();
+                    }
+                }, () =>
+                {
+                    object l = new();
+                    Monitor.Enter(l);
+                    for (int i = 0; i < waitCount; i += 1)
+                    {
+                        bool reacquired = Monitor.Wait(l, millisecondsTimeout: 5);
+                        Assert.False(reacquired);
+                    }
+
+                    Assert.True(
+                        mres.Wait(TimeSpan.FromSeconds(30)),
+                        "Not enough WaitHandleWait events were collected");
+                });
+
+                int expectedEventCount = waitCount + 1; // +1 for the mres.
+
+                Assert.Equal(expectedEventCount, startPayloads.Count);
+                foreach (object[] payload in startPayloads)
+                {
+                    Assert.Equal(3, payload.Length);
+                    Assert.IsType<byte>(payload[0]);
+                    Assert.IsType<nint>(payload[1]);
+                    Assert.IsType<ushort>(payload[2]);
+                }
+
+                Assert.Equal(expectedEventCount, stopPayloads.Count);
+                foreach (object[] payload in stopPayloads)
+                {
+                    Assert.Equal(1, payload.Length);
+                    Assert.IsType<ushort>(payload[0]);
                 }
             }).Dispose();
         }
