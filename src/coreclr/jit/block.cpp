@@ -1631,59 +1631,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, unsigned j
 }
 
 //------------------------------------------------------------------------
-// isBBCallAlwaysPair: Determine if this is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
-//
-// Return Value:
-//    True iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
-//    -- a block corresponding to an exit from the try of a try/finally.
-//
-// Notes:
-//    In the flow graph, this becomes a block that calls the finally, and a second, immediately
-//    following empty block (in the bbNext chain) to which the finally will return, and which
-//    branches unconditionally to the next block to be executed outside the try/finally.
-//    Note that code is often generated differently than this description. For example, on ARM,
-//    the target of the BBJ_ALWAYS is loaded in LR (the return register), and a direct jump is
-//    made to the 'finally'. The effect is that the 'finally' returns directly to the target of
-//    the BBJ_ALWAYS. A "retless" BBJ_CALLFINALLY is one that has no corresponding BBJ_ALWAYS.
-//    This can happen if the finally is known to not return (e.g., it contains a 'throw'). In
-//    that case, the BBJ_CALLFINALLY flags has BBF_RETLESS_CALL set. Note that ARM never has
-//    "retless" BBJ_CALLFINALLY blocks due to a requirement to use the BBJ_ALWAYS for
-//    generating code.
-//
-bool BasicBlock::isBBCallAlwaysPair() const
-{
-    if (this->KindIs(BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
-    {
-        // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
-        assert(!this->IsLast());
-        assert(this->Next()->KindIs(BBJ_ALWAYS));
-        assert(this->Next()->bbFlags & BBF_KEEP_BBJ_ALWAYS);
-        assert(this->Next()->isEmpty());
-
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-//------------------------------------------------------------------------
-// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
-//
-// Return Value:
-//    True iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
-//    -- a block corresponding to an exit from the try of a try/finally.
-//
-// Notes:
-//    See notes on isBBCallAlwaysPair(), above.
-//
-bool BasicBlock::isBBCallAlwaysPairTail() const
-{
-    return (bbPrev != nullptr) && bbPrev->isBBCallAlwaysPair();
-}
-
-//------------------------------------------------------------------------
 // hasEHBoundaryIn: Determine if this block begins at an EH boundary.
 //
 // Return Value:
