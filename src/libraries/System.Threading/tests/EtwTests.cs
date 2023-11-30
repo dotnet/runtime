@@ -38,6 +38,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnMono("WaitHandleWait event is not (yet?) implemented in mono")]
         public void WaitHandleWaitEventTest()
         {
             RemoteExecutor.Invoke(() =>
