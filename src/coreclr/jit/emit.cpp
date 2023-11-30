@@ -2725,6 +2725,8 @@ const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
     EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
 #if defined(TARGET_XARCH)
     EA_32BYTE, EA_64BYTE,
+#elif defined(TARGET_ARM64)
+    EA_SCALABLE,
 #endif // TARGET_XARCH
 };
 

@@ -299,7 +299,6 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //  Nodes used only within the code generator:
 //-----------------------------------------------------------------------------
 
-GTNODE(CLS_VAR_ADDR     , GenTreeClsVar      ,0,0,GTK_LEAF|DBK_NOTHIR)              // static data member address
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
 GTNODE(EMITNOP          , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // emitter-placed nop
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke prolog seq
