@@ -3150,7 +3150,7 @@ public:
                 {
                     // This can only be the case for a struct in which the 'val' was a COMMA, so
                     // the assignment is sunk below it.
-                    store = store->gtEffectiveVal(true);
+                    store = store->gtEffectiveVal();
                     noway_assert(origStore->OperIs(GT_COMMA) && (origStore == val));
                 }
                 else

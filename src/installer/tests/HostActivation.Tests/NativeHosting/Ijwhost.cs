@@ -116,8 +116,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(RepoDirectories.BuiltDotnet);
-                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
                 string folder = Path.Combine(BaseDirectory, "ijw");
                 IjwApp = new TestApp(folder, "ijw");
                 // Copy over ijwhost

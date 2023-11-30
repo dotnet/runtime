@@ -78,12 +78,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 await connection.FinishConnectAsync(options, linkedCts.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException)
             {
-                // handshake timeout elapsed, tear down the connection.
-                // Note that since handshake is not done yet, application error code is not sent.
                 await connection.DisposeAsync().ConfigureAwait(false);
 
+                // throw OCE with correct token if cancellation requested by user
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // cancellation by the linkedCts.CancelAfter. Convert to Timeout
                 throw new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, options.HandshakeTimeout));
             }
             catch

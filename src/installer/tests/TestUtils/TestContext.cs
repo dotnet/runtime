@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.IO;
+using Microsoft.DotNet.Cli.Build;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -17,7 +18,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static string TestAssetsOutput { get; }
         public static string TestArtifactsPath { get; }
 
-        public static string BuiltDotNet { get; }
+        public static DotNetCli BuiltDotNet { get; }
 
         private static string _testContextVariableFilePath { get; }
         private static ImmutableDictionary<string, string> _testContextVariables { get; }
@@ -45,7 +46,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             TestAssetsOutput = GetTestContextVariable("TEST_ASSETS_OUTPUT");
             TestArtifactsPath = GetTestContextVariable("TEST_ARTIFACTS");
 
-            BuiltDotNet = Path.Combine(TestArtifactsPath, "sharedFrameworkPublish");
+            BuiltDotNet = new DotNetCli(Path.Combine(TestArtifactsPath, "sharedFrameworkPublish"));
         }
 
         public static string GetTestContextVariable(string name)
