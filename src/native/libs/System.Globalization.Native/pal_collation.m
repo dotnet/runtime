@@ -312,13 +312,12 @@ int32_t GlobalizationNative_GetSortKeyNative(
         {
             if (sortKey != NULL)
             {
-                //sortKey = malloc(1);
                 sortKey[0] = '\0';
             }
             return 1;
         }
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
-        NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString);
+        NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString).precomposedStringWithCanonicalMapping;
 
         NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
         NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options);
@@ -344,7 +343,6 @@ int32_t GlobalizationNative_GetSortKeyNative(
             const uint8_t *bytesToCopy = (const uint8_t *)[dataToUse bytes];
             if (sortKey != NULL)
             {
-                //sortKey = (uint8_t *)malloc(utf8Length);
                 memcpy(sortKey, bytesToCopy, utf8Length);
             }
             return utf8Length;
