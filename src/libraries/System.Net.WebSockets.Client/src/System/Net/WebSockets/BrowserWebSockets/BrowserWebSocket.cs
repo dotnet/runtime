@@ -476,13 +476,17 @@ namespace System.Net.WebSockets
             try
             {
                 var sendTask = BrowserInterop.UnsafeSendSync(_innerWebSocket!, buffer, messageType, endOfMessage);
-                if (sendTask == null)
+                if (sendTask != null)
                 {
-                    // return synchronously
-                    return;
+                    await CancelationHelper(sendTask, cancellationToken, FastState).ConfigureAwait(true);
                 }
-
-                await CancelationHelper(sendTask, cancellationToken, FastState).ConfigureAwait(true);
+#if FEATURE_WASM_THREADS
+                // return synchronously, not supported with MT
+                else
+                {
+                    Environment.FailFast("Unexpected synchronous result");
+                }
+#endif
             }
             catch (JSException ex)
             {
@@ -502,19 +506,18 @@ namespace System.Net.WebSockets
                 using (MemoryHandle pinBuffer = bufferMemory.Pin())
                 {
                     var receiveTask = BrowserInterop.ReceiveUnsafeSync(_innerWebSocket!, pinBuffer, bufferMemory.Length);
-                    if (receiveTask == null)
+                    if (receiveTask != null)
                     {
-                        // return synchronously
-#if FEATURE_WASM_THREADS
-                        lock (_thisLock)
-                        {
-#endif
-                            return ConvertResponse(this);
-#if FEATURE_WASM_THREADS
-                        } //lock
-#endif
+                        await CancelationHelper(receiveTask, cancellationToken, FastState).ConfigureAwait(true);
                     }
-                    await CancelationHelper(receiveTask, cancellationToken, FastState).ConfigureAwait(true);
+#if FEATURE_WASM_THREADS
+                    // return synchronously, not supported with MT
+                    else
+                    {
+                        Environment.FailFast("Unexpected synchronous result");
+                    }
+#endif
+
 
 #if FEATURE_WASM_THREADS
                     lock (_thisLock)
@@ -555,8 +558,18 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = statusDescription;
 
-            var closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived) ?? Task.CompletedTask;
-            await CancelationHelper(closeTask, cancellationToken, FastState).ConfigureAwait(true);
+            var closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived);
+            if (closeTask != null)
+            {
+                await CancelationHelper(closeTask, cancellationToken, FastState).ConfigureAwait(true);
+            }
+#if FEATURE_WASM_THREADS
+            // return synchronously, not supported with MT
+            else
+            {
+                Environment.FailFast("Unexpected synchronous result");
+            }
+#endif
 
 #if FEATURE_WASM_THREADS
             lock (_thisLock)

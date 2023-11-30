@@ -130,7 +130,12 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
     const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
-        return null;
+        if (MonoWasmThreads) {
+            return Promise.resolve();
+        } else {
+            // finish synchronously
+            return null;
+        }
     }
 
     return _mono_wasm_web_socket_send_and_wait(ws, whole_buffer);
@@ -150,10 +155,14 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
     if (receive_event_queue.getLength()) {
         mono_assert(receive_promise_queue.getLength() == 0, "ERR20: Invalid WS state");
 
-        // finish synchronously
         _mono_wasm_web_socket_receive_buffering(ws, receive_event_queue, buffer_ptr, buffer_length);
 
-        return null;
+        if (MonoWasmThreads) {
+            return Promise.resolve();
+        } else {
+            // finish synchronously
+            return null;
+        }
     }
     const { promise, promise_control } = createPromiseController<void>();
     const receive_promise_control = promise_control as ReceivePromiseControl;
@@ -168,7 +177,12 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
     mono_assert(!!ws, "ERR19: expected ws instance");
 
     if (ws.readyState == WebSocket.CLOSED) {
-        return null;
+        if (MonoWasmThreads) {
+            return Promise.resolve();
+        } else {
+            // finish synchronously
+            return null;
+        }
     }
 
     if (wait_for_close_received) {
@@ -192,7 +206,12 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
         } else {
             ws.close(code);
         }
-        return null;
+        if (MonoWasmThreads) {
+            return Promise.resolve();
+        } else {
+            // finish synchronously
+            return null;
+        }
     }
 }
 
@@ -239,7 +258,12 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
     // Otherwise we block so that we apply some backpresure to the application sending large data.
     // this is different from Managed implementation
     if (ws.bufferedAmount < ws_send_buffer_blocking_threshold) {
-        return null;
+        if (MonoWasmThreads) {
+            return Promise.resolve();
+        } else {
+            // finish synchronously
+            return null;
+        }
     }
 
     // block the promise/task until the browser passed the buffer to OS
