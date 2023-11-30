@@ -43,7 +43,7 @@ namespace System.IO.Compression
         [InlineData((CompressionLevel)5)]
         public void Ctor_ArgumentValidation_ValidCompressionLevel(CompressionLevel compressionLevel)
         {
-            Assert.DoesNotThrow(() => new BrotliStream(new MemoryStream(), compressionLevel));
+            _ = new BrotliStream(new MemoryStream(), compressionLevel);
         }
 
         [Fact]
