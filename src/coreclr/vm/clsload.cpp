@@ -3480,7 +3480,7 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
-    SArray<EEClassHashEntry_t *> classEntries();
+    SArray<EEClassHashEntry_t *> classEntries;
 
     AddAvailableClassHaveLock(
         pModule,
