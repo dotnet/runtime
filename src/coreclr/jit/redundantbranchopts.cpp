@@ -428,26 +428,16 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             {
                 const ssize_t    domCns   = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
                 const ssize_t    treeCns  = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
-                const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
                 const genTreeOps domOper  = static_cast<genTreeOps>(domApp.m_func);
+                const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
 
-                bool canInferFromTrue = true;
-                bool implied          = IsRange2ImpliedByRange1(domOper, domCns, treeOper, treeCns);
-
-                if (!implied)
-                {
-                    // Reverse the dominating compare and try again, if it succeeds, we can infer from "false".
-                    implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
-                    canInferFromTrue = false;
-                }
-
-                // TODO: handle NeverIntersects case.
+                bool implied = IsRange2ImpliedByRange1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
                 if (implied)
                 {
                     rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    rii->canInferFromTrue  = canInferFromTrue;
-                    rii->canInferFromFalse = !canInferFromTrue;
+                    rii->canInferFromTrue  = false;
+                    rii->canInferFromFalse = true;
                     rii->reverseSense      = false;
                     return;
                 }
