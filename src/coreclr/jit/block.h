@@ -699,7 +699,8 @@ private:
     BasicBlockFlags bbFlags;
 
 public:
-    BasicBlockFlags HasFlag(const BasicBlockFlags flag) const
+    // MSVC doesn't inline this method in large callers by default
+    __forceinline BasicBlockFlags HasFlag(const BasicBlockFlags flag) const
     {
         // Assert flag is not multiple BasicBlockFlags OR'd together
         // by checking if it is a power of 2
@@ -722,7 +723,8 @@ public:
         bbFlags |= (block->bbFlags & mask);
     }
 
-    void SetFlags(const BasicBlockFlags flags)
+    // MSVC doesn't inline this method in large callers by default
+    __forceinline void SetFlags(const BasicBlockFlags flags)
     {
         bbFlags |= flags;
     }
