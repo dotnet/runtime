@@ -73,8 +73,7 @@ namespace System
         public override bool Equals(object? o) { throw new NotSupportedException(SR.NotSupported_NYI); }
         public override int GetHashCode() => _typeHandle.IsNull ? 0 : _typeHandle.GetHashCode();
 
-        // Not an api - declared public because of CoreLib/Reflection.Core divide.
-        public bool IsNull => _typeHandle.IsNull;
+        internal bool IsNull => _typeHandle.IsNull;
 
         internal ref byte Value
         {

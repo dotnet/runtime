@@ -3,6 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_release_cs_owned_object, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
@@ -15,7 +16,7 @@ import {
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
     ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol
 } from "./marshal";
-import { monoStringToString } from "./strings";
+import { monoStringToString, utf16ToString } from "./strings";
 import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
@@ -310,12 +311,21 @@ export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
     if (type == MarshalerType.None) {
         return null;
     }
-    const root = get_string_root(arg);
-    try {
-        const value = monoStringToString(root);
+    if (WasmEnableJsInteropByValue) {
+        const buffer = get_arg_intptr(arg);
+        const len = get_arg_length(arg) * 2;
+        const value = utf16ToString(<any>buffer, <any>buffer + len);
+        Module._free(buffer as any);
         return value;
-    } finally {
-        root.release();
+    }
+    else {
+        const root = get_string_root(arg);
+        try {
+            const value = monoStringToString(root);
+            return value;
+        } finally {
+            root.release();
+        }
     }
 }
 
@@ -421,7 +431,9 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             const element_arg = get_arg(<any>buffer_ptr, index);
             result[index] = marshal_string_to_js(element_arg);
         }
-        cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        if (!WasmEnableJsInteropByValue) {
+            cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        }
     }
     else if (element_type == MarshalerType.Object) {
         result = new Array(length);
@@ -429,7 +441,9 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             const element_arg = get_arg(<any>buffer_ptr, index);
             result[index] = _marshal_cs_object_to_js(element_arg);
         }
-        cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        if (!WasmEnableJsInteropByValue) {
+            cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        }
     }
     else if (element_type == MarshalerType.JSObject) {
         result = new Array(length);
