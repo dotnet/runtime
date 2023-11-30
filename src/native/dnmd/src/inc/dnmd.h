@@ -521,6 +521,14 @@ bool md_append_row(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* new_row
 // The table that new_child_row points to is treated as unsorted until md_commit_row_add is called after all columns have been set on the new row.
 bool md_add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcursor_t* new_row);
 
+// Creates a new row in the list for the given cursor specified by the given column such that the values of the sort_order_col are maintained in ascending order.
+// This method assumes that the list is currently sorted by the sort_order_col column.
+// This method accounts for any indirection tables that may need to be created or maintained to ensure that
+// the structure of the list is maintained without moving tokens.
+// The table that new_row points to is treated as unsorted until md_commit_row_add is called after all columns have been set on the new row.
+// The new_row row will also have the sort_order_col column initialized to sort_col_value.
+bool md_add_new_row_to_sorted_list(mdcursor_t list_owner, col_index_t list_col, col_index_t sort_order_col, uint32_t sort_col_value, mdcursor_t* new_row);
+
 // Finish the process of adding a row to the cursor's table.
 void md_commit_row_add(mdcursor_t row);
 

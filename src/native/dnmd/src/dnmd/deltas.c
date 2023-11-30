@@ -213,6 +213,9 @@ static bool process_log(mdcxt_t* cxt, mdcxt_t* delta)
             if (!md_token_to_cursor(cxt, tk, &parent))
                 return false;
 
+            // We don't use md_add_new_row_to_sorted_list here because we don't know the value of the Sequence column
+            // until we process the next record in the EncLog.
+            // We'll re-sort the list after we process the next entry in the EncLog.
             if (!add_list_target_row(parent, mdtMethodDef_ParamList))
                 return false;
             break;
