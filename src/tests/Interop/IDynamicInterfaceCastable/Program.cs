@@ -370,6 +370,7 @@ namespace IDynamicInterfaceCastableTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/1442", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         public static void ValidateGenericInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");

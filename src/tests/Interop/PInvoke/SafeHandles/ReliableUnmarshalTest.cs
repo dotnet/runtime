@@ -11,6 +11,7 @@ namespace SafeHandleTests
     public class ReliableUnmarshalTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48084", TestRuntimes.Mono)]
         public static void RunTest()
         {
             // Test that our SafeHandle-derived object has its underlying handle set after a P/Invoke
