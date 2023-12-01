@@ -664,13 +664,12 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
-                RawIndent = JsonWriterHelper.GetRawIndentation(value);
+                RawIndent = RawIndentation.FromString(value);
                 _indentText = value;
             }
         }
 
         internal RawIndentation RawIndent { get; private set; }
-
 
         /// <summary>
         /// Configures how object references are handled when reading and writing JSON.

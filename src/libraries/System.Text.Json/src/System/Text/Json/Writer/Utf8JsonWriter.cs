@@ -1035,7 +1035,7 @@ namespace System.Text.Json
         {
             Debug.Assert(_options.Indented);
 
-            JsonWriterHelper.WriteIndentation(buffer, indentation, _options.RawIndent);
+            _options.RawIndent.Write(buffer, indentation);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -27,7 +27,6 @@ namespace System.Text.Json
         public const byte Hyphen = (byte)'-';
         public const byte UtcOffsetToken = (byte)'Z';
         public const byte TimePrefix = (byte)'T';
-        public const byte Null = (byte)'\0';
 
         // \u2028 and \u2029 are considered respectively line and paragraph separators
         // UTF-8 representation for them is E2, 80, A8/A9

@@ -54,7 +54,7 @@ namespace System.Text.Json
             readonly get => _indentText ?? JsonConstants.DefaultIndent;
             set
             {
-                RawIndent = JsonWriterHelper.GetRawIndentation(value);
+                RawIndent = RawIndentation.FromString(value);
                 _indentText = value;
             }
         }
