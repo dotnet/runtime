@@ -3770,7 +3770,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 //
 // Arguments:
 //    kind - kind of exception to throw
-//    block - block where we need to throw an exception
+//    refData -- bbThrowIndex of the block that will jump to the throw helper
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
