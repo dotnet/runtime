@@ -1025,11 +1025,11 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-            imm = emitGetInsSC(id);
-            assert(insOptsScalable(id->idInsOpt()));
+            elemsize = id->idOpSize();
             assert(isVectorRegister(id->idReg1())); // nnnn
             assert(isVectorRegister(id->idReg2())); // ddddd
-            assert(isValidUimm16(imm));             // iiii
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            assert(isScalableVectorSize(elemsize));
             break;
 
         default:
@@ -1628,6 +1628,18 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) info,
     #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) info,
     #include "instrs.h"
+    #define INST1(id, nm, info, fmt, e1                                                     ) info,
+    #define INST2(id, nm, info, fmt, e1, e2                                                 ) info,
+    #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) info,
+    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) info,
+    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) info,
+    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) info,
+    #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) info,
+    #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) info,
+    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) info,
+    #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) info,
+    #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) info,
+    #include "instrsarm64sve.h"
 };
 // clang-format on
 
@@ -7285,9 +7297,12 @@ void emitter::emitIns_R_R_I(
         case INS_sve_sqrshrn:
         case INS_sve_sqrshrun:
         case INS_sve_uqrshrn:
-            assert(isVectorRegister(reg1)); // nnnn
-            assert(isVectorRegister(reg2)); // ddddd
-            assert(isValidUimm16(imm));     // iiii
+            isRightShift = emitInsIsVectorRightShift(ins);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isRightShift); // These are always right-shift.
+            assert(isValidVectorShiftAmount(imm, EA_4BYTE, isRightShift));
             fmt = IF_SVE_GA_2A;
             break;
 
@@ -13990,11 +14005,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             imm = emitGetInsSC(id);
-            assert(isValidUimm16(imm));
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            assert(emitInsIsVectorRightShift(id->idIns()));
+            assert(isValidVectorShiftAmount(imm, EA_4BYTE, /* rightShift */ true));
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_9_to_6(id->idReg1()); // nnnn
-            code |= insEncodeReg_V_4_to_0(id->idReg2()); // ddddd
-            code |= code |= ((code_t)imm << 4);          // iiii
+            code |= insEncodeVectorShift(EA_4BYTE, /* right-shift */ -imm); // iiii
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                    // ddddd
+            code |= insEncodeReg_V_9_to_6(id->idReg2());                    // nnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -14543,6 +14560,30 @@ void emitter::emitDispVectorElemList(
     }
     printf("}");
     printf("[%d]", index);
+
+    if (addComma)
+    {
+        emitDispComma();
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispSveRegList: Display a SVE vector register list
+//
+void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma)
+{
+    assert(isVectorRegister(firstReg));
+
+    regNumber currReg = firstReg;
+
+    printf("{ ");
+    for (unsigned i = 0; i < listSize; i++)
+    {
+        const bool notLastRegister = (i != listSize - 1);
+        emitDispSveReg(currReg, opt, notLastRegister);
+        currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+    }
+    printf(" }");
 
     if (addComma)
     {
@@ -16246,9 +16287,9 @@ void emitter::emitDispInsHelp(
             break;
 
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // nnnn
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // ddddd
-            emitDispImm(emitGetInsSC(id), false);               // iiii
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
+            emitDispSveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
+            emitDispImm(emitGetInsSC(id), false);                           // iiii
             break;
 
         default:

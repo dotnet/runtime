@@ -10339,11 +10339,17 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_GA_2A
     theEmitter->emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE, REG_V0, REG_V0, 5,
-                              INS_OPTS_SCALABLE_B); // SQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+                              INS_OPTS_SCALABLE_H); // SQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
     theEmitter->emitIns_R_R_I(INS_sve_sqrshrun, EA_SCALABLE, REG_V0, REG_V0, 5,
-                              INS_OPTS_SCALABLE_B); // SQRSHRUN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+                              INS_OPTS_SCALABLE_H); // SQRSHRUN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
     theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V0, REG_V0, 5,
-                              INS_OPTS_SCALABLE_B); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const> 
+                              INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE, REG_V0, REG_V1, 16,
+                              INS_OPTS_SCALABLE_H); // SQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqrshrun, EA_SCALABLE, REG_V0, REG_V2, 7,
+                              INS_OPTS_SCALABLE_H); // SQRSHRUN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V0, REG_V3, 1,
+                              INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
