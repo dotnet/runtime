@@ -1428,7 +1428,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && !ContainsGenericVariables() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !pInterface->IsGenericTypeDefinition() && pInterface->GetInstantiation().ContainsAllOneType(this->GetSpecialInstantiationType()))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();

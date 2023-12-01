@@ -1005,7 +1005,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
                  const ZapSig::Context *     pZapSigContext,
-                 MethodTable *               pMTInterfaceMapOwner,
+                 TypeHandle                  thSpecialInterfaceInstantiationType,
                  HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
     CONTRACT(TypeHandle)
@@ -1035,7 +1035,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         // Zap sig context must be NULL, as this can only happen in the type loader itself
         _ASSERTE(pZapSigContext == NULL);
         // Similarly with the pMTInterfaceMapOwner logic
-        _ASSERTE(pMTInterfaceMapOwner == NULL);
+        _ASSERTE(thSpecialInterfaceInstantiationType.IsNull());
 
         // This may throw an exception using the FullModule
         _ASSERTE(pModule->IsFullModule());
@@ -1491,7 +1491,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                             argDrop,
                                                             pSubst,
                                                             pZapSigContext,
-                                                            NULL,
+                                                            TypeHandle(),
                                                             pRecursiveFieldGenericHandling);
                         if (typeHnd.IsNull())
                         {
@@ -1518,7 +1518,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+                if (!thSpecialInterfaceInstantiationType.IsNull() && genericLoadInst.ContainsAllOneType(thSpecialInterfaceInstantiationType))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
                 }

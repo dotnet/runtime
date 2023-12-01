@@ -1470,11 +1470,10 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // Shortcut for generic approx type scenario
     if (pMTInterfaceMapOwner != NULL &&
-        !pMTInterfaceMapOwner->ContainsGenericVariables() &&
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
-        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner))
+        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
     {
         return TRUE;
     }
@@ -1497,9 +1496,9 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
-            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->ContainsGenericVariables())
+            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner)
             {
-                thArg = pMTInterfaceMapOwner;
+                thArg = pMTInterfaceMapOwner->GetSpecialInstantiationType();
             }
 
             TypeHandle thTargetArg = targetInst[i];
@@ -9283,6 +9282,12 @@ MethodTable::TryResolveConstraintMethodApprox(
         DWORD cPotentialMatchingInterfaces = 0;
         while (it.Next())
         {
+            // If the approx type doesn't match by type handle, then it clearly can't match
+            // by canonical type. This avoids force loading the interface and breaking the
+            // special interface map type scenario
+            if (!it.GetInterfaceApprox()->HasSameTypeDefAs(thInterfaceType.AsMethodTable()))
+                continue;
+
             TypeHandle thPotentialInterfaceType(it.GetInterface(pCanonMT));
             if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() ==
                 thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
@@ -9560,11 +9565,11 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     CONTRACT_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
-    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->ContainsGenericVariables())
+    if (pResult->IsSpecialMarkerTypeForGenericCasting())
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
-            ownerAsInst[i] = pMTOwner;
+            ownerAsInst[i] = pMTOwner->GetSpecialInstantiationType();
 
         _ASSERTE(pResult->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
         Instantiation inst(ownerAsInst, pResult->GetInstantiation().GetNumArgs());
