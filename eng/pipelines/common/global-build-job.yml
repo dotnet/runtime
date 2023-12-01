@@ -105,21 +105,6 @@ jobs:
         ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: ''
 
-      - name: _monoAotBuildshCommand
-        value: ''
-
-      - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - name: _monoAotBuildshCommand
-          value: 'mono_aot'
-
-      - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-        - name: _monoAotBuildshCommand
-          value: 'mono_fullaot'
-
-      - ${{ if eq(parameters.archType, 'arm64') }}:
-        - name: _monoAotCrossCompileArg
-          value: 'cross'
-
       # Set no native sanitizers by default
       - name: _nativeSanitizersArg
         value: ''

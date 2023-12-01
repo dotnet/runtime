@@ -239,6 +239,6 @@
         Importance="High" />
   </Target>
 
-  <Import Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')"
+  <Import Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'"
           Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
 </Project>
