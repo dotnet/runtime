@@ -3831,6 +3831,7 @@ void emitter::emitDispIns(
     size_t      instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize)
     {
+        // TODO-RISCV64: support different size instructions
         instrSize = sizeof(code_t);
         code_t instruction;
         memcpy(&instruction, instr, instrSize);
