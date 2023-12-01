@@ -246,7 +246,7 @@ public:
                                          BOOL dropGenericArgumentLevel = FALSE,
                                          const Substitution *pSubst = NULL,
                                          const ZapSig::Context *pZapSigContext = NULL,
-                                         TypeHandle thSpecialInterfaceInstantiationType = NULL,
+                                         MethodTable *pMTInterfaceMapOwner = NULL,
                                          HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
                                          ) const;
 

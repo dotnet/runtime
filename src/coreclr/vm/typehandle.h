@@ -736,15 +736,16 @@ public:
         return m_pArgs;
     }
 
-    bool ContainsAllOneType(TypeHandle th)
-    {
-        for (auto i = GetNumArgs(); i > 0;)
-        {
-            if ((*this)[--i] != th)
-                return false;
-        }
-        return true;
-    }
+#define NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES 3
+    static mdToken CustomSpecialInstantiationTokens[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES];
+    static DWORD CustomSpecialInstantiationIndices[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES];
+    static TypeHandle CustomSpecialInstantiationTypes[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES];
+
+    // Determine if the instantiation is the one which a Special Marker Type would be associated with
+    // IN: pMTGenericType - MethodTable of generic interface type to determine if it matches the expected instantiation. This may or may not be the open generic instance
+    //     pMTInterfaceMapOwner - MethodTable where an instantiation of the generic type def defined by pMTGenerictype will be instantiated over this instantiation.
+    // RESULT: a bool indicating whether or not this is the particular instantiation which can be efficiently represented by the Special Marker Type.
+    bool ContainsExpectedSpecialInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner);
 
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.

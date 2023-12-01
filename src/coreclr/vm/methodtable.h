@@ -1967,6 +1967,7 @@ public:
             RETURN (m_pMap->GetMethodTable());
         }
 
+#ifndef DACCESS_COMPILE
         inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
         {
             CONTRACT(bool)
@@ -1987,7 +1988,7 @@ public:
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
                     !pMTOwner->ContainsGenericVariables() &&
-                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                    pMT->GetInstantiation().ContainsExpectedSpecialInstantiation(pMT, pMTOwner))
                 {
                     exactMatch = true;
 #ifndef DACCESS_COMPILE
@@ -2002,6 +2003,7 @@ public:
 
             RETURN (exactMatch);
         }
+#endif
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {

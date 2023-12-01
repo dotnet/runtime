@@ -1473,7 +1473,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
-        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
+        pTargetMT->GetInstantiation().ContainsExpectedSpecialInstantiation(pTargetMT, pMTInterfaceMapOwner))
     {
         return TRUE;
     }
@@ -5873,6 +5873,7 @@ WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wM
 #endif // #ifdef DACCESS_COMPILE
 #endif // #ifdef FEATURE_TYPEEQUIVALENCE
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 BOOL
 MethodTable::FindEncodedMapDispatchEntry(
@@ -6038,6 +6039,7 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
     }
     RETURN (FALSE);
 }
+#endif // #ifdef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 
@@ -6833,7 +6835,6 @@ MethodTable * MethodTable::LookupDispatchMapType(DispatchMapTypeID typeID)
     InterfaceMapIterator intIt = IterateInterfaceMapFrom(typeID.GetInterfaceNum());
     return intIt.GetInterface(this);
 }
-#endif // DACCESS_COMPILE
 
 //==========================================================================================
 bool MethodTable::DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT)
@@ -6847,6 +6848,7 @@ bool MethodTable::DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, Me
     InterfaceMapIterator intIt = IterateInterfaceMapFrom(typeID.GetInterfaceNum());
     return intIt.CurrentInterfaceMatches(this, pMT);
 }
+#endif // DACCESS_COMPILE
 
 //==========================================================================================
 MethodDesc * MethodTable::GetIntroducingMethodDesc(DWORD slotNumber)

@@ -17,6 +17,44 @@
 #include "castcache.h"
 #include "frozenobjectheap.h"
 
+mdToken Instantiation::CustomSpecialInstantiationTokens[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES] = { 0 };
+DWORD Instantiation::CustomSpecialInstantiationIndices[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES] = { 0 };
+TypeHandle Instantiation::CustomSpecialInstantiationTypes[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES] = { 0 };
+
+// Determine if the instantiation is the one which a Special Marker Type would be associated with
+// IN: pMTGenericType - MethodTable of generic interface type to determine if it matches the expected instantiation. This may or may not be the open generic instance
+//     pMTInterfaceMapOwner - MethodTable where an instantiation of the generic type def defined by pMTGenerictype will be instantiated over this instantiation.
+// RESULT: a bool indicating whether or not this is the particular instantiation which can be efficiently represented by the Special Marker Type.
+bool Instantiation::ContainsExpectedSpecialInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner)
+{
+    mdToken tkCheck = pMTGenericType->GetModule()->IsSystem() ? pMTGenericType->GetCl() : 0;
+    DWORD specialInstantiationIndex = UINT32_MAX;
+    TypeHandle thExtraSpecial;
+
+    for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
+    {
+        if (tkCheck == CustomSpecialInstantiationTokens[i])
+        {
+            specialInstantiationIndex = CustomSpecialInstantiationIndices[i];
+            thExtraSpecial = CustomSpecialInstantiationTypes[i];
+        }
+    }
+    TypeHandle th = pMTInterfaceMapOwner->GetSpecialInstantiationType();
+
+    for (auto i = GetNumArgs(); i > 0;)
+    {
+        TypeHandle thInstantiationToCheck = th;
+
+        if ((i - 1) == specialInstantiationIndex)
+        {
+            thInstantiationToCheck = thExtraSpecial;
+        }
+        if ((*this)[--i] != thInstantiationToCheck)
+            return false;
+    }
+    return true;
+}
+
 #ifdef _DEBUG_IMPL
 
 BOOL TypeHandle::Verify()

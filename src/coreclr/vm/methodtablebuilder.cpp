@@ -9363,7 +9363,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                                                                                 CLASS_LOAD_EXACTPARENTS,
                                                                                 TRUE,
                                                                                 (const Substitution*)0,
-                                                                                retryWithExactInterfaces ? NULL : pMT->GetSpecialInstantiationType()).GetMethodTable();
+                                                                                retryWithExactInterfaces ? NULL : pMT).GetMethodTable();
 
             bool uninstGenericCase = !retryWithExactInterfaces && pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
 
