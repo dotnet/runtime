@@ -10,10 +10,6 @@
   <PropertyGroup>
     <BaseInnerSourceBuildCommand>./build.sh</BaseInnerSourceBuildCommand>
 
-    <!-- AfterSourceBuild.proj will fail the build if project path has `test` in it (example: src/libraries/pretest.proj) -->
-    <!-- Will be removed by https://github.com/dotnet/arcade/issues/13542 -->
-    <AllowTestProjectUsage>true</AllowTestProjectUsage>
-
     <!-- TargetRid names what gets built. -->
     <TargetRid Condition="'$(TargetRid)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
 
@@ -71,7 +67,7 @@
       <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
         Category="Crossgen2Pack" />
-        
+
         <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;"
         Category="Crossgen2Archive" />
