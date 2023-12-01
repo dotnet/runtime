@@ -11849,6 +11849,7 @@ template <typename TVisitor>
 class NewDomTreeVisitor
 {
     friend class FlowGraphDominatorTree;
+
 protected:
     Compiler* m_compiler;
 
@@ -11908,6 +11909,7 @@ private:
 
         static_cast<TVisitor*>(this)->End();
     }
+
 public:
     //------------------------------------------------------------------------
     // WalkTree: Walk the dominator tree.
