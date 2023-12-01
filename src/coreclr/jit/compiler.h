@@ -2174,87 +2174,6 @@ public:
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfs);
 };
 
-// A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
-template <typename TVisitor>
-class NewDomTreeVisitor
-{
-    friend class FlowGraphDominatorTree;
-protected:
-    Compiler* m_compiler;
-
-    NewDomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
-    {
-    }
-
-    void Begin()
-    {
-    }
-
-    void PreOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void PostOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void End()
-    {
-    }
-
-private:
-    void WalkTree(const DomTreeNode* tree)
-    {
-        static_cast<TVisitor*>(this)->Begin();
-
-        for (BasicBlock *next, *block = m_compiler->fgFirstBB; block != nullptr; block = next)
-        {
-            static_cast<TVisitor*>(this)->PreOrderVisit(block);
-
-            next = tree[block->bbPostorderNum].firstChild;
-
-            if (next != nullptr)
-            {
-                assert(next->bbIDom == block);
-                continue;
-            }
-
-            do
-            {
-                static_cast<TVisitor*>(this)->PostOrderVisit(block);
-
-                next = tree[block->bbPostorderNum].nextSibling;
-
-                if (next != nullptr)
-                {
-                    assert(next->bbIDom == block->bbIDom);
-                    break;
-                }
-
-                block = block->bbIDom;
-
-            } while (block != nullptr);
-        }
-
-        static_cast<TVisitor*>(this)->End();
-    }
-public:
-    //------------------------------------------------------------------------
-    // WalkTree: Walk the dominator tree.
-    //
-    // Parameter:
-    //    domTree - Dominator tree.
-    //
-    // Notes:
-    //    This performs a non-recursive, non-allocating walk of the dominator
-    //    tree.
-    //
-    void WalkTree(const FlowGraphDominatorTree* domTree)
-    {
-        WalkTree(domTree->m_tree);
-    }
-};
-
 
 //  The following holds information about instr offsets in terms of generated code.
 
@@ -11922,6 +11841,87 @@ public:
         }
 
         static_cast<TVisitor*>(this)->End();
+    }
+};
+
+// A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
+template <typename TVisitor>
+class NewDomTreeVisitor
+{
+    friend class FlowGraphDominatorTree;
+protected:
+    Compiler* m_compiler;
+
+    NewDomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
+    {
+    }
+
+    void Begin()
+    {
+    }
+
+    void PreOrderVisit(BasicBlock* block)
+    {
+    }
+
+    void PostOrderVisit(BasicBlock* block)
+    {
+    }
+
+    void End()
+    {
+    }
+
+private:
+    void WalkTree(const DomTreeNode* tree)
+    {
+        static_cast<TVisitor*>(this)->Begin();
+
+        for (BasicBlock *next, *block = m_compiler->fgFirstBB; block != nullptr; block = next)
+        {
+            static_cast<TVisitor*>(this)->PreOrderVisit(block);
+
+            next = tree[block->bbPostorderNum].firstChild;
+
+            if (next != nullptr)
+            {
+                assert(next->bbIDom == block);
+                continue;
+            }
+
+            do
+            {
+                static_cast<TVisitor*>(this)->PostOrderVisit(block);
+
+                next = tree[block->bbPostorderNum].nextSibling;
+
+                if (next != nullptr)
+                {
+                    assert(next->bbIDom == block->bbIDom);
+                    break;
+                }
+
+                block = block->bbIDom;
+
+            } while (block != nullptr);
+        }
+
+        static_cast<TVisitor*>(this)->End();
+    }
+public:
+    //------------------------------------------------------------------------
+    // WalkTree: Walk the dominator tree.
+    //
+    // Parameter:
+    //    domTree - Dominator tree.
+    //
+    // Notes:
+    //    This performs a non-recursive, non-allocating walk of the dominator
+    //    tree.
+    //
+    void WalkTree(const FlowGraphDominatorTree* domTree)
+    {
+        WalkTree(domTree->m_tree);
     }
 };
 
