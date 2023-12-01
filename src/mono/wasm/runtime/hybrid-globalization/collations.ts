@@ -123,16 +123,15 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
 
         // Grapheme segmentation of needle string
         while (needleIdx < needle.length) {
-            const breakIdx = graphemeBreaker.next_grapheme_break(needle, needleIdx);
-            needleSegments.push(needle.slice(needleIdx, breakIdx));
-            needleIdx = breakIdx;
+            const needleGrapheme = graphemeBreaker.next_grapheme(needle, needleIdx);
+            needleSegments.push(needleGrapheme);
+            needleIdx += needleGrapheme.length;
         }
 
         let srcIdx = 0;
         while (srcIdx < source.length) {
-            const breakIdx = graphemeBreaker.next_grapheme_break(source, srcIdx);
-            const srcGrapheme = source.slice(srcIdx, breakIdx);
-            srcIdx = breakIdx;
+            const srcGrapheme = graphemeBreaker.next_grapheme(source, srcIdx);
+            srcIdx += srcGrapheme.length;
 
             if (!check_match_found(srcGrapheme, needleSegments[0], locale, casePicker)) {
                 continue;
@@ -141,13 +140,12 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
             let j;
             let srcNextIdx = srcIdx;
             for (j = 1; j < needleSegments.length; j++) {
-                const breakIdx = graphemeBreaker.next_grapheme_break(source, srcNextIdx);
-                const srcGrapheme = source.slice(srcNextIdx, breakIdx);
+                const srcGrapheme = graphemeBreaker.next_grapheme(source, srcNextIdx);
 
                 if (!check_match_found(srcGrapheme, needleSegments[j], locale, casePicker)) {
                     break;
                 }
-                srcNextIdx = breakIdx;
+                srcNextIdx += srcGrapheme.length;
             }
             if (j == needleSegments.length) {
                 result = srcIdx - srcGrapheme.length;

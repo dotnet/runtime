@@ -21,12 +21,12 @@ type SegmentationRuleRaw = {
     after?: string
 }
   
-type SegmentationTypeTypeRaw = {
+type SegmentationTypeRaw = {
     variables: Record<string, string>
     rules: Record<string, SegmentationRuleRaw>
 }
 
-function replace_variables(variables: Record<string, string>, input: string):string {
+function replace_variables(variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
     return input.replaceAll(findVarRegex, match => {
         if (!(match in variables)) {
@@ -40,36 +40,36 @@ function generate_rule_regex (rule: string, variables: Record<string, string>, a
     return new RegExp(`${after ? "^" : ""}${replace_variables(variables, rule)}${after ? "" : "$"}`);
 }
 
-function prepare_segmanation_rules(segmentationTypeValue: SegmentationTypeTypeRaw): Record<string, SegmentationRule> {
-    const preparedRules: Record<string, SegmentationRule> = {};
-
-    for (const ruleNr of Object.keys(segmentationTypeValue.rules)) {
-        const ruleValue = segmentationTypeValue.rules[ruleNr];
-        const preparedRule: SegmentationRule = {breaks: ruleValue.breaks,};
-
-        if ("before" in ruleValue && ruleValue.before) {
-            preparedRule.before = generate_rule_regex(ruleValue.before, segmentationTypeValue.variables, false);
-        }
-        if ("after" in ruleValue && ruleValue.after) {
-            preparedRule.after = generate_rule_regex(ruleValue.after, segmentationTypeValue.variables, true);
-        }
-
-        preparedRules[ruleNr] = preparedRule;
-    }
-    return preparedRules;
-}
-
 export class GraphemeSegmenter {
     private readonly rules;
     private readonly ruleSortedKeys;
 
     public constructor() {  
         // Process segmentation rules
-        this.rules = prepare_segmanation_rules(SegmentationRules);
+        this.rules = GraphemeSegmenter.prepare_segmanation_rules(SegmentationRules);
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
 
 
+    /**
+     * Returns the next grapheme in the given string starting from the specified index.
+     * @param str - The input string.
+     * @param startIndex - The starting index.
+     * @returns The next grapheme.
+     */
+    public next_grapheme(str: string, startIndex: number): string {
+        const breakIdx = this.next_grapheme_break(str, startIndex);
+        return str.substring(startIndex, breakIdx);
+    }
+
+
+    /**
+     * Finds the index of the next grapheme break in a given string starting from a specified index.
+     * 
+     * @param str - The input string.
+     * @param startIndex - The index to start searching from.
+     * @returns The index of the next grapheme break.
+     */
     public next_grapheme_break(str: string, startIndex: number): number {
         if (startIndex < 0)
             return 0;
@@ -85,9 +85,8 @@ export class GraphemeSegmenter {
                 (0xDC00 <= (low = str.charCodeAt(i)) && low <= 0xDFFF)) {
                 continue;
             }
-    
-            const next = String.fromCodePoint(str.codePointAt(i)!);
 
+            const next = String.fromCodePoint(str.codePointAt(i)!);
             if (this.is_grapheme_break(prev, next))
                 return i;
     
@@ -113,5 +112,24 @@ export class GraphemeSegmenter {
 
         // GB999: Any ÷ Any
         return true;
+    }
+
+    private static prepare_segmanation_rules(segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
+        const preparedRules: Record<string, SegmentationRule> = {};
+    
+        for (const key of Object.keys(segmentationRules.rules)) {
+            const ruleValue = segmentationRules.rules[key];
+            const preparedRule: SegmentationRule = { breaks: ruleValue.breaks, };
+    
+            if ("before" in ruleValue && ruleValue.before) {
+                preparedRule.before = generate_rule_regex(ruleValue.before, segmentationRules.variables, false);
+            }
+            if ("after" in ruleValue && ruleValue.after) {
+                preparedRule.after = generate_rule_regex(ruleValue.after, segmentationRules.variables, true);
+            }
+    
+            preparedRules[key] = preparedRule;
+        }
+        return preparedRules;
     }
 }
