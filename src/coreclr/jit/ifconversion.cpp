@@ -340,10 +340,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 
                 // These do not need conditional execution.
                 case GT_NOP:
-                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
                     break;
 
                 // Cannot optimise this block.
@@ -743,7 +739,7 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
-    assert(m_startBlock->HasJump());
+    assert(m_startBlock->HasInitializedJumpDest());
     m_startBlock->SetJumpKind(BBJ_ALWAYS);
 
 #ifdef DEBUG

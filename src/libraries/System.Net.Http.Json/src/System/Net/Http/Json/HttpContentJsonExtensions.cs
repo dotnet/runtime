@@ -91,7 +91,7 @@ namespace System.Net.Http.Json
         {
             using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonHelpers.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonSerializerOptions.Web, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -101,7 +101,7 @@ namespace System.Net.Http.Json
         {
             using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
             {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonHelpers.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonSerializerOptions.Web, cancellationToken).ConfigureAwait(false);
             }
         }
 

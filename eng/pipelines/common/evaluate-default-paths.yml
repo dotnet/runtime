@@ -267,6 +267,7 @@ jobs:
       - src/mono/wasi/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
@@ -287,6 +288,7 @@ jobs:
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/wasm/debugger/*
       - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
