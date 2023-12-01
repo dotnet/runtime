@@ -181,7 +181,7 @@
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
       <!--<_WasiClangCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />-->
-      <!--<_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />-->
+      <_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />
 
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
       <_WasmCommonCFlags Condition="'$(_WasmShouldAOT)' == 'true'"         Include="-DENABLE_AOT=1" />
