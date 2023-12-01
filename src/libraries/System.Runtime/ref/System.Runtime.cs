@@ -12482,6 +12482,7 @@ namespace System.Runtime
         public static System.TimeSpan GetCompilationTime(bool currentThread = false) { throw null; }
         public static long GetCompiledILBytes(bool currentThread = false) { throw null; }
         public static long GetCompiledMethodCount(bool currentThread = false) { throw null; }
+        public static long GetLoadedTypeCount(bool currentThread = false) { throw null; }
     }
     public sealed partial class MemoryFailPoint : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {

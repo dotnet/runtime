@@ -98,9 +98,11 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 Volatile<int64_t> g_cbILJitted = 0;
 Volatile<int64_t> g_cMethodsJitted = 0;
 Volatile<int64_t> g_c100nsTicksInJit = 0;
+Volatile<int64_t> g_loadedTypeCount = 0;
 thread_local int64_t t_cbILJittedForThread = 0;
 thread_local int64_t t_cMethodsJittedForThread = 0;
 thread_local int64_t t_c100nsTicksInJitForThread = 0;
+thread_local int64_t t_loadedTypeCount = 0;
 
 // This prevents tearing of 64 bit values on 32 bit systems
 static inline
@@ -135,6 +137,14 @@ FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
     FCALL_CONTRACT;
 
     return currentThread ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
+}
+FCIMPLEND
+
+FCIMPL1(INT64, GetLoadedTypeCount, CLR_BOOL currentThread)
+{
+    FCALL_CONTRACT;
+
+    return currentThread ? t_loadedTypeCount : AtomicLoad64WithoutTearing(&g_loadedTypeCount);
 }
 FCIMPLEND
 

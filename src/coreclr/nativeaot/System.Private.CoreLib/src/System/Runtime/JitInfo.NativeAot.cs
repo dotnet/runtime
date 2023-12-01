@@ -9,6 +9,8 @@ namespace System.Runtime
 
         public static long GetCompiledMethodCount(bool currentThread = false) => 0;
 
+        public static long GetLoadedTypeCount(bool currentThread = false) => 0;
+
         private static long GetCompilationTimeInTicks(bool _ /*currentThread*/ = false) => 0;
     }
 }

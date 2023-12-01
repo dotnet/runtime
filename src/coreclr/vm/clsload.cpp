@@ -3371,8 +3371,6 @@ public:
     }
 };
 
-static volatile LONG TypeLoadIndex = 0;
-
 //---------------------------------------------------------------------------------------
 //
 TypeHandle
@@ -3549,7 +3547,12 @@ retry:
     {
         PendingTypeLoadHolder ptlh(pLoadingEntry);
 
-        bool logTypeLoad = (typeHnd.IsNull() && g_pConfig->TypeLoadSummary());
+        int64_t typeLoadIndex = 0;
+        if (typeHnd.IsNull())
+        {
+            t_loadedTypeCount++;
+            typeLoadIndex = InterlockedIncrement64(&g_loadedTypeCount);
+        }
 
         TRIGGERS_TYPELOAD();
 
@@ -3566,12 +3569,11 @@ retry:
 
         _ASSERTE(!typeHnd.IsNull());
 
-        if (logTypeLoad)
+        if (typeLoadIndex != 0 && g_pConfig->TypeLoadSummary())
         {
-            LONG index = InterlockedIncrement(&TypeLoadIndex);
             SString typeName;
             typeHnd.GetName(typeName);
-            printf("%d: %s\n", index, typeName.GetUTF8());
+            printf("%lld: %s\n", typeLoadIndex, typeName.GetUTF8());
         }
 
         pLoadingEntry->SetResult(typeHnd);
