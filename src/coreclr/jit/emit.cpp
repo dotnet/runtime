@@ -1491,6 +1491,12 @@ void emitter::dispIns(instrDesc* id)
     // For LoongArch64 using the emitDisInsName().
     NYI_LOONGARCH64("Not used on LOONGARCH64.");
 }
+#elif defined(TARGET_RISCV64)
+void emitter::dispIns(instrDesc* id)
+{
+    // For RISCV64 using the emitDisInsName().
+    NYI_RISCV64("Not used on RISCV64.");
+}
 #else
 void emitter::dispIns(instrDesc* id)
 {
