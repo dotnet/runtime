@@ -1,4 +1,5 @@
-<PropertyGroup>
+<Project>
+  <PropertyGroup>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
     <HybridGlobalization Condition="'$(HybridGlobalization)' == ''">false</HybridGlobalization>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
@@ -9,4 +10,5 @@
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">false</NullabilityInfoContextSupport>
     <_AggressiveAttributeTrimming Condition="'$(_AggressiveAttributeTrimming)' == ''">true</_AggressiveAttributeTrimming>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
-</PropertyGroup>    
+  </PropertyGroup>
+</Project>
