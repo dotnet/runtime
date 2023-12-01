@@ -18,7 +18,7 @@
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
       <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
       <WorkloadManifestWasiTargetsPath>$(IntermediateOutputPath)WorkloadManifest.Wasi.targets</WorkloadManifestWasiTargetsPath>
-      <WorkloadManifestWasmFeaturesPath>$(IntermediateOutputPath)WasmFeatures.props</WorkloadManifestWasmFeaturesPath>
+      <WorkloadManifestWasmFeaturesPath>$(MSBuildThisFileDirectory)WasmFeatures.props</WorkloadManifestWasmFeaturesPath>
       <WorkloadManifestTelemetryTargetsPath>$(MSBuildThisFileDirectory)WorkloadTelemetry.targets</WorkloadManifestTelemetryTargetsPath>
     </PropertyGroup>
 
