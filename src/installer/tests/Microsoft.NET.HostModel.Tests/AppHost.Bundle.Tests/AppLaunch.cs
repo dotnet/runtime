@@ -26,7 +26,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet)
+                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World!");
