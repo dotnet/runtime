@@ -515,10 +515,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public class SharedTestState : IDisposable
         {
-            public DotNetCli BuiltDotNet { get; }
             public TestApp HostApiInvokerApp { get; }
             public TestProjectFixture PortableAppFixture { get; }
-            public RepoDirectoriesProvider RepoDirectories { get; }
 
             public string BreadcrumbLocation { get; }
 
@@ -526,7 +524,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 HostApiInvokerApp = TestApp.CreateFromBuiltAssets("HostApiInvokerApp");
 
-                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
+                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectoriesProvider.Default)
                     .EnsureRestored()
                     .PublishProject();
 
