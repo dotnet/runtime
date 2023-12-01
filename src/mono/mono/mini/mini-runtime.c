@@ -2787,6 +2787,7 @@ lookup_start:
 	if (!jit_only && !code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_OTHER) {
 		if (mono_llvm_only) {
 			/* Signal to the caller that AOTed code is not found */
+			g_assert (method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
 			return NULL;
 		}
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
@@ -3508,6 +3509,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		gboolean use_interp = FALSE;
+
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP && method->string_ctor)
+			use_interp = TRUE;
 
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);

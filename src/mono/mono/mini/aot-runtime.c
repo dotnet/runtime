@@ -1195,11 +1195,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			int subtype = decode_value (p, &p);
 
-			if (!target)
-				return FALSE;
-
 			if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC) {
 				if (strcmp (target->name, "runtime_invoke_dynamic") != 0)
+					return FALSE;
+				if (!target)
 					return FALSE;
 				ref->method = target;
 			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT) {
@@ -1214,9 +1213,14 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, TRUE);
+			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL) {
+				MonoMethodSignature *sig = decode_signature_with_target (module, NULL, p, &p);
+				ref->method = mono_marshal_get_runtime_invoke_for_sig (sig);
 			} else {
 				MonoMethodSignature *sig;
 
+				if (!target)
+					return FALSE;
 				sig = decode_signature_with_target (module, NULL, p, &p);
 				info = mono_marshal_get_wrapper_info (target);
 				g_assert (info);
