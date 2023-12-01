@@ -259,7 +259,7 @@ public:
 
             if (value->OperGet() == GT_COMMA)
             {
-                GenTree* effectiveValue = value->gtEffectiveVal(/*commaOnly*/ true);
+                GenTree* effectiveValue = value->gtEffectiveVal();
 
                 noway_assert(
                     !varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||

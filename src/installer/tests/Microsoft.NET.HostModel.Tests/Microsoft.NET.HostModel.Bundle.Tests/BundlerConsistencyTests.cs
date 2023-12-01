@@ -354,8 +354,7 @@ namespace Microsoft.NET.HostModel.Tests
             {
                 App = TestApp.CreateFromBuiltAssets(AppName);
 
-                var builtDotNet = new DotNet.Cli.Build.DotNetCli(TestContext.BuiltDotNet);
-                SystemDll = Path.Combine(builtDotNet.GreatestVersionSharedFxPath, "System.dll");
+                SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
 
             public void Dispose()
