@@ -189,7 +189,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Gets the name of the server the client is trying to connect to. That name is used for server certificate validation. It can be a DNS name or an IP address.
     /// </summary>
     /// <returns>The name of the server the client is trying to connect to.</returns>
-    public string TargetHostName => _sslConnectionOptions.TargetHost ?? string.Empty;
+    public string TargetHostName => _sslConnectionOptions.TargetHost;
 
     /// <summary>
     /// The certificate provided by the peer.
@@ -312,7 +312,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: true,
-                options.ClientAuthenticationOptions.TargetHost ?? host ?? address.ToString() ?? string.Empty,
+                options.ClientAuthenticationOptions.TargetHost ?? host ?? address.ToString(),
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
