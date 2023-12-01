@@ -2466,6 +2466,50 @@ cprop_svar (TransformData *td, InterpInst *ins, int *pvar, guint32 current_liven
 	}
 }
 
+static gboolean
+can_cprop_dreg (TransformData *td, InterpInst *mov_ins)
+{
+	int dreg = mov_ins->dreg;
+	int sreg = mov_ins->sregs [0];
+
+	// sreg = def
+	// mov sreg -> dreg
+
+	InterpVarValue *sreg_val = get_var_value (td, sreg);
+	if (!sreg_val)
+		return FALSE;
+	// We only apply this optimization if the definition is in the same bblock as this use
+	if ((sreg_val->liveness >> INTERP_LIVENESS_INS_INDEX_BITS) != td->cbb->index)
+		return FALSE;
+	if (td->var_values [sreg].def->opcode == MINT_DEF_ARG)
+		return FALSE;
+	// reordering moves might break conversions
+	if (td->vars [dreg].mt != td->vars [sreg].mt)
+		return FALSE;
+
+	if (var_is_ssa_form (td, sreg)) {
+		// check if dreg is a renamed ssa fixed var (likely to remain alive)
+		if (td->vars [dreg].renamed_ssa_fixed && !td->vars [sreg].renamed_ssa_fixed) {
+			int last_use_liveness = td->renamable_vars [td->renamed_fixed_vars [td->vars [dreg].ext_index].renamable_var_ext_index].last_use_liveness;
+			if ((last_use_liveness >> INTERP_LIVENESS_INS_INDEX_BITS) != td->cbb->index ||
+					sreg_val->liveness >= last_use_liveness) {
+				// No other conflicting renamed fixed vars (of dreg) are used in this bblock, or their
+				// last use predates the definition. This means we can tweak def of sreg to store directly
+				// into dreg and patch all intermediary instructions to use dreg instead.
+				return TRUE;
+			}
+		}
+	} else if (!var_is_ssa_form (td, dreg)) {
+		// Neither sreg nor dreg are in SSA form. IL globals are likely to remain alive
+		// We ensure that stores to no SSA vars, that are il globals, are not reordered.
+		// For simplicity, we apply the optimization only if the def and move are adjacent.
+		if (td->vars [dreg].il_global && !td->vars [sreg].il_global && mov_ins == interp_next_ins (sreg_val->def))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 static void
 interp_cprop (TransformData *td)
 {
@@ -2574,50 +2618,32 @@ interp_cprop (TransformData *td)
 						g_print ("cprop loc %d -> ct :\n\t", sreg);
 						interp_dump_ins (ins, td->data_items);
 					}
-				} else if (td->vars [dreg].renamed_ssa_fixed && !td->vars [sreg].renamed_ssa_fixed &&
-						var_is_ssa_form (td, sreg) &&
-						td->vars [dreg].mt == td->vars [sreg].mt && // reordering moves might break conversions
-						td->var_values [sreg].def->opcode != MINT_DEF_ARG &&
-						(td->var_values [sreg].liveness >> INTERP_LIVENESS_INS_INDEX_BITS) == bb->index) {
-					// dreg is a renamed ssa fixed var (likely to remain alive) and the definition of sreg
-					// is in this current bblock.
-					int last_use_liveness = td->renamable_vars [td->renamed_fixed_vars [td->vars [dreg].ext_index].renamable_var_ext_index].last_use_liveness;
-					if ((last_use_liveness >> INTERP_LIVENESS_INS_INDEX_BITS) != bb->index ||
-							td->var_values [sreg].liveness >= last_use_liveness) {
-						// No other conflicting renamed fixed vars are used in this bblock, or their last use
-						// predates the definition. This means we can tweak def of sreg to store directly
-						// into dreg and patch all intermediary instructions to use dreg instead.
-						int dreg_ref_count = td->var_values [dreg].ref_count;
-						td->var_values [dreg] = td->var_values [sreg];
-						td->var_values [dreg].ref_count = dreg_ref_count;
-						td->var_values [dreg].def->dreg = dreg;
+				} else if (can_cprop_dreg (td, ins)) {
+					int dreg_ref_count = td->var_values [dreg].ref_count;
+					td->var_values [dreg] = td->var_values [sreg];
+					td->var_values [dreg].ref_count = dreg_ref_count;
+					td->var_values [dreg].def->dreg = dreg;
 
-						if (td->verbose_level) {
-							g_print ("cprop fixed dreg %d:\n\t", dreg);
-							interp_dump_ins (td->var_values [dreg].def, td->data_items);
-						}
-						// Overwrite all uses of sreg with dreg up to this point
-						replace_svar_uses (td, td->var_values [dreg].def->next, ins, sreg, dreg);
+					if (td->verbose_level) {
+						g_print ("cprop fixed dreg %d:\n\t", dreg);
+						interp_dump_ins (td->var_values [dreg].def, td->data_items);
+					}
+					// Overwrite all uses of sreg with dreg up to this point
+					replace_svar_uses (td, td->var_values [dreg].def->next, ins, sreg, dreg);
 
-						// Transform `mov dreg <- sreg` into `mov sreg <- dreg` in case sreg is still used
-						ins->dreg = sreg;
-						ins->sregs [0] = dreg;
-						td->var_values [dreg].ref_count++;
-						td->var_values [sreg].ref_count--;
+					// Transform `mov dreg <- sreg` into `mov sreg <- dreg` in case sreg is still used
+					ins->dreg = sreg;
+					ins->sregs [0] = dreg;
+					td->var_values [dreg].ref_count++;
+					td->var_values [sreg].ref_count--;
 
-						td->var_values [sreg].def = ins;
-						td->var_values [sreg].type = VAR_VALUE_OTHER_VAR;
-						td->var_values [sreg].var = dreg;
-						td->var_values [sreg].liveness = current_liveness;
-						if (td->verbose_level) {
-							g_print ("\t");
-							interp_dump_ins (ins, td->data_items);
-						}
-					} else {
-						if (td->verbose_level)
-							g_print ("local copy %d <- %d\n", dreg, sreg);
-						td->var_values [dreg].type = VAR_VALUE_OTHER_VAR;
-						td->var_values [dreg].var = sreg;
+					td->var_values [sreg].def = ins;
+					td->var_values [sreg].type = VAR_VALUE_OTHER_VAR;
+					td->var_values [sreg].var = dreg;
+					td->var_values [sreg].liveness = current_liveness;
+					if (td->verbose_level) {
+						g_print ("\t");
+						interp_dump_ins (ins, td->data_items);
 					}
 				} else {
 					if (td->verbose_level)
