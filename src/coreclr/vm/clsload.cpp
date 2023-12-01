@@ -1755,7 +1755,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                                                        ClassLoadLevel level /* = CLASS_LOADED */,
                                                        BOOL dropGenericArgumentLevel /* = FALSE */,
                                                        const Substitution *pSubst,
-                                                       MethodTable *pMTInterfaceMapOwner)
+                                                       TypeHandle thSpecialInterfaceInstantiationType)
 {
     CONTRACT(TypeHandle)
     {
@@ -1789,7 +1789,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
         }
         SigPointer sigptr(pSig, cSig);
         TypeHandle typeHnd = sigptr.GetTypeHandleThrowing(pModule, pTypeContext, fLoadTypes,
-                                                          level, dropGenericArgumentLevel, pSubst, (const ZapSig::Context *)0, pMTInterfaceMapOwner);
+                                                          level, dropGenericArgumentLevel, pSubst, (const ZapSig::Context *)0, thSpecialInterfaceInstantiationType);
 #ifndef DACCESS_COMPILE
         if ((fNotFoundAction == ThrowIfNotFound) && typeHnd.IsNull())
             pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDefOrRefOrSpec,

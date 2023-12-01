@@ -417,7 +417,7 @@ MethodTableBuilder::ExpandApproxInterface(
     // to have found all of the interfaces that the type implements, and to place them in the interface list itself. Also
     // we can assume no ambiguous interfaces
     // Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    if (!(GetModule()->IsSystem() && IsValueClass()))
+    if (!(GetModule()->IsSystem() && (IsValueClass() || IsInterface())))
     {
         // Make sure to pass in the substitution from the new itf type created above as
         // these methods assume that substitutions are allocated in the stacking heap,
@@ -9602,12 +9602,12 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     BOOL duplicates;
     bool retry = false;
 
-    // Always use exact loading behavior with classes or shared generics, as they have to deal with inheritance, and the
+    // Always use exact loading behavior with normal classes or shared generics, as they have to deal with inheritance, and the
     // inexact matching logic for classes would be more complex to write.
     // Also always use the exact loading behavior with any generic that contains generic variables, as the open type is used
     // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
     // and we make this case distinguishable by simply disallowing the optimization in those cases.
-    bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
+    bool retryWithExactInterfaces = !(pMT->IsValueType() || pMT->IsInterface()) || pMT->IsSharedByGenericInstantiations();
     if (retryWithExactInterfaces)
     {
         pMT->GetAuxiliaryDataForWrite()->SetMayHaveOpenInterfacesInInterfaceMap();
@@ -9639,7 +9639,15 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                                                                                 CLASS_LOAD_EXACTPARENTS,
                                                                                 TRUE,
                                                                                 (const Substitution*)0,
-                                                                                retryWithExactInterfaces ? NULL : pMT).GetMethodTable();
+                                                                                retryWithExactInterfaces ? NULL : pMT->GetSpecialInstantiationType()).GetMethodTable();
+
+            // When checking to possibly load the special instantiation type, if we load a type which ISN'T the type instantiatiated over the special instantiation type, but it IS IsSpecialMarkerTypeForGenericCasting
+            // the ClassLoader::LoadTypeDefOrRefOrSpecThrowing function will return System.Object's MT, and we need to detect that, and abort use of the special path.
+            if (!pNewIntfMT->IsInterface() && !retry)
+            {
+                retry = true;
+                break;
+            }
 
             bool uninstGenericCase = !retryWithExactInterfaces && pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
 
@@ -9647,7 +9655,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
             // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
             // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-            if (!(pMT->GetModule()->IsSystem() && pMT->IsValueType()))
+            if (!(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface())))
             {
                 MethodTable::InterfaceMapIterator intIt = pNewIntfMT->IterateInterfaceMap();
                 while (intIt.Next())
@@ -9702,7 +9710,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 #endif
     // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
     // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType()));
+    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface())));
 
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)

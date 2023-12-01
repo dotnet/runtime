@@ -1103,7 +1103,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
                  const ZapSig::Context *     pZapSigContext,
-                 MethodTable *               pMTInterfaceMapOwner,
+                 TypeHandle                  thSpecialInterfaceInstantiationType,
                  HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
     CONTRACT(TypeHandle)
@@ -1133,7 +1133,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         // Zap sig context must be NULL, as this can only happen in the type loader itself
         _ASSERTE(pZapSigContext == NULL);
         // Similarly with the pMTInterfaceMapOwner logic
-        _ASSERTE(pMTInterfaceMapOwner == NULL);
+        _ASSERTE(thSpecialInterfaceInstantiationType.IsNull());
 
         // This may throw an exception using the FullModule
         _ASSERTE(pModule->IsFullModule());
@@ -1589,7 +1589,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                             argDrop,
                                                             pSubst,
                                                             pZapSigContext,
-                                                            NULL,
+                                                            TypeHandle(),
                                                             pRecursiveFieldGenericHandling);
                         if (typeHnd.IsNull())
                         {
@@ -1616,7 +1616,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+                if (!thSpecialInterfaceInstantiationType.IsNull() && genericLoadInst.ContainsAllOneType(thSpecialInterfaceInstantiationType))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
                 }
@@ -1637,7 +1637,16 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                                         &instContext,
                                                                         pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
 
-                    if (!handlingRecursiveGenericFieldScenario)
+                    if (!thFound.IsNull() && !thSpecialInterfaceInstantiationType.IsNull() && !thFound.IsTypeDesc() && thFound.AsMethodTable()->IsSpecialMarkerTypeForGenericCasting())
+                    {
+                        // We are trying to load an interface instantiation, and we have a concept of the special marker type enabled, but
+                        // the loaded type is not the expected type we should be looking for to return a special marker type, but the normal load has
+                        // found a type which claims to be a special marker type. In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+                        break;
+                    }
+                    else if (!handlingRecursiveGenericFieldScenario)
                     {
                         thRet = thFound;
                         break;
