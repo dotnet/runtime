@@ -3371,7 +3371,7 @@ public:
     }
 };
 
-static uint32_t TypeLoadIndex = 0;
+static volatile LONG TypeLoadIndex = 0;
 
 //---------------------------------------------------------------------------------------
 //
@@ -3568,10 +3568,10 @@ retry:
 
         if (logTypeLoad)
         {
-            uint32_t index = InterlockedIncrement(&TypeLoadIndex);
+            LONG index = InterlockedIncrement(&TypeLoadIndex);
             SString typeName;
             typeHnd.GetName(typeName);
-            printf("%u: %s\n", index, typeName.GetUTF8());
+            printf("%d: %s\n", index, typeName.GetUTF8());
         }
 
         pLoadingEntry->SetResult(typeHnd);
