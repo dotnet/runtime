@@ -3,10 +3,12 @@
 
 namespace System.Text.Json
 {
-    internal struct RawIndentation(byte? @byte, Memory<byte> bytes) : IEquatable<RawIndentation>
+    internal struct RawIndentation(Memory<byte> bytes, byte? @byte, int? length) : IEquatable<RawIndentation>
     {
         public readonly byte Byte => @byte ?? JsonConstants.Space;
         public readonly ReadOnlySpan<byte> Bytes => bytes.Span;
+
+        public readonly int Length => length ?? 2;
 
         public readonly bool Equals(RawIndentation other) => Byte == other.Byte && Bytes.SequenceEqual(other.Bytes);
 

@@ -38,7 +38,7 @@ namespace System.Text.Json
                 }
             }
 
-            return new(indentByte, (indentByte is JsonConstants.Null) ? indentBytes : []);
+            return new((indentByte is JsonConstants.Null) ? indentBytes : [], indentByte, indentBytes.Length);
         }
 
         public static void WriteIndentation(Span<byte> buffer, int indentation, RawIndentation rawIndent)
@@ -65,6 +65,8 @@ namespace System.Text.Json
             }
             else if (rawIndent.Bytes is { Length: > 0 } indentBytes)
             {
+                Debug.Assert(indentation % indentBytes.Length == 0);
+
                 int offset = 0;
                 while (offset < indentation)
                 {

@@ -80,7 +80,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonWriterOptions Options => _options;
 
-        private int IndentLength => _options.IndentText.Length;
+        private int IndentLength => _options.RawIndent.Length;
 
         private int Indentation => CurrentDepth * IndentLength;
 
