@@ -222,10 +222,12 @@ export class TaskHolder {
 }
 
 export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
+    const type = get_arg_type(arg);
     // this path is used only when Task is passed as argument to JSImport and virtual JSHandle would be used
+    mono_assert(type != MarshalerType.TaskPreCreated, "Unexpected Task type: TaskPreCreated");
 
     // if there is synchronous result, return it
-    const promise = try_marshal_sync_task_to_js(arg, res_converter);
+    const promise = try_marshal_sync_task_to_js(arg, type, res_converter);
     if (promise !== false) {
         return promise;
     }
@@ -254,24 +256,28 @@ export function begin_marshal_task_to_js(arg: JSMarshalerArgument, _?: Marshaler
 
 export function end_marshal_task_to_js(args: JSMarshalerArguments, res_converter: MarshalerToJs | undefined, eagerPromise: Promise<any> | null) {
     // this path is used when Task is returned from JSExport/call_entry_point
-    // it could return synchronously (when on the same thread)
     const res = get_arg(args, 1);
+    const type = get_arg_type(res);
 
-    // if there is no synchronous result, return eagerPromise which we created earlier
-    const promise = try_marshal_sync_task_to_js(res, res_converter);
-    if (promise === false) {
+    // if there is no synchronous result, return eagerPromise we created earlier
+    if (type === MarshalerType.TaskPreCreated) {
         return eagerPromise;
     }
+
     // otherwise drop the eagerPromise's handle
     const js_handle = get_arg_js_handle(res);
     mono_wasm_release_cs_owned_object(js_handle);
 
-    // and return the synchronous result
+    // get the synchronous result
+    const promise = try_marshal_sync_task_to_js(res, type, res_converter);
+
+    // make sure we got the result
+    mono_assert(promise !== false, () => `Expected synchronous result, got: ${type}`);
+
     return promise;
 }
 
-function try_marshal_sync_task_to_js(arg: JSMarshalerArgument, res_converter?: MarshalerToJs): Promise<any> | null | false {
-    const type = get_arg_type(arg);
+function try_marshal_sync_task_to_js(arg: JSMarshalerArgument, type: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null | false {
     if (type === MarshalerType.None) {
         return null;
     }
