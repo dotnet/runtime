@@ -167,7 +167,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            if (slot.Type == MarshalerType.None)
+            if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
                 slot.JSHandle = AllocJSVHandle();
@@ -178,7 +178,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 // this path should hit for return values from JSExport/call_entry_point
                 // promise and handle is pre-allocated in slot.JSHandle
             }
-
 
             var taskHolder = new JSObject(slot.JSHandle);
 
@@ -246,7 +245,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            if (slot.Type == MarshalerType.None)
+            if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
                 slot.JSHandle = AllocJSVHandle();
@@ -317,7 +316,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            if (slot.Type == MarshalerType.None)
+            if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
                 slot.JSHandle = AllocJSVHandle();

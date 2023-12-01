@@ -229,7 +229,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #else
                 var holder = new JSHostImplementation.PromiseHolder();
 #endif
-                arguments[1].slot.Type = MarshalerType.Task;
+                arguments[1].slot.Type = MarshalerType.TaskPreCreated;
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
 

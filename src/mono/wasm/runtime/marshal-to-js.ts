@@ -225,7 +225,7 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
     // this path is used only when Task is passed as argument to JSImport and virtual JSHandle would be used
 
     // if there is synchronous result, return it
-    const promise = sync_marshal_task_to_js(arg, res_converter);
+    const promise = try_marshal_sync_task_to_js(arg, res_converter);
     if (promise !== false) {
         return promise;
     }
@@ -248,7 +248,7 @@ export function begin_marshal_task_to_js(arg: JSMarshalerArgument, _?: Marshaler
         (holder as any)[proxy_debug_symbol] = `TaskHolder with JSHandle ${js_handle}`;
     }
     set_js_handle(arg, js_handle);
-    set_arg_type(arg, MarshalerType.Task);
+    set_arg_type(arg, MarshalerType.TaskPreCreated);
     return holder.promise;
 }
 
@@ -257,18 +257,20 @@ export function end_marshal_task_to_js(args: JSMarshalerArguments, res_converter
     // it could return synchronously (when on the same thread)
     const res = get_arg(args, 1);
 
-    // if there is synchronous result, return it
-    const promise = sync_marshal_task_to_js(res, res_converter);
-    if (promise !== false) {
-        const js_handle = get_arg_js_handle(res);
-        mono_wasm_release_cs_owned_object(js_handle);
-        return promise;
+    // if there is no synchronous result, return eagerPromise which we created earlier
+    const promise = try_marshal_sync_task_to_js(res, res_converter);
+    if (promise === false) {
+        return eagerPromise;
     }
+    // otherwise drop the eagerPromise's handle
+    const js_handle = get_arg_js_handle(res);
+    mono_wasm_release_cs_owned_object(js_handle);
 
-    return eagerPromise;
+    // and return the synchronous result
+    return promise;
 }
 
-function sync_marshal_task_to_js(arg: JSMarshalerArgument, res_converter?: MarshalerToJs) {
+function try_marshal_sync_task_to_js(arg: JSMarshalerArgument, res_converter?: MarshalerToJs): Promise<any> | null | false {
     const type = get_arg_type(arg);
     if (type === MarshalerType.None) {
         return null;
@@ -407,7 +409,7 @@ function _marshal_js_object_to_js(arg: JSMarshalerArgument): any {
     }
     const js_handle = get_arg_js_handle(arg);
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-    mono_assert(js_obj, "Expected JS object instance");
+    mono_assert(js_obj !== undefined, () => `JS object JSHandle ${js_handle} was not found`);
     return js_obj;
 }
 

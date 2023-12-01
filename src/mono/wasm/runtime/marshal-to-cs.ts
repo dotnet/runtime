@@ -315,7 +315,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }
     mono_check(isThenable(value), "Value is not a Promise");
 
-    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.Task;
+    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     const gc_handle = handleIsPreallocated ? get_arg_gc_handle(arg) : alloc_gcv_handle();
     if (!handleIsPreallocated) {
         set_gc_handle(arg, gc_handle);

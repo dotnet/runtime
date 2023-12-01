@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public sealed class PromiseHolder
         {
-            public nint GCHandle;
+            public nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
 #if FEATURE_WASM_THREADS
             // the JavaScript object could only exist on the single web worker and can't migrate to other workers
@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
 
 #if FEATURE_WASM_THREADS
+            // TODO possibly unify signature with non-MT and pass null
             public PromiseHolder(JSSynchronizationContext targetContext)
             {
                 GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);

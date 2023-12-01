@@ -320,9 +320,9 @@ function bind_fn(closure: BindingClosure) {
                 }
             }
             let js_result = undefined;
-            if (is_async && res_converter) {
+            if (is_async) {
                 // pre-allocate the promise
-                js_result = res_converter(args);
+                js_result = res_converter!(args);
             }
 
             // call C# side
