@@ -312,16 +312,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: true,
-                options.ClientAuthenticationOptions.TargetHost ?? string.Empty,
+                options.ClientAuthenticationOptions.TargetHost ?? host ?? address.ToString() ?? string.Empty,
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
                 options.ClientAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options);
 
-            // RFC 6066 forbids IP literals
-            // DNI mapping is handled by MsQuic
-            string sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? address?.ToString() ?? string.Empty;
+            // RFC 6066 forbids IP literals.
+            // IDN mapping is handled by MsQuic.
+            string sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
 
             IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(sni);
             try
