@@ -7608,7 +7608,7 @@ namespace System.Text.Json.Tests
         {
             return from indented in new[] { true, false }
                    from skipValidation in new[] { true, false }
-                   from indentText in indented ? new[] { "", " ", "  ", "    ", "\t", "\n", "\r\n", "\t\f\r\n" } : []
+                   from indentText in indented ? new[] { null, "", " ", "  ", "    ", "\t", "\t " } : []
                    select CreateOptions(indented, indentText, skipValidation);
 
             static JsonWriterOptions CreateOptions(bool indented, string indentText, bool skipValidation)

@@ -48,18 +48,18 @@ namespace System.Text.Json
         /// Defines the indentation string used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to two space characters.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character. Allowed characters are space and horizontal tab.</exception>
         public string IndentText
         {
-            get => _indentText ?? JsonConstants.DefaultIndent;
+            readonly get => _indentText ?? JsonConstants.DefaultIndent;
             set
             {
-                if (value is null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(nameof(value));
-                }
+                RawIndent = JsonWriterHelper.GetRawIndentation(value);
                 _indentText = value;
             }
         }
+
+        internal RawIndentation RawIndent { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum depth allowed when writing JSON, with the default (i.e. 0) indicating a max depth of 1000.

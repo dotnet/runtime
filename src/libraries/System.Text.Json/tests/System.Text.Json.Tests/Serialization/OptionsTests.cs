@@ -372,7 +372,7 @@ namespace System.Text.Json.Serialization.Tests
             options.WriteIndented = true;
             options.IndentText = tab;
             json = JsonSerializer.Serialize(obj, options);
-            Assert.DoesNotContain(tab, json);
+            Assert.Contains(tab, json);
         }
 
         [Fact]

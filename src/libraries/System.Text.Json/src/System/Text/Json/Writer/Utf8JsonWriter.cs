@@ -56,9 +56,6 @@ namespace System.Text.Json
         // else, no list separator is needed since we are writing the first item.
         private int _currentDepth;
 
-        private Memory<byte>? _indentBytes;
-        private byte? _indentByte;
-
         private JsonWriterOptions _options; // Since JsonWriterOptions is a struct, use a field to avoid a copy for internal code.
 
         /// <summary>
@@ -1034,50 +1031,11 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.LineFeed;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteIndentation(Span<byte> buffer, int indentation)
-        {
-            EnsureIndentation();
-
-            if (_indentByte is not null)
-            {
-                JsonWriterHelper.WriteIndentation(buffer, indentation, (byte)_indentByte);
-            }
-            else if (_indentBytes is { Length: > 0 } indentBytes)
-            {
-                JsonWriterHelper.WriteIndentation(buffer, indentation, indentBytes.Span);
-            }
-        }
-
-        private void EnsureIndentation()
         {
             Debug.Assert(_options.Indented);
 
-            if (_indentByte is not null || _indentBytes is not null) return;
-
-            if (_options.IndentText is JsonConstants.DefaultIndent)
-            {
-                _indentByte = JsonConstants.Space;
-                return;
-            }
-
-            byte[] indentBytes = Encoding.UTF8.GetBytes(_options.IndentText);
-
-            foreach (byte b in indentBytes)
-            {
-                byte? previous = _indentByte;
-                _indentByte = b;
-                if (previous is not null && _indentByte != previous)
-                {
-                    _indentByte = null;
-                    break;
-                }
-            }
-
-            if (_indentByte is null)
-            {
-                _indentBytes = indentBytes;
-            }
+            JsonWriterHelper.WriteIndentation(buffer, indentation, _options.RawIndent);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

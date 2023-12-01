@@ -10,36 +10,67 @@ namespace System.Text.Json
 {
     internal static partial class JsonWriterHelper
     {
-        public static void WriteIndentation(Span<byte> buffer, int indent, byte indentByte)
+        public static RawIndentation GetRawIndentation(string value)
         {
-            Debug.Assert(buffer.Length >= indent);
-
-            // Based on perf tests, the break-even point where vectorized Fill is faster
-            // than explicitly writing the space in a loop is 8.
-            if (indent < 8 && indent % 2 == 0)
+            if (value is null)
             {
-                int i = 0;
-                while (i < indent)
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
+            byte[] indentBytes = Encoding.UTF8.GetBytes(value);
+            byte? indentByte = null;
+
+            foreach (byte b in indentBytes)
+            {
+                if (JsonConstants.IndentChars.IndexOf(b) is -1)
                 {
-                    buffer[i++] = indentByte;
-                    buffer[i++] = indentByte;
+                    throw new ArgumentOutOfRangeException(nameof(value), $"{nameof(value)} contains an invalid character. Allowed characters are space and horizontal tab.");
+                }
+
+                if (indentByte is not JsonConstants.Null)
+                {
+                    byte? previous = indentByte;
+                    indentByte = b;
+                    if (previous is not null && indentByte != previous)
+                    {
+                        indentByte = JsonConstants.Null;
+                    }
                 }
             }
-            else
-            {
-                buffer.Slice(0, indent).Fill(indentByte);
-            }
+
+            return new(indentByte, (indentByte is JsonConstants.Null) ? indentBytes : []);
         }
 
-        public static void WriteIndentation(Span<byte> buffer, int indentation, Span<byte> indent)
+        public static void WriteIndentation(Span<byte> buffer, int indentation, RawIndentation rawIndent)
         {
             Debug.Assert(buffer.Length >= indentation);
 
-            int offset = 0;
-            while (offset < indentation)
+            if (rawIndent.Byte is not JsonConstants.Null)
             {
-                indent.CopyTo(buffer.Slice(offset));
-                offset += indent.Length;
+                // Based on perf tests, the break-even point where vectorized Fill is faster
+                // than explicitly writing the space in a loop is 8.
+                if (indentation < 8 && indentation % 2 == 0)
+                {
+                    int i = 0;
+                    while (i < indentation)
+                    {
+                        buffer[i++] = rawIndent.Byte;
+                        buffer[i++] = rawIndent.Byte;
+                    }
+                }
+                else
+                {
+                    buffer.Slice(0, indentation).Fill(rawIndent.Byte);
+                }
+            }
+            else if (rawIndent.Bytes is { Length: > 0 } indentBytes)
+            {
+                int offset = 0;
+                while (offset < indentation)
+                {
+                    indentBytes.CopyTo(buffer.Slice(offset));
+                    offset += indentBytes.Length;
+                }
             }
         }
 

@@ -39,7 +39,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, "\t", true, 0)]
         [InlineData(true, " ", false, 1)]
         [InlineData(false, "", true, 1024)]
-        [InlineData(false, "\f\t", false, 1024 * 1024)]
+        [InlineData(false, "\t ", false, 1024 * 1024)]
         public static void JsonWriterOptions(bool indented, string indentText, bool skipValidation, int maxDepth)
         {
             var options = new JsonWriterOptions();

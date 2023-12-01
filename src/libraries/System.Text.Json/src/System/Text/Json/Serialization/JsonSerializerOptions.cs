@@ -129,6 +129,7 @@ namespace System.Text.Json
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
+            RawIndent = options.RawIndent;
 
             TrackOptionsInstance(this);
         }
@@ -662,14 +663,14 @@ namespace System.Text.Json
             }
             set
             {
-                if (value is null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(nameof(value));
-                }
                 VerifyMutable();
+                RawIndent = JsonWriterHelper.GetRawIndentation(value);
                 _indentText = value;
             }
         }
+
+        internal RawIndentation RawIndent { get; private set; }
+
 
         /// <summary>
         /// Configures how object references are handled when reading and writing JSON.
@@ -903,6 +904,7 @@ namespace System.Text.Json
                 Encoder = Encoder,
                 Indented = WriteIndented,
                 IndentText = IndentText,
+                RawIndent = RawIndent,
                 MaxDepth = EffectiveMaxDepth,
 #if !DEBUG
                 SkipValidation = true

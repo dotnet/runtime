@@ -27,6 +27,7 @@ namespace System.Text.Json
         public const byte Hyphen = (byte)'-';
         public const byte UtcOffsetToken = (byte)'Z';
         public const byte TimePrefix = (byte)'T';
+        public const byte Null = (byte)'\0';
 
         // \u2028 and \u2029 are considered respectively line and paragraph separators
         // UTF-8 representation for them is E2, 80, A8/A9
@@ -46,6 +47,8 @@ namespace System.Text.Json
 
         // Explicitly skipping ReverseSolidus since that is handled separately
         public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
+
+        public static ReadOnlySpan<byte> IndentChars => " \t"u8;
 
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
