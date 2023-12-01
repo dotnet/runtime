@@ -807,12 +807,7 @@ protected:
                       regNumber targetReg,
                       regNumber baseReg,
                       regNumber indexReg,
-                      int       scale
-#ifdef TARGET_RISCV64
-                      ,
-                      regNumber scaleTempReg
-#endif
-                      );
+                      int scale RISCV64_ARG(regNumber scaleTempReg));
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_ARMARCH)

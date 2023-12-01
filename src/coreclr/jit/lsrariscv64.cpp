@@ -243,7 +243,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if (!(tree->gtFlags & GTF_UNSIGNED))
+                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -281,7 +281,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if (!(tree->gtFlags & GTF_UNSIGNED))
+                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -345,7 +345,7 @@ int LinearScan::BuildNode(GenTree* tree)
             emitAttr attr = emitActualTypeSize(tree->AsOp());
             if (EA_SIZE(attr) != EA_8BYTE)
             {
-                if (tree->AsOp()->gtFlags & GTF_UNSIGNED)
+                if ((tree->AsOp()->gtFlags & GTF_UNSIGNED) != 0)
                     buildInternalIntRegisterDefForNode(tree);
             }
 
@@ -439,7 +439,7 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             buildInternalRegisterUses();
         }
-            [[fallthrough]];
+            FALLTHROUGH;
 
         case GT_JCMP:
             srcCount = BuildCmp(tree);
@@ -655,11 +655,11 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             assert(dstCount == 1);
 
-            if (base && index)
+            if ((base != nullptr) && (index != nullptr))
             {
                 DWORD scale;
                 BitScanForward(&scale, lea->gtScale);
-                if (scale)
+                if (scale > 0)
                     buildInternalIntRegisterDefForNode(tree); // scaleTempReg
             }
 
@@ -1386,7 +1386,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
     enum CodeGen::GenIntCastDesc::CheckKind kind = CodeGen::GenIntCastDesc(cast).CheckKind();
-    if (kind != CodeGen::GenIntCastDesc::CHECK_NONE && kind != CodeGen::GenIntCastDesc::CHECK_POSITIVE)
+    if ((kind != CodeGen::GenIntCastDesc::CHECK_NONE) && (kind != CodeGen::GenIntCastDesc::CHECK_POSITIVE))
     {
         buildInternalIntRegisterDefForNode(cast);
     }
