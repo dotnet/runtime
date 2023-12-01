@@ -109,12 +109,19 @@ namespace System.Numerics
             // Trim trailing 0s (at the first in little endian array)
             d = d.TrimStart(0u);
 
+            // Make the first non-zero element to be two's complement
+            if (d.Length > 0)
+            {
+                d[0] = (uint)(-(int)d[0]);
+                d = d.Slice(1);
+            }
+
             if (d.IsEmpty)
             {
                 return;
             }
 
-            // Make one's complement for every element
+            // Make one's complement for other elements
             int offset = 0;
 
             ref uint start = ref MemoryMarshal.GetReference(d);
@@ -147,10 +154,6 @@ namespace System.Numerics
             {
                 d[offset] = ~d[offset];
             }
-
-            // Adjust the first non-zero element to be two's complement
-            Debug.Assert(d[0] != uint.MaxValue);
-            d[0]++;
         }
 
         public static ulong MakeUInt64(uint uHi, uint uLo)
