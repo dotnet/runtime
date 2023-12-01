@@ -457,7 +457,11 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 {
     assert(opts.IsReadyToRun());
     BasicBlock* block = *pBlock;
-    if (!call->IsHelperCall() || !(call->IsExpTLSFieldAccess() || call->IsExpTLSFieldAccessLazyCtor()))
+    CorInfoHelpFunc helper = call->GetHelperNum();
+
+    bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE) ||
+                               (helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE);
+    if (!call->IsHelperCall() || !(isExpTLSFieldAccess || call->IsExpTLSFieldAccessLazyCtor()))
     {
         return false;
     }

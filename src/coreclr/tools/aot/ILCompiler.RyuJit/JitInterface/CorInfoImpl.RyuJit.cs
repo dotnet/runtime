@@ -2143,20 +2143,24 @@ namespace Internal.JitInterface
                         if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
                         {
                             ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
-                            if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
+                            if (index is TypeThreadStaticIndexNode ti)
                             {
-                                if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                                if (ti.IsInlined)
                                 {
-                                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY;
-                                }
-                                else
-                                {
-                                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                                    {
+                                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY;
+                                    }
+                                    else
+                                    {
+                                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                                    }
                                 }
                             }
                         }
-                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
+
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                     }
                     else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
                     {

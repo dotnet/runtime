@@ -274,9 +274,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 throw new NotImplementedException();
             }
-            else
+            else if (factory.Target.IsWindows)
             {
-                throw new NotImplementedException();
+                // For windows, the TLS access will get inlined by ryujit.
+                // No need to emit any code here.
             }
         }
     }
