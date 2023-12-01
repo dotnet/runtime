@@ -8,7 +8,7 @@ namespace System.Collections.Tests
 {
     public static class CollectionsUtilTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public static void CreateCaseInsensitiveHashtable()
         {
             Hashtable hashtable = CollectionsUtil.CreateCaseInsensitiveHashtable();

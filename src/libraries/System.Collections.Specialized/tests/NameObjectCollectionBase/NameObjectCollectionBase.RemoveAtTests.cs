@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseRemoveAtTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void RemoveAt()
         {
             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(10);
