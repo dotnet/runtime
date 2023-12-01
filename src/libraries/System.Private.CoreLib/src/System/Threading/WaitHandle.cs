@@ -36,6 +36,7 @@ namespace System.Threading
         internal const int WaitAbandoned = 0x80;
 
         public const int WaitTimeout = 0x102;
+        internal const int WaitFailed = unchecked((int)0xffffffff);
 
         protected WaitHandle()
         {
@@ -103,7 +104,10 @@ namespace System.Threading
             return WaitOneNoCheck(millisecondsTimeout);
         }
 
-        private bool WaitOneNoCheck(int millisecondsTimeout)
+        internal bool WaitOneNoCheck(
+            int millisecondsTimeout,
+            object? associatedObject = null,
+            NativeRuntimeEventSource.WaitHandleWaitSourceMap waitSource = NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -125,10 +129,9 @@ namespace System.Threading
             bool success = false;
             try
             {
-                int waitResult;
-
                 waitHandle.DangerousAddRef(ref success);
 
+                int waitResult = WaitFailed;
                 SynchronizationContext? context = SynchronizationContext.Current;
                 if (context != null && context.IsWaitNotificationRequired())
                 {
@@ -136,7 +139,51 @@ namespace System.Threading
                 }
                 else
                 {
-                    waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+#if !CORECLR // CoreCLR sends the wait events from the native side
+                    bool sendWaitEvents =
+                        millisecondsTimeout != 0 &&
+                        NativeRuntimeEventSource.Log.IsEnabled(
+                            EventLevel.Verbose,
+                            NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
+
+                    // Monitor.Wait is typically a blocking wait. For other waits, when sending the wait events try a
+                    // nonblocking wait first such that the events sent are more likely to represent blocking waits.
+                    bool tryNonblockingWaitFirst =
+                        sendWaitEvents &&
+                        waitSource != NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait;
+                    if (tryNonblockingWaitFirst)
+                    {
+                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout: 0);
+                        if (waitResult == WaitTimeout)
+                        {
+                            // Do a full wait and send the wait events
+                            tryNonblockingWaitFirst = false;
+                        }
+                        else
+                        {
+                            // The nonblocking wait was successful, don't send the wait events
+                            sendWaitEvents = false;
+                        }
+                    }
+
+                    if (sendWaitEvents)
+                    {
+                        NativeRuntimeEventSource.Log.WaitHandleWaitStart(waitSource, associatedObject ?? this);
+                    }
+
+                    // When tryNonblockingWaitFirst is true, we have a final wait result from the nonblocking wait above
+                    if (!tryNonblockingWaitFirst)
+#endif
+                    {
+                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                    }
+
+#if !CORECLR // CoreCLR sends the wait events from the native side
+                    if (sendWaitEvents)
+                    {
+                        NativeRuntimeEventSource.Log.WaitHandleWaitStop();
+                    }
+#endif
                 }
 
                 if (waitResult == WaitAbandoned)
@@ -350,6 +397,57 @@ namespace System.Threading
                 }
                 waitResult = WaitMultipleIgnoringSyncContext(unsafeWaitHandles, false, millisecondsTimeout);
             }
+
+            return waitResult;
+        }
+
+        internal static int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        {
+            int waitResult = WaitFailed;
+
+#if !CORECLR // CoreCLR sends the wait events from the native side
+            bool sendWaitEvents =
+                millisecondsTimeout != 0 &&
+                NativeRuntimeEventSource.Log.IsEnabled(
+                    EventLevel.Verbose,
+                    NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
+
+            // When sending the wait events try a nonblocking wait first such that the events sent are more likely to
+            // represent blocking waits
+            bool tryNonblockingWaitFirst = sendWaitEvents;
+            if (tryNonblockingWaitFirst)
+            {
+                waitResult = WaitMultipleIgnoringSyncContextCore(handles, waitAll, millisecondsTimeout: 0);
+                if (waitResult == WaitTimeout)
+                {
+                    // Do a full wait and send the wait events
+                    tryNonblockingWaitFirst = false;
+                }
+                else
+                {
+                    // The nonblocking wait was successful, don't send the wait events
+                    sendWaitEvents = false;
+                }
+            }
+
+            if (sendWaitEvents)
+            {
+                NativeRuntimeEventSource.Log.WaitHandleWaitStart();
+            }
+
+            // When tryNonblockingWaitFirst is true, we have a final wait result from the nonblocking wait above
+            if (!tryNonblockingWaitFirst)
+#endif
+            {
+                waitResult = WaitMultipleIgnoringSyncContextCore(handles, waitAll, millisecondsTimeout);
+            }
+
+#if !CORECLR // CoreCLR sends the wait events from the native side
+            if (sendWaitEvents)
+            {
+                NativeRuntimeEventSource.Log.WaitHandleWaitStop();
+            }
+#endif
 
             return waitResult;
         }

@@ -331,7 +331,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
-        public void WaitHandleWaitStart(
+        private void WaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             nint AssociatedObjectID,
             ushort ClrInstanceID = DefaultClrInstanceId)
@@ -339,6 +339,13 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
             LogWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID);
         }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void WaitHandleWaitStart(
+            WaitHandleWaitSourceMap waitSource = WaitHandleWaitSourceMap.Unknown,
+            object? associatedObject = null) =>
+            WaitHandleWaitStart(waitSource, *(nint*)Unsafe.AsPointer(ref associatedObject));
 
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
         public void WaitHandleWaitStop(ushort ClrInstanceID = DefaultClrInstanceId)

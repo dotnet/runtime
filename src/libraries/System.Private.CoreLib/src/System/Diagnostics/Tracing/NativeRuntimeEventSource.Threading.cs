@@ -517,7 +517,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
-        public unsafe void WaitHandleWaitStart(
+        private unsafe void WaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             nint AssociatedObjectID,
             ushort ClrInstanceID = DefaultClrInstanceId)
@@ -536,6 +536,13 @@ namespace System.Diagnostics.Tracing
             data[2].Reserved = 0;
             WriteEventCore(301, 3, data);
         }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void WaitHandleWaitStart(
+            WaitHandleWaitSourceMap waitSource = WaitHandleWaitSourceMap.Unknown,
+            object? associatedObject = null) =>
+            WaitHandleWaitStart(waitSource, *(nint*)Unsafe.AsPointer(ref associatedObject));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]

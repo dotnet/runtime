@@ -98,15 +98,17 @@ namespace System.Diagnostics.Tracing
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
+#pragma warning disable IDE0060 // Remove unused parameter
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void LogWaitHandleWaitStart(
+        private static void LogWaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             IntPtr AssociatedObjectID,
-            ushort ClrInstanceID);
+            ushort ClrInstanceID) =>
+            Debug.Fail("This event is currently not expected to be raised by managed code in CoreCLR.");
 
         [NonEvent]
-        [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void LogWaitHandleWaitStop(ushort ClrInstanceID);
+        private static void LogWaitHandleWaitStop(ushort ClrInstanceID) =>
+            Debug.Fail("This event is currently not expected to be raised by managed code in CoreCLR.");
+#pragma warning restore IDE0060
     }
 }

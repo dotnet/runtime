@@ -85,9 +85,11 @@ def getManifestsToGenerate(runtimeFlavor):
 
 def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
-    # ThreadPool, Contention and WaitHandle events are defined manually in NativeRuntimeEventSource.Threading.cs
+    # Some threading events are defined manually in NativeRuntimeEventSource.Threading.cs
     symbol = eventNode.getAttribute("symbol")
     if any(s in symbol for s in ["ThreadPool", "Contention", "WaitHandle"]):
+        return
+    if "WaitHandle" in symbol:
         return
 
     evtLevel = eventNode.getAttribute("level")[4:]
