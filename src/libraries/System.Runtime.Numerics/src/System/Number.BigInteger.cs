@@ -537,7 +537,7 @@ namespace System
 
         internal static ParsingStatus TryParseBigIntegerBinaryNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
         {
-            int whiteIndex = 0;
+            int whiteIndex;
 
             // Skip past any whitespace at the beginning.
             if ((style & NumberStyles.AllowLeadingWhite) != 0)
@@ -571,55 +571,60 @@ namespace System
             const int BitsPerDigit = 1;
             const int DigitsPerBlock = sizeof(uint) * 8 / BitsPerDigit;
 
-            // Handle small values first
-            if (value.Length <= DigitsPerBlock)
+            // Remember the sign from original leading input
+            // Taking the LSB is enough for distinguishing 0/1
+            // Invalid digits will be caught in parsing below
+            int signBits = (value[0] << 31) >> 31;
+
+            // Start from leading blocks. Leading blocks can be unaligned, or whole of 0/F's that need to be trimmed.
+            (int wholeBlockCount, int leadingBitsCount) = Math.DivRem(value.Length, DigitsPerBlock);
+
+            int leading = signBits;
+            // First parse unanligned leading block if exists.
+            if (leadingBitsCount != 0)
             {
-                if (!int.TryParse(value, NumberStyles.AllowBinarySpecifier, null, out int smallValue))
+                if (!int.TryParse(value[0..leadingBitsCount], NumberStyles.AllowBinarySpecifier, null, out leading))
                 {
                     goto FailExit;
                 }
 
-                result = smallValue; // Defer to implicit operator to handle int.MinValue
-                return ParsingStatus.OK;
+                // Fill leading sign bits
+                leading |= signBits << (leadingBitsCount * BitsPerDigit);
+                value = value[leadingBitsCount..];
             }
 
-            // Trim unnecessary leading 0/1's
-            // Remember the sign before trimming
-            if (!HexConverter.IsHexChar(value[0])) goto FailExit;
-            bool isNegative = HexConverter.FromChar(value[0]) >= 8;
-            value = isNegative ? value.TrimStart('1') : value.TrimStart('0');
-
-            // Corner case: the value fits in int after trimming
-            if (value.Length <= DigitsPerBlock)
+            // Skip all the blocks consists of the same bit of sign
+            while (!value.IsEmpty && leading == signBits)
             {
-                if (!int.TryParse(value, NumberStyles.AllowBinarySpecifier, null, out int smallValue))
+                // Potentially vectorizable if single-block vectorization is available
+                if (!int.TryParse(value[0..DigitsPerBlock], NumberStyles.AllowBinarySpecifier, null, out leading))
                 {
                     goto FailExit;
                 }
+                value = value[DigitsPerBlock..];
+                wholeBlockCount--;
+            }
 
-                if (isNegative)
+            if (value.IsEmpty)
+            {
+                // There's nothing beyond significant leading block. Return it as the result.
+                if ((leading ^ signBits) < 0 || leading == int.MinValue)
                 {
-                    // Fill leading bits of negative value to 1
-                    smallValue |= -1 << (value.Length * BitsPerDigit);
-                }
-
-                // If the sign differs with int (01xxxxxxx or 10xxxxxxx),
-                // or if the value is int.MinValue, store the value in _bits
-                if ((smallValue & int.MinValue) != (isNegative ? int.MinValue : 0)
-                    || smallValue == int.MinValue)
-                {
-                    result = new BigInteger(isNegative ? -1 : 1, [(uint)smallValue]);
+                    // The sign of result differs with leading digit, or it's int.MinValue.
+                    // Require to store in _bits.
+                    result = new BigInteger(signBits | 1, [(uint)leading]);
                     return ParsingStatus.OK;
                 }
-
-                // Otherwise it fits in _sign
-                result = new BigInteger(smallValue, null);
-                return ParsingStatus.OK;
+                else
+                {
+                    // Small value that fits in _sign.
+                    result = new BigInteger(leading, null);
+                    return ParsingStatus.OK;
+                }
             }
 
             // Now the size of bits array can be definitely calculated
-            (int wholeBlockCount, int leadingBitsCount) = Math.DivRem(value.Length, DigitsPerBlock);
-            int totalUIntCount = leadingBitsCount != 0 ? wholeBlockCount + 1 : wholeBlockCount;
+            int totalUIntCount = wholeBlockCount + 1;
 
             // Early out for too large input
             if (totalUIntCount > BigInteger.MaxLength)
@@ -629,35 +634,24 @@ namespace System
             }
 
             uint[] bits = new uint[totalUIntCount];
-            ref char finalWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(value), value.Length - DigitsPerBlock); // value[^DigitsPerBlock]
+            ref char lastWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(value), value.Length - DigitsPerBlock);
 
-            // TODO: Vectorized parsing for whole uints
-            for (int i = 0; i < wholeBlockCount; i++)
+            // TODO: Vectorized parsing for whole blocks
+            for (int i = 0; i < bits.Length - 1; i++)
             {
                 if (!uint.TryParse(
-                    MemoryMarshal.CreateSpan(ref Unsafe.Subtract(ref finalWholeBlockStart, i * DigitsPerBlock), DigitsPerBlock),
-                    NumberStyles.AllowBinarySpecifier, null, out bits[i]))
+                    MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Subtract(ref lastWholeBlockStart, i * DigitsPerBlock), DigitsPerBlock),
+                    NumberStyles.BinaryNumber,
+                    null,
+                    out bits[i]))
                 {
                     goto FailExit;
                 }
             }
 
-            // Parse the leading uint
-            if (leadingBitsCount != 0)
-            {
-                if (!uint.TryParse(value[0..leadingBitsCount], NumberStyles.AllowBinarySpecifier, null, out bits[^1]))
-                {
-                    goto FailExit;
-                }
+            bits[^1] = (uint)leading;
 
-                // Fill leading sign bits
-                if (isNegative)
-                {
-                    bits[^1] |= (uint)(-1 << (leadingBitsCount * BitsPerDigit));
-                }
-            }
-
-            if (isNegative)
+            if (signBits != 0)
             {
                 // For negative values, negate the whole array
                 NumericsHelpers.DangerousMakeTwosComplement(bits);
