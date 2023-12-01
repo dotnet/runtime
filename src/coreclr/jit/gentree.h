@@ -5452,8 +5452,6 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
     }
 
-    }
-
     void SetExpTLSFieldAccessLazyCtor()
     {
         gtCallMoreFlags |= GTF_CALL_M_EXP_TLS_ACCESS_LAZY;
@@ -5467,6 +5465,8 @@ struct GenTreeCall final : public GenTree
     bool IsExpTLSFieldAccessLazyCtor() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXP_TLS_ACCESS_LAZY) != 0;
+    }
+
     void SetExpandedEarly()
     {
         gtCallMoreFlags |= GTF_CALL_M_EXPANDED_EARLY;

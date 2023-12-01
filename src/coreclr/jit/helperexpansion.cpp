@@ -467,7 +467,6 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     JITDUMP("\n");
     bool hasLazyStaticCtor = call->IsExpTLSFieldAccessLazyCtor();
 
-    call->ClearExpTLSFieldAccess();
     call->ClearExpTLSFieldAccessLazyCtor();
 
     CORINFO_THREAD_STATIC_INFO_READYTORUN threadStaticInfo;
@@ -568,15 +567,13 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         fgMorphArgs(classCtorRunHelperCall);
 
         GenTree* lazyCtorValueDef = gtNewStoreLclVarNode(finalLclNum, classCtorRunHelperCall);
-        lazyCtorBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, targetSymbCondBB, lazyCtorValueDef, debugInfo, true);
+        lazyCtorBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, targetSymbCondBB, lazyCtorValueDef, debugInfo, block, true);
         fgInsertStmtAfter(targetSymbCondBB, targetSymbCondBB->firstStmt(), fgNewStmtFromTree(tlsRootAddrDef));
 
         fgRemoveRefPred(block, prevBb);
         fgAddRefPred(targetSymbCondBB, prevBb);
         fgAddRefPred(lazyCtorBB, targetSymbCondBB);
         fgAddRefPred(block, lazyCtorBB);
-
-        lazyCtorBB->bbJumpDest = block;
 
         // Inherit the weights
         block->inheritWeight(prevBb);
@@ -658,10 +655,11 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
         // fallbackBb
         GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
-        BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, true);
+        BasicBlock* fallbackBb =
+            fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, block, true);
 
         GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
-        BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
+        BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
 
         *callUse = finalLcl;
 
@@ -677,9 +675,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         fgAddRefPred(block, fallbackBb);
         fgAddRefPred(block, fastPathBb);
 
-        tlsRootNullCondBB->bbJumpDest = fastPathBb;
-        fastPathBb->bbJumpDest        = block;
-        fallbackBb->bbJumpDest        = block;
+        tlsRootNullCondBB->SetJumpDest(fastPathBb);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
@@ -694,8 +690,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
             assert(targetSymbCondBB != nullptr);
             assert(lazyCtorBB != nullptr);
 
-            targetSymbCondBB->bbJumpDest = tlsRootNullCondBB;
-            lazyCtorBB->bbJumpDest       = block;
+            targetSymbCondBB->SetJumpDest(tlsRootNullCondBB);
+            lazyCtorBB->SetJumpDest(block);
 
             fgAddRefPred(tlsRootNullCondBB, targetSymbCondBB);
 
