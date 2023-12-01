@@ -11398,10 +11398,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
     assert(ureg == 0 || ureg % 2 == 0);
-    if (ureg != 0)
-    {
-        ureg /= 2u;
-    }
+    ureg /= 2u;
     assert((ureg >= 0) && (ureg <= 32));
     return ureg << 6;
 }
