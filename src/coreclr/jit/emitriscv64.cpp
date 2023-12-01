@@ -941,9 +941,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction  ins,
-                           emitAttr     attr,
-                           regNumber    reg,
+void emitter::emitIns_R_AI(instruction ins,
+                           emitAttr    attr,
+                           regNumber   reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
@@ -1243,8 +1243,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*            addr,
-                           ssize_t          argSize,
+                           void*    addr,
+                           ssize_t  argSize,
                            emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -1713,9 +1713,9 @@ void emitter::emitJumpDistBind()
         emitCounts_INS_OPTS_J * (6 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J)
     NATIVE_OFFSET psd = B_DIST_SMALL_MAX_POS - maxPlaceholderSize;
 
-    /*****************************************************************************/
-    /* If the default small encoding is not enough, we start again here.     */
-    /*****************************************************************************/
+/*****************************************************************************/
+/* If the default small encoding is not enough, we start again here.     */
+/*****************************************************************************/
 
 AGAIN:
 
@@ -1746,7 +1746,7 @@ AGAIN:
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
 
-        /* Make sure the jumps are properly ordered */
+/* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
@@ -2107,7 +2107,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #if DUMP_GC_TABLES
     bool dspOffs = emitComp->opts.dspGCtbls;
 #else
-    bool dspOffs = !emitComp->opts.disDiffable;
+    bool     dspOffs = !emitComp->opts.disDiffable;
 #endif
 #endif // DEBUG
 
@@ -2505,7 +2505,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         regNumber reg2 = REG_R0;
                         if (INS_beqz != ins && INS_bnez != ins)
                             reg2 = id->idReg2();
-                        code = emitInsCode(ins) ^ 0x1000;
+                        code     = emitInsCode(ins) ^ 0x1000;
                         code |= (code_t)reg1 << 15; /* rj */
                         code |= (code_t)reg2 << 20; /* rd */
                         code |= 0x8 << 7;
@@ -2585,7 +2585,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         regNumber reg2 = REG_R0;
                         if (INS_beqz != ins && INS_bnez != ins)
                             reg2 = id->idReg2();
-                        code = emitInsCode(ins) ^ 0x1000;
+                        code     = emitInsCode(ins) ^ 0x1000;
                         code |= (code_t)reg1 << 15; /* rj */
                         code |= (code_t)reg2 << 20; /* rd */
                         code |= 28 << 7;
