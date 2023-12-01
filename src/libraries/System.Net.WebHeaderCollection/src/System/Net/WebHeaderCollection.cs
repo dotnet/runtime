@@ -50,7 +50,7 @@ namespace System.Net
 
         private static HeaderInfoTable HeaderInfo => _headerInfo ??= new HeaderInfoTable();
 
-        private NameValueCollection InnerCollection => _innerCollection ??= new NameValueCollection(ApproxHighAvgNumHeaders, CaseInsensitiveAscii.StaticInstance);
+        private NameValueCollection InnerCollection => _innerCollection ??= new NameValueCollection(ApproxHighAvgNumHeaders, StringComparer.OrdinalIgnoreCase);
 
         private bool AllowHttpResponseHeader
         {
