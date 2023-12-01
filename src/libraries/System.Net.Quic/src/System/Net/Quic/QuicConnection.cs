@@ -13,15 +13,14 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
-
 using CONNECTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._CONNECTED_e__Struct;
-using SHUTDOWN_INITIATED_BY_TRANSPORT_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_TRANSPORT_e__Struct;
-using SHUTDOWN_INITIATED_BY_PEER_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_PEER_e__Struct;
-using SHUTDOWN_COMPLETE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_COMPLETE_e__Struct;
 using LOCAL_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._LOCAL_ADDRESS_CHANGED_e__Struct;
 using PEER_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_ADDRESS_CHANGED_e__Struct;
-using PEER_STREAM_STARTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_STREAM_STARTED_e__Struct;
 using PEER_CERTIFICATE_RECEIVED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_CERTIFICATE_RECEIVED_e__Struct;
+using PEER_STREAM_STARTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_STREAM_STARTED_e__Struct;
+using SHUTDOWN_COMPLETE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_COMPLETE_e__Struct;
+using SHUTDOWN_INITIATED_BY_PEER_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_PEER_e__Struct;
+using SHUTDOWN_INITIATED_BY_TRANSPORT_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_TRANSPORT_e__Struct;
 
 namespace System.Net.Quic;
 
@@ -67,9 +66,27 @@ public sealed partial class QuicConnection : IAsyncDisposable
         static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
         {
             QuicConnection connection = new QuicConnection();
+
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            if (options.HandshakeTimeout != Timeout.InfiniteTimeSpan && options.HandshakeTimeout != TimeSpan.Zero)
+            {
+                linkedCts.CancelAfter(options.HandshakeTimeout);
+            }
+
             try
             {
-                await connection.FinishConnectAsync(options, cancellationToken).ConfigureAwait(false);
+                await connection.FinishConnectAsync(options, linkedCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                await connection.DisposeAsync().ConfigureAwait(false);
+
+                // throw OCE with correct token if cancellation requested by user
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // cancellation by the linkedCts.CancelAfter. Convert to Timeout
+                throw new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, options.HandshakeTimeout));
             }
             catch
             {
@@ -93,6 +110,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
     private readonly ValueTaskSource _connectedTcs = new ValueTaskSource();
     private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
+
+    private readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
+
+    // Token that fires when the connection is closed.
+    internal CancellationToken ConnectionShutdownToken => _shutdownTokenSource.Token;
 
     private readonly Channel<QuicStream> _acceptQueue = Channel.CreateUnbounded<QuicStream>(new UnboundedChannelOptions()
     {
@@ -497,6 +519,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
+        _shutdownTokenSource.Cancel();
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
@@ -524,7 +547,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return QUIC_STATUS_SUCCESS;
         }
 
-        data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_FC_UPDATES;
+        data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_ID_FC_UPDATES;
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
@@ -618,6 +641,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         await valueTask.ConfigureAwait(false);
         Debug.Assert(_connectedTcs.IsCompleted);
         _handle.Dispose();
+        _shutdownTokenSource.Dispose();
 
         _configuration?.Dispose();
 

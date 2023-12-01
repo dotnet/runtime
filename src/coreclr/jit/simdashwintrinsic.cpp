@@ -274,7 +274,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     CORINFO_CLASS_HANDLE argClass         = NO_CLASS_HANDLE;
-    var_types            retType          = JITtype2varType(sig->retType);
+    var_types            retType          = genActualType(JITtype2varType(sig->retType));
     CorInfoType          simdBaseJitType  = CORINFO_TYPE_UNDEF;
     var_types            simdType         = TYP_UNKNOWN;
     unsigned             simdSize         = 0;

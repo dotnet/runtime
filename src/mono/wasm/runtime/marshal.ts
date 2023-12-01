@@ -9,6 +9,7 @@ import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF3
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
 import { TypedArray, VoidPtr } from "./types/emscripten";
+import { utf16ToString } from "./strings";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
@@ -19,7 +20,7 @@ export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 
 export const JavaScriptMarshalerArgSize = 16;
 export const JSMarshalerTypeSize = 32;
-export const JSMarshalerSignatureHeaderSize = 4 + 4; // without Exception and Result
+export const JSMarshalerSignatureHeaderSize = 4 * 8; // without Exception and Result
 
 export function alloc_stack_frame(size: number): JSMarshalerArguments {
     const args = Module.stackAlloc(JavaScriptMarshalerArgSize * size) as any;
@@ -80,6 +81,28 @@ export function get_signature_argument_count(signature: JSFunctionSignature): nu
 export function get_signature_version(signature: JSFunctionSignature): number {
     mono_assert(signature, "Null signatures");
     return <any>getI32(signature);
+}
+
+export function get_signature_handle(signature: JSFunctionSignature): number {
+    mono_assert(signature, "Null signatures");
+    return <any>getI32(<any>signature + 8);
+}
+
+export function get_signature_function_name(signature: JSFunctionSignature): string | null {
+    mono_assert(signature, "Null signatures");
+    const functionNameOffset = <any>getI32(<any>signature + 16);
+    if (functionNameOffset === 0) return null;
+    const functionNameLength = <any>getI32(<any>signature + 20);
+    mono_assert(functionNameOffset, "Null name");
+    return utf16ToString(<any>signature + functionNameOffset, <any>signature + functionNameOffset + functionNameLength);
+}
+
+export function get_signature_module_name(signature: JSFunctionSignature): string | null {
+    mono_assert(signature, "Null signatures");
+    const moduleNameOffset = <any>getI32(<any>signature + 24);
+    if (moduleNameOffset === 0) return null;
+    const moduleNameLength = <any>getI32(<any>signature + 28);
+    return utf16ToString(<any>signature + moduleNameOffset, <any>signature + moduleNameOffset + moduleNameLength);
 }
 
 export function get_sig_type(sig: JSMarshalerType): MarshalerType {

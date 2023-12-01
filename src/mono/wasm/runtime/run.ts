@@ -42,7 +42,7 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
         if (ENVIRONMENT_IS_NODE) {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore:
-            const process = await import(/* webpackIgnore: true */"process");
+            const process = await import(/*! webpackIgnore: true */"process");
             args = process.argv.slice(2) as string[];
         } else {
             args = [];

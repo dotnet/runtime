@@ -77,7 +77,7 @@
   -->
 
   <PropertyGroup>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
 
@@ -162,7 +162,8 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <RunArguments Condition="'$(RunArguments)' == '' and '$(WasmSingleFileBundle)' != 'true'">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <RunArguments Condition="'$(RunArguments)' == '' and '$(WasmSingleFileBundle)' == 'true'">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -280,7 +281,11 @@
 
     <PropertyGroup>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</WasmAppDir>
+
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
+      <!-- Ensure this is only the filename -->
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' != ''">$([System.IO.Path]::GetFileName($(WasmMainAssemblyFileName)))</WasmMainAssemblyFileName>
+
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasmOutputFileName>
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasmOutputFileName>
       <_WasmOutputFileName>$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
@@ -330,7 +335,7 @@
     </RuntimeConfigParserTask>
 
     <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Include="$(_ParsedRuntimeConfigFilePath)" />
+      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" />
     </ItemGroup>
   </Target>
 
@@ -348,7 +353,6 @@
     <ItemGroup Condition="'$(WasmBuildNative)' != 'true'">
       <!-- Add the default ones when we don't compile one -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm"/>
-      <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">
@@ -382,6 +386,7 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
+      RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
       />
   </Target>
 

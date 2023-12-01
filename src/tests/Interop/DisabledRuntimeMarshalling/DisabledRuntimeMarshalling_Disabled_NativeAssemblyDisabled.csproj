@@ -8,7 +8,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />
-    <Compile Include="*.cs" />
+    <Compile Include="AutoLayout.cs" />
+    <Compile Include="FunctionPointers.cs" />
+    <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative_DisabledMarshalling.csproj" />

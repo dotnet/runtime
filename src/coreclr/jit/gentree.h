@@ -547,8 +547,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
 
-    GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
-
     GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proven this check is always in-bounds
 
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
@@ -620,6 +618,7 @@ enum GenTreeDebugFlags : unsigned int
     GTF_DEBUG_NODE_MASK         = 0x0000003F, // These flags are all node (rather than operation) properties.
 
     GTF_DEBUG_VAR_CSE_REF       = 0x00800000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
+    GTF_DEBUG_CAST_DONT_FOLD    = 0x00400000, // GT_CAST    -- Try to prevent this cast from being folded
 };
 
 inline constexpr GenTreeDebugFlags operator ~(GenTreeDebugFlags a)
@@ -1725,7 +1724,6 @@ public:
         {
             case GT_LEA:
             case GT_RETFILT:
-            case GT_NOP:
             case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
@@ -1818,7 +1816,7 @@ public:
 
     void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
 
-    inline GenTree* gtEffectiveVal(bool commaOnly = false);
+    inline GenTree* gtEffectiveVal();
 
     inline GenTree* gtCommaStoreVal();
 
@@ -2997,7 +2995,7 @@ struct GenTreeOp : public GenTreeUnOp
         : GenTreeUnOp(oper, type DEBUGARG(largeNode)), gtOp2(nullptr)
     {
         // Unary operators with optional arguments:
-        assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+        assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
     }
 
     // returns true if we will use the division by constant optimization for this node.
@@ -3006,12 +3004,6 @@ struct GenTreeOp : public GenTreeUnOp
     // checks if we will use the division by constant optimization this node
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
-
-    // True if this node is marked as using the division by constant optimization
-    bool MarkedDivideByConstOptimized() const
-    {
-        return (gtFlags & GTF_DIV_BY_CNS_OPT) != 0;
-    }
 
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
     bool IsValidLongMul();
@@ -7940,24 +7932,6 @@ public:
     pointers) must be flagged as 'large' in GenTree::InitNodeSize().
  */
 
-// GenTreeClsVar: data address node (GT_CLS_VAR_ADDR).
-//
-struct GenTreeClsVar : public GenTree
-{
-    CORINFO_FIELD_HANDLE gtClsVarHnd;
-
-    GenTreeClsVar(var_types type, CORINFO_FIELD_HANDLE clsVarHnd)
-        : GenTree(GT_CLS_VAR_ADDR, type), gtClsVarHnd(clsVarHnd)
-    {
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeClsVar() : GenTree()
-    {
-    }
-#endif
-};
-
 /* gtPhiArg -- phi node rhs argument, var = phi(phiarg, phiarg, phiarg...); GT_PHI_ARG */
 struct GenTreePhiArg : public GenTreeLclVarCommon
 {
@@ -9265,18 +9239,14 @@ inline GenTree*& GenTree::Data()
     return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
-inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
+inline GenTree* GenTree::gtEffectiveVal()
 {
     GenTree* effectiveVal = this;
     while (true)
     {
-        if (effectiveVal->gtOper == GT_COMMA)
+        if (effectiveVal->OperIs(GT_COMMA))
         {
-            effectiveVal = effectiveVal->AsOp()->gtGetOp2();
-        }
-        else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->AsOp()->gtOp1 != nullptr))
-        {
-            effectiveVal = effectiveVal->AsOp()->gtOp1;
+            effectiveVal = effectiveVal->gtGetOp2();
         }
         else
         {

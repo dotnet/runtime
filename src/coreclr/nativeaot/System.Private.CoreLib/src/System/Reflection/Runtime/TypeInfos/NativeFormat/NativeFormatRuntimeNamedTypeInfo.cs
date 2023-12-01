@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Text;
 
 using Internal.Metadata.NativeFormat;
 
@@ -77,12 +77,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     Handle guidStringArgumentHandle = fahEnumerator.Current;
                     if (fahEnumerator.MoveNext())
                         continue;
-                    if (!(guidStringArgumentHandle.ParseConstantValue(_reader) is string guidString))
+                    if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
                         continue;
-                    return new Guid(guidString);
+                    return new Guid(guidStringArgumentHandle.ToConstantStringValueHandle(_reader).GetString(_reader));
                 }
             }
-
             return null;
         }
 

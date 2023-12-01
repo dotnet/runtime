@@ -316,6 +316,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
             {
+                TypeSystemContext.EnsureLoadableType(type);
                 return new ReflectedTypeNode(type);
             });
 
@@ -366,6 +367,16 @@ namespace ILCompiler.DependencyAnalysis
             _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode>(key =>
             {
                 return new SerializedFrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+            });
+
+            _frozenConstructedRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
+            {
+                return new FrozenRuntimeTypeNode(key, constructed: true);
+            });
+
+            _frozenNecessaryRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
+            {
+                return new FrozenRuntimeTypeNode(key, constructed: false);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -1225,6 +1236,27 @@ namespace ILCompiler.DependencyAnalysis
         public SerializedFrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
+        }
+
+        public FrozenRuntimeTypeNode SerializedMaximallyConstructableRuntimeTypeObject(TypeDesc type)
+        {
+            if (ConstructedEETypeNode.CreationAllowed(type))
+                return SerializedConstructedRuntimeTypeObject(type);
+            return SerializedNecessaryRuntimeTypeObject(type);
+        }
+
+        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenConstructedRuntimeTypeNodes;
+
+        public FrozenRuntimeTypeNode SerializedConstructedRuntimeTypeObject(TypeDesc type)
+        {
+            return _frozenConstructedRuntimeTypeNodes.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenNecessaryRuntimeTypeNodes;
+
+        public FrozenRuntimeTypeNode SerializedNecessaryRuntimeTypeObject(TypeDesc type)
+        {
+            return _frozenNecessaryRuntimeTypeNodes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;

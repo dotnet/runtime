@@ -21,7 +21,7 @@ public:
     {
     }
 
-    HRESULT STDMETHODCALLTYPE Next( 
+    HRESULT STDMETHODCALLTYPE Next(
         ULONG celt,
         VARIANT *rgVar,
         ULONG *pCeltFetched) override
@@ -32,7 +32,7 @@ public:
             V_VT(&rgVar[*pCeltFetched]) = VT_I4;
             V_I4(&(rgVar[*pCeltFetched])) = current;
         }
-        
+
         return celt == *pCeltFetched ? S_OK : S_FALSE;
     }
 
@@ -81,31 +81,31 @@ public:
     {
     }
 
-    HRESULT STDMETHODCALLTYPE GetTypeInfoCount( 
-        UINT *pctinfo) override
+    HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
+        uint32_t *pctinfo) override
     {
         *pctinfo = 0;
         return S_OK;
     }
-    
-    HRESULT STDMETHODCALLTYPE GetTypeInfo( 
-        UINT iTInfo,
+
+    HRESULT STDMETHODCALLTYPE GetTypeInfo(
+        uint32_t iTInfo,
         LCID lcid,
         ITypeInfo **ppTInfo) override
     {
         return E_NOTIMPL;
     }
-    
-    HRESULT STDMETHODCALLTYPE GetIDsOfNames( 
+
+    HRESULT STDMETHODCALLTYPE GetIDsOfNames(
         REFIID riid,
         LPOLESTR *rgszNames,
-        UINT cNames,
+        uint32_t cNames,
         LCID lcid,
         DISPID *rgDispId) override
     {
         bool containsUnknown = false;
         DISPID *curr = rgDispId;
-        for (UINT i = 0; i < cNames; ++i)
+        for (uint32_t i = 0; i < cNames; ++i)
         {
             *curr = DISPID_UNKNOWN;
             LPOLESTR name = rgszNames[i];
@@ -120,16 +120,16 @@ public:
 
         return (containsUnknown) ? DISP_E_UNKNOWNNAME : S_OK;
     }
-    
+
     HRESULT STDMETHODCALLTYPE Invoke(
         DISPID dispIdMember,
         REFIID riid,
         LCID lcid,
-        WORD wFlags,
+        uint16_t wFlags,
         DISPPARAMS *pDispParams,
         VARIANT *pVarResult,
         EXCEPINFO *pExcepInfo,
-        UINT *puArgErr) override
+        uint32_t *puArgErr) override
     {
         if (dispIdMember == DISPID_NEWENUM && (wFlags & INVOKE_PROPERTYGET) == INVOKE_PROPERTYGET)
         {

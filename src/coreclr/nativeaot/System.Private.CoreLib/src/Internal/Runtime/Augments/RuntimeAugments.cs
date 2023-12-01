@@ -17,13 +17,13 @@
 //    Reflection.Execution.dll
 
 using System;
-using System.Reflection;
-using System.Runtime;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using Internal.Runtime.CompilerHelpers;
@@ -686,12 +686,6 @@ namespace Internal.Runtime.Augments
         public static IntPtr GetTargetOfUnboxingAndInstantiatingStub(IntPtr functionPointer)
         {
             return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
-        {
-            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, factory, contextObject, out auxResult);
         }
 
         //==============================================================================================

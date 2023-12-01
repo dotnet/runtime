@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    public sealed class Condition
+    internal sealed class Condition
     {
         internal class Waiter
         {
