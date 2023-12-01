@@ -292,16 +292,12 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if the peephole optimization is enabled,
-//    and block is a BBJ_ALWAYS to the next block that we can fall through into
+//    true if block is a BBJ_ALWAYS to the next block that we can fall into
 //
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
 {
     assert(KindIs(BBJ_ALWAYS));
-    const bool tryJumpOpt = compiler->opts.OptimizationEnabled() || ((bbFlags & BBF_NONE_QUIRK) != 0);
-    const bool skipJump   = tryJumpOpt && JumpsToNext() && !hasAlign() && ((bbFlags & BBF_KEEP_BBJ_ALWAYS) == 0) &&
-                          !compiler->fgInDifferentRegions(this, bbJumpDest);
-    return skipJump;
+    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbJumpDest);
 }
 
 //------------------------------------------------------------------------
@@ -494,14 +490,6 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_LOOP_HEAD)
     {
         printf("Loop ");
-    }
-    if (bbFlags & BBF_LOOP_CALL0)
-    {
-        printf("Loop0 ");
-    }
-    if (bbFlags & BBF_LOOP_CALL1)
-    {
-        printf("Loop1 ");
     }
     if (bbFlags & BBF_HAS_LABEL)
     {

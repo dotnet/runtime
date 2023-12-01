@@ -4662,92 +4662,6 @@ PhaseStatus Compiler::optUnrollLoops()
 #pragma warning(pop)
 #endif
 
-/*****************************************************************************
- *
- *  Return false if there is a code path from 'topBB' to 'botBB' that might
- *  not execute a method call.
- */
-
-bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
-{
-    // TODO-Cleanup: Currently BBF_GC_SAFE_POINT is not set for helper calls,
-    // as some helper calls are neither interruptible nor hijackable.
-    // When we can determine this, then we can set BBF_GC_SAFE_POINT for
-    // those helpers too.
-
-    // We can always check topBB and botBB for any gc safe points and early out
-
-    if ((topBB->bbFlags | botBB->bbFlags) & BBF_GC_SAFE_POINT)
-    {
-        return false;
-    }
-
-    // Otherwise we will need to rely upon the dominator sets
-
-    if (!fgDomsComputed)
-    {
-        // return a conservative answer of true when we don't have the dominator sets
-        return true;
-    }
-
-    noway_assert(topBB->bbNum <= botBB->bbNum);
-
-    BasicBlock* curBB = topBB;
-    for (;;)
-    {
-        noway_assert(curBB);
-
-        // If we added a loop pre-header block then we will
-        //  have a bbNum greater than fgLastBB, and we won't have
-        //  any dominator information about this block, so skip it.
-        //
-        if (curBB->bbNum <= fgLastBB->bbNum)
-        {
-            noway_assert(curBB->bbNum <= botBB->bbNum);
-
-            // Does this block contain a gc safe point?
-
-            if (curBB->bbFlags & BBF_GC_SAFE_POINT)
-            {
-                // Will this block always execute on the way to botBB ?
-                //
-                // Since we are checking every block in [topBB .. botBB] and we are using
-                // a lexical definition of a loop.
-                //  (all that we know is that is that botBB is a back-edge to topBB)
-                // Thus while walking blocks in this range we may encounter some blocks
-                // that are not really part of the loop, and so we need to perform
-                // some additional checks:
-                //
-                // We will check that the current 'curBB' is reachable from 'topBB'
-                // and that it dominates the block containing the back-edge 'botBB'
-                // When both of these are true then we know that the gcsafe point in 'curBB'
-                // will be encountered in the loop and we can return false
-                //
-                if (fgDominate(curBB, botBB) && fgReachable(topBB, curBB))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                // If we've reached the destination block, then we're done
-
-                if (curBB == botBB)
-                {
-                    break;
-                }
-            }
-        }
-
-        curBB = curBB->Next();
-    }
-
-    // If we didn't find any blocks that contained a gc safe point and
-    // also met the fgDominate and fgReachable criteria then we must return true
-    //
-    return true;
-}
-
 Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
 {
     class CountTreeInfoVisitor : public GenTreeVisitor<CountTreeInfoVisitor>
@@ -5995,6 +5909,13 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CAST:
             {
+#ifdef DEBUG
+                if ((tree->gtDebugFlags & GTF_DEBUG_CAST_DONT_FOLD) != 0)
+                {
+                    return false;
+                }
+#endif
+
                 if ((tree->CastToType() != srct) || tree->gtOverflow())
                 {
                     return false;
@@ -8557,7 +8478,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         continue;
                     }
 
-                    GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
+                    GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal();
 
                     if (addr->TypeGet() == TYP_BYREF && addr->OperGet() == GT_LCL_VAR)
                     {

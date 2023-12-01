@@ -9180,7 +9180,7 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 			break;
 		}
 		default:
-			//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
+			printf ("Skip: %s\n", mono_method_full_name (method, TRUE));
 			return FALSE;
 		}
 	} else {

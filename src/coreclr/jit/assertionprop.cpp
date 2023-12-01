@@ -1121,7 +1121,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         //
         // Set op1 to the instance pointer of the indirection
         //
-        op1 = op1->gtEffectiveVal(/* commaOnly */ true);
+        op1 = op1->gtEffectiveVal();
 
         ssize_t offset = 0;
         while ((op1->gtOper == GT_ADD) && (op1->gtType == TYP_BYREF))
@@ -1129,12 +1129,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp1()->gtEffectiveVal(/* commaOnly */ true);
+                op1 = op1->gtGetOp1()->gtEffectiveVal();
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp2()->gtEffectiveVal(/* commaOnly */ true);
+                op1 = op1->gtGetOp2()->gtEffectiveVal();
             }
             else
             {
@@ -4356,8 +4356,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
         foldResult = !foldResult;
     }
 
-    op2->AsIntCon()->gtIconVal = foldResult;
-    op2->gtType                = TYP_INT;
+    op2->BashToConst((ssize_t)foldResult, TYP_INT);
 
     return optAssertionProp_Update(op2, tree, stmt);
 }
@@ -4533,7 +4532,7 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
         return true;
     }
 
-    op = op->gtEffectiveVal(/* commaOnly */ true);
+    op = op->gtEffectiveVal();
 
     if (!op->OperIs(GT_LCL_VAR))
     {

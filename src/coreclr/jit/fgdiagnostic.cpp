@@ -2567,19 +2567,20 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
         return WALK_CONTINUE;
     }
 
-    JITDUMP("STRESS_64RSLT_MUL before:\n");
-    DISPTREE(tree);
+    JITDUMP("STRESS_64RSLT_MUL before:\n")
+    DISPTREE(tree)
 
-    // To ensure optNarrowTree() doesn't fold back to the original tree.
-    tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp1, false, TYP_LONG);
-    tree->AsOp()->gtOp1 = pComp->gtNewOperNode(GT_NOP, TYP_LONG, tree->AsOp()->gtOp1);
-    tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp1, false, TYP_LONG);
-    tree->AsOp()->gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp2, false, TYP_LONG);
+    tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->gtGetOp1(), false, TYP_LONG);
+    tree->AsOp()->gtOp2 = pComp->gtNewCastNode(TYP_LONG, tree->gtGetOp2(), false, TYP_LONG);
     tree->gtType        = TYP_LONG;
     *pTree              = pComp->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
 
-    JITDUMP("STRESS_64RSLT_MUL after:\n");
-    DISPTREE(*pTree);
+    // To ensure optNarrowTree() doesn't fold back to the original tree.
+    tree->gtGetOp1()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+    tree->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_CAST_DONT_FOLD;
+
+    JITDUMP("STRESS_64RSLT_MUL after:\n")
+    DISPTREE(*pTree)
 
     return WALK_SKIP_SUBTREES;
 }
@@ -3244,6 +3245,11 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
             {
                 m_compiler->gtDispTree(node);
                 assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+            }
+
+            if (node->OperIs(GT_NOP))
+            {
+                assert(node->TypeIs(TYP_VOID) && "GT_NOP should be TYP_VOID.");
             }
 
             if (varTypeIsSmall(node))
