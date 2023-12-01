@@ -453,6 +453,11 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
             }
         }
 
+        // In the case of GT_RET_EXPR any subsequent spills will appear in the wrong place -- after
+        // the call. We need to move them to before the call
+        //
+        Statement* lastStmt = impLastStmt;
+
         if ((dstVarDsc != nullptr) && !dstVarDsc->IsAddressExposed() && !dstVarDsc->lvHasLdAddrOp)
         {
             impSpillLclRefs(lvaGetLclNum(dstVarDsc), chkLevel);
@@ -479,6 +484,40 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         else
         {
             impSpillSpecialSideEff();
+        }
+
+        if ((lastStmt != impLastStmt) && expr->OperIs(GT_RET_EXPR))
+        {
+            GenTree* const call = expr->AsRetExpr()->gtInlineCandidate;
+            JITDUMP("\nimpAppendStmt: after sinking a local struct store into inline candidate [%06u], we need to "
+                    "reorder subsequent spills.\n",
+                    dspTreeID(call));
+
+            // Move all newly appended statements to just before the call's statement.
+            // First, find the statement containing the call.
+            //
+            Statement* insertBeforeStmt = lastStmt;
+
+            while (insertBeforeStmt->GetRootNode() != call)
+            {
+                assert(insertBeforeStmt != impStmtList);
+                insertBeforeStmt = insertBeforeStmt->GetPrevStmt();
+            }
+
+            Statement* movingStmt = lastStmt->GetNextStmt();
+
+            JITDUMP("Moving " FMT_STMT " through " FMT_STMT " before " FMT_STMT "\n", movingStmt->GetID(),
+                    impLastStmt->GetID(), insertBeforeStmt->GetID());
+
+            // We move these backwards, so must keep moving the insert
+            // point to keep them in order.
+            //
+            while (impLastStmt != lastStmt)
+            {
+                Statement* movingStmt = impExtractLastStmt();
+                impInsertStmtBefore(movingStmt, insertBeforeStmt);
+                insertBeforeStmt = movingStmt;
+            }
         }
     }
 
