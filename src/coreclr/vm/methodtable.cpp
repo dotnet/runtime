@@ -1265,7 +1265,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
-        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner))
+        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
     {
         return TRUE;
     }
@@ -1290,7 +1290,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
             TypeHandle thArg = inst[i];
             if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
             {
-                thArg = pMTInterfaceMapOwner;
+                thArg = pMTInterfaceMapOwner->GetSpecialInstantiationType();
             }
 
             TypeHandle thTargetArg = targetInst[i];
@@ -8510,6 +8510,12 @@ MethodTable::TryResolveConstraintMethodApprox(
         DWORD cPotentialMatchingInterfaces = 0;
         while (it.Next())
         {
+            // If the approx type doesn't match by type handle, then it clearly can't match
+            // by canonical type. This avoids force loading the interface and breaking the
+            // special interface map type scenario
+            if (!it.GetInterfaceApprox()->HasSameTypeDefAs(thInterfaceType.AsMethodTable()))
+                continue;
+
             TypeHandle thPotentialInterfaceType(it.GetInterface(pCanonMT));
             if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() ==
                 thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
@@ -8796,7 +8802,7 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
-            ownerAsInst[i] = pMTOwner;
+            ownerAsInst[i] = pMTOwner->GetSpecialInstantiationType();
 
         _ASSERTE(pResult->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
         Instantiation inst(ownerAsInst, pResult->GetInstantiation().GetNumArgs());

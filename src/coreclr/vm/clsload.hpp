@@ -656,7 +656,7 @@ public:
                                                      ClassLoadLevel level = CLASS_LOADED,
                                                      BOOL dropGenericArgumentLevel = FALSE,
                                                      const Substitution *pSubst = NULL /* substitution to apply if the token is a type spec with generic variables */,
-                                                     MethodTable *pMTInterfaceMapOwner = NULL);
+                                                     TypeHandle thSpecialInterfaceInstantiationType = TypeHandle());
 
     // Load constructed types by providing their constituents
     static TypeHandle LoadPointerOrByrefTypeThrowing(CorElementType typ,
