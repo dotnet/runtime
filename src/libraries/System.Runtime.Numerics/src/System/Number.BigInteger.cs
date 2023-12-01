@@ -491,17 +491,23 @@ namespace System
             }
 
             uint[] bits = new uint[totalUIntCount];
-            ref char finalWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(value), value.Length - DigitsPerBlock); // value[^DigitsPerBlock]
+            Span<uint> wholeBlockDestination = leadingBitsCount != 0 ? bits[1..] : bits;
+            ReadOnlySpan<char> wholeBlockSource = value[leadingBitsCount..];
 
-            // TODO: Vectorized parsing for whole uints
-            for (int i = 0; i < wholeBlockCount; i++)
+            Debug.Assert(wholeBlockDestination.Length * DigitsPerBlock == wholeBlockSource.Length);
+
+            if (Convert.FromHexString(wholeBlockSource, MemoryMarshal.AsBytes(wholeBlockDestination), out _, out _) != OperationStatus.Done)
             {
-                if (!uint.TryParse(
-                    MemoryMarshal.CreateSpan(ref Unsafe.Subtract(ref finalWholeBlockStart, i * DigitsPerBlock), DigitsPerBlock),
-                    NumberStyles.AllowHexSpecifier, null, out bits[i]))
-                {
-                    goto FailExit;
-                }
+                goto FailExit;
+            }
+
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.AsBytes(wholeBlockDestination).Reverse();
+            }
+            else
+            {
+                wholeBlockDestination.Reverse();
             }
 
             // Parse the leading uint
