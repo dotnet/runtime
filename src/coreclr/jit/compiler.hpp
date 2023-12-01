@@ -627,10 +627,6 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             return BasicBlockVisit::Continue;
 
-        case BBJ_NONE:
-            RETURN_ON_ABORT(func(bbNext));
-            return VisitEHSuccs(comp, func);
-
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
 
@@ -696,9 +692,6 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
             return func(bbJumpDest);
-
-        case BBJ_NONE:
-            return func(bbNext);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
@@ -1249,7 +1242,7 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) ==
            0); // Can't use this to construct any types that extend unary/binary operator.
-    assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
+    assert(op1 != nullptr || oper == GT_RETFILT || (oper == GT_RETURN && type == TYP_VOID));
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
@@ -1609,7 +1602,7 @@ inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
 
 inline GenTree* Compiler::gtNewNothingNode()
 {
-    return new (this, GT_NOP) GenTreeOp(GT_NOP, TYP_VOID);
+    return new (this, GT_NOP) GenTree(GT_NOP, TYP_VOID);
 }
 /*****************************************************************************/
 
@@ -1627,10 +1620,7 @@ inline bool GenTree::IsNothingNode() const
 inline void GenTree::gtBashToNOP()
 {
     ChangeOper(GT_NOP);
-
-    gtType        = TYP_VOID;
-    AsOp()->gtOp1 = AsOp()->gtOp2 = nullptr;
-
+    gtType = TYP_VOID;
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
 
@@ -4417,16 +4407,15 @@ void GenTree::VisitOperands(TVisitor visitor)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_NOP:
             return;
 
         // Unary operators with an optional operand
-        case GT_NOP:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:

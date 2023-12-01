@@ -108,7 +108,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
 
-        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_NONE, BBJ_THROW, BBJ_CALLFINALLY));
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY));
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -206,9 +206,9 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             //
             newStmt = fgNewStmtAtBeg(block, call);
         }
-        else if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_NONE))
+        else if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY))
         {
-            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE we don't need to insert it before the condition.
+            // For BBJ_ALWAYS and BBJ_CALLFINALLY, we don't need to insert it before the condition.
             // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
@@ -277,24 +277,25 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
         }
 
-        BasicBlock* poll          = fgNewBBafter(BBJ_NONE, top, true);
+        BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetJumpDest());
         BBjumpKinds   oldJumpKind = top->GetJumpKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
+        poll->SetJumpDest(bottom);
+        assert(poll->JumpsToNext());
 
         // Update block flags
         const BasicBlockFlags originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
-        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST &
-                                       ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
-                                         BBF_RETLESS_CALL))) == 0);
+        noway_assert(
+            (originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL))) == 0);
         top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
         bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
                                             BBF_RETLESS_CALL);
         bottom->inheritWeight(top);
-        poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
+        poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_NONE_QUIRK);
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
@@ -396,9 +397,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // (1 for unconditional branches, 2 for conditional branches, N for switches).
         switch (oldJumpKind)
         {
-            case BBJ_NONE:
-                fgReplacePred(bottom->Next(), top, bottom);
-                break;
             case BBJ_RETURN:
             case BBJ_THROW:
                 // no successors
@@ -893,7 +891,6 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_CNS_STR:
         case GT_FIELD_ADDR:
         case GT_LCL_ADDR:
-        case GT_CLS_VAR_ADDR:
             return false;
 
         case GT_IND:
@@ -1240,179 +1237,6 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     // Looks like we will need the cast
     //
     return true;
-}
-
-/*****************************************************************************
- *
- *  Mark whether the edge "srcBB -> dstBB" forms a loop that will always
- *  execute a call or not.
- */
-
-void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
-{
-    /* Bail if this is not a backward edge */
-
-    if (srcBB->bbNum < dstBB->bbNum)
-    {
-        return;
-    }
-
-    /* Unless we already know that there is a loop without a call here ... */
-
-    if (!(dstBB->bbFlags & BBF_LOOP_CALL0))
-    {
-        /* Check whether there is a loop path that doesn't call */
-
-        if (optReachWithoutCall(dstBB, srcBB))
-        {
-            dstBB->bbFlags |= BBF_LOOP_CALL0;
-            dstBB->bbFlags &= ~BBF_LOOP_CALL1;
-        }
-        else
-        {
-            dstBB->bbFlags |= BBF_LOOP_CALL1;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// fgLoopCallMark: Mark which loops are guaranteed to execute a call by setting the
-// block BBF_LOOP_CALL0 and BBF_LOOP_CALL1 flags, as appropriate.
-//
-void Compiler::fgLoopCallMark()
-{
-    // If we've already marked all the blocks, bail.
-
-    if (fgLoopCallMarked)
-    {
-        return;
-    }
-
-    fgLoopCallMarked = true;
-
-#ifdef DEBUG
-    // This code depends on properly ordered bbNum, so check that.
-    fgDebugCheckBBNumIncreasing();
-#endif // DEBUG
-
-    // Walk the blocks, looking for backward edges.
-
-    for (BasicBlock* const block : Blocks())
-    {
-        switch (block->GetJumpKind())
-        {
-            case BBJ_COND:
-            case BBJ_CALLFINALLY:
-            case BBJ_ALWAYS:
-            case BBJ_EHCATCHRET:
-                fgLoopCallTest(block, block->GetJumpDest());
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    fgLoopCallTest(block, bTarget);
-                }
-                break;
-
-            default:
-                break;
-        }
-    }
-}
-
-/*****************************************************************************
- *
- *  Note the fact that the given block is a loop header.
- */
-
-void Compiler::fgMarkLoopHead(BasicBlock* block)
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("fgMarkLoopHead: Checking loop head block " FMT_BB ": ", block->bbNum);
-    }
-#endif
-
-    /* Have we decided to generate fully interruptible code already? */
-
-    if (GetInterruptible())
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("method is already fully interruptible\n");
-        }
-#endif
-        return;
-    }
-
-    /* Is the loop head block known to execute a method call? */
-
-    if (block->bbFlags & BBF_GC_SAFE_POINT)
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("this block will execute a call\n");
-        }
-#endif
-        return;
-    }
-
-    /* Are dominator sets available? */
-
-    if (fgDomsComputed)
-    {
-        /* Make sure that we know which loops will always execute calls */
-
-        if (!fgLoopCallMarked)
-        {
-            fgLoopCallMark();
-        }
-
-        /* Will every trip through our loop execute a call? */
-
-        if (block->bbFlags & BBF_LOOP_CALL1)
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("this block dominates a block that will execute a call\n");
-            }
-#endif
-            return;
-        }
-    }
-
-    /*
-     *  We have to make this method fully interruptible since we can not
-     *  ensure that this loop will execute a call every time it loops.
-     *
-     *  We'll also need to generate a full register map for this method.
-     */
-
-    assert(!codeGen->isGCTypeFixed());
-
-    if (!compCanEncodePtrArgCntMax())
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("a callsite with more than 1023 pushed args exists\n");
-        }
-#endif
-        return;
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("no guaranteed callsite exits, marking method as fully interruptible\n");
-    }
-#endif
-    SetInterruptible(true);
 }
 
 GenTree* Compiler::fgGetCritSectOfStaticMethod()
@@ -2985,14 +2809,15 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::New(this, BBJ_NONE);
-    newHead->bbFlags |= BBF_INTERNAL;
+    BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS, block);
+    newHead->bbFlags |= (BBF_INTERNAL | BBF_NONE_QUIRK);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
     fgInsertBBbefore(block, newHead); // insert the new block in the block list
-    fgExtendEHRegionBefore(block);    // Update the EH table to make the prolog block the first block in the block's EH
-                                      // block.
+    assert(newHead->JumpsToNext());
+    fgExtendEHRegionBefore(block); // Update the EH table to make the prolog block the first block in the block's EH
+                                   // block.
 
     // Distribute the pred list between newHead and block. Incoming edges coming from outside
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
@@ -3422,13 +3247,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                         fgAddRefPred(transitionBlock, prevToFirstColdBlock);
                     }
                     break;
-
-                case BBJ_NONE:
-                    // If the block preceding the first cold block is BBJ_NONE,
-                    // convert it to BBJ_ALWAYS to force an explicit jump.
-
-                    prevToFirstColdBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstColdBlock);
-                    break;
             }
         }
     }
@@ -3601,13 +3419,13 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
     assert(!fgRngChkThrowAdded);
 
     const static BBjumpKinds jumpKinds[] = {
-        BBJ_NONE,  // SCK_NONE
-        BBJ_THROW, // SCK_RNGCHK_FAIL
-        BBJ_THROW, // SCK_DIV_BY_ZERO
-        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
-        BBJ_THROW, // SCK_ARG_EXCPN
-        BBJ_THROW, // SCK_ARG_RNG_EXCPN
-        BBJ_THROW, // SCK_FAIL_FAST
+        BBJ_ALWAYS, // SCK_NONE
+        BBJ_THROW,  // SCK_RNGCHK_FAIL
+        BBJ_THROW,  // SCK_DIV_BY_ZERO
+        BBJ_THROW,  // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW,  // SCK_ARG_EXCPN
+        BBJ_THROW,  // SCK_ARG_RNG_EXCPN
+        BBJ_THROW,  // SCK_FAIL_FAST
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3622,6 +3440,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         // regions since the time the descriptor was created.
         //
         assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
+        assert(add->acdKind != SCK_NONE);
 
         BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* jumpDest */ nullptr,
                                                    /* runRarely */ true, /* insertAtEnd */ true);
@@ -3883,117 +3702,201 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
     return SetTreeSeqVisitor(this, tree, isLIR).Sequence();
 }
 
-/*****************************************************************************
- *
- *  Figure out the order in which operators should be evaluated, along with
- *  other information (such as the register sets trashed by each subtree).
- *  Also finds blocks that need GC polls and inserts them as needed.
- */
-
+//------------------------------------------------------------------------------
+// fgSetBlockOrder: Determine the interruptibility model of the method and
+// thread the IR.
+//
 PhaseStatus Compiler::fgSetBlockOrder()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgSetBlockOrder()\n");
-    }
-#endif // DEBUG
+    JITDUMP("*************** In fgSetBlockOrder()\n");
 
 #ifdef DEBUG
     BasicBlock::s_nMaxTrees = 0;
 #endif
 
-    /* Walk the basic blocks to assign sequence numbers */
-
-    /* If we don't compute the doms, then we never mark blocks as loops. */
-    if (fgDomsComputed)
+    if (compCanEncodePtrArgCntMax() && fgHasCycleWithoutGCSafePoint())
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            /* If this block is a loop header, mark it appropriately */
-
-            if (block->isLoopHead())
-            {
-                fgMarkLoopHead(block);
-            }
-        }
-    }
-    else
-    {
-        /* If we don't have the dominators, use an abbreviated test for fully interruptible.  If there are
-         * any back edges, check the source and destination blocks to see if they're GC Safe.  If not, then
-         * go fully interruptible. */
-        for (BasicBlock* const block : Blocks())
-        {
-// true if the edge is forward, or if it is a back edge and either the source and dest are GC safe.
-#define EDGE_IS_GC_SAFE(src, dst)                                                                                      \
-    (((src)->bbNum < (dst)->bbNum) || (((src)->bbFlags | (dst)->bbFlags) & BBF_GC_SAFE_POINT))
-
-            bool partiallyInterruptible = true;
-            switch (block->GetJumpKind())
-            {
-                case BBJ_COND:
-                case BBJ_ALWAYS:
-                    partiallyInterruptible = EDGE_IS_GC_SAFE(block, block->GetJumpDest());
-                    break;
-
-                case BBJ_SWITCH:
-                    for (BasicBlock* const bTarget : block->SwitchTargets())
-                    {
-                        partiallyInterruptible &= EDGE_IS_GC_SAFE(block, bTarget);
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (!partiallyInterruptible)
-            {
-                // DDB 204533:
-                // The GC encoding for fully interruptible methods does not
-                // support more than 1023 pushed arguments, so we can't set
-                // SetInterruptible() here when we have 1024 or more pushed args
-                //
-                if (compCanEncodePtrArgCntMax())
-                {
-                    SetInterruptible(true);
-                }
-                break;
-            }
-#undef EDGE_IS_GC_SAFE
-        }
+        JITDUMP("Marking method as fully interruptible\n");
+        SetInterruptible(true);
     }
 
     for (BasicBlock* const block : Blocks())
     {
-
-#if FEATURE_FASTTAILCALL
-#ifndef JIT32_GCENCODER
-        if (block->endsWithTailCallOrJmp(this, true) && optReachWithoutCall(fgFirstBB, block))
-        {
-            // This tail call might combine with other tail calls to form a
-            // loop.  Thus we need to either add a poll, or make the method
-            // fully interruptible.  I chose the later because that's what
-            // JIT64 does.
-            SetInterruptible(true);
-        }
-#endif // !JIT32_GCENCODER
-#endif // FEATURE_FASTTAILCALL
-
         fgSetBlockOrder(block);
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("The biggest BB has %4u tree nodes\n", BasicBlock::s_nMaxTrees);
-    }
-#endif // DEBUG
+    JITDUMP("The biggest BB has %4u tree nodes\n", BasicBlock::s_nMaxTrees);
 
     // Return "everything" to enable consistency checking of the statement links during post phase.
     //
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+class GCSafePointSuccessorEnumerator
+{
+    BasicBlock* m_block;
+    union {
+        BasicBlock*  m_successors[2];
+        BasicBlock** m_pSuccessors;
+    };
+
+    unsigned m_numSuccs;
+    unsigned m_curSucc = UINT_MAX;
+
+public:
+    // Constructs an enumerator of successors to be used for checking for GC
+    // safe point cycles.
+    GCSafePointSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
+    {
+        m_numSuccs = 0;
+        block->VisitRegularSuccs(comp, [this](BasicBlock* succ) {
+            if (m_numSuccs < ArrLen(m_successors))
+            {
+                m_successors[m_numSuccs] = succ;
+            }
+
+            m_numSuccs++;
+            return BasicBlockVisit::Continue;
+        });
+
+        if (m_numSuccs == 0)
+        {
+            if (block->endsWithTailCallOrJmp(comp, true))
+            {
+                // This tail call might combine with other tail calls to form a
+                // loop. Add a pseudo successor back to the entry to model
+                // this.
+                m_successors[0] = comp->fgFirstBB;
+                m_numSuccs      = 1;
+                return;
+            }
+        }
+        else
+        {
+            assert(!block->endsWithTailCallOrJmp(comp, true));
+        }
+
+        if (m_numSuccs > ArrLen(m_successors))
+        {
+            m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
+
+            unsigned numSuccs = 0;
+            block->VisitRegularSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+                assert(numSuccs < m_numSuccs);
+                m_pSuccessors[numSuccs++] = succ;
+                return BasicBlockVisit::Continue;
+            });
+
+            assert(numSuccs == m_numSuccs);
+        }
+    }
+
+    // Gets the block whose successors are enumerated.
+    BasicBlock* Block()
+    {
+        return m_block;
+    }
+
+    // Returns the next available successor or `nullptr` if there are no more successors.
+    BasicBlock* NextSuccessor()
+    {
+        m_curSucc++;
+        if (m_curSucc >= m_numSuccs)
+        {
+            return nullptr;
+        }
+
+        if (m_numSuccs <= ArrLen(m_successors))
+        {
+            return m_successors[m_curSucc];
+        }
+
+        return m_pSuccessors[m_curSucc];
+    }
+};
+
+//------------------------------------------------------------------------------
+// fgHasCycleWithoutGCSafePoint: Check if the flow graph has a cycle in it that
+// does not go through a BBF_GC_SAFE_POINT block.
+//
+// Returns:
+//   True if a cycle exists, in which case the function needs to be marked
+//   fully interruptible.
+//
+bool Compiler::fgHasCycleWithoutGCSafePoint()
+{
+    ArrayStack<GCSafePointSuccessorEnumerator> stack(getAllocator(CMK_ArrayStack));
+    BitVecTraits                               traits(fgBBNumMax + 1, this);
+    BitVec                                     visited(BitVecOps::MakeEmpty(&traits));
+    BitVec                                     finished(BitVecOps::MakeEmpty(&traits));
+
+    for (BasicBlock* block : Blocks())
+    {
+        if ((block->bbFlags & BBF_GC_SAFE_POINT) != 0)
+        {
+            continue;
+        }
+
+        if (BitVecOps::IsMember(&traits, finished, block->bbNum))
+        {
+            continue;
+        }
+
+        bool added = BitVecOps::TryAddElemD(&traits, visited, block->bbNum);
+        assert(added);
+
+        stack.Emplace(this, block);
+
+        while (stack.Height() > 0)
+        {
+            BasicBlock* block = stack.TopRef().Block();
+            BasicBlock* succ  = stack.TopRef().NextSuccessor();
+
+            if (succ != nullptr)
+            {
+                if ((succ->bbFlags & BBF_GC_SAFE_POINT) != 0)
+                {
+                    continue;
+                }
+
+                if (BitVecOps::IsMember(&traits, finished, succ->bbNum))
+                {
+                    continue;
+                }
+
+                if (!BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+                {
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("Found a cycle that does not go through a GC safe point:\n");
+                        printf(FMT_BB, succ->bbNum);
+                        for (int index = 0; index < stack.Height(); index++)
+                        {
+                            BasicBlock* block = stack.TopRef(index).Block();
+                            printf(" <- " FMT_BB, block->bbNum);
+
+                            if (block == succ)
+                                break;
+                        }
+                        printf("\n");
+                    }
+#endif
+
+                    return true;
+                }
+
+                stack.Emplace(this, succ);
+            }
+            else
+            {
+                BitVecOps::AddElemD(&traits, finished, block->bbNum);
+                stack.Pop();
+            }
+        }
+    }
+
+    return false;
 }
 
 /*****************************************************************************/

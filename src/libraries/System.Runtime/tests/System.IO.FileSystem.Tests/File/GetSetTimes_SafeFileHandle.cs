@@ -96,19 +96,23 @@ namespace System.IO.Tests
         public async Task WritingShouldUpdateWriteTime_After_SetLastAccessTime()
         {
             string filePath = GetTestFilePath();
-            using var handle = OpenFileHandle(filePath, FileAccess.ReadWrite);
+            using SafeFileHandle handle = OpenFileHandle(filePath, FileAccess.ReadWrite);
 
             File.SetLastAccessTime(handle, DateTime.Now.Subtract(TimeSpan.FromDays(1)));
-            var timeBeforeWrite = File.GetLastWriteTime(handle);
+            DateTime timeAfterWrite = default, timeBeforeWrite = File.GetLastWriteTime(handle);
 
-            using var writer = new StreamWriter(new FileStream(handle, FileAccess.ReadWrite));
-            writer.AutoFlush = true;
-            writer.WriteLine("now: " + DateTime.Now);
-            await Task.Delay(2000);
-            writer.WriteLine("now: " + DateTime.Now);
+            // According to https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-win32_file_attribute_data
+            // write time has a resolution of 2 seconds on FAT. Let's wait a little bit longer.
+            for (int i = 0; i <= 5 && timeBeforeWrite >= timeAfterWrite; i++)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(i));
 
-            var timeAfterWrite = File.GetLastWriteTime(handle);
-            Assert.True(timeAfterWrite > timeBeforeWrite);
+                await RandomAccess.WriteAsync(handle, new byte[1] { 1 }, fileOffset: i);
+
+                timeAfterWrite = File.GetLastWriteTime(handle);
+            }
+
+            AssertExtensions.GreaterThan(timeAfterWrite, timeBeforeWrite);
         }
 
         [Fact]

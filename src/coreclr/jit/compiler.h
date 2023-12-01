@@ -5778,6 +5778,7 @@ public:
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
 
     PhaseStatus fgSetBlockOrder();
+    bool fgHasCycleWithoutGCSafePoint();
 
     FlowGraphDfsTree* fgComputeDfs();
 
@@ -5787,13 +5788,8 @@ public:
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
 
-    // The following check for loops that don't execute calls
-    bool fgLoopCallMarked;
-
     void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
     void fgLoopCallMark();
-
-    void fgMarkLoopHead(BasicBlock* block);
 
     unsigned fgGetCodeEstimate(BasicBlock* block);
 
@@ -6096,7 +6092,10 @@ private:
 
     bool fgIsThrow(GenTree* tree);
 
+public:
     bool fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2);
+
+private:
     bool fgIsBlockCold(BasicBlock* block);
 
     GenTree* fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* oper);
@@ -6676,7 +6675,7 @@ public:
         {
             if (lpHead->NextIs(lpEntry))
             {
-                assert(lpHead->bbFallsThrough());
+                assert(lpHead->bbFallsThrough() || lpHead->JumpsToNext());
                 assert(lpTop == lpEntry);
                 return true;
             }
@@ -8009,8 +8008,6 @@ public:
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
-
-    bool optReachWithoutCall(BasicBlock* srcBB, BasicBlock* dstBB);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -11389,12 +11386,12 @@ public:
 #endif // !FEATURE_EH_FUNCLETS
             case GT_PHI_ARG:
             case GT_JMPTABLE:
-            case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
             case GT_EMITNOP:
             case GT_PINVOKE_PROLOG:
             case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
+            case GT_NOP:
                 break;
 
             // Lclvar unary operators
@@ -11435,7 +11432,6 @@ public:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
             case GT_RETURNTRAP:
-            case GT_NOP:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:

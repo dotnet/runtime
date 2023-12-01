@@ -808,11 +808,7 @@ PhaseStatus Compiler::fgCloneFinally()
             // through to a callfinally.
             BasicBlock* jumpDest = nullptr;
 
-            if (block->KindIs(BBJ_NONE) && (block == lastTryBlock))
-            {
-                jumpDest = block->Next();
-            }
-            else if (block->KindIs(BBJ_ALWAYS))
+            if (block->KindIs(BBJ_ALWAYS))
             {
                 jumpDest = block->GetJumpDest();
             }
@@ -1031,7 +1027,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 // callfinallys, depending on the EH implementation.
                 const unsigned    hndIndex = 0;
                 BasicBlock* const nearBlk  = cloneInsertAfter;
-                newBlock                   = fgNewBBinRegion(BBJ_NONE, finallyTryIndex, hndIndex, nearBlk);
+                newBlock                   = fgNewBBinRegion(BBJ_ALWAYS, finallyTryIndex, hndIndex, nearBlk);
 
                 // If the clone ends up just after the finally, adjust
                 // the stopping point for finally traversal.
@@ -1045,7 +1041,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Put subsequent blocks in the same region...
                 const bool extendRegion = true;
-                newBlock                = fgNewBBafter(BBJ_NONE, insertAfter, extendRegion);
+                newBlock                = fgNewBBafter(BBJ_ALWAYS, insertAfter, extendRegion);
             }
 
             cloneBBCount++;
@@ -1081,7 +1077,8 @@ PhaseStatus Compiler::fgCloneFinally()
             newBlock->clearHndIndex();
 
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-            assert(newBlock->KindIs(BBJ_NONE));
+            assert(newBlock->KindIs(BBJ_ALWAYS));
+            assert(!newBlock->HasInitializedJumpDest());
         }
 
         if (!clonedOk)
@@ -1104,7 +1101,8 @@ PhaseStatus Compiler::fgCloneFinally()
         {
             BasicBlock* newBlock = blockMap[block];
             // Jump kind/target should not be set yet
-            assert(newBlock->KindIs(BBJ_NONE));
+            assert(newBlock->KindIs(BBJ_ALWAYS));
+            assert(!newBlock->HasInitializedJumpDest());
 
             if (block->KindIs(BBJ_EHFINALLYRET))
             {
@@ -1435,19 +1433,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                         }
                     }
                 }
-                else if (succBlock->KindIs(BBJ_NONE))
-                {
-                    if (succBlock->isEmpty())
-                    {
-                        BasicBlock* const succSuccBlock = succBlock->Next();
-
-                        // case (d)
-                        if (succSuccBlock->bbFlags & BBF_CLONED_FINALLY_BEGIN)
-                        {
-                            isJumpToClonedFinally = true;
-                        }
-                    }
-                }
+                // ~~case (d) via a fallthrough to an empty block to (b)~~ [no longer possible]
 
                 bool isReturnFromFinally = false;
 
@@ -2061,13 +2047,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
             switch (predBlock->GetJumpKind())
             {
-                case BBJ_NONE:
-                {
-                    fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updated = true;
-                }
-                break;
-
                 case BBJ_ALWAYS:
                 {
                     fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);

@@ -656,7 +656,7 @@ CONFIG_INTEGER(JitEnableHeadTailMerge, W("JitEnableHeadTailMerge"), 1)
 CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
 // Enable cross-block local assertion prop
-CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 0)
+CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

@@ -888,11 +888,6 @@ void Compiler::fgExtendDbgLifetimes()
 
         switch (block->GetJumpKind())
         {
-            case BBJ_NONE:
-                PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -1925,7 +1920,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
-            case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
                 if (node->IsUnusedValue())

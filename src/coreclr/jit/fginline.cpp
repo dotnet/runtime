@@ -259,7 +259,7 @@ public:
 
             if (value->OperGet() == GT_COMMA)
             {
-                GenTree* effectiveValue = value->gtEffectiveVal(/*commaOnly*/ true);
+                GenTree* effectiveValue = value->gtEffectiveVal();
 
                 noway_assert(
                     !varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
@@ -673,15 +673,16 @@ private:
                 tree->gtBashToNOP();
                 m_madeChanges = true;
 
-                if (!condTree->IsIntegralConst(0))
+                if (condTree->IsIntegralConst(0))
                 {
-                    block->SetJumpKind(BBJ_ALWAYS);
-                    m_compiler->fgRemoveRefPred(block->Next(), block);
+                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
+                    block->bbFlags |= BBF_NONE_QUIRK;
                 }
                 else
                 {
-                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
-                    block->SetJumpKindAndTarget(BBJ_NONE);
+                    block->SetJumpKind(BBJ_ALWAYS);
+                    m_compiler->fgRemoveRefPred(block->Next(), block);
                 }
             }
         }
@@ -1529,19 +1530,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-                if (block->IsLast())
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->SetJumpKindAndTarget(BBJ_NONE);
-                }
-                else
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
-                            block->bbNum, bottomBlock->bbNum);
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock);
-                }
+                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                        bottomBlock->bbNum);
 
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock);
                 fgAddRefPred(bottomBlock, block);
+
+                if (block == InlineeCompiler->fgLastBB)
+                {
+                    block->bbFlags |= BBF_NONE_QUIRK;
+                }
             }
         }
 
@@ -1550,7 +1548,11 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         InlineeCompiler->fgFirstBB->bbRefs--;
 
         // Insert inlinee's blocks into inliner's block list.
+        assert(topBlock->KindIs(BBJ_ALWAYS));
+        assert(topBlock->HasJumpTo(bottomBlock));
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
+        topBlock->SetJumpDest(topBlock->Next());
+        topBlock->bbFlags |= BBF_NONE_QUIRK;
         fgRemoveRefPred(bottomBlock, topBlock);
         fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);

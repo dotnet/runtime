@@ -5,6 +5,7 @@
 [[SetCommandsEcho]]
 
 export PATH="$HOME/.jsvu/bin:$PATH"
+export PATH=$PREPEND_PATH:$PATH
 
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
