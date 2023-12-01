@@ -16,7 +16,7 @@ if(CLR_CMAKE_HOST_WIN32)
         string(REPLACE "/CETCOMPAT" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
     endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
-    add_library_clr(mscorrc SHARED
+    add_library_clr(mscorrc MODULE
         include.rc
     )
     install_clr(TARGETS mscorrc DESTINATIONS . sharedFramework COMPONENT runtime)

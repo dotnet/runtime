@@ -20,7 +20,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=clretwrc.dll)
 
-add_library_clr(clretwrc SHARED
+add_library_clr(clretwrc MODULE
     clretwrc.rc
 )
 
