@@ -17,8 +17,6 @@
              Link="ProductionCode\Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="ProductionCode\Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="ProductionCode\Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="ProductionCode\Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
