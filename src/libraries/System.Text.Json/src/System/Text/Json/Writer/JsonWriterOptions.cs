@@ -47,8 +47,9 @@ namespace System.Text.Json
         /// <summary>
         /// Defines the indentation string used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to two space characters.
         /// </summary>
+        /// <remarks>Allowed characters are space and horizontal tab.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character. Allowed characters are space and horizontal tab.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
         public string IndentText
         {
             readonly get => _indentText ?? JsonConstants.DefaultIndent;

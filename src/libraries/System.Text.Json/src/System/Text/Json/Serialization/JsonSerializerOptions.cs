@@ -651,7 +651,9 @@ namespace System.Text.Json
         /// <summary>
         /// Defines the indentation string being used when <see cref="WriteIndented" /> is enabled. Defaults to two space characters.
         /// </summary>
+        /// <remarks>Allowed characters are space and horizontal tab.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
