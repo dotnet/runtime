@@ -73,5 +73,20 @@ namespace System.Text.Json.Tests
             var options = new JsonWriterOptions();
             Assert.Throws<ArgumentNullException>(() => options.IndentText = null);
         }
+
+        [Theory]
+        [InlineData("\f")]
+        [InlineData("\t\f")]
+        [InlineData("\n")]
+        [InlineData("\r")]
+        [InlineData("\r\n")]
+        [InlineData("a")]
+        [InlineData("a ")]
+        [InlineData("abc")]
+        public static void JsonWriterOptions_IndentText_InvalidCharacters(string text)
+        {
+            var options = new JsonWriterOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentText = text);
+        }
     }
 }

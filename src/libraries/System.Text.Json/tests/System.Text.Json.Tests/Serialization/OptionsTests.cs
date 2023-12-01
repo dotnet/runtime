@@ -337,6 +337,21 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<ArgumentNullException>(() => options.IndentText = null);
         }
 
+        [Theory]
+        [InlineData("\f")]
+        [InlineData("\t\f")]
+        [InlineData("\n")]
+        [InlineData("\r")]
+        [InlineData("\r\n")]
+        [InlineData("a")]
+        [InlineData("a ")]
+        [InlineData("abc")]
+        public static void IndentText_WithInvalidChartacters_ThrowsArgumentOutOfRangeException(string text)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentText = text);
+        }
+
         [Fact]
         public static void IndentText()
         {
