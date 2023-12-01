@@ -65,14 +65,14 @@ public class WasiTemplateTests : BuildTestBase
         .UnwrapItemsAsArrays();
 
     [Theory]
-    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ false)]
-    [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ false)]
-    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ false)]
-    [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ false)]
-    [InlineData("Debug", /*aot*/ false, /*singleFileBundle*/ true)]
-    // [InlineData("Debug", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    [InlineData("Release", /*aot*/ false, /*singleFileBundle*/ true)]
-    // [InlineData("Release", /*aot*/ true, /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    [InlineData("Debug", /*singleFileBundle*/ false, /*aot*/ false)]
+    [InlineData("Debug", /*singleFileBundle*/ false, /*aot*/ true)]
+    [InlineData("Release", /*singleFileBundle*/ false, /*aot*/ false)]
+    [InlineData("Release", /*singleFileBundle*/ false, /*aot*/ true)]
+    [InlineData("Debug", /*singleFileBundle*/ true, /*aot*/ false)]
+    // [InlineData("Debug", /*singleFileBundle*/ true, /*aot*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    [InlineData("Release", /*singleFileBundle*/ true, /*aot*/ false)]
+    // [InlineData("Release", /*singleFileBundle*/ true, /*aot*/ true)] // https://github.com/dotnet/runtime/issues/95273
     // [MemberData(nameof(TestDataForConsolePublishAndRun))] // use when the issue is resolved
     public void ConsoleBuildThenRunThenPublish(string config, bool singleFileBundle, bool aot)
     {
