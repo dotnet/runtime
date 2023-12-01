@@ -11191,6 +11191,24 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_9_to_6_Times_Two(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert(ureg == 0 || ureg % 2 == 0);
+    if (ureg != 0)
+    {
+        ureg /= 2u;
+    }
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 6;
+}
+
+/*****************************************************************************
+ *
  *  Returns an encoding for the specified condition code.
  */
 
@@ -14011,7 +14029,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeVectorShift(EA_4BYTE, /* right-shift */ -imm); // iiii
             code |= insEncodeReg_V_4_to_0(id->idReg1());                    // ddddd
-            code |= insEncodeReg_V_9_to_6(id->idReg2());                    // nnnn
+            code |= insEncodeReg_V_9_to_6_Times_Two(id->idReg2());          // nnnn
             dst += emitOutput_Instr(dst, code);
             break;
 

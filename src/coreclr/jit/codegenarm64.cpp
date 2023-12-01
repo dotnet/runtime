@@ -10344,11 +10344,11 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_H); // SQRSHRUN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
     theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V0, REG_V0, 5,
                               INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE, REG_V0, REG_V1, 16,
+    theEmitter->emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE, REG_V0, REG_V2, 16,
                               INS_OPTS_SCALABLE_H); // SQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_sqrshrun, EA_SCALABLE, REG_V0, REG_V2, 7,
+    theEmitter->emitIns_R_R_I(INS_sve_sqrshrun, EA_SCALABLE, REG_V0, REG_V4, 7,
                               INS_OPTS_SCALABLE_H); // SQRSHRUN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V0, REG_V3, 1,
+    theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V0, REG_V6, 1,
                               INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE

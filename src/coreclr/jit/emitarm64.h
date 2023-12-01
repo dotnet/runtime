@@ -379,6 +379,9 @@ static code_t insEncodeReg_V_20_to_17(regNumber reg);
 // Return an encoding for the specified 'V' register used in '9' thru '6' position.
 static code_t insEncodeReg_V_9_to_6(regNumber reg);
 
+// Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
+static code_t insEncodeReg_V_9_to_6_Times_Two(regNumber reg);
+
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
 
