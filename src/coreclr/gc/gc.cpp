@@ -25619,7 +25619,7 @@ int gc_heap::calculate_new_heap_count ()
     dynamic_heap_count_data.scp_decrease_per_step_down = scp_decrease_per_step_down;
 
     GCEventFireHeapCountTuning_V1 (
-        (uint16_t)dynamic_heap_count_data.new_n_heaps,
+        (uint16_t)new_n_heaps,
         (uint64_t)VolatileLoadWithoutBarrier (&settings.gc_index),
         dynamic_heap_count_data.median_throughput_cost_percent,
         dynamic_heap_count_data.smoothed_median_throughput_cost_percent,
