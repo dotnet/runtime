@@ -65,7 +65,7 @@ namespace System.Data
             Assert.Equal(new DataRow[] { zero, one, two, three }, compared);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void OrderByDescending_AddSortExpressionValidation()
         {
             var (table, one, two, three) = InstantiateTable();
