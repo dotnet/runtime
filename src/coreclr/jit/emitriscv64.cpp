@@ -2103,14 +2103,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     instruction ins;
     size_t      sz; // = emitSizeOfInsDsc(id);
 
-#ifdef DEBUG
-#if DUMP_GC_TABLES
-    bool dspOffs = emitComp->opts.dspGCtbls;
-#else  // !DUMP_GC_TABLES
-    bool     dspOffs = !emitComp->opts.disDiffable;
-#endif // !DUMP_GC_TABLES
-#endif // DEBUG
-
     assert(REG_NA == (int)REG_NA);
 
     insOpts insOp = id->idInsOpt();
