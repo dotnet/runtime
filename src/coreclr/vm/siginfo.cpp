@@ -1518,9 +1518,11 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsExpectedSpecialInstantiation(genericType.AsMethodTable(), pMTInterfaceMapOwner))
                 {
-                    thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
+                    ClassLoader::EnsureLoaded(genericType, level);
+                    thRet = genericType;
+                    _ASSERTE(thRet == ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level));
                 }
                 else
                 {

@@ -1326,10 +1326,22 @@ void SystemDomain::LoadBaseSystemClasses()
         CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
 
         // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
-        CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
+        TypeHandle thBoolean(CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN));
+
+        Instantiation::CustomSpecialInstantiationTokens[0] = CoreLibBinder::GetClass(CLASS__ICOMPARISONOPERATORS)->GetCl();
+        Instantiation::CustomSpecialInstantiationTypes[0] = thBoolean;
+        Instantiation::CustomSpecialInstantiationIndices[0] = 2;
+
+        Instantiation::CustomSpecialInstantiationTokens[1] = CoreLibBinder::GetClass(CLASS__IEQUALITYOPERATORS)->GetCl();
+        Instantiation::CustomSpecialInstantiationTypes[1] = thBoolean;
+        Instantiation::CustomSpecialInstantiationIndices[1] = 2;
 
         // Int32 has to be loaded next to break cycle in IShiftOperators
-        CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
+        TypeHandle thI4(CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4));
+
+        Instantiation::CustomSpecialInstantiationTokens[2] = CoreLibBinder::GetClass(CLASS__ISHIFTOPERATORS)->GetCl();
+        Instantiation::CustomSpecialInstantiationTypes[2] = thI4;
+        Instantiation::CustomSpecialInstantiationIndices[2] = 1;
 
         // Make sure all primitive types are loaded
         for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)

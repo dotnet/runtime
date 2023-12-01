@@ -1387,11 +1387,10 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // Shortcut for generic approx type scenario
     if (pMTInterfaceMapOwner != NULL &&
-        !pMTInterfaceMapOwner->ContainsGenericVariables() &&
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
-        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner))
+        pTargetMT->GetInstantiation().ContainsExpectedSpecialInstantiation(pTargetMT, pMTInterfaceMapOwner))
     {
         return TRUE;
     }
@@ -1409,16 +1408,19 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
     {
         pClass = pTargetMT->GetClass();
         Instantiation inst = GetInstantiation();
+
+        TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
+        if (pMTInterfaceMapOwner && IsSpecialMarkerTypeForGenericCasting())
+        {
+            ConstructInstantiationForSpecialMarkerType(this, pMTInterfaceMapOwner, &ownerAsInst, &inst);
+        }
+
         Instantiation targetInst = pTargetMT->GetInstantiation();
+
 
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
-            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->ContainsGenericVariables())
-            {
-                thArg = pMTInterfaceMapOwner;
-            }
-
             TypeHandle thTargetArg = targetInst[i];
 
             // If argument types are not equivalent, test them for compatibility
@@ -5791,6 +5793,7 @@ WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wM
 #endif // #ifdef DACCESS_COMPILE
 #endif // #ifdef FEATURE_TYPEEQUIVALENCE
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 BOOL
 MethodTable::FindEncodedMapDispatchEntry(
@@ -5956,6 +5959,7 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
     }
     RETURN (FALSE);
 }
+#endif // #ifdef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 
@@ -6203,21 +6207,81 @@ void ThrowExceptionForConflictingOverride(
 
 namespace
 {
+    bool IsSameMethodTable(MethodTable* pInterfaceMTPossiblyWithAlternateInstantiation, Instantiation *pInst, MethodTable* pMTToCompare)
+    {
+        if (pInst == NULL)
+        {
+            return pInterfaceMTPossiblyWithAlternateInstantiation == pMTToCompare;
+        }
+        else
+        {
+            if (!pInterfaceMTPossiblyWithAlternateInstantiation->HasSameTypeDefAs(pMTToCompare))
+            {
+                return false;
+            }
+            Instantiation instMTToCompare = pMTToCompare->GetInstantiation();
+            if (pInst->GetNumArgs() < instMTToCompare.GetNumArgs())
+            {
+                return false;
+            }
+
+            for (DWORD i = 0; i < instMTToCompare.GetNumArgs(); i++)
+            {
+                if ((*pInst)[i] != instMTToCompare[i])
+                    return false;
+            }
+            return true;
+        }
+    }
+
+    bool CanCastToInterfaceCheck(MethodTable*& pInterfaceMTPossiblyWithAlternateInstantiation, Instantiation *&pInst, MethodTable* pMTToCompare, ClassLoadLevel level)
+    {
+restart:
+        if ((pInst == NULL) || !pMTToCompare->HasInstantiation())
+        {
+            return pInterfaceMTPossiblyWithAlternateInstantiation->CanCastToInterface(pMTToCompare);
+        }
+        else
+        {
+            MethodTable::InterfaceMapIterator it = pInterfaceMTPossiblyWithAlternateInstantiation->IterateInterfaceMap();
+            while (it.Next())
+            {
+                if (it.GetInterfaceApprox()->HasSameTypeDefAs(pMTToCompare))
+                {
+                    // At this point we might have a match. If its a special marker type, then we can determine the instantiation from pInst, 
+                    // otherwise we need to re-instantiate pInterfaceMTPossiblyWithAlternateInstantiation and try again
+                    if (pMTToCompare->HasVariance() || !it.GetInterfaceApprox()->IsSpecialMarkerTypeForGenericCasting())
+                    {
+                        pInterfaceMTPossiblyWithAlternateInstantiation = ClassLoader::LoadGenericInstantiationThrowing(pInterfaceMTPossiblyWithAlternateInstantiation->GetModule(), pInterfaceMTPossiblyWithAlternateInstantiation->GetCl(), *pInst, ClassLoader::LoadTypes, level).AsMethodTable();
+                        pInst = NULL;
+                        goto restart;
+                    }
+                    
+                    return (pMTToCompare->GetInstantiation().ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(pMTToCompare, pInterfaceMTPossiblyWithAlternateInstantiation, *pInst));
+                }
+            }
+
+            return false;
+        }
+    }
+
     bool TryGetCandidateImplementation(
         MethodTable *pMT,
+        Instantiation* pInstForOpenMT,
         MethodDesc *interfaceMD,
         MethodTable *interfaceMT,
         FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags,
         MethodDesc **candidateMD,
         ClassLoadLevel level)
     {
+restart:
         bool allowVariance = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::AllowVariance) != FindDefaultInterfaceImplementationFlags::None;
         bool instantiateMethodInstantiation = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::InstantiateFoundMethodDesc) != FindDefaultInterfaceImplementationFlags::None;
 
         *candidateMD = NULL;
 
         MethodDesc *candidateMaybe = NULL;
-        if (pMT == interfaceMT)
+        if (IsSameMethodTable(pMT, pInstForOpenMT, interfaceMT))
         {
             if (!interfaceMD->IsAbstract())
             {
@@ -6225,7 +6289,7 @@ namespace
                 candidateMaybe = interfaceMD;
             }
         }
-        else if (pMT->CanCastToInterface(interfaceMT))
+        else if (CanCastToInterfaceCheck(pMT, pInstForOpenMT, interfaceMT, level))
         {
             if (pMT->HasSameTypeDefAs(interfaceMT))
             {
@@ -6272,7 +6336,7 @@ namespace
                                 // The parent of pDeclMD is unreliable for this purpose because it may or
                                 // may not be canonicalized. Let's go from the metadata.
 
-                                SigTypeContext typeContext = SigTypeContext(pMT);
+                                SigTypeContext typeContext = pInstForOpenMT != NULL ? SigTypeContext(*pInstForOpenMT, Instantiation()) : SigTypeContext(pMT);
 
                                 mdTypeRef tkParent;
                                 IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
@@ -6288,7 +6352,13 @@ namespace
                                 if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
                                     || pDeclMT == interfaceMT)
                                 {
-                                    // We have a match
+                                    // We have a match; however, if we found the match on the special marker type, resolve it, and restart to get the real pMD
+                                    if (pInstForOpenMT != NULL)
+                                    {
+                                        pMT = ClassLoader::LoadGenericInstantiationThrowing(pMT->GetModule(), pMT->GetCl(), *pInstForOpenMT, ClassLoader::LoadTypes, level).AsMethodTable();
+                                        pInstForOpenMT = NULL;
+                                        goto restart;
+                                    }
                                     candidateMaybe = pMD;
                                 }
                             }
@@ -6314,7 +6384,9 @@ namespace
                     resolveVirtualStaticMethodFlags |= ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
                 }
 
-                candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
+                candidateMaybe = MethodTable::TryResolveVirtualStaticMethodOnThisTypeStatic(
+                    pMT,
+                    pInstForOpenMT,
                     interfaceMT,
                     interfaceMD,
                     resolveVirtualStaticMethodFlags,
@@ -6327,6 +6399,12 @@ namespace
 
         if (candidateMaybe->HasClassOrMethodInstantiation())
         {
+            if (pInstForOpenMT != NULL)
+            {
+                pMT = ClassLoader::LoadGenericInstantiationThrowing(pMT->GetModule(), pMT->GetCl(), *pInstForOpenMT, ClassLoader::LoadTypes, level).AsMethodTable();
+                pInstForOpenMT = NULL;
+            }
+
             // Instantiate the MethodDesc
             // We don't want generic dictionary from this pointer - we need pass secret type argument
             // from instantiating stubs to resolve ambiguity
@@ -6378,7 +6456,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &candidateMaybe, level))
+    if (IsInterface() && TryGetCandidateImplementation(this, NULL, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &candidateMaybe, level))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -6415,10 +6493,22 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
             while (!it.Finished())
             {
-                MethodTable *pCurMT = it.GetInterface(pMT, level);
+                MethodTable *pCurMT = it.GetInterfaceApprox();
+                Instantiation *pInst = NULL;
+                TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
+                Instantiation inst;
+                if (pCurMT->IsSpecialMarkerTypeForGenericCasting())
+                {
+                    ConstructInstantiationForSpecialMarkerType(pCurMT, pMT, &ownerAsInst, &inst);
+                    pInst = &inst;
+                }
+                else
+                {
+                    pCurMT = it.GetInterface(pMT, level);
+                }
 
                 MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &pCurMD, level))
+                if (TryGetCandidateImplementation(pCurMT, pInst, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &pCurMD, level))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
@@ -6687,7 +6777,6 @@ MethodTable * MethodTable::LookupDispatchMapType(DispatchMapTypeID typeID)
     InterfaceMapIterator intIt = IterateInterfaceMapFrom(typeID.GetInterfaceNum());
     return intIt.GetInterface(this);
 }
-#endif // DACCESS_COMPILE
 
 //==========================================================================================
 bool MethodTable::DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT)
@@ -6701,6 +6790,7 @@ bool MethodTable::DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, Me
     InterfaceMapIterator intIt = IterateInterfaceMapFrom(typeID.GetInterfaceNum());
     return intIt.CurrentInterfaceMatches(this, pMT);
 }
+#endif // DACCESS_COMPILE
 
 //==========================================================================================
 MethodDesc * MethodTable::GetIntroducingMethodDesc(DWORD slotNumber)
@@ -8814,17 +8904,17 @@ MethodTable::ResolveVirtualStaticMethod(
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
+MethodTable::TryResolveVirtualStaticMethodOnThisTypeStatic(MethodTable* pMTThis, Instantiation* pInstIfThisIsSpecialMarkerType, MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
 {
     bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariance = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
 
     HRESULT hr = S_OK;
-    IMDInternalImport* pMDInternalImport = GetMDImport();
+    IMDInternalImport* pMDInternalImport = pMTThis->GetMDImport();
     HENUMInternalMethodImplHolder hEnumMethodImpl(pMDInternalImport);
-    hr = hEnumMethodImpl.EnumMethodImplInitNoThrow(GetCl());
-    SigTypeContext sigTypeContext(this);
+    hr = hEnumMethodImpl.EnumMethodImplInitNoThrow(pMTThis->GetCl());
+    SigTypeContext sigTypeContext = pInstIfThisIsSpecialMarkerType == NULL ? SigTypeContext(pMTThis) : SigTypeContext(*pInstIfThisIsSpecialMarkerType, Instantiation());
 
     if (FAILED(hr))
     {
@@ -8857,8 +8947,29 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             COMPlusThrow(kTypeLoadException, hr);
         }
+
+        // Load first with a dropped GenericArgumentLevel
+        // This allows the exact interface type to not be loaded, but instead
+        // will get the open form of the type. By doing this we avoid forcing the
+        // full set of interfaces to be loaded and do not break the optimizations
+        // associated with the SpecialMarkerType.
         MethodTable *pInterfaceMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-            GetModule(),
+            pMTThis->GetModule(),
+            tkParent,
+            &sigTypeContext,
+            ClassLoader::ThrowIfNotFound,
+            ClassLoader::PermitUninstDefOrRef,
+            ClassLoader::LoadTypes,
+            CLASS_LOAD_APPROXPARENTS, TRUE /* dropGenericArgumentLevel*/)
+            .GetMethodTable();
+
+        if (!pInterfaceMT->HasSameTypeDefAs(pInterfaceType))
+        {
+            continue;
+        }
+
+        pInterfaceMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+            pMTThis->GetModule(),
             tkParent,
             &sigTypeContext,
             ClassLoader::ThrowIfNotFound,
@@ -8888,7 +8999,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         if ((TypeFromToken(methodDecl) == mdtMethodDef) || pInterfaceMT->IsFullyLoaded())
         {
             pMethodDecl =  MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
-            GetModule(),
+            pMTThis->GetModule(),
             methodDecl,
             &sigTypeContext,
             /* strictMetadataChecks */ FALSE,
@@ -8909,7 +9020,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 continue;
             }
 
-            pMethodDecl = MemberLoader::FindMethod(pInterfaceMT, szMember, pSig, cSig, GetModule());
+            pMethodDecl = MemberLoader::FindMethod(pInterfaceMT, szMember, pSig, cSig, pMTThis->GetModule());
         }
         else
         {
@@ -8932,7 +9043,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         }
 
         MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMethodDef(
-            GetModule(),
+            pMTThis->GetModule(),
             methodBody,
             FALSE,
             CLASS_LOAD_EXACTPARENTS);
@@ -8943,16 +9054,22 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
 
         // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods
         // defined on the same type that defines the MethodImpl
-        if (!HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
+        if (!pMTThis->HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
         if (!verifyImplemented && instantiateMethodParameters)
         {
+            MethodTable *pMTActualThis = pMTThis;
+            if (pInstIfThisIsSpecialMarkerType != NULL)
+            {
+                pMTActualThis = ClassLoader::LoadGenericInstantiationThrowing(pMTThis->GetModule(), pMTThis->GetCl(), *pInstIfThisIsSpecialMarkerType, ClassLoader::LoadTypes, level).AsMethodTable();
+            }
+
             pMethodImpl = pMethodImpl->FindOrCreateAssociatedMethodDesc(
                 pMethodImpl,
-                this,
+                pMTActualThis,
                 FALSE,
                 pInterfaceMD->GetMethodInstantiation(),
                 /* allowInstParam */ FALSE,
@@ -9091,6 +9208,12 @@ MethodTable::TryResolveConstraintMethodApprox(
         DWORD cPotentialMatchingInterfaces = 0;
         while (it.Next())
         {
+            // If the approx type doesn't match by type handle, then it clearly can't match
+            // by canonical type. This avoids force loading the interface and breaking the
+            // special interface map type scenario
+            if (!it.GetInterfaceApprox()->HasSameTypeDefAs(thInterfaceType.AsMethodTable()))
+                continue;
+
             TypeHandle thPotentialInterfaceType(it.GetInterface(pCanonMT));
             if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() ==
                 thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
@@ -9368,14 +9491,11 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     CONTRACT_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
-    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->ContainsGenericVariables())
+    if (pResult->IsSpecialMarkerTypeForGenericCasting())
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
-        for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
-            ownerAsInst[i] = pMTOwner;
-
-        _ASSERTE(pResult->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
-        Instantiation inst(ownerAsInst, pResult->GetInstantiation().GetNumArgs());
+        Instantiation inst;
+        ConstructInstantiationForSpecialMarkerType(pResult, pMTOwner, &ownerAsInst, &inst);
         pResult = ClassLoader::LoadGenericInstantiationThrowing(pResult->GetModule(), pResult->GetCl(), inst, ClassLoader::LoadTypes, loadLevel).AsMethodTable();
         if (pResult->IsFullyLoaded())
             SetInterface(pResult);

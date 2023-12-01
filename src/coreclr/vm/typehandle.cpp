@@ -17,6 +17,106 @@
 #include "castcache.h"
 #include "frozenobjectheap.h"
 
+mdToken Instantiation::CustomSpecialInstantiationTokens[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES] = { 0 };
+DWORD Instantiation::CustomSpecialInstantiationIndices[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES] = { 0 };
+TypeHandle Instantiation::CustomSpecialInstantiationTypes[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES] = { 0 };
+
+// Determine if the instantiation is the one which a Special Marker Type would be associated with
+// IN: pMTGenericType - MethodTable of generic interface type to determine if it matches the expected instantiation. This may or may not be the open generic instance
+//     pMTInterfaceMapOwner - MethodTable where an instantiation of the generic type def defined by pMTGenerictype will be instantiated over this instantiation.
+// RESULT: a bool indicating whether or not this is the particular instantiation which can be efficiently represented by the Special Marker Type.
+bool Instantiation::ContainsExpectedSpecialInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner)
+{
+    Instantiation instOwner = pMTInterfaceMapOwner->GetInstantiation();
+    return ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(pMTGenericType, pMTInterfaceMapOwner, instOwner);
+}
+
+bool Instantiation::ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner, const Instantiation& instForOwnerMT)
+{
+    // Handle case which might need to allocate if we construct the instantiation
+    if (pMTGenericType->IsGenericCollectionsInterface() && instForOwnerMT.GetNumArgs() == 2 && GetNumArgs() == 1)
+    {
+        MethodTable* pMTPossibleKeyValuePair = (*this)[0].GetMethodTable();
+        if (pMTPossibleKeyValuePair != NULL && pMTPossibleKeyValuePair->GetCl() == CoreLibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)->GetCl() && pMTPossibleKeyValuePair->GetModule()->IsSystem())
+        {
+            Instantiation instKeyValuePair = pMTPossibleKeyValuePair->GetInstantiation();
+            if (instForOwnerMT[0] == instKeyValuePair[0] && instForOwnerMT[1] == instKeyValuePair[1])
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    TypeHandle ownerAsInst[MethodTable::MaxGenericParametersForSpecialMarkerType];
+    Instantiation inst;
+    MethodTable::ConstructInstantiationForSpecialMarkerType(pMTGenericType, pMTInterfaceMapOwner, instForOwnerMT, &ownerAsInst, &inst);
+    return Equals(inst);
+}
+
+void MethodTable::ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult)
+{
+    Instantiation instOwner = pMTOwner->GetInstantiation();
+    ConstructInstantiationForSpecialMarkerType(pMTOpenInterface, pMTOwner, instOwner, ownerAsInst, instResult);
+}
+
+void MethodTable::ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, const Instantiation& instOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult)
+{
+    if (pMTOpenInterface->IsGenericCollectionsInterface())
+    {
+        if (instOwner.GetNumArgs() == 2 && pMTOpenInterface->GetInstantiation().GetNumArgs() == 1)
+        {
+            MethodTable* pMTKeyValuePair = CoreLibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC);
+            (*ownerAsInst)[0] = ClassLoader::LoadGenericInstantiationThrowing(pMTKeyValuePair->GetModule(), pMTKeyValuePair->GetCl(), instOwner, ClassLoader::LoadTypes, CLASS_LOAD_APPROXPARENTS);
+            *instResult = Instantiation(*ownerAsInst, 1);
+            return;
+        }
+
+        if (pMTOpenInterface->GetInstantiation().GetNumArgs() > MaxGenericParametersForSpecialMarkerType)
+        {
+            *instResult = Instantiation();
+            return;
+        }
+
+        if (pMTOpenInterface->GetInstantiation().GetNumArgs() != instOwner.GetNumArgs())
+        {
+            *instResult = Instantiation();
+            return;
+        }
+
+        memcpy(*ownerAsInst, instOwner.GetRawArgs(), sizeof(TypeHandle) * instOwner.GetNumArgs());
+        *instResult = Instantiation(*ownerAsInst, instOwner.GetNumArgs());
+        return;
+    }
+
+    TypeHandle thInstTypeStandard;
+
+    if (pMTOwner->IsInterface() && pMTOwner->HasInstantiation())
+    {
+        thInstTypeStandard = instOwner[0];
+    }
+    else
+    {
+        thInstTypeStandard = TypeHandle(pMTOwner);
+    }
+
+    for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
+        (*ownerAsInst)[i] = thInstTypeStandard;
+
+    if (pMTOpenInterface->GetModule()->IsSystem())
+    {
+        for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
+        {
+            if (pMTOpenInterface->GetCl() == Instantiation::CustomSpecialInstantiationTokens[i])
+            {
+                (*ownerAsInst)[Instantiation::CustomSpecialInstantiationIndices[i]] = Instantiation::CustomSpecialInstantiationTypes[i];
+            }
+        }
+    }
+
+    *instResult = Instantiation(*ownerAsInst, min(MaxGenericParametersForSpecialMarkerType, pMTOpenInterface->GetInstantiation().GetNumArgs()));
+}
+
 #ifdef _DEBUG_IMPL
 
 BOOL TypeHandle::Verify()

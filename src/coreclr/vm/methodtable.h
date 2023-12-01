@@ -1162,16 +1162,25 @@ public:
     // of the fully loaded type. This is to reduce the amount of type loading
     // performed at process startup.
     //
+    // When special marker type is a generic collections interface, if it has 1 generic parameter, and the owner has 2, then it will be considered to be instantiated over KeyValuePair<OwnerInstantiationType[0], OwnerInstantiationType[1]>
+    // Otherwise when special marker type is a generic collections interface, the instantiation will be over exactly the same instantiation as the owner type
+    // Otherwise when placed on a valuetype or a non-generic interface, the special marker will indicate that the interface should be considered instantiated over the valuetype
+    // Otherwise when placed on an interface, the special marker will indicate that the interface should be considered instantiated over the first generic parameter of the interface
+    //
     // The current rule is that these interfaces can only appear
-    // on valuetypes that are not shared generic, and that the special
-    // marker type is the open generic type.
+    // on valuetypes, interfaces and classes which derive directly from System.Object
     //
     inline bool IsSpecialMarkerTypeForGenericCasting()
     {
         return IsGenericTypeDefinition();
     }
 
+
     static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
+    typedef TypeHandle SpecialMarkerTypeHandleArray[MaxGenericParametersForSpecialMarkerType];
+    static void ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult);
+    static void ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, const Instantiation& instOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult);
+
 
     static BOOL ComputeContainsGenericVariables(Instantiation inst);
 
@@ -1215,6 +1224,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsByRefLike);
+    }
+
+    BOOL IsGenericCollectionsInterface()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetFlag(enum_flag_IsGenericCollectionsInterface);
+    }
+
+    void SetIsGenericCollectionsInterface()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetFlag(enum_flag_IsGenericCollectionsInterface);
     }
 
     // class is a com object class
@@ -1972,6 +1993,7 @@ public:
             RETURN (m_pMap->GetMethodTable());
         }
 
+#ifndef DACCESS_COMPILE
         inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
         {
             CONTRACT(bool)
@@ -1992,7 +2014,7 @@ public:
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
                     !pMTOwner->ContainsGenericVariables() &&
-                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                    pMT->GetInstantiation().ContainsExpectedSpecialInstantiation(pMT, pMTOwner))
                 {
                     exactMatch = true;
 #ifndef DACCESS_COMPILE
@@ -2007,6 +2029,7 @@ public:
 
             RETURN (exactMatch);
         }
+#endif
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
@@ -2227,7 +2250,11 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
+    static MethodDesc *TryResolveVirtualStaticMethodOnThisTypeStatic(MethodTable*pMTThis, Instantiation* pInstIfThisIsSpecialMarkerType, MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
+    {
+        return TryResolveVirtualStaticMethodOnThisTypeStatic(this, NULL, pInterfaceType, pInterfaceMD, resolveVirtualStaticMethodFlags, level);
+    }
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
@@ -3363,9 +3390,7 @@ private:
         enum_flag_HasBoxedRegularStatics    = 0x00002000,
         enum_flag_HasBoxedThreadStatics     = 0x00004000,
 
-        // In a perfect world we would fill these flags using other flags that we already have
-        // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
+        enum_flag_IsGenericCollectionsInterface = 0x00008000,
 
 #define SET_FALSE(flag)     ((flag) & 0)
 #define SET_TRUE(flag)      ((flag) & 0xffff)

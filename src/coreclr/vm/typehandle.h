@@ -736,16 +736,30 @@ public:
         return m_pArgs;
     }
 
-    bool ContainsAllOneType(TypeHandle th)
+#define NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES 3
+    static mdToken CustomSpecialInstantiationTokens[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES];
+    static DWORD CustomSpecialInstantiationIndices[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES];
+    static TypeHandle CustomSpecialInstantiationTypes[NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES];
+
+    // Determine if the instantiation is the one which a Special Marker Type would be associated with
+    // IN: pMTGenericType - MethodTable of generic interface type to determine if it matches the expected instantiation. This may or may not be the open generic instance
+    //     pMTInterfaceMapOwner - MethodTable where an instantiation of the generic type def defined by pMTGenerictype will be instantiated over this instantiation.
+    // RESULT: a bool indicating whether or not this is the particular instantiation which can be efficiently represented by the Special Marker Type.
+    bool ContainsExpectedSpecialInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner);
+    bool ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner, const Instantiation& instForOwnerMT);
+
+    bool Equals(const Instantiation& other)
     {
-        for (auto i = GetNumArgs(); i > 0;)
+        if (GetNumArgs() != other.GetNumArgs())
+            return false;
+        for (DWORD iArg = 0; iArg < m_nArgs; iArg++)
         {
-            if ((*this)[--i] != th)
+            if (m_pArgs[iArg] != other.m_pArgs[iArg])
                 return false;
         }
         return true;
     }
-
+    
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.
     TypeHandle* m_pArgs;

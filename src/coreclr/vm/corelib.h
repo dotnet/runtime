@@ -465,6 +465,10 @@ DEFINE_CLASS(VECTOR512T,            Intrinsics,             Vector512`1)
 
 DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
+DEFINE_CLASS(ISHIFTOPERATORS,       Numerics,               IShiftOperators`3)
+DEFINE_CLASS(ICOMPARISONOPERATORS,  Numerics,               IComparisonOperators`3)
+DEFINE_CLASS(IEQUALITYOPERATORS,    Numerics,               IEqualityOperators`3)
+
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
 DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
