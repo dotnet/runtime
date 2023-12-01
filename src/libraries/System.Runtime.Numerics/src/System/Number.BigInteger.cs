@@ -399,7 +399,7 @@ namespace System
 
         internal static ParsingStatus TryParseBigIntegerHexNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
         {
-            int whiteIndex = 0;
+            int whiteIndex;
 
             // Skip past any whitespace at the beginning.
             if ((style & NumberStyles.AllowLeadingWhite) != 0)
@@ -433,55 +433,60 @@ namespace System
             const int BitsPerDigit = 4;
             const int DigitsPerBlock = sizeof(uint) * 8 / BitsPerDigit;
 
-            // Handle small values first
-            if (value.Length <= DigitsPerBlock)
+            // Remember the sign from original leading input
+            // A valid ASCII hex digit is positive (0-7) if it starts with 00110
+            // Invalid digits will be caught in parsing below
+            int signBits = (value[0] & 0b_1111_1000) == 0b_0011_0000 ? 0 : -1;
+
+            // Start from leading blocks. Leading blocks can be unaligned, or whole of 0/F's that need to be trimmed.
+            (int wholeBlockCount, int leadingBitsCount) = Math.DivRem(value.Length, DigitsPerBlock);
+
+            int leading = signBits;
+            // First parse unanligned leading block if exists.
+            if (leadingBitsCount != 0)
             {
-                if (!int.TryParse(value, NumberStyles.AllowHexSpecifier, null, out int smallValue))
+                if (!int.TryParse(value[0..leadingBitsCount], NumberStyles.AllowHexSpecifier, null, out leading))
                 {
                     goto FailExit;
                 }
 
-                result = smallValue; // Defer to implicit operator to handle int.MinValue
-                return ParsingStatus.OK;
+                // Fill leading sign bits
+                leading |= signBits << (leadingBitsCount * BitsPerDigit);
+                value = value[leadingBitsCount..];
             }
 
-            // Trim unnecessary leading 0/F's
-            // Remember the sign before trimming
-            if (!HexConverter.IsHexChar(value[0])) goto FailExit;
-            bool isNegative = HexConverter.FromChar(value[0]) >= 8;
-            value = isNegative ? value.TrimStart(['f', 'F']) : value.TrimStart('0');
-
-            // Corner case: the value fits in int after trimming
-            if (value.Length <= DigitsPerBlock)
+            // Skip all the blocks consists of the same bit of sign
+            while (!value.IsEmpty && leading == signBits)
             {
-                if (!int.TryParse(value, NumberStyles.AllowHexSpecifier, null, out int smallValue))
+                // Potentially vectorizable if single-block vectorization is available
+                if (!int.TryParse(value[0..DigitsPerBlock], NumberStyles.AllowHexSpecifier, null, out leading))
                 {
                     goto FailExit;
                 }
+                value = value[DigitsPerBlock..];
+                wholeBlockCount--;
+            }
 
-                if (isNegative)
+            if (value.IsEmpty)
+            {
+                // There's nothing beyond significant leading block. Return it as the result.
+                if ((leading ^ signBits) < 0 || leading == int.MinValue)
                 {
-                    // Fill leading bits of negative value to 1
-                    smallValue |= -1 << (value.Length * BitsPerDigit);
-                }
-
-                // If the sign differs with int (0{F~8}xxxxxxx or F{0-7}xxxxxxx),
-                // or if the value is int.MinValue, store the value in _bits
-                if ((smallValue & int.MinValue) != (isNegative ? int.MinValue : 0)
-                    || smallValue == int.MinValue)
-                {
-                    result = new BigInteger(isNegative ? -1 : 1, [(uint)smallValue]);
+                    // The sign of result differs with leading digit, or it's int.MinValue.
+                    // Require to store in _bits.
+                    result = new BigInteger(signBits | 1, [(uint)leading]);
                     return ParsingStatus.OK;
                 }
-
-                // Otherwise it fits in _sign
-                result = new BigInteger(smallValue, null);
-                return ParsingStatus.OK;
+                else
+                {
+                    // Small value that fits in _sign.
+                    result = new BigInteger(leading, null);
+                    return ParsingStatus.OK;
+                }
             }
 
             // Now the size of bits array can be definitely calculated
-            (int wholeBlockCount, int leadingBitsCount) = Math.DivRem(value.Length, DigitsPerBlock);
-            int totalUIntCount = leadingBitsCount != 0 ? wholeBlockCount + 1 : wholeBlockCount;
+            int totalUIntCount = wholeBlockCount + 1;
 
             // Early out for too large input
             if (totalUIntCount > BigInteger.MaxLength)
@@ -491,12 +496,10 @@ namespace System
             }
 
             uint[] bits = new uint[totalUIntCount];
-            Span<uint> wholeBlockDestination = leadingBitsCount != 0 ? bits[1..] : bits;
-            ReadOnlySpan<char> wholeBlockSource = value[leadingBitsCount..];
+            Span<uint> wholeBlockDestination = bits.AsSpan(0, wholeBlockCount);
 
-            Debug.Assert(wholeBlockDestination.Length * DigitsPerBlock == wholeBlockSource.Length);
-
-            if (Convert.FromHexString(wholeBlockSource, MemoryMarshal.AsBytes(wholeBlockDestination), out _, out _) != OperationStatus.Done)
+            // Vectorized parsing for whole blocks
+            if (Convert.FromHexString(value, MemoryMarshal.AsBytes(wholeBlockDestination), out _, out _) != OperationStatus.Done)
             {
                 goto FailExit;
             }
@@ -510,22 +513,9 @@ namespace System
                 wholeBlockDestination.Reverse();
             }
 
-            // Parse the leading uint
-            if (leadingBitsCount != 0)
-            {
-                if (!uint.TryParse(value[0..leadingBitsCount], NumberStyles.AllowHexSpecifier, null, out bits[^1]))
-                {
-                    goto FailExit;
-                }
+            bits[^1] = (uint)leading;
 
-                // Fill leading sign bits
-                if (isNegative)
-                {
-                    bits[^1] |= (uint)(-1 << (leadingBitsCount * BitsPerDigit));
-                }
-            }
-
-            if (isNegative)
+            if (signBits != 0)
             {
                 // For negative values, negate the whole array
                 NumericsHelpers.DangerousMakeTwosComplement(bits);
