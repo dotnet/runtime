@@ -6,6 +6,7 @@ import { monoStringToString, utf16ToString } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { GraphemeSegmenter } from "./grapheme-segmenter";
 
 const COMPARISON_ERROR = -2;
 const INDEXING_ERROR = -1;
@@ -114,54 +115,45 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
         const cultureName = monoStringToString(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
         const casePicker = (options & 0x1f);
-
-        const segmenter = new Intl.Segmenter(locale, { granularity: "grapheme" });
-        const needleSegments = Array.from(segmenter.segment(needle)).map(s => s.segment);
-        let i = 0;
-        let stop = false;
         let result = -1;
-        let segmentWidth = 0;
-        let index = 0;
-        let nextIndex = 0;
-        while (!stop) {
-            // we need to restart the iterator in this outer loop because we have shifted it in the inner loop
-            const iteratorSrc = segmenter.segment(source.slice(i, source.length))[Symbol.iterator]();
-            let srcNext = iteratorSrc.next();
 
-            if (srcNext.done)
-                break;
+        const graphemeBreaker = new GraphemeSegmenter();
+        const needleSegments = [];
+        let needleIdx = 0;
 
-            let matchFound = check_match_found(srcNext.value.segment, needleSegments[0], locale, casePicker);
-            index = nextIndex;
-            srcNext = iteratorSrc.next();
-            if (srcNext.done) {
-                result = matchFound ? index : result;
-                break;
+        // Grapheme segmentation of needle string
+        while (needleIdx < needle.length) {
+            const breakIdx = graphemeBreaker.next_grapheme_break(needle, needleIdx);
+            needleSegments.push(needle.slice(needleIdx, breakIdx));
+            needleIdx = breakIdx;
+        }
+
+        let srcIdx = 0;
+        while (srcIdx < source.length) {
+            const breakIdx = graphemeBreaker.next_grapheme_break(source, srcIdx);
+            const srcGrapheme = source.slice(srcIdx, breakIdx);
+            srcIdx = breakIdx;
+
+            if (!check_match_found(srcGrapheme, needleSegments[0], locale, casePicker)) {
+                continue;
             }
-            segmentWidth = srcNext.value.index;
-            nextIndex = index + segmentWidth;
-            if (matchFound) {
-                for (let j = 1; j < needleSegments.length; j++) {
-                    if (srcNext.done) {
-                        stop = true;
-                        break;
-                    }
-                    matchFound = check_match_found(srcNext.value.segment, needleSegments[j], locale, casePicker);
-                    if (!matchFound)
-                        break;
 
-                    srcNext = iteratorSrc.next();
-                }
-                if (stop)
+            let j;
+            let srcNextIdx = srcIdx;
+            for (j = 1; j < needleSegments.length; j++) {
+                const breakIdx = graphemeBreaker.next_grapheme_break(source, srcNextIdx);
+                const srcGrapheme = source.slice(srcNextIdx, breakIdx);
+
+                if (!check_match_found(srcGrapheme, needleSegments[j], locale, casePicker)) {
                     break;
+                }
+                srcNextIdx = breakIdx;
             }
-
-            if (matchFound) {
-                result = index;
+            if (j == needleSegments.length) {
+                result = srcIdx - srcGrapheme.length;
                 if (fromBeginning)
                     break;
             }
-            i = nextIndex;
         }
         wrap_no_error_root(is_exception, exceptionRoot);
         return result;
