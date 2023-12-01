@@ -11397,7 +11397,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert(ureg == 0 || ureg % 2 == 0);
+    assert(ureg % 2 == 0);
     ureg /= 2u;
     assert((ureg >= 0) && (ureg <= 32));
     return ureg << 6;
@@ -18920,22 +18920,23 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
             break;
 
+        // Not available in Arm Neoverse N2 Software Optimization Guide.
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             switch (ins)
             {
                 case INS_sve_sqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
-                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
                     break;
 
                 case INS_sve_sqrshrun:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
-                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
                     break;
 
                 case INS_sve_uqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
-                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
                     break;
 
                 default:
