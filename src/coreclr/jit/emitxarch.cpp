@@ -13909,6 +13909,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
+        if ((size == EA_2BYTE) && (ins == INS_cmpxchg))
+        {
+            dst += emitOutputByte(dst, 0x66);
+        }
+
         // Output the REX prefix
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
