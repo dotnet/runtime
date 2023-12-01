@@ -4543,3 +4543,250 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
 
     return true;
 }
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::IntersectDom:
+//   Find common IDom parent, much like least common ancestor.
+//
+// Parameters:
+//   finger1 - A basic block that might share IDom ancestor with finger2.
+//   finger2 - A basic block that might share IDom ancestor with finger1.
+//
+// Returns:
+//   A basic block whose IDom is the dominator for finger1 and finger2, or else
+//   nullptr. This may be called while immediate dominators are being computed,
+//   and if the input values are members of the same loop (each reachable from
+//   the other), then one may not yet have its immediate dominator computed
+//   when we are attempting to find the immediate dominator of the other. So a
+//   nullptr return value means that the the two inputs are in a cycle, not
+//   that they don't have a common dominator ancestor.
+//
+// Remarks:
+//   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
+//   Harvey, Ken Kennedy.
+//
+BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
+{
+    while (finger1 != finger2)
+    {
+        if (finger1 == nullptr || finger2 == nullptr)
+        {
+            return nullptr;
+        }
+        while (finger1 != nullptr && finger1->bbPostorderNum < finger2->bbPostorderNum)
+        {
+            finger1 = finger1->bbIDom;
+        }
+        if (finger1 == nullptr)
+        {
+            return nullptr;
+        }
+        while (finger2 != nullptr && finger2->bbPostorderNum < finger1->bbPostorderNum)
+        {
+            finger2 = finger2->bbIDom;
+        }
+    }
+    return finger1;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::Intersect:
+//   See FlowGraphDominatorTree::IntersectDom.
+//
+BasicBlock* FlowGraphDominatorTree::Intersect(BasicBlock* block1, BasicBlock* block2)
+{
+    return IntersectDom(block1, block2);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::Dominates:
+//   Check if node "dominator" is an ancestor of node "dominated".
+//
+// Parameters:
+//   dominator - Node that may dominate
+//   dominated - Node that may be dominated
+//
+// Returns:
+//   True "dominator" dominates "dominated".
+//
+bool FlowGraphDominatorTree::Dominates(BasicBlock* dominator, BasicBlock* dominated)
+{
+    assert(m_dfs->Contains(dominator) && m_dfs->Contains(dominated));
+
+    // What we want to ask here is basically if A is in the middle of the path
+    // from B to the root (the entry node) in the dominator tree. Turns out
+    // that can be translated as:
+    //
+    //   A dom B <-> preorder(A) <= preorder(B) && postorder(A) >= postorder(B)
+    //
+    // where the equality holds when you ask if A dominates itself.
+    //
+    return (m_preorderNum[dominator->bbPostorderNum] <= m_preorderNum[dominated->bbPostorderNum]) &&
+           (m_postorderNum[dominator->bbPostorderNum] >= m_postorderNum[dominated->bbPostorderNum]);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::Build: Compute the dominator tree for the blocks in
+// the DFS tree.
+//
+// Parameters:
+//   dfs - DFS tree.
+//
+// Returns:
+//   Data structure representing dominator tree. Immediate dominators are
+//   marked directly into the BasicBlock structures, in the bbIDom field, so
+//   multiple instances cannot be simultaneously used.
+//
+// Remarks:
+//   As a precondition it is required that the flow graph has a unique root.
+//   This might require creating a scratch root block in case the first block
+//   has backedges or is in a try region.
+//
+FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* dfs)
+{
+    Compiler*    comp      = dfs->GetCompiler();
+    BasicBlock** postOrder = dfs->GetPostOrder();
+    unsigned     count     = dfs->GetPostOrderCount();
+
+    assert((comp->fgFirstBB->bbPreds == nullptr) && !comp->fgFirstBB->hasTryIndex());
+    assert(postOrder[count - 1] == comp->fgFirstBB);
+    comp->fgFirstBB->bbIDom = nullptr;
+
+    // First compute immediate dominators.
+    unsigned numIters = 0;
+    bool     changed  = true;
+    while (changed)
+    {
+        changed = false;
+
+        // In reverse post order, except for the entry block (count - 1 is entry BB).
+        for (unsigned i = count - 1; i > 0; i--)
+        {
+            unsigned    poNum = i - 1;
+            BasicBlock* block = postOrder[poNum];
+
+            // Intersect DOM, if computed, for all predecessors.
+            BasicBlock* bbIDom = nullptr;
+            for (FlowEdge* pred = comp->BlockDominancePreds(block); pred; pred = pred->getNextPredEdge())
+            {
+                BasicBlock* domPred = pred->getSourceBlock();
+                if (!dfs->Contains(domPred))
+                {
+                    continue; // Unreachable pred
+                }
+
+                if ((numIters <= 0) && (domPred->bbPostorderNum <= poNum))
+                {
+                    continue; // Pred not yet visited
+                }
+
+                if (bbIDom == nullptr)
+                {
+                    bbIDom = domPred;
+                }
+                else
+                {
+                    bbIDom = IntersectDom(bbIDom, domPred);
+                }
+            }
+
+            // Did we change the bbIDom value?  If so, we go around the outer loop again.
+            if (block->bbIDom != bbIDom)
+            {
+                changed       = true;
+                block->bbIDom = bbIDom;
+            }
+        }
+
+        numIters++;
+    }
+
+    // Now build dominator tree.
+    DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
+
+    // TODO-Quirk: Build the dominator tree by iterating in normal post order
+    // (ending up with sibling links in RPO) instead of this. It will cause
+    // diffs because things like RBO and copy prop depend on the exact order of
+    // visiting blocks in the dominator tree.
+    for (BasicBlock* block : comp->Blocks(comp->fgFirstBB->Next()))
+    {
+        if (!dfs->Contains(block))
+        {
+            continue;
+        }
+
+        unsigned    poNum  = block->bbPostorderNum;
+        BasicBlock* parent = block->bbIDom;
+
+        domTree[poNum].nextSibling                 = domTree[parent->bbPostorderNum].firstChild;
+        domTree[parent->bbPostorderNum].firstChild = block;
+    }
+
+//// Skip the root since it has no siblings.
+// for (unsigned i = 0; i < count - 1; i++)
+//{
+//    BasicBlock* block  = postOrder[i];
+//    BasicBlock* parent = block->bbIDom;
+//    assert(dfs->Contains(block) && dfs->Contains(parent));
+
+//    domTree[i].nextSibling                     = domTree[parent->bbPostorderNum].firstChild;
+//    domTree[parent->bbPostorderNum].firstChild = block;
+//}
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("After computing the dominance tree:\n");
+        for (unsigned i = count; i > 0; i--)
+        {
+            unsigned poNum = i - 1;
+            if (domTree[poNum].firstChild == nullptr)
+            {
+                continue;
+            }
+
+            printf(FMT_BB " :", postOrder[poNum]->bbNum);
+            for (BasicBlock* child = domTree[poNum].firstChild; child != nullptr;
+                 child             = domTree[child->bbPostorderNum].nextSibling)
+            {
+                printf(" " FMT_BB, child->bbNum);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+#endif
+
+    // Assign preorder/postorder nums for fast "domnates" queries.
+    class NumberDomTreeVisitor : public NewDomTreeVisitor<NumberDomTreeVisitor>
+    {
+        unsigned* m_preorderNums;
+        unsigned* m_postorderNums;
+        unsigned  m_preNum  = 0;
+        unsigned  m_postNum = 0;
+
+    public:
+        NumberDomTreeVisitor(Compiler* comp, unsigned* preorderNums, unsigned* postorderNums)
+            : NewDomTreeVisitor(comp), m_preorderNums(preorderNums), m_postorderNums(postorderNums)
+        {
+        }
+
+        void PreOrderVisit(BasicBlock* block)
+        {
+            m_preorderNums[block->bbPostorderNum] = m_preNum++;
+        }
+
+        void PostOrderVisit(BasicBlock* block)
+        {
+            m_postorderNums[block->bbPostorderNum] = m_postNum++;
+        }
+    };
+
+    unsigned* preorderNums  = new (comp, CMK_DominatorMemory) unsigned[count];
+    unsigned* postorderNums = new (comp, CMK_DominatorMemory) unsigned[count];
+
+    NumberDomTreeVisitor number(comp, preorderNums, postorderNums);
+    number.WalkTree(domTree);
+
+    return new (comp, CMK_DominatorMemory) FlowGraphDominatorTree(dfs, domTree, preorderNums, postorderNums);
+}
