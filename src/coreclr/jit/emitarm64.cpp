@@ -1102,6 +1102,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // nnnn
             assert(isVectorRegister(id->idReg2())); // ddddd
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            break;
 
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
