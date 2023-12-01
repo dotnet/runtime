@@ -1904,8 +1904,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
-                                                                       // beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr ||
+                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -1981,8 +1981,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
-                                                                       // beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr ||
+                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2086,7 +2086,7 @@ AGAIN:
 }
 
 /*****************************************************************************
- *
+*
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -2106,9 +2106,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef DEBUG
 #if DUMP_GC_TABLES
     bool dspOffs = emitComp->opts.dspGCtbls;
-#else
+#else  // !DUMP_GC_TABLES
     bool     dspOffs = !emitComp->opts.disDiffable;
-#endif
+#endif // !DUMP_GC_TABLES
 #endif // DEBUG
 
     assert(REG_NA == (int)REG_NA);
