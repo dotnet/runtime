@@ -538,7 +538,7 @@ public:
         return bbJumpKind;
     }
 
-    __forceinline void SetJumpKind(BBjumpKinds jumpKind)
+    FORCEINLINE void SetJumpKind(BBjumpKinds jumpKind)
     {
         // If this block's jump kind requires a target, ensure it is already set
         assert(!HasJumpDest() || HasInitializedJumpDest());
@@ -561,7 +561,7 @@ public:
         }
     }
 
-    __forceinline BasicBlock* Next() const
+    FORCEINLINE BasicBlock* Next() const
     {
         return bbNext;
     }
@@ -619,7 +619,7 @@ public:
         return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
     }
 
-    __forceinline BasicBlock* GetJumpDest() const
+    FORCEINLINE BasicBlock* GetJumpDest() const
     {
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
         assert(!HasJumpDest() || HasInitializedJumpDest());
@@ -634,7 +634,7 @@ public:
         assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
-    __forceinline void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
+    FORCEINLINE void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
     {
         bbJumpKind = jumpKind;
         bbJumpDest = jumpDest;
@@ -655,7 +655,7 @@ public:
         return (bbJumpDest == jumpDest);
     }
 
-    __forceinline bool JumpsToNext() const
+    FORCEINLINE bool JumpsToNext() const
     {
         assert(HasInitializedJumpDest());
         return (bbJumpDest == bbNext);
@@ -705,7 +705,7 @@ public:
     unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
                      // the block is unreachable.
 
-    __forceinline bool isRunRarely() const
+    FORCEINLINE bool isRunRarely() const
     {
         return ((bbFlags & BBF_RUN_RARELY) != 0);
     }
@@ -831,7 +831,7 @@ public:
 
     // Set block weight to zero, and set run rarely flag.
     //
-    __forceinline void bbSetRunRarely()
+    FORCEINLINE void bbSetRunRarely()
     {
         this->scaleBBWeight(BB_ZERO_WEIGHT);
     }
@@ -889,7 +889,7 @@ public:
     //    "retless" BBJ_CALLFINALLY blocks due to a requirement to use the BBJ_ALWAYS for
     //    generating code.
     //
-    __forceinline bool isBBCallAlwaysPair() const
+    FORCEINLINE bool isBBCallAlwaysPair() const
     {
         if (this->KindIs(BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
         {
@@ -917,12 +917,12 @@ public:
     // Notes:
     //    See notes on isBBCallAlwaysPair(), above.
     //
-    __forceinline bool isBBCallAlwaysPairTail() const
+    FORCEINLINE bool isBBCallAlwaysPairTail() const
     {
         return (bbPrev != nullptr) && bbPrev->isBBCallAlwaysPair();
     }
 
-    __forceinline bool KindIs(BBjumpKinds kind) const
+    FORCEINLINE bool KindIs(BBjumpKinds kind) const
     {
         return bbJumpKind == kind;
     }
@@ -1061,11 +1061,11 @@ public:
     // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
     unsigned bbCatchTyp;
 
-    __forceinline bool hasTryIndex() const
+    FORCEINLINE bool hasTryIndex() const
     {
         return bbTryIndex != 0;
     }
-    __forceinline bool hasHndIndex() const
+    FORCEINLINE bool hasHndIndex() const
     {
         return bbHndIndex != 0;
     }
