@@ -9573,6 +9573,17 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
             ownerAsInst[i] = pMTOwner->GetSpecialInstantiationType();
 
+        if (pResult->GetModule()->IsSystem())
+        {
+            for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
+            {
+                if (pResult->GetCl() == Instantiation::CustomSpecialInstantiationTokens[i])
+                {
+                    ownerAsInst[Instantiation::CustomSpecialInstantiationIndices[i]] = Instantiation::CustomSpecialInstantiationTypes[i];
+                }
+            }
+        }
+
         _ASSERTE(pResult->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
         Instantiation inst(ownerAsInst, pResult->GetInstantiation().GetNumArgs());
         pResult = ClassLoader::LoadGenericInstantiationThrowing(pResult->GetModule(), pResult->GetCl(), inst, ClassLoader::LoadTypes, loadLevel).AsMethodTable();
