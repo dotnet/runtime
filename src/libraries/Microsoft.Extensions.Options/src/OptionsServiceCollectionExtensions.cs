@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="name">The name of the options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
         public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(
             this IServiceCollection services,
             string? name = null)
             where TOptions : class
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="name">The name of the options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
         public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>(
             this IServiceCollection services,
             string? name = null)
