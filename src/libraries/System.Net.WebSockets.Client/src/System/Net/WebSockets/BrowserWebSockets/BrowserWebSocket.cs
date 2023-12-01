@@ -120,7 +120,7 @@ namespace System.Net.WebSockets
                 throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
             }
 #if FEATURE_WASM_THREADS
-            JSHost.CurrentOrMainJSSynchronizationContext!.Send(_ =>
+            JSHost.CurrentOrMainJSSynchronizationContext.Send(_ =>
             {
                 lock (_thisLock)
                 {
@@ -484,7 +484,7 @@ namespace System.Net.WebSockets
                 // return synchronously, not supported with MT
                 else
                 {
-                    Environment.FailFast("Unexpected synchronous result");
+                    Environment.FailFast("BrowserWebSocket.SendAsyncCore: Unexpected synchronous result");
                 }
 #endif
             }
@@ -514,7 +514,7 @@ namespace System.Net.WebSockets
                     // return synchronously, not supported with MT
                     else
                     {
-                        Environment.FailFast("Unexpected synchronous result");
+                        Environment.FailFast("BrowserWebSocket.ReceiveAsyncCore: Unexpected synchronous result");
                     }
 #endif
 
@@ -567,7 +567,7 @@ namespace System.Net.WebSockets
             // return synchronously, not supported with MT
             else
             {
-                Environment.FailFast("Unexpected synchronous result");
+                Environment.FailFast("BrowserWebSocket.CloseAsyncCore: Unexpected synchronous result");
             }
 #endif
 
