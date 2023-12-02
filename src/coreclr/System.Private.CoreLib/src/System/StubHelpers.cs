@@ -1272,12 +1272,59 @@ namespace System.StubHelpers
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void LayoutDestroyNativeInternal(object obj, byte* pNative);
+        internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            nuint size;
+            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
+            Debug.Assert(success);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Marshal, ref pCleanupWorkList);
+            }
+            else
+            {
+                Buffer.Memmove(ref *pNative, ref obj.GetRawData(), size);
+            }
+        }
+
+        internal static unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            nuint size;
+            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
+            Debug.Assert(success);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            }
+            else
+            {
+                Buffer.Memmove(ref obj.GetRawData(), ref *pNative, size);
+            }
+        }
+
+        internal static unsafe void LayoutDestroyNativeInternal(object obj, byte* pNative)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            nuint size;
+            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
+            Debug.Assert(success);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            }
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateInternal(IntPtr typeHandle);
 
