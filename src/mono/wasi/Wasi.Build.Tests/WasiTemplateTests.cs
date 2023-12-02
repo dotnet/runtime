@@ -29,6 +29,9 @@ public class WasiTemplateTests : BuildTestBase
     [InlineData("Release", /*singleFileBundle*/ true)]
     public void ConsoleBuildAndRunAOT(string config, bool singleFileBundle)
     {
+        // This is specfically for the case where the project file has `RunATOCompilation=true`
+        // and user *builds* the project, but the above setting ends up affecting the
+        // build in some unexpected way. For example by add -DENABLE_AOT=1
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
