@@ -12393,19 +12393,6 @@ const int RING_BUFFER_SIZE = 65536;
 static TypeLoadTiming TypeLoadTimingRingBuffer[RING_BUFFER_SIZE];
 static volatile long TypeLoadRingBufferIndex = 0;
 
-void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks)
-{
-    InterlockedAdd64(&TypeLoadTickCount, ticks);
-    InterlockedIncrement64(&TypeLoadCallCount);
-    long timingIndex = InterlockedIncrement(&TypeLoadRingBufferIndex) - 1;
-    if (timingIndex >= 0 && timingIndex < RING_BUFFER_SIZE)
-    {
-        TypeLoadTimingRingBuffer[timingIndex].Thread = GetCurrentThreadId();
-        TypeLoadTimingRingBuffer[timingIndex].Ticks = ticks;
-        TypeLoadTimingRingBuffer[timingIndex].Type = type;
-    }
-}
-
 static const int TypeNameBufferSize = 65536;
 static char TypeNameBuffer[TypeNameBufferSize];
 
@@ -12441,6 +12428,27 @@ char *FormatTypeName(char *typeBuffer, TypeHandle type)
         *typeBuffer = 0;
     }
     return typeBuffer;
+}
+
+void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks)
+{
+    InterlockedAdd64(&TypeLoadTickCount, ticks);
+    InterlockedIncrement64(&TypeLoadCallCount);
+    long timingIndex = InterlockedIncrement(&TypeLoadRingBufferIndex) - 1;
+    if (timingIndex >= 0 && timingIndex < RING_BUFFER_SIZE)
+    {
+        TypeLoadTimingRingBuffer[timingIndex].Thread = GetCurrentThreadId();
+        TypeLoadTimingRingBuffer[timingIndex].Ticks = ticks;
+        TypeLoadTimingRingBuffer[timingIndex].Type = type;
+    }
+    /*
+    char stackBuffer[16384];
+    FormatTypeName(stackBuffer, type);
+    if (!strcmp(stackBuffer, "System.Numerics.IAdditiveIdentity`2<!0, !0>"))
+    {
+        DebugBreak();
+    }
+    */
 }
 
 void DumpTypeLoadTimingInfo()
