@@ -55,6 +55,36 @@ bool Instantiation::ContainsExpectedSpecialInstantiation(MethodTable *pMTGeneric
     return true;
 }
 
+bool Instantiation::ContainsExpectedSpecialInstantiationForInterfaceInstantiatedWithFirstGenericParameterOf(MethodTable *pMTGenericType, TypeHandle thFirstGenericParameter)
+{
+    mdToken tkCheck = pMTGenericType->GetModule()->IsSystem() ? pMTGenericType->GetCl() : 0;
+    DWORD specialInstantiationIndex = UINT32_MAX;
+    TypeHandle thExtraSpecial;
+
+    for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
+    {
+        if (tkCheck == CustomSpecialInstantiationTokens[i])
+        {
+            specialInstantiationIndex = CustomSpecialInstantiationIndices[i];
+            thExtraSpecial = CustomSpecialInstantiationTypes[i];
+        }
+    }
+    TypeHandle th = thFirstGenericParameter;
+
+    for (auto i = GetNumArgs(); i > 0;)
+    {
+        TypeHandle thInstantiationToCheck = th;
+
+        if ((i - 1) == specialInstantiationIndex)
+        {
+            thInstantiationToCheck = thExtraSpecial;
+        }
+        if ((*this)[--i] != thInstantiationToCheck)
+            return false;
+    }
+    return true;
+}
+
 #ifdef _DEBUG_IMPL
 
 BOOL TypeHandle::Verify()

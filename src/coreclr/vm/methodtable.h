@@ -1123,6 +1123,9 @@ public:
     }
 
     static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
+    typedef TypeHandle SpecialMarkerTypeHandleArray[MaxGenericParametersForSpecialMarkerType];
+    static void ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult);
+
 
     static BOOL ComputeContainsGenericVariables(Instantiation inst);
 
@@ -2240,7 +2243,11 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
+    static MethodDesc *TryResolveVirtualStaticMethodOnThisTypeStatic(MethodTable*pMTThis, Instantiation* pInstIfThisIsSpecialMarkerType, MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
+    {
+        return TryResolveVirtualStaticMethodOnThisTypeStatic(this, NULL, pInterfaceType, pInterfaceMD, resolveVirtualStaticMethodFlags, level);
+    }
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
