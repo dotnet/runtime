@@ -50,8 +50,9 @@ namespace WasmAppBuilder {
         }
 
         public void Warning (string code, string message, params object[] args) {
-            Helper?.LogWarning(null, code, null, null, 0, 0, 0, 0, message, args);
-            ErrorOutput?.WriteLine($"warning : {code}: {AutoFormat(message, args)}");
+            // HACK: We use warnaserror in random places, so we can't use warnings
+            Helper?.LogMessage(null, code, null, null, 0, 0, 0, 0, MessageImportance.Normal, message, args);
+            Output?.WriteLine($"info : {code}: {AutoFormat(message, args)}");
         }
 
         public void Error (string message) {
