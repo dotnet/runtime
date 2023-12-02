@@ -22,6 +22,12 @@ export function wrap_as_cancelable_promise<T>(fn: () => Promise<T>): Controllabl
     return promise;
 }
 
+export function wrap_as_cancelable<T>(inner: Promise<T>): ControllablePromise<T> {
+    const { promise, promise_control } = createPromiseController<T>();
+    inner.then((data) => promise_control.resolve(data)).catch((reason) => promise_control.reject(reason));
+    return promise;
+}
+
 export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void {
     const holder = _lookup_js_owned_object(task_holder_gc_handle) as PromiseHolder;
     mono_assert(!!holder, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
