@@ -4704,34 +4704,18 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     // Now build dominator tree.
     DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
 
-    // TODO-Quirk: Build the dominator tree by iterating in normal post order
-    // (ending up with sibling links in RPO) instead of this. It will cause
-    // diffs because things like RBO and copy prop depend on the exact order of
-    // visiting blocks in the dominator tree.
-    for (BasicBlock* block : comp->Blocks(comp->fgFirstBB->Next()))
+    // Build the child and sibling links based on the immediate dominators.
+    // Running this loop in post-order means we end up with sibling links in
+    // reverse post-order. Skip the root since it has no siblings.
+    for (unsigned i = 0; i < count - 1; i++)
     {
-        if (!dfs->Contains(block))
-        {
-            continue;
-        }
-
-        unsigned    poNum  = block->bbPostorderNum;
+        BasicBlock* block  = postOrder[i];
         BasicBlock* parent = block->bbIDom;
+        assert(dfs->Contains(block) && dfs->Contains(parent));
 
-        domTree[poNum].nextSibling                 = domTree[parent->bbPostorderNum].firstChild;
+        domTree[i].nextSibling                     = domTree[parent->bbPostorderNum].firstChild;
         domTree[parent->bbPostorderNum].firstChild = block;
     }
-
-//// Skip the root since it has no siblings.
-// for (unsigned i = 0; i < count - 1; i++)
-//{
-//    BasicBlock* block  = postOrder[i];
-//    BasicBlock* parent = block->bbIDom;
-//    assert(dfs->Contains(block) && dfs->Contains(parent));
-
-//    domTree[i].nextSibling                     = domTree[parent->bbPostorderNum].firstChild;
-//    domTree[parent->bbPostorderNum].firstChild = block;
-//}
 
 #ifdef DEBUG
     if (comp->verbose)
