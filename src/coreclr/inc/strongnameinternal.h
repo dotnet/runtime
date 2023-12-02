@@ -7,6 +7,14 @@
 #ifndef _STRONGNAME_INTERNAL_H
 #define _STRONGNAME_INTERNAL_H
 
+// Public key blob binary format.
+typedef struct {
+    unsigned int SigAlgID;       // (ALG_ID) signature algorithm used to create the signature
+    unsigned int HashAlgID;      // (ALG_ID) hash algorithm used to create the signature
+    ULONG        cbPublicKey;    // length of the key in bytes
+    BYTE         PublicKey[1];   // variable length byte array containing the key value in format output by CryptoAPI
+} PublicKeyBlob;
+
 HRESULT StrongNameTokenFromPublicKey(BYTE* pbPublicKeyBlob,  // [in] public key blob
     ULONG    cbPublicKeyBlob,
     BYTE** ppbStrongNameToken,     // [out] strong name token

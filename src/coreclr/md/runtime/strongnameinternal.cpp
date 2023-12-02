@@ -19,14 +19,6 @@
 #include "thekey.h"
 #include "ecmakey.h"
 
-// Public key blob binary format.
-typedef struct {
-    unsigned int SigAlgID;       // (ALG_ID) signature algorithm used to create the signature
-    unsigned int HashAlgID;      // (ALG_ID) hash algorithm used to create the signature
-    ULONG        cbPublicKey;    // length of the key in bytes
-    BYTE         PublicKey[1];   // variable length byte array containing the key value in format output by CryptoAPI
-} PublicKeyBlob;
-
 //---------------------------------------------------------------------------------------
 //
 // Determine the number of bytes that a public key blob occupies, including the key portion
