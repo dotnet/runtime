@@ -25,8 +25,8 @@ public class WasiTemplateTests : BuildTestBase
     [Theory]
     [InlineData("Debug", /*singleFileBundle*/ false)]
     [InlineData("Release", /*singleFileBundle*/ false)]
-    // [InlineData("Debug", /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    // [InlineData("Release", /*singleFileBundle*/ true)] // https://github.com/dotnet/runtime/issues/95273
+    [InlineData("Debug", /*singleFileBundle*/ true)]
+    [InlineData("Release", /*singleFileBundle*/ true)]
     public void ConsoleBuildAndRunAOT(string config, bool singleFileBundle)
     {
         string id = $"{config}_{GetRandomId()}";
@@ -65,15 +65,7 @@ public class WasiTemplateTests : BuildTestBase
         .UnwrapItemsAsArrays();
 
     [Theory]
-    [InlineData("Debug", /*singleFileBundle*/ false, /*aot*/ false)]
-    [InlineData("Debug", /*singleFileBundle*/ false, /*aot*/ true)]
-    [InlineData("Release", /*singleFileBundle*/ false, /*aot*/ false)]
-    [InlineData("Release", /*singleFileBundle*/ false, /*aot*/ true)]
-    [InlineData("Debug", /*singleFileBundle*/ true, /*aot*/ false)]
-    // [InlineData("Debug", /*singleFileBundle*/ true, /*aot*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    [InlineData("Release", /*singleFileBundle*/ true, /*aot*/ false)]
-    // [InlineData("Release", /*singleFileBundle*/ true, /*aot*/ true)] // https://github.com/dotnet/runtime/issues/95273
-    // [MemberData(nameof(TestDataForConsolePublishAndRun))] // use when the issue is resolved
+    [MemberData(nameof(TestDataForConsolePublishAndRun))]
     public void ConsoleBuildThenRunThenPublish(string config, bool singleFileBundle, bool aot)
     {
         string id = $"{config}_{GetRandomId()}";
