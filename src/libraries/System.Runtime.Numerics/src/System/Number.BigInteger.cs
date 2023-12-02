@@ -331,12 +331,12 @@ namespace System
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             {
-                return TryParseBigIntegerHexNumberStyle(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParsingInfo<char>, char>(value, style, out result);
             }
 
             if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return TryParseBigIntegerBinaryNumberStyle(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerBinaryParsingInfo<char>, char>(value, style, out result);
             }
 
             return TryParseBigIntegerNumber(value, style, info, out result);
@@ -397,7 +397,9 @@ namespace System
             return result;
         }
 
-        internal static ParsingStatus TryParseBigIntegerHexNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
+        internal static ParsingStatus TryParseBigIntegerHexOrBinaryNumberStyle<TParsingInfo, TChar>(ReadOnlySpan<TChar> value, NumberStyles style, out BigInteger result)
+            where TParsingInfo : struct, IBigIntegerHexOrBinaryParsingInfo<TParsingInfo, TChar>
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int whiteIndex;
 
@@ -406,7 +408,7 @@ namespace System
             {
                 for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
                 {
-                    if (!IsWhite(value[whiteIndex]))
+                    if (!IsWhite(uint.CreateTruncating(value[whiteIndex])))
                         break;
                 }
 
@@ -418,7 +420,7 @@ namespace System
             {
                 for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
                 {
-                    if (!IsWhite(value[whiteIndex]))
+                    if (!IsWhite(uint.CreateTruncating(value[whiteIndex])))
                         break;
                 }
 
@@ -430,62 +432,57 @@ namespace System
                 goto FailExit;
             }
 
-            const int BitsPerDigit = 4;
-            const int DigitsPerBlock = sizeof(uint) * 8 / BitsPerDigit;
-
             // Remember the sign from original leading input
-            // A valid ASCII hex digit is positive (0-7) if it starts with 00110
             // Invalid digits will be caught in parsing below
-            int signBits = (value[0] & 0b_1111_1000) == 0b_0011_0000 ? 0 : -1;
+            uint signBits = TParsingInfo.GetSignBitsIfValid(uint.CreateTruncating(value[0]));
 
             // Start from leading blocks. Leading blocks can be unaligned, or whole of 0/F's that need to be trimmed.
-            (int wholeBlockCount, int leadingBitsCount) = Math.DivRem(value.Length, DigitsPerBlock);
+            int leadingBitsCount = value.Length % TParsingInfo.DigitsPerBlock;
 
-            int leading = signBits;
+            uint leading = signBits;
             // First parse unanligned leading block if exists.
             if (leadingBitsCount != 0)
             {
-                if (!int.TryParse(value[0..leadingBitsCount], NumberStyles.AllowHexSpecifier, null, out leading))
+                if (!TParsingInfo.TryParseUnalignedBlock(value[0..leadingBitsCount], out leading))
                 {
                     goto FailExit;
                 }
 
                 // Fill leading sign bits
-                leading |= signBits << (leadingBitsCount * BitsPerDigit);
+                leading |= signBits << (leadingBitsCount * TParsingInfo.BitsPerDigit);
                 value = value[leadingBitsCount..];
             }
 
             // Skip all the blocks consists of the same bit of sign
             while (!value.IsEmpty && leading == signBits)
             {
-                // Potentially vectorizable if single-block vectorization is available
-                if (!int.TryParse(value[0..DigitsPerBlock], NumberStyles.AllowHexSpecifier, null, out leading))
+                if (!TParsingInfo.TryParseSingleBlock(value[0..TParsingInfo.DigitsPerBlock], out leading))
                 {
                     goto FailExit;
                 }
-                value = value[DigitsPerBlock..];
-                wholeBlockCount--;
+                value = value[TParsingInfo.DigitsPerBlock..];
             }
 
             if (value.IsEmpty)
             {
                 // There's nothing beyond significant leading block. Return it as the result.
-                if ((leading ^ signBits) < 0 || leading == int.MinValue)
+                if ((int)(leading ^ signBits) < 0 || (int)leading == int.MinValue)
                 {
                     // The sign of result differs with leading digit, or it's int.MinValue.
                     // Require to store in _bits.
-                    result = new BigInteger(signBits | 1, [(uint)leading]);
+                    result = new BigInteger((int)signBits | 1, [leading]);
                     return ParsingStatus.OK;
                 }
                 else
                 {
                     // Small value that fits in _sign.
-                    result = new BigInteger(leading, null);
+                    result = new BigInteger((int)leading, null);
                     return ParsingStatus.OK;
                 }
             }
 
             // Now the size of bits array can be definitely calculated
+            int wholeBlockCount = value.Length / TParsingInfo.DigitsPerBlock;
             int totalUIntCount = wholeBlockCount + 1;
 
             // Early out for too large input
@@ -498,158 +495,12 @@ namespace System
             uint[] bits = new uint[totalUIntCount];
             Span<uint> wholeBlockDestination = bits.AsSpan(0, wholeBlockCount);
 
-            // Vectorized parsing for whole blocks
-            if (Convert.FromHexString(value, MemoryMarshal.AsBytes(wholeBlockDestination), out _, out _) != OperationStatus.Done)
+            if (!TParsingInfo.TryParseWholeBlocks(value, wholeBlockDestination))
             {
                 goto FailExit;
             }
 
-            if (BitConverter.IsLittleEndian)
-            {
-                MemoryMarshal.AsBytes(wholeBlockDestination).Reverse();
-            }
-            else
-            {
-                wholeBlockDestination.Reverse();
-            }
-
-            bits[^1] = (uint)leading;
-
-            if (signBits != 0)
-            {
-                // For negative values, negate the whole array
-                NumericsHelpers.DangerousMakeTwosComplement(bits);
-
-                result = new BigInteger(-1, bits);
-                return ParsingStatus.OK;
-            }
-            else
-            {
-                // For positive values, it's done
-                result = new BigInteger(1, bits);
-                return ParsingStatus.OK;
-            }
-
-        FailExit:
-            result = default;
-            return ParsingStatus.Failed;
-        }
-
-        internal static ParsingStatus TryParseBigIntegerBinaryNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
-        {
-            int whiteIndex;
-
-            // Skip past any whitespace at the beginning.
-            if ((style & NumberStyles.AllowLeadingWhite) != 0)
-            {
-                for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
-                {
-                    if (!IsWhite(value[whiteIndex]))
-                        break;
-                }
-
-                value = value[whiteIndex..];
-            }
-
-            // Skip past any whitespace at the end.
-            if ((style & NumberStyles.AllowTrailingWhite) != 0)
-            {
-                for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
-                {
-                    if (!IsWhite(value[whiteIndex]))
-                        break;
-                }
-
-                value = value[..(whiteIndex + 1)];
-            }
-
-            if (value.IsEmpty)
-            {
-                goto FailExit;
-            }
-
-            const int BitsPerDigit = 1;
-            const int DigitsPerBlock = sizeof(uint) * 8 / BitsPerDigit;
-
-            // Remember the sign from original leading input
-            // Taking the LSB is enough for distinguishing 0/1
-            // Invalid digits will be caught in parsing below
-            int signBits = (value[0] << 31) >> 31;
-
-            // Start from leading blocks. Leading blocks can be unaligned, or whole of 0/F's that need to be trimmed.
-            (int wholeBlockCount, int leadingBitsCount) = Math.DivRem(value.Length, DigitsPerBlock);
-
-            int leading = signBits;
-            // First parse unanligned leading block if exists.
-            if (leadingBitsCount != 0)
-            {
-                if (!int.TryParse(value[0..leadingBitsCount], NumberStyles.AllowBinarySpecifier, null, out leading))
-                {
-                    goto FailExit;
-                }
-
-                // Fill leading sign bits
-                leading |= signBits << (leadingBitsCount * BitsPerDigit);
-                value = value[leadingBitsCount..];
-            }
-
-            // Skip all the blocks consists of the same bit of sign
-            while (!value.IsEmpty && leading == signBits)
-            {
-                // Potentially vectorizable if single-block vectorization is available
-                if (!int.TryParse(value[0..DigitsPerBlock], NumberStyles.AllowBinarySpecifier, null, out leading))
-                {
-                    goto FailExit;
-                }
-                value = value[DigitsPerBlock..];
-                wholeBlockCount--;
-            }
-
-            if (value.IsEmpty)
-            {
-                // There's nothing beyond significant leading block. Return it as the result.
-                if ((leading ^ signBits) < 0 || leading == int.MinValue)
-                {
-                    // The sign of result differs with leading digit, or it's int.MinValue.
-                    // Require to store in _bits.
-                    result = new BigInteger(signBits | 1, [(uint)leading]);
-                    return ParsingStatus.OK;
-                }
-                else
-                {
-                    // Small value that fits in _sign.
-                    result = new BigInteger(leading, null);
-                    return ParsingStatus.OK;
-                }
-            }
-
-            // Now the size of bits array can be definitely calculated
-            int totalUIntCount = wholeBlockCount + 1;
-
-            // Early out for too large input
-            if (totalUIntCount > BigInteger.MaxLength)
-            {
-                result = default;
-                return ParsingStatus.Overflow;
-            }
-
-            uint[] bits = new uint[totalUIntCount];
-            ref char lastWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(value), value.Length - DigitsPerBlock);
-
-            // TODO: Vectorized parsing for whole blocks
-            for (int i = 0; i < bits.Length - 1; i++)
-            {
-                if (!uint.TryParse(
-                    MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Subtract(ref lastWholeBlockStart, i * DigitsPerBlock), DigitsPerBlock),
-                    NumberStyles.BinaryNumber,
-                    null,
-                    out bits[i]))
-                {
-                    goto FailExit;
-                }
-            }
-
-            bits[^1] = (uint)leading;
+            bits[^1] = leading;
 
             if (signBits != 0)
             {
@@ -1457,5 +1308,98 @@ namespace System
                 return null;
             }
         }
+    }
+
+    internal interface IBigIntegerHexOrBinaryParsingInfo<TParsingInfo, TChar>
+        where TParsingInfo : struct, IBigIntegerHexOrBinaryParsingInfo<TParsingInfo, TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        static abstract int BitsPerDigit { get; }
+
+        static virtual int DigitsPerBlock => sizeof(uint) * 8 / TParsingInfo.BitsPerDigit;
+
+        static abstract NumberStyles BlockNumberStyle { get; }
+
+        static abstract uint GetSignBitsIfValid(uint ch);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static virtual bool TryParseUnalignedBlock(ReadOnlySpan<TChar> input, out uint result)
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                return uint.TryParse(MemoryMarshal.Cast<TChar, char>(input), TParsingInfo.BlockNumberStyle, null, out result);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static virtual bool TryParseSingleBlock(ReadOnlySpan<TChar> input, out uint result)
+            => TParsingInfo.TryParseUnalignedBlock(input, out result);
+
+        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destiniation)
+        {
+            Debug.Assert(destiniation.Length * TParsingInfo.DigitsPerBlock == input.Length);
+            ref TChar lastWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(input), input.Length - TParsingInfo.DigitsPerBlock);
+
+            for (int i = 0; i < destiniation.Length - 1; i++)
+            {
+                if (!TParsingInfo.TryParseSingleBlock(
+                    MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Subtract(ref lastWholeBlockStart, i * TParsingInfo.DigitsPerBlock), TParsingInfo.DigitsPerBlock),
+                    out destiniation[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    internal readonly struct BigIntegerHexParsingInfo<TChar> : IBigIntegerHexOrBinaryParsingInfo<BigIntegerHexParsingInfo<TChar>, TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        public static int BitsPerDigit => 4;
+
+        public static NumberStyles BlockNumberStyle => NumberStyles.AllowHexSpecifier;
+
+        // A valid ASCII hex digit is positive (0-7) if it starts with 00110
+        public static uint GetSignBitsIfValid(uint ch) => (uint)((ch & 0b_1111_1000) == 0b_0011_0000 ? 0 : -1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destiniation)
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                if (Convert.FromHexString(MemoryMarshal.Cast<TChar, char>(input), MemoryMarshal.AsBytes(destiniation), out _, out _) != OperationStatus.Done)
+                {
+                    return false;
+                }
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    MemoryMarshal.AsBytes(destiniation).Reverse();
+                }
+                else
+                {
+                    destiniation.Reverse();
+                }
+
+                return true;
+            }
+
+            throw new NotSupportedException();
+        }
+    }
+
+    internal readonly struct BigIntegerBinaryParsingInfo<TChar> : IBigIntegerHexOrBinaryParsingInfo<BigIntegerBinaryParsingInfo<TChar>, TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        public static int BitsPerDigit => 1;
+
+        public static NumberStyles BlockNumberStyle => NumberStyles.AllowBinarySpecifier;
+
+        // Taking the LSB is enough for distinguishing 0/1
+        public static uint GetSignBitsIfValid(uint ch) => (uint)(((int)ch << 31) >> 31);
     }
 }
