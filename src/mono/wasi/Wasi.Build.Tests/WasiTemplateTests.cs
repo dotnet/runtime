@@ -8,8 +8,6 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Wasm.Build.Tests;
-using System.Collections.Generic;
-using System.Linq;
 
 #nullable enable
 
@@ -55,17 +53,6 @@ public class WasiTemplateTests : BuildTestBase
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
         RunWithoutBuild(config, id);
     }
-
-    public static IEnumerable<object?[]> TestDataForConsolePublishAndRun() =>
-        new IEnumerable<object?>[]
-        {
-            new object?[] { "Debug" },
-            new object?[] { "Release" }
-        }
-        .AsEnumerable()
-        .MultiplyWithSingleArgs(true, false) /*propertyValue*/
-        .MultiplyWithSingleArgs(true, false) /*aot*/
-        .UnwrapItemsAsArrays();
 
     [Theory]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
@@ -113,54 +100,6 @@ public class WasiTemplateTests : BuildTestBase
                         UseCache: false));
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-    [MemberData(nameof(TestDataForConsolePublishAndRun))]
-    public void ConsolePublishAndRunForSingleFileBundle_InvariantTimeZone(string config, bool invariantTimezone, bool aot)
-    {
-        string extraProperties = invariantTimezone ? "<InvariantTimezone>true</InvariantTimezone>" : "";
-        CommandResult res = ConsolePublishAndRunForSingleFileBundleInternal(config, "InvariantTimezones.cs", aot, extraProperties: extraProperties);
-        if(invariantTimezone)
-            Assert.Contains("Could not find Asia/Tokyo", res.Output);
-        else
-            Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", res.Output);
-    }
-
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-    [MemberData(nameof(TestDataForConsolePublishAndRun))]
-    public void ConsolePublishAndRunForSingleFileBundle_InvariantGlobalization(string config, bool invariantGlobalization, bool aot)
-    {
-        string extraProperties = invariantGlobalization ? "<InvariantGlobalization>true</InvariantGlobalization>" : "";
-        CommandResult res = ConsolePublishAndRunForSingleFileBundleInternal(config, "InvariantGlobalization.cs", aot, extraProperties: extraProperties);
-        Assert.Contains("Number: 1", res.Output);
-    }
-
-    private CommandResult ConsolePublishAndRunForSingleFileBundleInternal(string config, string programFileName, bool aot, string extraProperties = "")
-    {
-        if (string.IsNullOrEmpty(programFileName))
-            throw new ArgumentException("Cannot be empty", nameof(programFileName));
-
-        string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
-        string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, programFileName), Path.Combine(_projectDir!, "Program.cs"), true);
-
-        extraProperties += "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
-        AddItemsPropertiesToProject(projectFile, extraProperties);
-
-        var buildArgs = new BuildArgs(projectName, config, aot, id, null);
-        buildArgs = ExpandBuildArgs(buildArgs);
-
-        BuildProject(buildArgs,
-                    id: id,
-                    new BuildProjectOptions(
-                        DotnetWasmFromRuntimePack: false, // singlefilebundle will always relink
-                        CreateProject: false,
-                        Publish: true,
-                        TargetFramework: BuildTestBase.DefaultTargetFramework,
-                        UseCache: false));
-        return RunWithoutBuild(config, id);
-    }
-
     [Theory]
     [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
     [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
@@ -200,23 +139,5 @@ public class WasiTemplateTests : BuildTestBase
                                     .EnsureSuccessful();
 
         Assert.Contains("Hello, Wasi Console!", res.Output);
-    }
-
-    private CommandResult RunWithoutBuild(string config, string id)
-    {
-        string runArgs = $"run --no-build -c {config}";
-        runArgs += " x y z";
-        // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
-        int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
-        CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
-                            .WithWorkingDirectory(_projectDir!)
-                            .ExecuteWithCapturedOutput(runArgs)
-                            .EnsureExitCode(expectedExitCode);
-
-        Assert.Contains("Hello, Wasi Console!", res.Output);
-        Assert.Contains("args[0] = x", res.Output);
-        Assert.Contains("args[1] = y", res.Output);
-        Assert.Contains("args[2] = z", res.Output);
-        return res;
     }
 }
