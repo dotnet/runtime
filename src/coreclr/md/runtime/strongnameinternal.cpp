@@ -6,9 +6,68 @@
 
 #include "stdafx.h"
 #include "strongnameinternal.h"
+#include "sha1.h"
+
+// We allow a special abbreviated form of the Microsoft public key (16 bytes
+// long: 0 for both alg ids, 4 for key length and 4 bytes of 0 for the key
+// itself). This allows us to build references to system libraries that are
+// platform neutral (so a 3rd party can build SPCL replacements). The
+// special zero PK is just shorthand for the local runtime's real system PK,
+// which is always used to perform the signature verification, so no security
+// hole is opened by this. Therefore we need to store a copy of the real PK (for
+// this platform) here.
 #include "thekey.h"
 #include "ecmakey.h"
-#include "sha1.h"
+
+// Public key blob binary format.
+typedef struct {
+    unsigned int SigAlgID;       // (ALG_ID) signature algorithm used to create the signature
+    unsigned int HashAlgID;      // (ALG_ID) hash algorithm used to create the signature
+    ULONG        cbPublicKey;    // length of the key in bytes
+    BYTE         PublicKey[1];   // variable length byte array containing the key value in format output by CryptoAPI
+} PublicKeyBlob;
+
+//---------------------------------------------------------------------------------------
+//
+// Determine the number of bytes that a public key blob occupies, including the key portion
+//
+// Arguments:
+//   keyPublicKey - key blob to calculate the size of
+//
+
+DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    return offsetof(PublicKeyBlob, PublicKey) +     // Size of the blob header plus
+           GET_UNALIGNED_VAL32(&keyPublicKey.cbPublicKey);  // the number of bytes in the key
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Check to see if a public key blob is the ECMA public key blob
+//
+// Arguments:
+//   keyPublicKey - Key to check to see if it matches the ECMA key
+//
+
+bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(g_rbNeutralPublicKey) &&
+           memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), g_rbNeutralPublicKey, sizeof(g_rbNeutralPublicKey)) == 0;
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -36,63 +95,6 @@ bool StrongNameIsEcmaKey(_In_reads_(cbKey) const BYTE *pbKey, DWORD cbKey)
 
     const PublicKeyBlob *pKeyBlob = reinterpret_cast<const PublicKeyBlob *>(pbKey);
     return StrongNameIsEcmaKey(*pKeyBlob);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Check to see if a public key blob is the ECMA public key blob
-//
-// Arguments:
-//   keyPublicKey - Key to check to see if it matches the ECMA key
-//
-
-bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(g_rbNeutralPublicKey) &&
-           memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), g_rbNeutralPublicKey, sizeof(g_rbNeutralPublicKey)) == 0;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Verify that a public key blob looks like a reasonable public key
-//
-// Arguments:
-//   pbBuffer     - buffer to verify the format of
-//   cbBuffer     - size of pbBuffer
-//
-
-bool StrongNameIsValidPublicKey(_In_reads_(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(pbBuffer));
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // The buffer must be at least as large as the public key structure
-    if (cbBuffer < sizeof(PublicKeyBlob))
-    {
-        return false;
-    }
-
-    // The buffer must be the same size as the structure header plus the trailing key data
-    const PublicKeyBlob *pkeyPublicKey = reinterpret_cast<const PublicKeyBlob *>(pbBuffer);
-    if (GET_UNALIGNED_VAL32(&pkeyPublicKey->cbPublicKey) != cbBuffer - offsetof(PublicKeyBlob, PublicKey))
-    {
-        return false;
-    }
-
-    // The buffer itself looks reasonable, but the public key structure needs to be validated as well
-    return StrongNameIsValidPublicKey(*pkeyPublicKey);
 }
 
 //---------------------------------------------------------------------------------------
@@ -146,30 +148,41 @@ bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey)
     return true;
 }
 
-
 //---------------------------------------------------------------------------------------
 //
-// Determine the number of bytes that a public key blob occupies, including the key portion
+// Verify that a public key blob looks like a reasonable public key
 //
 // Arguments:
-//   keyPublicKey - key blob to calculate the size of
+//   pbBuffer     - buffer to verify the format of
+//   cbBuffer     - size of pbBuffer
 //
 
-DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
+bool StrongNameIsValidPublicKey(_In_reads_(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
 {
     CONTRACTL
     {
+        PRECONDITION(CheckPointer(pbBuffer));
         NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-    return offsetof(PublicKeyBlob, PublicKey) +     // Size of the blob header plus
-           GET_UNALIGNED_VAL32(&keyPublicKey.cbPublicKey);  // the number of bytes in the key
+    // The buffer must be at least as large as the public key structure
+    if (cbBuffer < sizeof(PublicKeyBlob))
+    {
+        return false;
+    }
+
+    // The buffer must be the same size as the structure header plus the trailing key data
+    const PublicKeyBlob *pkeyPublicKey = reinterpret_cast<const PublicKeyBlob *>(pbBuffer);
+    if (GET_UNALIGNED_VAL32(&pkeyPublicKey->cbPublicKey) != cbBuffer - offsetof(PublicKeyBlob, PublicKey))
+    {
+        return false;
+    }
+
+    // The buffer itself looks reasonable, but the public key structure needs to be validated as well
+    return StrongNameIsValidPublicKey(*pkeyPublicKey);
 }
-
-
-
 
 // Size in bytes of strong name token.
 #define SN_SIZEOF_TOKEN     8
@@ -275,34 +288,6 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     {
         memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_SILVERLIGHT_KEYTOKEN(), SN_SIZEOF_TOKEN);
         goto Exit;
-    }
-
-    // To compute the correct public key token, we need to make sure the public key blob
-    // was not padded with extra bytes that CAPI CryptImportKey would've ignored.
-    // Without this round trip, we would blindly compute the hash over the padded bytes
-    // which could make finding a public key token collision a significantly easier task
-    // since an attacker wouldn't need to work hard on generating valid key pairs before hashing.
-    if (cbPublicKeyBlob <= sizeof(PublicKeyBlob)) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
-    }
-
-    // Check that the blob type is PUBLICKEYBLOB.
-    pPublicKey = (PublicKeyBlob*) pbPublicKeyBlob;
-
-    if (GET_UNALIGNED_VAL32(&pPublicKey->cbPublicKey) > cbPublicKeyBlob) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
-    }
-
-    if (cbPublicKeyBlob < SN_SIZEOF_KEY(pPublicKey)) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
-    }
-
-    if (*(BYTE*) pPublicKey->PublicKey /* PUBLICKEYSTRUC->bType */ != PUBLICKEYBLOB) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
     }
 
     // Compute a hash over the public key.

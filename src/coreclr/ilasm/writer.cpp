@@ -1034,7 +1034,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             goto exit;
         }
 
-        // Public-sign by default
+        // CoreCLR ILAsm only supports public signing
         m_dwComImageFlags |= COMIMAGE_FLAGS_STRONGNAMESIGNED;
     }
 

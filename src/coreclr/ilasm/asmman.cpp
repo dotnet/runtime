@@ -448,27 +448,6 @@ void    AsmMan::EndAssembly()
                     }
 
                     CloseHandle(hFile);
-
-                    // Guess whether we're full or delay signing based on
-                    // whether the blob passed to us looks like a public
-                    // key. (I.e. we may just have copied a full key pair
-                    // into the public key buffer).
-                    if (m_sStrongName.m_cbPublicKey >= sizeof(PublicKeyBlob) &&
-                        (offsetof(PublicKeyBlob, PublicKey) +
-                         VAL32(((PublicKeyBlob*)m_sStrongName.m_pbPublicKey)->cbPublicKey)) == m_sStrongName.m_cbPublicKey)
-                        m_sStrongName.m_fFullSign = FALSE;
-                    else
-                        m_sStrongName.m_fFullSign = TRUE;
-
-                    // If we really have a key pair, we'll move it into a
-                    // key container so the signing code gets the key pair
-                    // from a consistent place.
-                    if (m_sStrongName.m_fFullSign)
-                    {
-                        report->error("Error: ilasm on CoreCLR does not support full sign.\n");
-                        m_pCurAsmRef = NULL;
-                        return;
-                    }
                 }
             }
             else
@@ -485,7 +464,6 @@ void    AsmMan::EndAssembly()
                 }
 
                 m_sStrongName.m_wzKeyContainer = NULL;
-                m_sStrongName.m_fFullSign = FALSE;
                 m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::NotAllocated;
             }
         }

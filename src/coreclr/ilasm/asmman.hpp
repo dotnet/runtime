@@ -138,7 +138,6 @@ struct AsmManStrongName
     BYTE   *m_pbPrivateKey;
     DWORD   m_cbPrivateKey;
     WCHAR  *m_wzKeyContainer;
-    BOOL    m_fFullSign;
 
     // Where has the memory pointed to by m_pbPublicKey been taken from:
     AllocationState   m_dwPublicKeyAllocated;
