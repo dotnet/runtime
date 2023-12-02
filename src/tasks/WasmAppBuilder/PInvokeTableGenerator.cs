@@ -258,6 +258,13 @@ internal sealed class PInvokeTableGenerator
     {
         var method = pinvoke.Method;
 
+        if (method.Name == "EnumCalendarInfo")
+        {
+            // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
+            // https://github.com/dotnet/runtime/issues/43791
+            return $"int {_fixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);";
+        }
+
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
             // Don't use method.ToString() or any of it's parameters, or return type
