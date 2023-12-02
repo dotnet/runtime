@@ -1262,11 +1262,6 @@ AGAIN:
             break;
 #endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-        case GT_NOP:
-
-            op1 = op1->AsOp()->gtOp1;
-            goto AGAIN;
-
         case GT_COMMA:
 
             op1 = op1->AsOp()->gtOp2;
@@ -1340,11 +1335,6 @@ AGAIN:
             }
             break;
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-        case GT_NOP:
-
-            op2 = op2->AsOp()->gtOp1;
-            goto AGAIN;
 
         case GT_COMMA:
 

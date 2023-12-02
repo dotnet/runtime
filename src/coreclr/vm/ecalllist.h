@@ -556,12 +556,6 @@ FCFuncStart(gMngdNativeArrayMarshalerFuncs)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
-
-FCFuncStart(gInterfaceMarshalerFuncs)
-    FCFuncElement("ConvertToNative", StubHelpers::InterfaceMarshaler__ConvertToNative)
-    FCFuncElement("ConvertToManaged", StubHelpers::InterfaceMarshaler__ConvertToManaged)
-FCFuncEnd()
-
 FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdSafeArrayMarshaler::CreateMarshaler)
     FCFuncElement("ConvertSpaceToNative", MngdSafeArrayMarshaler::ConvertSpaceToNative)
@@ -570,7 +564,6 @@ FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("ConvertContentsToManaged", MngdSafeArrayMarshaler::ConvertContentsToManaged)
     FCFuncElement("ClearNative", MngdSafeArrayMarshaler::ClearNative)
 FCFuncEnd()
-
 #endif // FEATURE_COMINTEROP
 
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
@@ -687,7 +680,6 @@ FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
 FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
 FCClassElement("IEnumerator", "System.Collections", gStdMngIEnumeratorFuncs)
 FCClassElement("IReflect", "System.Reflection", gStdMngIReflectFuncs)
-FCClassElement("InterfaceMarshaler", "System.StubHelpers", gInterfaceMarshalerFuncs)
 #endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("JitInfo", "System.Runtime", gJitInfoFuncs)

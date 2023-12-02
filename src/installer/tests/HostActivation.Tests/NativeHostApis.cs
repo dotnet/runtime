@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SdkResolutionFixture(SharedTestState state)
             {
-                Dotnet = new DotNetCli(TestContext.BuiltDotNet);
+                Dotnet = TestContext.BuiltDotNet;
 
                 _fixture = state.HostApiInvokerAppFixture.Copy();
 
