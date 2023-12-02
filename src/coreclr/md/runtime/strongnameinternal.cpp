@@ -296,11 +296,6 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
 
     goto Exit;
 
- Error:
-    if (*ppbStrongNameToken) {
-        delete [] *ppbStrongNameToken;
-        *ppbStrongNameToken = NULL;
-    }
 Exit:
 #else
     DacNotImpl();
