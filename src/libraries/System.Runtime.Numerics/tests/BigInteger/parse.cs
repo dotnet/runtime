@@ -139,6 +139,9 @@ namespace System.Numerics.Tests
             Assert.Equal(new BigInteger(-2), result);
             Assert.Equal(-2, result);
 
+            Assert.True(BigInteger.TryParse("F", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-1, result);
+
             Assert.Throws<FormatException>(() =>
             {
                 BigInteger.Parse("zzz", NumberStyles.HexNumber);
@@ -148,6 +151,18 @@ namespace System.Numerics.Tests
             {
                 BigInteger.Parse("1", NumberStyles.AllowHexSpecifier | NumberStyles.AllowCurrencySymbol);
             });
+        }
+
+        [Theory]
+        [InlineData("1", -1L)]
+        [InlineData("01", 1L)]
+        [InlineData("10000000000000000000000000000000", (long)int.MinValue)]
+        [InlineData("010000000000000000000000000000001", 0x080000001L)]
+        [InlineData("111111111111111111111111111111110", -2L)]
+        public void Parse_BinSpecialCases(string input, long expectedValue)
+        {
+            Assert.True(BigInteger.TryParse(input, NumberStyles.BinaryNumber, null, out BigInteger result));
+            Assert.Equal(expectedValue, result);
         }
 
         private static void RunFormatProviderParseStrings()
