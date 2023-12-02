@@ -235,6 +235,8 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_TryGetStructMarshalStub)
     DllImportEntry(MarshalNative_SizeOfHelper)
+    DllImportEntry(MarshalNative_GetDelegateForFunctionPointerInternal)
+    DllImportEntry(MarshalNative_GetFunctionPointerForDelegateInternal)
     DllImportEntry(MarshalNative_GetHINSTANCE)
 #ifdef _DEBUG
     DllImportEntry(MarshalNative_GetIsInCooperativeGCModeFunctionPointer)

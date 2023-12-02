@@ -474,8 +474,6 @@ FCFuncStart(gInteropMarshalFuncs)
 
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
     FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
-    FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
-    FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)
 
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
