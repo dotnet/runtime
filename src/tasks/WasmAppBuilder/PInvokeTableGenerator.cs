@@ -445,32 +445,32 @@ internal sealed class PInvokeTableGenerator
                 return false;
 
             if (!type.IsValueType) {
-                log.Warning("WASM0060", "Type {0} is not blittable: Not a ValueType", type);
+                log.Info("WASM0060", "Type {0} is not blittable: Not a ValueType", type);
                 return false;
             }
 
             var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
             if (!type.IsLayoutSequential && (fields.Length > 1)) {
-                log.Warning("WASM0061", "Type {0} is not blittable: LayoutKind is not Sequential", type);
+                log.Info("WASM0061", "Type {0} is not blittable: LayoutKind is not Sequential", type);
                 return false;
             }
 
             foreach (var ft in fields) {
                 if (!IsBlittable(ft.FieldType, log)) {
-                    log.Warning("WASM0062", "Type {0} is not blittable: Field {1} is not blittable", type, ft.Name);
+                    log.Info("WASM0062", "Type {0} is not blittable: Field {1} is not blittable", type, ft.Name);
                     return false;
                 }
                 // HACK: Skip literals since they're complicated
                 // Ideally we would block initonly fields too since the callee could mutate them, but
                 //  we rely on being able to pass types like System.Guid which are readonly
                 if (ft.IsLiteral) {
-                    log.Warning("WASM0063", "Type {0} is not blittable: Field {1} is literal", type, ft.Name);
+                    log.Info("WASM0063", "Type {0} is not blittable: Field {1} is literal", type, ft.Name);
                     return false;
                 }
             }
 
-            log.Info("WASM0069", "ValueType {0} is blittable", type);
+            // log.Info("WASM0069", "ValueType {0} is blittable", type);
             return true;
         }
     }
