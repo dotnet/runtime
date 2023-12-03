@@ -6376,14 +6376,49 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
 //
 // Arguments:
 //    initBlkNode - the GT_STORE_BLK node
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    // TODO: LoongArch64 impl
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
+
+    GenTree* const zeroNode = initBlkNode->Data();
+    genConsumeReg(zeroNode);
+    const regNumber zeroReg = zeroNode->GetRegNum();
+
+    if (initBlkNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier();
+    }
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    // The loop is reversed (it makes it smaller)
+    //// GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        const regNumber offsetReg = initBlkNode->ExtractTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+
+        // TODO: LoongArch64:
+        //
+        //// GetEmitter()->emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
+        //// GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
+        //// GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, offsetReg, offsetReg);
+        //// inst_JMP(EJ_ne, loop);
+    }
 }
 
 // Generate code for a load from some address + offset

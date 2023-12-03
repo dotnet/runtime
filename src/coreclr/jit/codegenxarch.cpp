@@ -3318,7 +3318,9 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 }
 
 //------------------------------------------------------------------------
-// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
 //
 // Arguments:
 //    initBlkNode - the GT_STORE_BLK node
@@ -3345,6 +3347,8 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     const unsigned size = initBlkNode->GetLayout()->GetSize();
     assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
 
+    // The loop is reversed (it makes it smaller)
+    GetEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, 0);
     if (size > TARGET_POINTER_SIZE)
     {
         const regNumber offsetReg = initBlkNode->ExtractTempReg();
@@ -3357,7 +3361,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, TARGET_POINTER_SIZE);
         inst_JMP(EJ_jne, loop);
     }
-    GetEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, 0);
 }
 
 #ifdef TARGET_AMD64
