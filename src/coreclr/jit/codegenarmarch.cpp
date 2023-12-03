@@ -3115,6 +3115,63 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
+
+#ifdef TARGET_ARM64
+    const regNumber zeroReg = REG_ZR;
+#else
+    GenTree* const zeroNode = initBlkNode->Data();
+    genConsumeReg(zeroNode);
+    const regNumber zeroReg = zeroNode->GetRegNum();
+#endif
+
+    if (initBlkNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier();
+    }
+
+    //  mov     offsetReg, <block size>
+    //.LOOP:
+    //  str     xzr, [dstReg, offsetReg]
+    //  subs    offsetReg, offsetReg, #8
+    //  bne     .LOOP
+    //  str     xzr, [dstReg]
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    if (size > TARGET_POINTER_SIZE)
+    {
+        const regNumber offsetReg = initBlkNode->ExtractTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+
+        GetEmitter()->emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
+#ifdef TARGET_ARM64
+        GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
+#else
+        // There is no subs (sets flags) instruction on ARM32, so we use sub and cmp instead.
+        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
+        GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, offsetReg, offsetReg);
+#endif
+        inst_JMP(EJ_ne, loop);
+    }
+    GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
+}
+
+//------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
 void CodeGen::genCall(GenTreeCall* call)
@@ -4382,6 +4439,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindCpObjUnroll:
             assert(!blkOp->gtBlkOpGcUnsafe);
             genCodeForCpObj(blkOp->AsBlk());
+            break;
+
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
             break;
 
         case GenTreeBlk::BlkOpKindHelper:

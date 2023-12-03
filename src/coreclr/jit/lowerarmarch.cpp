@@ -600,7 +600,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            blkNode->gtBlkOpKind =
+                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindHelper;
         }
     }
     else

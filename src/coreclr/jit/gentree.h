@@ -7242,12 +7242,11 @@ public:
 #ifdef TARGET_XARCH
         BlkOpKindCpObjRepInstr,
 #endif
-#ifndef TARGET_X86
         BlkOpKindHelper,
-#endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,
 #endif
+        BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
@@ -7256,12 +7255,15 @@ public:
     bool gtBlkOpGcUnsafe;
 #endif
 
-#ifdef TARGET_XARCH
     bool IsOnHeapAndContainsReferences()
     {
         return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIs(GT_LCL_ADDR);
     }
-#endif
+
+    bool IsZeroingGcPointersOnHeap()
+    {
+        return OperIs(GT_STORE_BLK) && Data()->IsIntegralConst(0) && IsOnHeapAndContainsReferences();
+    }
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)

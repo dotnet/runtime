@@ -3034,6 +3034,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             genCodeForCpObj(storeBlkNode->AsBlk());
             break;
 
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(storeBlkNode);
+            break;
+
 #ifdef TARGET_AMD64
         case GenTreeBlk::BlkOpKindHelper:
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
@@ -3310,6 +3315,49 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode  = initBlkNode->Addr();
+    GenTree* const zeroNode = initBlkNode->Data();
+
+    genConsumeReg(dstNode);
+    genConsumeReg(zeroNode);
+
+    const regNumber dstReg  = dstNode->GetRegNum();
+    const regNumber zeroReg = zeroNode->GetRegNum();
+
+    //  xor      zeroReg, zeroReg
+    //  mov      offsetReg, <block size>
+    //.LOOP:
+    //  mov      qword ptr [dstReg + offsetReg], zeroReg
+    //  sub      offsetReg, 8
+    //  jne      .LOOP
+    //  mov      qword ptr [dstReg], zeroReg
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    if (size > TARGET_POINTER_SIZE)
+    {
+        const regNumber offsetReg = initBlkNode->ExtractTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+
+        GetEmitter()->emitIns_ARX_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, offsetReg, 1, 0);
+        GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, TARGET_POINTER_SIZE);
+        inst_JMP(EJ_jne, loop);
+    }
+    GetEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, 0);
 }
 
 #ifdef TARGET_AMD64
