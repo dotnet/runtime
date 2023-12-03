@@ -6,49 +6,6 @@
 #include "ssarenamestate.h"
 #include "ssabuilder.h"
 
-namespace
-{
-/**
- * Method that finds a common IDom parent, much like least common ancestor.
- *
- * @param finger1 A basic block that might share IDom ancestor with finger2.
- * @param finger2 A basic block that might share IDom ancestor with finger1.
- *
- * @see "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J. Harvey, Ken Kennedy.
- *
- * @return A basic block whose IDom is the dominator for finger1 and finger2,
- * or else NULL.  This may be called while immediate dominators are being
- * computed, and if the input values are members of the same loop (each reachable from the other),
- * then one may not yet have its immediate dominator computed when we are attempting
- * to find the immediate dominator of the other.  So a NULL return value means that the
- * the two inputs are in a cycle, not that they don't have a common dominator ancestor.
- */
-static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
-{
-    while (finger1 != finger2)
-    {
-        if (finger1 == nullptr || finger2 == nullptr)
-        {
-            return nullptr;
-        }
-        while (finger1 != nullptr && finger1->bbPostorderNum < finger2->bbPostorderNum)
-        {
-            finger1 = finger1->bbIDom;
-        }
-        if (finger1 == nullptr)
-        {
-            return nullptr;
-        }
-        while (finger2 != nullptr && finger2->bbPostorderNum < finger1->bbPostorderNum)
-        {
-            finger2 = finger2->bbIDom;
-        }
-    }
-    return finger1;
-}
-
-} // end of anonymous namespace.
-
 // =================================================================================
 //                                      SSA
 // =================================================================================
@@ -135,80 +92,6 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
     , m_visitedTraits(0, pCompiler) // at this point we do not know the size, SetupBBRoot can add a block
     , m_renameStack(m_allocator, pCompiler->lvaCount)
 {
-}
-
-/**
- * Computes the immediate dominator IDom for each block iteratively.
- *
- * @param postOrder The array of basic blocks arranged in postOrder.
- * @param count The size of valid elements in the postOrder array.
- *
- * @see "A simple, fast dominance algorithm." paper.
- */
-void SsaBuilder::ComputeImmediateDom()
-{
-    JITDUMP("[SsaBuilder::ComputeImmediateDom]\n");
-
-    FlowGraphDfsTree* dfs       = m_pCompiler->m_dfs;
-    BasicBlock**      postOrder = dfs->GetPostOrder();
-    unsigned          count     = dfs->GetPostOrderCount();
-
-    // Add entry point to visited as its IDom is NULL.
-    assert(postOrder[count - 1] == m_pCompiler->fgFirstBB);
-
-    unsigned numIters = 0;
-    bool     changed  = true;
-    while (changed)
-    {
-        changed = false;
-
-        // In reverse post order, except for the entry block (count - 1 is entry BB).
-        for (int i = count - 2; i >= 0; --i)
-        {
-            BasicBlock* block = postOrder[i];
-
-            DBG_SSA_JITDUMP("Visiting in reverse post order: " FMT_BB ".\n", block->bbNum);
-
-            // Intersect DOM, if computed, for all predecessors.
-            BasicBlock* bbIDom = nullptr;
-            for (FlowEdge* pred = m_pCompiler->BlockDominancePreds(block); pred; pred = pred->getNextPredEdge())
-            {
-                BasicBlock* domPred = pred->getSourceBlock();
-                if ((domPred->bbPostorderNum >= (unsigned)count) || (postOrder[domPred->bbPostorderNum] != domPred))
-                {
-                    continue; // Unreachable pred
-                }
-
-                if ((numIters <= 0) && (domPred->bbPostorderNum <= (unsigned)i))
-                {
-                    continue; // Pred not yet visited
-                }
-
-                if (bbIDom == nullptr)
-                {
-                    bbIDom = domPred;
-                }
-                else
-                {
-                    bbIDom = IntersectDom(bbIDom, domPred);
-                }
-            }
-
-            // Did we change the bbIDom value?  If so, we go around the outer loop again.
-            if (block->bbIDom != bbIDom)
-            {
-                changed = true;
-
-                // IDom has changed, update it.
-                DBG_SSA_JITDUMP("bbIDom of " FMT_BB " becomes " FMT_BB ".\n", block->bbNum, bbIDom ? bbIDom->bbNum : 0);
-                block->bbIDom = bbIDom;
-            }
-
-            DBG_SSA_JITDUMP("Marking block " FMT_BB " as processed.\n", block->bbNum);
-        }
-
-        numIters++;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1343,14 +1226,14 @@ void SsaBuilder::RenameVariables()
         }
     }
 
-    class SsaRenameDomTreeVisitor : public DomTreeVisitor<SsaRenameDomTreeVisitor>
+    class SsaRenameDomTreeVisitor : public NewDomTreeVisitor<SsaRenameDomTreeVisitor>
     {
         SsaBuilder*     m_builder;
         SsaRenameState* m_renameStack;
 
     public:
         SsaRenameDomTreeVisitor(Compiler* compiler, SsaBuilder* builder, SsaRenameState* renameStack)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_builder(builder), m_renameStack(renameStack)
+            : NewDomTreeVisitor(compiler), m_builder(builder), m_renameStack(renameStack)
         {
         }
 
@@ -1368,7 +1251,7 @@ void SsaBuilder::RenameVariables()
     };
 
     SsaRenameDomTreeVisitor visitor(m_pCompiler, this, &m_renameStack);
-    visitor.WalkTree();
+    visitor.WalkTree(m_pCompiler->fgSsaDomTree);
 }
 
 //------------------------------------------------------------------------
@@ -1421,24 +1304,8 @@ void SsaBuilder::Build()
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
 
-    // TODO-Cleanup: We currently have two dominance computations happening.  We should unify them; for
-    // now, at least forget the results of the first. Note that this does not clear fgDomTreePreOrder
-    // and fgDomTreePostOrder nor does the subsequent code call fgNumberDomTree once the new dominator
-    // tree is built. The pre/post order numbers that were generated previously and used for loop
-    // recognition are still being used by optPerformHoistExpr via fgCreateLoopPreHeader. That's rather
-    // odd, considering that SetupBBRoot may have added a new block.
-    for (BasicBlock* const block : m_pCompiler->Blocks())
-    {
-        block->bbIDom         = nullptr;
-        block->bbPostorderNum = 0;
-    }
-
-    m_pCompiler->m_dfs = m_pCompiler->fgComputeDfs();
-
-    // Compute IDom(b).
-    ComputeImmediateDom();
-
-    m_pCompiler->fgSsaDomTree = m_pCompiler->fgBuildDomTree();
+    m_pCompiler->m_dfs        = m_pCompiler->fgComputeDfs();
+    m_pCompiler->fgSsaDomTree = FlowGraphDominatorTree::Build(m_pCompiler->m_dfs);
     EndPhase(PHASE_BUILD_SSA_DOMS);
 
     // Compute liveness on the graph.

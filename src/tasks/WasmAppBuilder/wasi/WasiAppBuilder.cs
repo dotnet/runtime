@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Nodes;
 using Microsoft.Build.Framework;
 
@@ -21,9 +22,21 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
             throw new LogAsErrorException($"{nameof(IcuDataFileNames)} property shouldn't be empty when {nameof(InvariantGlobalization)}=false");
 
         if (Assemblies.Length == 0 && !IsSingleFileBundle)
+            throw new LogAsErrorException("Cannot build Wasm app without any assemblies");
+
+        if (IsSingleFileBundle)
         {
-            Log.LogError("Cannot build Wasm app without any assemblies");
-            return false;
+            if (ExtraFilesToDeploy.Length > 0)
+            {
+                throw new LogAsErrorException($"$({nameof(ExtraFilesToDeploy)}) is not supported for single file bundles. " +
+                                              $"Value: {string.Join(",", ExtraFilesToDeploy.Select(e => e.GetMetadata("FullPath")))}");
+            }
+
+            if (FilesToIncludeInFileSystem.Length > 0)
+            {
+                throw new LogAsErrorException($"$({nameof(FilesToIncludeInFileSystem)}) is not supported for single file bundles. " +
+                                              $"Value: {string.Join(",", FilesToIncludeInFileSystem.Select(e => e.ItemSpec))}");
+            }
         }
 
         return true;

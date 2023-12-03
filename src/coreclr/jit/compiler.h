@@ -2216,6 +2216,33 @@ public:
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
 };
 
+class FlowGraphDominatorTree
+{
+    template<typename TVisitor>
+    friend class NewDomTreeVisitor;
+
+    const FlowGraphDfsTree* m_dfs;
+    const DomTreeNode* m_tree;
+    const unsigned* m_preorderNum;
+    const unsigned* m_postorderNum;
+
+    FlowGraphDominatorTree(const FlowGraphDfsTree* dfs, const DomTreeNode* tree, const unsigned* preorderNum, const unsigned* postorderNum)
+        : m_dfs(dfs)
+        , m_tree(tree)
+        , m_preorderNum(preorderNum)
+        , m_postorderNum(postorderNum)
+    {
+    }
+
+    static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
+public:
+    BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
+    bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
+
+    static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfs);
+};
+
+
 //  The following holds information about instr offsets in terms of generated code.
 
 enum class IPmappingDscKind
@@ -4778,7 +4805,7 @@ public:
 
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
-    DomTreeNode* fgSsaDomTree;
+    FlowGraphDominatorTree* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
 
@@ -11465,6 +11492,7 @@ public:
             case GT_PINVOKE_PROLOG:
             case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
+            case GT_NOP:
                 break;
 
             // Lclvar unary operators
@@ -11505,7 +11533,6 @@ public:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
             case GT_RETURNTRAP:
-            case GT_NOP:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:
@@ -11842,6 +11869,9 @@ public:
     //------------------------------------------------------------------------
     // WalkTree: Walk the dominator tree, starting from fgFirstBB.
     //
+    // Parameter:
+    //    tree - Dominator tree nodes.
+    //
     // Notes:
     //    This performs a non-recursive, non-allocating walk of the tree by using
     //    DomTreeNode's firstChild and nextSibling links to locate the children of
@@ -11885,6 +11915,89 @@ public:
         }
 
         static_cast<TVisitor*>(this)->End();
+    }
+};
+
+// A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
+template <typename TVisitor>
+class NewDomTreeVisitor
+{
+    friend class FlowGraphDominatorTree;
+
+protected:
+    Compiler* m_compiler;
+
+    NewDomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
+    {
+    }
+
+    void Begin()
+    {
+    }
+
+    void PreOrderVisit(BasicBlock* block)
+    {
+    }
+
+    void PostOrderVisit(BasicBlock* block)
+    {
+    }
+
+    void End()
+    {
+    }
+
+private:
+    void WalkTree(const DomTreeNode* tree)
+    {
+        static_cast<TVisitor*>(this)->Begin();
+
+        for (BasicBlock *next, *block = m_compiler->fgFirstBB; block != nullptr; block = next)
+        {
+            static_cast<TVisitor*>(this)->PreOrderVisit(block);
+
+            next = tree[block->bbPostorderNum].firstChild;
+
+            if (next != nullptr)
+            {
+                assert(next->bbIDom == block);
+                continue;
+            }
+
+            do
+            {
+                static_cast<TVisitor*>(this)->PostOrderVisit(block);
+
+                next = tree[block->bbPostorderNum].nextSibling;
+
+                if (next != nullptr)
+                {
+                    assert(next->bbIDom == block->bbIDom);
+                    break;
+                }
+
+                block = block->bbIDom;
+
+            } while (block != nullptr);
+        }
+
+        static_cast<TVisitor*>(this)->End();
+    }
+
+public:
+    //------------------------------------------------------------------------
+    // WalkTree: Walk the dominator tree.
+    //
+    // Parameter:
+    //    domTree - Dominator tree.
+    //
+    // Notes:
+    //    This performs a non-recursive, non-allocating walk of the dominator
+    //    tree.
+    //
+    void WalkTree(const FlowGraphDominatorTree* domTree)
+    {
+        WalkTree(domTree->m_tree);
     }
 };
 

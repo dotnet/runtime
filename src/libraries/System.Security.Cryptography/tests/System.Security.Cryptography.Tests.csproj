@@ -388,13 +388,17 @@
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="DefaultECDsaProvider.Browser.cs" />
+    <Compile Include="DefaultECDiffieHellmanProvider.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
     <Compile Include="X509Certificates\X509StoreMutableTests.cs" />

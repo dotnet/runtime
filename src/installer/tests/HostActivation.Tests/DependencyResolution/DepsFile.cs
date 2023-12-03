@@ -60,10 +60,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public SharedTestState()
             {
                 DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion)
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
                     .Build();
 
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion, b => b
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
                     .WithProject(DependencyName, "1.0.0", p => p
                         .WithAssemblyGroup(null, g => g.WithAsset($"{DependencyName}.dll"))));
 

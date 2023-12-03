@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
+import { marshal_exception_to_js, bind_arg_marshal_to_js, end_marshal_task_to_js } from "./marshal-to-js";
 import {
     get_arg, get_sig, get_signature_argument_count, is_args_exception,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
@@ -64,9 +64,11 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         }
 
         const res_sig = get_sig(signature, 1);
-        const res_marshaler_type = get_signature_type(res_sig);
-        if (res_marshaler_type == MarshalerType.Task) {
+        let res_marshaler_type = get_signature_type(res_sig);
+        const is_async = res_marshaler_type == MarshalerType.Task;
+        if (is_async) {
             assert_synchronization_context();
+            res_marshaler_type = MarshalerType.TaskPreCreated;
         }
         const res_converter = bind_arg_marshal_to_js(res_sig, res_marshaler_type, 1);
 
@@ -76,14 +78,22 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             args_count,
             arg_marshalers,
             res_converter,
+            is_async,
             isDisposed: false,
         };
         let bound_fn: Function;
+        // void
         if (args_count == 0 && !res_converter) {
             bound_fn = bind_fn_0V(closure);
         }
         else if (args_count == 1 && !res_converter) {
             bound_fn = bind_fn_1V(closure);
+        }
+        else if (is_async && args_count == 1 && res_converter) {
+            bound_fn = bind_fn_1RA(closure);
+        }
+        else if (is_async && args_count == 2 && res_converter) {
+            bound_fn = bind_fn_2RA(closure);
         }
         else if (args_count == 1 && res_converter) {
             bound_fn = bind_fn_1R(closure);
@@ -192,6 +202,38 @@ function bind_fn_1R(closure: BindingClosure) {
     };
 }
 
+function bind_fn_1RA(closure: BindingClosure) {
+    const method = closure.method;
+    const marshaler1 = closure.arg_marshalers[0]!;
+    const res_converter = closure.res_converter!;
+    const fqn = closure.fqn;
+    if (!MonoWasmThreads) (<any>closure) = null;
+    return function bound_fn_1R(arg1: any) {
+        const mark = startMeasure();
+        loaderHelpers.assert_runtime_running();
+        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(3);
+            marshaler1(args, arg1);
+
+            // pre-allocate the promise
+            let promise = res_converter(args);
+
+            // call C# side
+            invoke_method_and_handle_exception(method, args);
+
+            // in case the C# side returned synchronously
+            promise = end_marshal_task_to_js(args, undefined, promise);
+
+            return promise;
+        } finally {
+            Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
+        }
+    };
+}
+
 function bind_fn_2R(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
@@ -221,12 +263,47 @@ function bind_fn_2R(closure: BindingClosure) {
     };
 }
 
+function bind_fn_2RA(closure: BindingClosure) {
+    const method = closure.method;
+    const marshaler1 = closure.arg_marshalers[0]!;
+    const marshaler2 = closure.arg_marshalers[1]!;
+    const res_converter = closure.res_converter!;
+    const fqn = closure.fqn;
+    if (!MonoWasmThreads) (<any>closure) = null;
+    return function bound_fn_2R(arg1: any, arg2: any) {
+        const mark = startMeasure();
+        loaderHelpers.assert_runtime_running();
+        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(4);
+            marshaler1(args, arg1);
+            marshaler2(args, arg2);
+
+            // pre-allocate the promise
+            let promise = res_converter(args);
+
+            // call C# side
+            invoke_method_and_handle_exception(method, args);
+
+            // in case the C# side returned synchronously
+            promise = end_marshal_task_to_js(args, undefined, promise);
+
+            return promise;
+        } finally {
+            Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
+        }
+    };
+}
+
 function bind_fn(closure: BindingClosure) {
     const args_count = closure.args_count;
     const arg_marshalers = closure.arg_marshalers;
     const res_converter = closure.res_converter;
     const method = closure.method;
     const fqn = closure.fqn;
+    const is_async = closure.is_async;
     if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
         const mark = startMeasure();
@@ -242,14 +319,22 @@ function bind_fn(closure: BindingClosure) {
                     marshaler(args, js_arg);
                 }
             }
+            let js_result = undefined;
+            if (is_async) {
+                // pre-allocate the promise
+                js_result = res_converter!(args);
+            }
 
             // call C# side
             invoke_method_and_handle_exception(method, args);
-
-            if (res_converter) {
-                const js_result = res_converter(args);
-                return js_result;
+            if (is_async) {
+                // in case the C# side returned synchronously
+                js_result = end_marshal_task_to_js(args, undefined, js_result);
             }
+            else if (res_converter) {
+                js_result = res_converter(args);
+            }
+            return js_result;
         } finally {
             Module.stackRestore(sp);
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
@@ -263,6 +348,7 @@ type BindingClosure = {
     method: MonoMethod,
     arg_marshalers: (BoundMarshalerToCs)[],
     res_converter: BoundMarshalerToJs | undefined,
+    is_async: boolean,
     isDisposed: boolean,
 }
 

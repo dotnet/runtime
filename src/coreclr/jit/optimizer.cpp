@@ -5958,6 +5958,13 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CAST:
             {
+#ifdef DEBUG
+                if ((tree->gtDebugFlags & GTF_DEBUG_CAST_DONT_FOLD) != 0)
+                {
+                    return false;
+                }
+#endif
+
                 if ((tree->CastToType() != srct) || tree->gtOverflow())
                 {
                     return false;
@@ -6827,7 +6834,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         BasicBlock* preheader = childLoop->EntryEdges()[0]->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
         {
-            if (fgDominate(childPreHead, pLoopDsc->lpExit))
+            if (fgSsaDomTree->Dominates(childPreHead, pLoopDsc->lpExit))
             {
                 // If the child loop pre-header dominates the exit, it will get added in the dominator tree
                 // loop below.
@@ -8484,7 +8491,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                         continue;
                     }
 
-                    GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
+                    GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal();
 
                     if (addr->TypeGet() == TYP_BYREF && addr->OperGet() == GT_LCL_VAR)
                     {

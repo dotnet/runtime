@@ -1361,17 +1361,6 @@ namespace System
             return null;
         }
 
-        private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
-
-        private static bool IsDigit(uint ch) => (ch - '0') <= 9;
-
-        internal enum ParsingStatus
-        {
-            OK,
-            Failed,
-            Overflow
-        }
-
         [DoesNotReturn]
         internal static void ThrowOverflowOrFormatException<TChar, TInteger>(ParsingStatus status, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
