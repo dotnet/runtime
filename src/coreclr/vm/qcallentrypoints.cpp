@@ -8,7 +8,6 @@
 // Headers for all ECall entrypoints
 //
 #include "arraynative.h"
-#include "stringnative.h"
 #include "objectnative.h"
 #include "comdelegate.h"
 #include "customattribute.h"
@@ -352,6 +351,7 @@ static const Entry s_QCall[] =
     DllImportEntry(X86BaseCpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
+    DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ObjectMarshaler_ConvertToNative)

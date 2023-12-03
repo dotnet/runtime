@@ -50,7 +50,8 @@ public:
     static FCDECL0(void,            ClearLastError          );
     static FCDECL1(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
 
-    static FCDECL2(void,            ThrowInteropParamException, UINT resID, UINT paramIdx);
+    static FCDECL2(FC_BOOL_RET,     TryGetStringTrailByte,  StringObject* thisRefUNSAFE, UINT8 *pbData);
+
     static FCDECL1(Object*,         GetHRExceptionObject,   HRESULT hr);
 
 #ifdef FEATURE_COMINTEROP
@@ -95,6 +96,7 @@ extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectH
 extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, QCall::ObjectHandleOnStack retObject);
 #endif
 
+extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData);
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
 
 #endif  // __STUBHELPERS_h__

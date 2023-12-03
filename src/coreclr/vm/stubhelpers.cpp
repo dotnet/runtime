@@ -476,6 +476,29 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 }
 FCIMPLEND
 
+#include <optsmallperfcritical.h>
+FCIMPL2(FC_BOOL_RET, StubHelpers::TryGetStringTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData)
+{
+    FCALL_CONTRACT;
+
+    STRINGREF thisRef = ObjectToSTRINGREF(thisRefUNSAFE);
+    FC_RETURN_BOOL(thisRef->GetTrailByte(pbData));
+}
+FCIMPLEND
+#include <optdefault.h>
+
+extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    str.Get()->SetTrailByte(bData);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {
     QCALL_CONTRACT;

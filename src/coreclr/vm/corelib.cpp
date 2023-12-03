@@ -13,7 +13,6 @@
 // Headers for all ECall entrypoints
 //
 #include "arraynative.h"
-#include "stringnative.h"
 #include "objectnative.h"
 #include "comdelegate.h"
 #include "customattribute.h"

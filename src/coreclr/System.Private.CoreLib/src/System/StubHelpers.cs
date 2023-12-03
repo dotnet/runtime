@@ -231,7 +231,7 @@ namespace System.StubHelpers
             }
             else
             {
-                bool hasTrailByte = strManaged.TryGetTrailByte(out byte trailByte);
+                bool hasTrailByte = StubHelpers.TryGetStringTrailByte(strManaged, out byte trailByte);
 
                 uint lengthInBytes = (uint)strManaged.Length * 2;
 
@@ -315,7 +315,7 @@ namespace System.StubHelpers
                 if ((length & 1) == 1)
                 {
                     // odd-sized strings need to have the trailing byte saved in their sync block
-                    ret.SetTrailByte(((byte*)bstr)[length - 1]);
+                    StubHelpers.SetStringTrailByte(ret, ((byte*)bstr)[length - 1]);
                 }
 
                 return ret;
@@ -1271,6 +1271,19 @@ namespace System.StubHelpers
                 throw new MarshalDirectiveException(SR.Marshaler_StringTooLong);
             }
         }
+
+        // Try to retrieve the extra byte - returns false if not present.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool TryGetStringTrailByte(string str, out byte data);
+
+        // Set extra byte for odd-sized strings that came from interop as BSTR.
+        internal static void SetStringTrailByte(string str, byte data)
+        {
+            SetStringTrailByte(new StringHandleOnStack(ref str!), data);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_SetStringTrailByte")]
+        private static partial void SetStringTrailByte(StringHandleOnStack str, byte data);
 
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {

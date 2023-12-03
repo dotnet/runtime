@@ -12,13 +12,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern string FastAllocateString(int length);
 
-        // Set extra byte for odd-sized strings that came from interop as BSTR.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern void SetTrailByte(byte data);
-        // Try to retrieve the extra byte - returns false if not present.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern bool TryGetTrailByte(out byte data);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
         private static partial void Intern(StringHandleOnStack src);
 
