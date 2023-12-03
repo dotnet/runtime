@@ -18,7 +18,7 @@ public class StructWithGC_Zeroing
         LargeStructWithGC2 ls2 = default;
         ls2.str = "hello2";
         ls2.z1 = long.MinValue;
-        ZeroIt(ref ls2);
+        ZeroIt2(ref ls2);
 
         if (ls1.str != null || ls2.str != null || ls1.z2 != 0 || ls2.z1 != 0)
             throw new InvalidOperationException("should be zeroed");
@@ -33,7 +33,7 @@ public class StructWithGC_Zeroing
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ZeroIt(ref LargeStructWithGC2 s)
+    private static void ZeroIt2(ref LargeStructWithGC2 s)
     {
         // X64-NOT: CORINFO_HELP_MEMSET
         // ARM64-NOT: CORINFO_HELP_MEMSET
