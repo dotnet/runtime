@@ -2039,6 +2039,8 @@ class FlowGraphNaturalLoop
     const FlowGraphDfsTree* m_tree;
     BasicBlock* m_header;
     FlowGraphNaturalLoop* m_parent = nullptr;
+    FlowGraphNaturalLoop* m_child = nullptr;
+    FlowGraphNaturalLoop* m_sibling = nullptr;
     // Bit vector of blocks in the loop; each index is the RPO index a block,
     // with the head block's RPO index subtracted.
     BitVec m_blocks;
@@ -2076,6 +2078,16 @@ public:
     FlowGraphNaturalLoop* GetParent() const
     {
         return m_parent;
+    }
+
+    FlowGraphNaturalLoop* GetChild() const
+    {
+        return m_child;
+    }
+
+    FlowGraphNaturalLoop* GetSibling() const
+    {
+        return m_sibling;
     }
 
     unsigned GetIndex() const
@@ -2236,6 +2248,12 @@ enum class NodeThreading
     AllLocals, // Locals are threaded (after local morph when optimizing)
     AllTrees,  // All nodes are threaded (after gtSetBlockOrder)
     LIR,       // Nodes are in LIR form (after rationalization)
+};
+
+enum class FieldKindForVN
+{
+    SimpleStatic,
+    WithBaseAddr
 };
 
 /*
@@ -4746,6 +4764,8 @@ public:
     struct LoopDsc;
     LoopDsc** m_newToOldLoop;
     FlowGraphNaturalLoop** m_oldToNewLoop;
+    struct LoopSideEffects* m_loopSideEffects;
+    struct HoistCounts* m_loopHoistCounts;
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -6493,6 +6513,13 @@ protected:
         // Previous decisions on loop-invariance of value numbers in the current loop.
         VNSet m_curLoopVnInvariantCache;
 
+        int m_loopVarInOutCount;
+        int m_loopVarCount;
+        int m_hoistedExprCount;
+        int m_loopVarFPCount;
+        int m_loopVarInOutFPCount;
+        int m_hoistedFPExprCount;
+
         // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
         {
@@ -6520,26 +6547,26 @@ protected:
     // by the loop "lnum" itself.
     bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
-    // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
-    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt);
+    // Do hoisting for a particular loop
+    bool optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
 
-    // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
+    // Hoist all expressions in "blocks" that are invariant in "loop"
     // outside of that loop.
-    void optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
+    void optHoistLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
 
-    // Return true if the tree looks profitable to hoist out of loop 'lnum'.
-    bool optIsProfitableToHoistTree(GenTree* tree, unsigned lnum);
+    // Return true if the tree looks profitable to hoist out of "loop"
+    bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop);
 
-    // Performs the hoisting 'tree' into the PreHeader for loop 'lnum'
-    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt);
+    // Performs the hoisting 'tree' into the PreHeader for "loop"
+    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
 
     // Note the new SSA uses in tree
     void optRecordSsaUses(GenTree* tree, BasicBlock* block);
 
-    // Returns true iff the ValueNum "vn" represents a value that is loop-invariant in "lnum".
+    // Returns true iff the ValueNum "vn" represents a value that is loop-invariant in "loop".
     //   Constants and init values are always loop invariant.
     //   VNPhi's connect VN's to the SSA definition, so we can know if the SSA def occurs in the loop.
-    bool optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* recordedVNs);
+    bool optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* recordedVNs);
 
     // If "blk" is the entry block of a natural loop, returns true and sets "*pLnum" to the index of the loop
     // in the loop table.
@@ -6560,21 +6587,14 @@ protected:
     void optMarkLoopRemoved(unsigned loopNum);
 
 private:
-    // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
-    // including all nested loops, and records the set of "side effects" of the loop: fields (object instance and
-    // static) written to, and SZ-array element type equivalence classes updated.
-    void optComputeLoopNestSideEffects(unsigned lnum);
-
-    // Given a loop number 'lnum' mark it and any nested loops as having 'memoryHavoc'
-    void optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc);
+    // Given a loop mark it and any nested loops as having 'memoryHavoc'
+    void optRecordLoopNestsMemoryHavoc(FlowGraphNaturalLoop* loop, MemoryKindSet memoryHavoc);
 
     // Add the side effects of "blk" (which is required to be within a loop) to all loops of which it is a part.
-    // Returns false if we encounter a block that is not marked as being inside a loop.
-    //
-    bool optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
+    void optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNaturalLoop* mostNestedLoop);
 
     // Hoist the expression "expr" out of loop "lnum".
-    void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, unsigned lnum);
+    void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, FlowGraphNaturalLoop* loop);
 
 public:
     PhaseStatus optOptimizeBools();
@@ -6606,12 +6626,6 @@ protected:
         CALLINT_SCL_INDIRS, // kills non GC ref indirections                 (SETFIELD non-OBJ)
         CALLINT_ALL_INDIRS, // kills both GC ref and non GC ref indirections (SETFIELD STRUCT)
         CALLINT_ALL,        // kills everything                              (normal method call)
-    };
-
-    enum class FieldKindForVN
-    {
-        SimpleStatic,
-        WithBaseAddr
     };
 
 public:
@@ -6951,16 +6965,16 @@ protected:
                           const RedirectBlockOption = RedirectBlockOption::DoNotChangePredLists);
 
     // Marks the containsCall information to "lnum" and any parent loops.
-    void AddContainsCallAllContainingLoops(unsigned lnum);
+    void AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop);
 
     // Adds the variable liveness information from 'blk' to "lnum" and any parent loops.
-    void AddVariableLivenessAllContainingLoops(unsigned lnum, BasicBlock* blk);
+    void AddVariableLivenessAllContainingLoops(FlowGraphNaturalLoop* loop, BasicBlock* blk);
 
     // Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
-    void AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
+    void AddModifiedFieldAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
 
     // Adds "elemType" to the set of modified array element types of "lnum" and any parent loops.
-    void AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLASS_HANDLE elemType);
+    void AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemType);
 
     // Requires that "from" and "to" have the same "bbJumpKind" (perhaps because "to" is a clone
     // of "from".)  Copies the jump destination from "from" to "to".
@@ -11978,6 +11992,38 @@ public:
 
     void Append(const char* str);
     void Append(char chr);
+};
+
+typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
+                FieldHandleSet;
+
+typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
+
+struct LoopSideEffects
+{
+    // The loop contains an operation that we assume has arbitrary memory side
+    // effects. If this is set, the fields below may not be accurate (since
+    // they become irrelevant.)
+    bool HasMemoryHavoc[MemoryKindCount];
+    // The set of variables that are IN or OUT during the execution of this loop
+    VARSET_TP VarInOut;
+    // The set of variables that are USE or DEF during the execution of this loop.
+    VARSET_TP VarUseDef;
+    // This has entries for all static field and object instance fields modified
+    // in the loop.
+    FieldHandleSet* FieldsModified = nullptr;
+    // Bits set indicate the set of sz array element types such that
+    // arrays of that type are modified
+    // in the loop.
+    ClassHandleSet* ArrayElemTypesModified = nullptr;
+    bool ContainsCall = false;
+    bool HasNestedLoops = false;
+
+    LoopSideEffects();
+
+    void AddVariableLiveness(Compiler* comp, BasicBlock* block);
+    void AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
+    void AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd);
 };
 
 /*****************************************************************************

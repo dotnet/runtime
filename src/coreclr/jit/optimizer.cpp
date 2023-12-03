@@ -6367,21 +6367,22 @@ void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
 // Arguments:
 //   origExpr - tree to hoist
 //   exprBb   - block containing the tree
-//   lnum     - loop that we're hoisting origExpr out of
+//   loop     - loop that we're hoisting origExpr out of
 //
-void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsigned lnum)
+void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGraphNaturalLoop* loop)
 {
     assert(exprBb != nullptr);
+    assert(loop->EntryEdges().size() == 1);
 
+    BasicBlock* preheader = loop->EntryEdges()[0]->getSourceBlock();
 #ifdef DEBUG
     if (verbose)
     {
         printf("\nHoisting a copy of ");
         printTreeID(origExpr);
         printf(" " FMT_VN, origExpr->gtVNPair.GetLiberal());
-        printf(" from " FMT_BB " into PreHeader " FMT_BB " for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n",
-               exprBb->bbNum, optLoopTable[lnum].lpHead->bbNum, lnum, optLoopTable[lnum].lpTop->bbNum,
-               optLoopTable[lnum].lpBottom->bbNum);
+        printf(" from " FMT_BB " into PreHeader " FMT_BB " for loop " FMT_LP " (head: " FMT_BB "):\n",
+            exprBb->bbNum, preheader->bbNum, loop->GetIndex(), loop->GetHeader()->bbNum);
         gtDispTree(origExpr);
         printf("\n");
     }
@@ -6404,27 +6405,21 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     // The value of the expression isn't used.
     GenTree* hoist = gtUnusedValNode(hoistExpr);
 
-    /* Put the statement in the preheader */
-
-    INDEBUG(optLoopTable[lnum].lpValidatePreHeader());
-
-    BasicBlock* preHead = optLoopTable[lnum].lpHead;
-
     // Scan the tree for any new SSA uses.
     //
-    optRecordSsaUses(hoist, preHead);
+    optRecordSsaUses(hoist, preheader);
 
-    preHead->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
+    preheader->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
 
     Statement* hoistStmt = gtNewStmt(hoist);
 
     // Simply append the statement at the end of the preHead's list.
-    Statement* firstStmt = preHead->firstStmt();
+    Statement* firstStmt = preheader->firstStmt();
     if (firstStmt != nullptr)
     {
         /* append after last statement */
 
-        Statement* lastStmt = preHead->lastStmt();
+        Statement* lastStmt = preheader->lastStmt();
         assert(lastStmt->GetNextStmt() == nullptr);
 
         lastStmt->SetNextStmt(hoistStmt);
@@ -6435,7 +6430,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     {
         /* Empty pre-header - store the single statement in the block */
 
-        preHead->bbStmtList = hoistStmt;
+        preheader->bbStmtList = hoistStmt;
         hoistStmt->SetPrevStmt(hoistStmt);
     }
 
@@ -6444,7 +6439,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
 #ifdef DEBUG
     if (verbose)
     {
-        printf("This hoisted copy placed in PreHeader (" FMT_BB "):\n", preHead->bbNum);
+        printf("This hoisted copy placed in PreHeader (" FMT_BB "):\n", preheader->bbNum);
         gtDispTree(hoist);
         printf("\n");
     }
@@ -6461,13 +6456,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     {
 
         // What is the depth of the loop "lnum"?
-        ssize_t  depth    = 0;
-        unsigned lnumIter = lnum;
-        while (optLoopTable[lnumIter].lpParent != BasicBlock::NOT_IN_LOOP)
-        {
-            depth++;
-            lnumIter = optLoopTable[lnumIter].lpParent;
-        }
+        ssize_t  depth = optLoopDepth((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable));
 
         NodeToTestDataMap* testData = GetNodeTestData();
 
@@ -6579,6 +6568,10 @@ PhaseStatus Compiler::optHoistLoopCode()
 
     // Consider all the loop nests, in inner-to-outer order
     //
+    // TODO-Quirk: Switch this to postorder over the loops, instead of this
+    // loop tree based thing. It is not the exact same order, but it will still
+    // process child loops before parent loops.
+
     bool             modified = false;
     LoopHoistContext hoistCtxt(this);
     for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
@@ -6659,7 +6652,7 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
         }
     }
 
-    modified |= optHoistThisLoop(lnum, hoistCtxt);
+    modified |= optHoistThisLoop(m_oldToNewLoop[lnum], hoistCtxt);
 
     return modified;
 }
@@ -6668,42 +6661,33 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 // optHoistThisLoop: run loop hoisting for the indicated loop
 //
 // Arguments:
-//    lnum - loop to process
+//    loop - loop to process
 //    hoistCtxt - context for the hoisting
 //
 // Returns:
 //    true if any hoisting was done
 //
-bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
+bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt)
 {
-    LoopDsc* pLoopDsc = &optLoopTable[lnum];
-
-    /* If loop was removed continue */
-
-    if (pLoopDsc->lpIsRemoved())
-    {
-        JITDUMP("   ... not hoisting " FMT_LP ": removed\n", lnum);
-        return false;
-    }
-
     // Ensure the per-loop sets/tables are empty.
     hoistCtxt->m_curLoopVnInvariantCache.RemoveAll();
+
+    const LoopSideEffects& sideEffs = m_loopSideEffects[loop->GetIndex()];
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("optHoistThisLoop for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n", lnum, pLoopDsc->lpTop->bbNum,
-               pLoopDsc->lpBottom->bbNum);
-        printf("  Loop body %s a call\n", (pLoopDsc->lpFlags & LPFLG_CONTAINS_CALL) ? "contains" : "does not contain");
-        printf("  Loop has %s\n", (pLoopDsc->lpExitCnt == 1) ? "single exit" : "multiple exits");
+        printf("optHoistThisLoop for loop " FMT_LP " (head: " FMT_BB "):\n", loop->GetIndex(), loop->GetHeader()->bbNum);
+        printf("  Loop body %s a call\n", sideEffs.ContainsCall ? "contains" : "does not contain");
+        printf("  Loop has %s\n", (loop->ExitEdges().size() == 1) ? "single exit" : "multiple exits");
     }
 #endif
 
-    VARSET_TP loopVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, pLoopDsc->lpVarUseDef));
+    VARSET_TP loopVars(VarSetOps::Intersection(this, sideEffs.VarInOut, sideEffs.VarUseDef));
 
-    pLoopDsc->lpVarInOutCount    = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
-    pLoopDsc->lpLoopVarCount     = VarSetOps::Count(this, loopVars);
-    pLoopDsc->lpHoistedExprCount = 0;
+    hoistCtxt->m_loopVarInOutCount = VarSetOps::Count(this, sideEffs.VarInOut);
+    hoistCtxt->m_loopVarCount     = VarSetOps::Count(this, loopVars);
+    hoistCtxt->m_hoistedExprCount = 0;
 
 #ifndef TARGET_64BIT
 
@@ -6713,7 +6697,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         //  the Counts such that each TYP_LONG variable counts twice.
         //
         VARSET_TP loopLongVars(VarSetOps::Intersection(this, loopVars, lvaLongVars));
-        VARSET_TP inOutLongVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaLongVars));
+        VARSET_TP inOutLongVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaLongVars));
 
 #ifdef DEBUG
         if (verbose)
@@ -6722,21 +6706,21 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
             dumpConvertedVarSet(this, lvaLongVars);
         }
 #endif
-        pLoopDsc->lpLoopVarCount += VarSetOps::Count(this, loopLongVars);
-        pLoopDsc->lpVarInOutCount += VarSetOps::Count(this, inOutLongVars);
+        hoistedCtxt->m_loopVarCount += VarSetOps::Count(this, loopLongVars);
+        hoistedCtxt->m_loopVarInOutCount += VarSetOps::Count(this, inOutLongVars);
     }
 #endif // !TARGET_64BIT
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n  USEDEF  (%d)=", VarSetOps::Count(this, pLoopDsc->lpVarUseDef));
-        dumpConvertedVarSet(this, pLoopDsc->lpVarUseDef);
+        printf("\n  USEDEF  (%d)=", VarSetOps::Count(this, sideEffs.VarUseDef));
+        dumpConvertedVarSet(this, sideEffs.VarUseDef);
 
-        printf("\n  INOUT   (%d)=", pLoopDsc->lpVarInOutCount);
-        dumpConvertedVarSet(this, pLoopDsc->lpVarInOut);
+        printf("\n  INOUT   (%d)=", hoistCtxt->m_loopVarInOutCount);
+        dumpConvertedVarSet(this, sideEffs.VarInOut);
 
-        printf("\n  LOOPVARS(%d)=", pLoopDsc->lpLoopVarCount);
+        printf("\n  LOOPVARS(%d)=", hoistCtxt->m_loopVarCount);
         dumpConvertedVarSet(this, loopVars);
         printf("\n");
     }
@@ -6745,22 +6729,21 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     if (!VarSetOps::IsEmpty(this, lvaFloatVars))
     {
         VARSET_TP loopFPVars(VarSetOps::Intersection(this, loopVars, lvaFloatVars));
-        VARSET_TP inOutFPVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaFloatVars));
+        VARSET_TP inOutFPVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaFloatVars));
 
-        pLoopDsc->lpLoopVarFPCount     = VarSetOps::Count(this, loopFPVars);
-        pLoopDsc->lpVarInOutFPCount    = VarSetOps::Count(this, inOutFPVars);
-        pLoopDsc->lpHoistedFPExprCount = 0;
-
-        pLoopDsc->lpLoopVarCount -= pLoopDsc->lpLoopVarFPCount;
-        pLoopDsc->lpVarInOutCount -= pLoopDsc->lpVarInOutFPCount;
+        hoistCtxt->m_loopVarFPCount     = VarSetOps::Count(this, loopFPVars);
+        hoistCtxt->m_loopVarInOutFPCount    = VarSetOps::Count(this, inOutFPVars);
+        hoistCtxt->m_hoistedFPExprCount = 0;
+        hoistCtxt->m_loopVarCount -= hoistCtxt->m_loopVarFPCount;
+        hoistCtxt->m_loopVarInOutCount -= hoistCtxt->m_loopVarInOutFPCount;
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("  INOUT-FP(%d)=", pLoopDsc->lpVarInOutFPCount);
+            printf("  INOUT-FP(%d)=", hoistCtxt->m_loopVarInOutFPCount);
             dumpConvertedVarSet(this, inOutFPVars);
 
-            printf("\n  LOOPV-FP(%d)=", pLoopDsc->lpLoopVarFPCount);
+            printf("\n  LOOPV-FP(%d)=", hoistCtxt->m_loopVarFPCount);
             dumpConvertedVarSet(this, loopFPVars);
 
             printf("\n");
@@ -6769,9 +6752,9 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     }
     else // lvaFloatVars is empty
     {
-        pLoopDsc->lpLoopVarFPCount     = 0;
-        pLoopDsc->lpVarInOutFPCount    = 0;
-        pLoopDsc->lpHoistedFPExprCount = 0;
+        hoistCtxt->m_loopVarFPCount     = 0;
+        hoistCtxt->m_loopVarInOutFPCount    = 0;
+        hoistCtxt->m_hoistedFPExprCount = 0;
     }
 
     // Find the set of definitely-executed blocks.
@@ -6830,17 +6813,19 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // convenient). But note that it is arbitrary because there is not guaranteed execution order amongst
     // the child loops.
 
-    for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //
-         childLoop != BasicBlock::NOT_IN_LOOP;                 //
-         childLoop = optLoopTable[childLoop].lpSibling)
+    for (FlowGraphNaturalLoop* childLoop = loop->GetChild();
+         childLoop != nullptr;
+         childLoop = childLoop->GetSibling())
     {
-        if (optLoopTable[childLoop].lpIsRemoved())
+        // TODO-Quirk: Remove
+        if (m_oldToNewLoop[childLoop->GetIndex()] == nullptr)
         {
             continue;
         }
-        INDEBUG(optLoopTable[childLoop].lpValidatePreHeader());
-        BasicBlock* childPreHead = optLoopTable[childLoop].lpHead;
-        if (pLoopDsc->lpExitCnt == 1)
+
+        assert(childLoop->EntryEdges().size() == 1);
+        BasicBlock* preheader = childLoop->EntryEdges()[0]->getSourceBlock();
+        if (loop->ExitEdges().size() == 1)
         {
             if (fgDominate(childPreHead, pLoopDsc->lpExit))
             {
@@ -6892,17 +6877,15 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     JITDUMP("  --  " FMT_BB " (entry block)\n", pLoopDsc->lpEntry->bbNum);
     defExec.Push(pLoopDsc->lpEntry);
 
-    optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
+    optHoistLoopBlocks(loop, &defExec, hoistCtxt);
 
     const unsigned numHoisted = pLoopDsc->lpHoistedFPExprCount + pLoopDsc->lpHoistedExprCount;
     return numHoisted > 0;
 }
 
-bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
+bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop)
 {
-    LoopDsc* pLoopDsc = &optLoopTable[lnum];
-
-    bool loopContainsCall = (pLoopDsc->lpFlags & LPFLG_CONTAINS_CALL) != 0;
+    bool loopContainsCall = m_loopSideEffects[loop->GetIndex()].ContainsCall;
 
     int availRegCount;
     int hoistedExprCount;
@@ -7126,7 +7109,7 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 // optHoistLoopBlocks: Hoist invariant expression out of the loop.
 //
 // Arguments:
-//    loopNum - The number of the loop
+//    loop - The loop
 //    blocks - A stack of blocks belonging to the loop
 //    hoistContext - The loop hoist context
 //
@@ -7135,7 +7118,7 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 //    the loop, in the execution order, starting with the loop entry
 //    block on top of the stack.
 //
-void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext)
+void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext)
 {
     class HoistVisitor : public GenTreeVisitor<HoistVisitor>
     {
@@ -7167,7 +7150,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
         ArrayStack<Value> m_valueStack;
         bool              m_beforeSideEffect;
-        unsigned          m_loopNum;
+        FlowGraphNaturalLoop* m_loop;
         LoopHoistContext* m_hoistContext;
         BasicBlock*       m_currentBlock;
 
@@ -7262,7 +7245,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                     ValueNum loopMemoryVN =
                         m_compiler->GetMemoryPerSsaData(loopEntryBlock->bbMemorySsaNumIn[memoryKind])
                             ->m_vnPair.GetLiberal();
-                    if (!m_compiler->optVNIsLoopInvariant(loopMemoryVN, m_loopNum,
+                    if (!m_compiler->optVNIsLoopInvariant(loopMemoryVN, m_loop,
                                                           &m_hoistContext->m_curLoopVnInvariantCache))
                     {
                         return false;
@@ -7283,11 +7266,11 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             UseExecutionOrder = true,
         };
 
-        HoistVisitor(Compiler* compiler, unsigned loopNum, LoopHoistContext* hoistContext)
+        HoistVisitor(Compiler* compiler, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistContext)
             : GenTreeVisitor(compiler)
             , m_valueStack(compiler->getAllocator(CMK_LoopHoist))
             , m_beforeSideEffect(true)
-            , m_loopNum(loopNum)
+            , m_loop(loop)
             , m_hoistContext(hoistContext)
             , m_currentBlock(nullptr)
         {
@@ -7305,7 +7288,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // hoist the top node?
                 if (top.m_hoistable)
                 {
-                    m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loopNum, m_hoistContext);
+                    m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loop, m_hoistContext);
                 }
                 else
                 {
@@ -7344,8 +7327,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 bool isInvariant = lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
                 isInvariant = isInvariant &&
-                              !m_compiler->optLoopTable[m_loopNum].lpContains(
-                                  m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
+                    !m_loop->ContainsBlock(m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
+
                 // and the VN of the tree is considered invariant as well.
                 //
                 // TODO-CQ: This VN invariance check should not be necessary and in some cases it is conservative - it
@@ -7654,7 +7637,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
                         if (IsHoistableOverExcepSibling(value.Node(), hasExcep))
                         {
-                            m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
+                            m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loop, m_hoistContext);
                         }
 
                         // Don't hoist this tree again.
@@ -7700,19 +7683,16 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         }
     };
 
-    LoopDsc* loopDsc = &optLoopTable[loopNum];
-    assert(blocks->Top() == loopDsc->lpEntry);
-
-    HoistVisitor visitor(this, loopNum, hoistContext);
+    HoistVisitor visitor(this, loop, hoistContext);
 
     while (!blocks->Empty())
     {
         BasicBlock* block       = blocks->Pop();
         weight_t    blockWeight = block->getBBWeight(this);
 
-        JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB ">\n",
-                block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loopNum,
-                loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
+        JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " (head: " FMT_BB ")\n",
+                block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loop->GetIndex(),
+                loop->GetHeader()->bbNum);
 
         if (blockWeight < (BB_UNITY_WEIGHT / 10))
         {
@@ -7726,12 +7706,10 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
     hoistContext->ResetHoistedInCurLoop();
 }
 
-void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt)
+void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt)
 {
-    assert(lnum != BasicBlock::NOT_IN_LOOP);
-
     // It must pass the hoistable profitablity tests for this loop level
-    if (!optIsProfitableToHoistTree(tree, lnum))
+    if (!optIsProfitableToHoistTree(tree, loop))
     {
         JITDUMP("   ... not profitable to hoist\n");
         return;
@@ -7742,25 +7720,26 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
         // already hoisted this expression in the current loop, so don't hoist this expression.
 
         JITDUMP("      [%06u] ... already hoisted " FMT_VN " in " FMT_LP "\n ", dspTreeID(tree),
-                tree->gtVNPair.GetLiberal(), lnum);
+                tree->gtVNPair.GetLiberal(), loop->GetIndex());
         return;
     }
 
     // We should already have a pre-header for the loop.
-    INDEBUG(optLoopTable[lnum].lpValidatePreHeader());
+    assert(loop->EntryEdges().size() == 1);
+    BasicBlock* preheader = loop->EntryEdges()[0]->getSourceBlock();
 
     // If the block we're hoisting from and the pre-header are in different EH regions, don't hoist.
     // TODO: we could probably hoist things that won't raise exceptions, such as constants.
-    if (!BasicBlock::sameTryRegion(optLoopTable[lnum].lpHead, treeBb))
+    if (!BasicBlock::sameTryRegion(preheader, treeBb))
     {
         JITDUMP("   ... not hoisting in " FMT_LP ", eh region constraint (pre-header try index %d, candidate " FMT_BB
                 " try index %d\n",
-                lnum, optLoopTable[lnum].lpHead->bbTryIndex, treeBb->bbNum, treeBb->bbTryIndex);
+                loop->GetIndex(), preheader->bbTryIndex, treeBb->bbNum, treeBb->bbTryIndex);
         return;
     }
 
     // Expression can be hoisted
-    optPerformHoistExpr(tree, treeBb, lnum);
+    optPerformHoistExpr(tree, treeBb, loop);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
     if (!varTypeIsFloating(tree->TypeGet()))
@@ -7783,7 +7762,7 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
     hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
 }
 
-bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInvariantCache)
+bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* loopVnInvariantCache)
 {
     // If it is not a VN, is not loop-invariant.
     if (vn == ValueNumStore::NoVN)
@@ -7814,27 +7793,29 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
             unsigned      lclNum = funcApp.m_args[0];
             unsigned      ssaNum = funcApp.m_args[1];
             LclSsaVarDsc* ssaDef = lvaTable[lclNum].GetPerSsaData(ssaNum);
-            res                  = !optLoopContains(lnum, ssaDef->GetBlock()->bbNatLoopNum);
+            res = !loop->ContainsBlock(ssaDef->GetBlock());
         }
         else if (funcApp.m_func == VNF_PhiMemoryDef)
         {
             BasicBlock* defnBlk = reinterpret_cast<BasicBlock*>(vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]));
-            res                 = !optLoopContains(lnum, defnBlk->bbNatLoopNum);
+            res = !loop->ContainsBlock(defnBlk);
         }
         else if (funcApp.m_func == VNF_MemOpaque)
         {
-            const unsigned vnLoopNum = funcApp.m_args[0];
+            const unsigned blockNum = funcApp.m_args[0];
 
-            // Check for the special "ambiguous" loop MemOpaque VN.
+            // Check for the special "ambiguous" block VN.
             // This is considered variant in every loop.
             //
-            if (vnLoopNum == BasicBlock::MAX_LOOP_NUM)
+            if (blockNum == UINT_MAX)
             {
                 res = false;
             }
             else
             {
-                res = !optLoopContains(lnum, vnLoopNum);
+                assert(blockNum < m_dfs->GetPostOrderCount());
+                BasicBlock* block = m_dfs->GetPostOrder()[blockNum];
+                res = !loop->ContainsBlock(block);
             }
         }
         else
@@ -7849,8 +7830,9 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 
                     if (i == 3)
                     {
-                        const unsigned vnLoopNum = funcApp.m_args[3];
-                        res                      = !optLoopContains(lnum, vnLoopNum);
+                        const unsigned blockNum = funcApp.m_args[3];
+                        assert(blockNum < m_dfs->GetPostOrderCount());
+                        res = !loop->ContainsBlock(m_dfs->GetPostOrder()[blockNum]);
                         break;
                     }
                 }
@@ -7858,7 +7840,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
                 // TODO-CQ: We need to either make sure that *all* VN functions
                 // always take VN args, or else have a list of arg positions to exempt, as implicitly
                 // constant.
-                if (!optVNIsLoopInvariant(funcApp.m_args[i], lnum, loopVnInvariantCache))
+                if (!optVNIsLoopInvariant(funcApp.m_args[i], loop, loopVnInvariantCache))
                 {
                     res = false;
                     break;
@@ -8345,27 +8327,42 @@ bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)
     return false;
 }
 
+LoopSideEffects::LoopSideEffects()
+    : VarInOut(VarSetOps::UninitVal())
+    , VarUseDef(VarSetOps::UninitVal())
+{
+    for (MemoryKind mk : allMemoryKinds())
+    {
+        HasMemoryHavoc[mk] = false;
+    }
+}
+
 void Compiler::optComputeLoopSideEffects()
 {
-    unsigned lnum;
-    for (lnum = 0; lnum < optLoopCount; lnum++)
+    m_loopSideEffects = new (this, CMK_LoopOpt) LoopSideEffects[m_loops->NumLoops()];
+
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        VarSetOps::AssignNoCopy(this, optLoopTable[lnum].lpVarInOut, VarSetOps::MakeEmpty(this));
-        VarSetOps::AssignNoCopy(this, optLoopTable[lnum].lpVarUseDef, VarSetOps::MakeEmpty(this));
-        optLoopTable[lnum].lpFlags &= ~LPFLG_CONTAINS_CALL;
+        m_loopSideEffects[loop->GetIndex()].VarInOut = VarSetOps::MakeEmpty(this);
+        m_loopSideEffects[loop->GetIndex()].VarUseDef = VarSetOps::MakeEmpty(this);
     }
 
-    for (lnum = 0; lnum < optLoopCount; lnum++)
-    {
-        if (optLoopTable[lnum].lpIsRemoved())
-        {
-            continue;
-        }
+    // Now visit all loops in post order, meaning we see child loops first.
+    // Mark side effects into the loop and all ancestor loops the first time we
+    // see it.
+    BitVecTraits postOrderTraits = m_dfs->PostOrderTraits();
+    BitVec visited(BitVecOps::MakeEmpty(&postOrderTraits));
 
-        if (optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP)
-        { // Is outermost...
-            optComputeLoopNestSideEffects(lnum);
-        }
+    for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
+    {
+        loop->VisitLoopBlocks([&](BasicBlock* block) {
+            if (BitVecOps::TryAddElemD(&postOrderTraits, visited, block->bbPostorderNum))
+            {
+                optComputeLoopSideEffectsOfBlock(block, loop);
+            }
+
+            return BasicBlockVisit::Continue;
+            });
     }
 }
 
@@ -8395,58 +8392,25 @@ void Compiler::optComputeInterestingVarSets()
     }
 }
 
-void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
+void Compiler::optRecordLoopNestsMemoryHavoc(FlowGraphNaturalLoop* loop, MemoryKindSet memoryHavoc)
 {
-    JITDUMP("optComputeLoopNestSideEffects for " FMT_LP "\n", lnum);
-    assert(optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP); // Requires: lnum is outermost.
-    for (BasicBlock* const bbInLoop : optLoopTable[lnum].LoopBlocks())
-    {
-        if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
-        {
-            // When optComputeLoopSideEffectsOfBlock returns false, we encountered
-            // a block that was moved into the loop range (by fgReorderBlocks),
-            // but not marked correctly as being inside the loop.
-            // We conservatively mark this loop (and any outer loops)
-            // as having memory havoc side effects.
-            //
-            // Record that all loops containing this block have memory havoc effects.
-            //
-            optRecordLoopNestsMemoryHavoc(lnum, fullMemoryKindSet);
-
-            // All done, no need to keep visiting more blocks
-            break;
-        }
-    }
-}
-
-void Compiler::optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc)
-{
-    // We should start out with 'lnum' set to a valid natural loop index
-    assert(lnum != BasicBlock::NOT_IN_LOOP);
-
-    while (lnum != BasicBlock::NOT_IN_LOOP)
+    do
     {
         for (MemoryKind memoryKind : allMemoryKinds())
         {
             if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
             {
-                optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
+                m_loopSideEffects[loop->GetIndex()].HasMemoryHavoc[memoryKind] = true;
             }
         }
 
-        // Move lnum to the next outtermost loop that we need to mark
-        lnum = optLoopTable[lnum].lpParent;
-    }
+        loop = loop->GetParent();
+    } while (loop != nullptr);
 }
 
-bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
+void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNaturalLoop* mostNestedLoop)
 {
-    unsigned mostNestedLoop = blk->bbNatLoopNum;
-    JITDUMP("optComputeLoopSideEffectsOfBlock " FMT_BB ", mostNestedLoop %d\n", blk->bbNum, mostNestedLoop);
-    if (mostNestedLoop == BasicBlock::NOT_IN_LOOP)
-    {
-        return false;
-    }
+    JITDUMP("optComputeLoopSideEffectsOfBlock " FMT_BB ", mostNestedLoop " FMT_LP "\n", blk->bbNum, mostNestedLoop->GetIndex());
     AddVariableLivenessAllContainingLoops(mostNestedLoop, blk);
 
     // MemoryKinds for which an in-loop call or store has arbitrary effects.
@@ -8468,10 +8432,10 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     AddContainsCallAllContainingLoops(mostNestedLoop);
                 }
 
-                // If we just set LPFLG_CONTAINS_CALL or it was previously set
-                if (optLoopTable[mostNestedLoop].lpFlags & LPFLG_CONTAINS_CALL)
+                // If we just marked it as containing a call or it was previously set
+                if (m_loopSideEffects[mostNestedLoop->GetIndex()].ContainsCall)
                 {
-                    // We can early exit after both memoryHavoc and LPFLG_CONTAINS_CALL are both set to true.
+                    // We can early exit after both memoryHavoc and ContainsCall are both set to true.
                     break;
                 }
 
@@ -8681,31 +8645,29 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
         // Record that all loops containing this block have this kind of memoryHavoc effects.
         optRecordLoopNestsMemoryHavoc(mostNestedLoop, memoryHavoc);
     }
-    return true;
 }
 
-// Marks the containsCall information to "lnum" and any parent loops.
-void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
+// Marks the containsCall information to "loop" and any parent loops.
+void Compiler::AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop)
 {
 
 #if FEATURE_LOOP_ALIGN
     // If this is the inner most loop, reset the LOOP_ALIGN flag
     // because a loop having call will not likely to benefit from
     // alignment
-    if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
+    if (!m_loopSideEffects[loop->GetIndex()].HasNestedLoops)
     {
-        BasicBlock* top = optLoopTable[lnum].lpTop;
+        BasicBlock* top = loop->GetLexicallyTopMostBlock();
 
         top->unmarkLoopAlign(this DEBUG_ARG("Loop with call"));
     }
 #endif
 
-    assert(0 <= lnum && lnum < optLoopCount);
-    while (lnum != BasicBlock::NOT_IN_LOOP)
+    do
     {
-        optLoopTable[lnum].lpFlags |= LPFLG_CONTAINS_CALL;
-        lnum = optLoopTable[lnum].lpParent;
-    }
+        m_loopSideEffects[loop->GetIndex()].ContainsCall = true;
+        loop = loop->GetParent();
+    } while (loop != nullptr);
 }
 
 // Adds the variable liveness information for 'blk' to 'this' LoopDsc
@@ -8719,36 +8681,33 @@ void Compiler::LoopDsc::AddVariableLiveness(Compiler* comp, BasicBlock* blk)
 }
 
 // Adds the variable liveness information for 'blk' to "lnum" and any parent loops.
-void Compiler::AddVariableLivenessAllContainingLoops(unsigned lnum, BasicBlock* blk)
+void Compiler::AddVariableLivenessAllContainingLoops(FlowGraphNaturalLoop* loop, BasicBlock* blk)
 {
-    assert(0 <= lnum && lnum < optLoopCount);
-    while (lnum != BasicBlock::NOT_IN_LOOP)
+    do
     {
-        optLoopTable[lnum].AddVariableLiveness(this, blk);
-        lnum = optLoopTable[lnum].lpParent;
-    }
+        m_loopSideEffects[loop->GetIndex()].AddVariableLiveness(this, blk);
+        loop = loop->GetParent();
+    } while (loop != nullptr);
 }
 
-// Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
-void Compiler::AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
+// Adds "fldHnd" to the set of modified fields of "loop" and any parent loops.
+void Compiler::AddModifiedFieldAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
 {
-    assert(0 <= lnum && lnum < optLoopCount);
-    while (lnum != BasicBlock::NOT_IN_LOOP)
+    do
     {
-        optLoopTable[lnum].AddModifiedField(this, fldHnd, fieldKind);
-        lnum = optLoopTable[lnum].lpParent;
-    }
+        m_loopSideEffects[loop->GetIndex()].AddModifiedField(this, fldHnd, fieldKind);
+        loop = loop->GetParent();
+    } while (loop != nullptr);
 }
 
-// Adds "elemType" to the set of modified array element types of "lnum" and any parent loops.
-void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLASS_HANDLE elemClsHnd)
+// Adds "elemType" to the set of modified array element types of "loop" and any parent loops.
+void Compiler::AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemClsHnd)
 {
-    assert(0 <= lnum && lnum < optLoopCount);
-    while (lnum != BasicBlock::NOT_IN_LOOP)
+    do
     {
-        optLoopTable[lnum].AddModifiedElemType(this, elemClsHnd);
-        lnum = optLoopTable[lnum].lpParent;
-    }
+        m_loopSideEffects[loop->GetIndex()].AddModifiedElemType(this, elemClsHnd);
+        loop = loop->GetParent();
+    } while (loop != nullptr);
 }
 
 //------------------------------------------------------------------------------

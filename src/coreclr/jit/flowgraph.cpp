@@ -4471,6 +4471,18 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfs)
         JITDUMP("Added loop " FMT_LP " with header " FMT_BB "\n", loop->GetIndex(), loop->GetHeader()->bbNum);
     }
 
+    // Now build sibling/child links by iterating loops in post order. This
+    // makes us end up with sibling links in reverse post order.
+    for (FlowGraphNaturalLoop* loop : loops->InPostOrder())
+    {
+        if (loop->m_parent != nullptr)
+        {
+            loop->m_sibling = loop->m_parent->m_child;
+            loop->m_parent->m_child = loop;
+        }
+    }
+
+#ifdef DEBUG
     if (loops->m_loops.size() > 0)
     {
         JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
@@ -4480,6 +4492,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfs)
     {
         JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
     }
+#endif
 
     return loops;
 }
