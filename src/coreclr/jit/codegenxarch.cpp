@@ -3337,12 +3337,12 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     const regNumber zeroReg = zeroNode->GetRegNum();
 
     //  xor      zeroReg, zeroReg
+    //  mov      qword ptr [dstReg], zeroReg
     //  mov      offsetReg, <block size>
     //.LOOP:
     //  mov      qword ptr [dstReg + offsetReg], zeroReg
     //  sub      offsetReg, 8
     //  jne      .LOOP
-    //  mov      qword ptr [dstReg], zeroReg
 
     const unsigned size = initBlkNode->GetLayout()->GetSize();
     assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));

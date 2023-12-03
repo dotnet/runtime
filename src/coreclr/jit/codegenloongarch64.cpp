@@ -6385,12 +6385,13 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    GenTree* const dstNode = initBlkNode->Addr();
-    genConsumeReg(dstNode);
-    const regNumber dstReg = dstNode->GetRegNum();
-
+    GenTree* const dstNode  = initBlkNode->Addr();
     GenTree* const zeroNode = initBlkNode->Data();
+
+    genConsumeReg(dstNode);
     genConsumeReg(zeroNode);
+
+    const regNumber dstReg  = dstNode->GetRegNum();
     const regNumber zeroReg = zeroNode->GetRegNum();
 
     if (initBlkNode->IsVolatile())
@@ -6402,6 +6403,8 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     const unsigned size = initBlkNode->GetLayout()->GetSize();
     assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
 
+    //// TODO: implement on LoongArch64:
+
     // The loop is reversed (it makes it smaller)
     //// GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
     if (size > TARGET_POINTER_SIZE)
@@ -6412,11 +6415,9 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         BasicBlock* loop = genCreateTempLabel();
         genDefineTempLabel(loop);
 
-        // TODO: LoongArch64:
-        //
         //// GetEmitter()->emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
         //// GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
-        //// GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, offsetReg, offsetReg);
+        //// GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, offsetReg, zeroReg);
         //// inst_JMP(EJ_ne, loop);
     }
 }

@@ -3124,17 +3124,16 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    GenTree* const dstNode = initBlkNode->Addr();
-    genConsumeReg(dstNode);
-    const regNumber dstReg = dstNode->GetRegNum();
-
-#ifdef TARGET_ARM64
-    const regNumber zeroReg = REG_ZR;
-#else
+    GenTree* const dstNode  = initBlkNode->Addr();
     GenTree* const zeroNode = initBlkNode->Data();
+
+    genConsumeReg(dstNode);
     genConsumeReg(zeroNode);
+
+    const regNumber dstReg  = dstNode->GetRegNum();
     const regNumber zeroReg = zeroNode->GetRegNum();
-#endif
+
+    // TODO-ARM64: mark initBlkNode->Data() as contained and use WZR/XZR
 
     if (initBlkNode->IsVolatile())
     {
@@ -3142,12 +3141,13 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         instGen_MemoryBarrier();
     }
 
+    //  mov     zeroReg, wzr
+    //  str     zeroReg, [dstReg]
     //  mov     offsetReg, <block size>
     //.LOOP:
-    //  str     xzr, [dstReg, offsetReg]
+    //  str     zeroReg, [dstReg, offsetReg]
     //  subs    offsetReg, offsetReg, #8
     //  bne     .LOOP
-    //  str     xzr, [dstReg]
 
     const unsigned size = initBlkNode->GetLayout()->GetSize();
     assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
@@ -3168,7 +3168,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 #else
         // There is no subs (sets flags) instruction on ARM32, so we use sub and cmp instead.
         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
-        GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, offsetReg, offsetReg);
+        GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, offsetReg, zeroReg);
 #endif
         inst_JMP(EJ_ne, loop);
     }
