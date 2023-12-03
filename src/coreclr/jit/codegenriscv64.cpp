@@ -6067,7 +6067,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    // TODO:
+    // TODO: RISC-V impl
 }
 
 //------------------------------------------------------------------------

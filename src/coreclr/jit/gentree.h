@@ -7336,9 +7336,14 @@ public:
     bool gtBlkOpGcUnsafe;
 #endif
 
+    bool ContainsReferences()
+    {
+        return (m_layout != nullptr) && m_layout->HasGCPtr();
+    }
+
     bool IsOnHeapAndContainsReferences()
     {
-        return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIs(GT_LCL_ADDR);
+        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR);
     }
 
     bool IsZeroingGcPointersOnHeap()
@@ -7355,6 +7360,10 @@ public:
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, data)
     {
+        if (data->IsIntegralConst(0))
+        {
+            data->gtFlags |= GTF_DONT_CSE;
+        }
         Initialize(layout);
     }
 
