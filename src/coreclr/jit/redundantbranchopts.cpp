@@ -505,18 +505,13 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         // We assume cns1 and cns2 are always on the RHS of the compare.
         if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
             vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
-            varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[1])))
+            varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[1])) &&
+            varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[0])))
         {
             // We currently don't handle VNF_relop_UN funcs here
             if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
                 ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
             {
-                // CI test
-                assert(varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[0])));
-                assert(vnStore->TypeOfVN(treeApp.m_args[0]) == vnStore->TypeOfVN(domApp.m_args[0]));
-                assert(vnStore->TypeOfVN(treeApp.m_args[1]) == vnStore->TypeOfVN(domApp.m_args[1]));
-                assert(vnStore->TypeOfVN(treeApp.m_args[0]) == vnStore->TypeOfVN(domApp.m_args[1]));
-
                 // Dominating "X relop CNS"
                 const genTreeOps domOper = static_cast<genTreeOps>(domApp.m_func);
                 const ssize_t    domCns  = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
