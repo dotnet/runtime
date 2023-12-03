@@ -6800,7 +6800,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         BasicBlock* childPreHead = optLoopTable[childLoop].lpHead;
         if (pLoopDsc->lpExitCnt == 1)
         {
-            if (fgDominate(childPreHead, pLoopDsc->lpExit))
+            if (fgSsaDomTree->Dominates(childPreHead, pLoopDsc->lpExit))
             {
                 // If the child loop pre-header dominates the exit, it will get added in the dominator tree
                 // loop below.
