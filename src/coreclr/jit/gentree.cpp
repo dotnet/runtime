@@ -12436,6 +12436,11 @@ void Compiler::gtDispTree(GenTree*     tree,
                         printf(" (Helper)");
                         break;
 #endif
+
+                    case GenTreeBlk::BlkOpKindLoop:
+                        printf(" (Loop)");
+                        break;
+
                     default:
                         unreached();
                 }

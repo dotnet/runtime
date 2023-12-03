@@ -6060,6 +6060,17 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    // TODO:
+}
+
+//------------------------------------------------------------------------
 // genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
 //
 // Arguments:
@@ -6946,6 +6957,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindCpObjUnroll:
             assert(!blkOp->gtBlkOpGcUnsafe);
             genCodeForCpObj(blkOp->AsBlk());
+            break;
+
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
             break;
 
         case GenTreeBlk::BlkOpKindHelper:

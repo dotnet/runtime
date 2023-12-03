@@ -624,6 +624,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif // TARGET_ARM64
             break;
 
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
+
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());
                 dstAddrRegMask = RBM_ARG_0;
