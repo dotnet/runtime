@@ -6383,7 +6383,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    // TODO:
+    // TODO: LoongArch64 impl
 }
 
 // Generate code for a load from some address + offset
