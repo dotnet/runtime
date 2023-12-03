@@ -36,7 +36,7 @@ int64_t GetPreciseTickCount()
     return result;
 }
 
-void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount)
+void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t inclusiveTickCount, int64_t subtreeTickCount = 0)
 {
     static long timingCallCount = 0;
     static const int BufferSize = 1024;
@@ -65,12 +65,21 @@ void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, in
             FILE_ATTRIBUTE_NORMAL,
             NULL);
 
-        const char *titleLine = "CALLS/INDEX |   THREAD |         SECS | ACTION\n";
+        const char *titleLine = "CALLS/INDEX |   THREAD | INCLUSIVE SECS | EXCLUSIVE SECS |   SUBTREE SECS | EXCLUSIVE % | SUBTREE % | ACTION\n";
         WriteFile(LogFileHandle, titleLine, (DWORD)strlen(titleLine), nullptr, nullptr);
         fputs(titleLine, stdout);
     }
-    
-    snprintf(buffer, sizeof(buffer), "%11lld | %8x | %12.9f | %s\n", callCount, threadID, tickCount / (double)TimerFrequency, action);
+
+    int64_t exclusiveTickCount = inclusiveTickCount - subtreeTickCount;
+    double inclusiveTicksPercentageFactor = 100.0 / (inclusiveTickCount ? inclusiveTickCount : 1);
+    snprintf(buffer, sizeof(buffer), "%11lld | %8x | %14.9f | %14.9f | %14.9f | %11.2f | %9.2f | %s\n",
+        callCount, threadID,
+        inclusiveTickCount / (double)TimerFrequency,
+        exclusiveTickCount / (double)TimerFrequency,
+        subtreeTickCount / (double)TimerFrequency,
+        exclusiveTickCount * inclusiveTicksPercentageFactor,
+        subtreeTickCount * inclusiveTicksPercentageFactor,
+        action);
     fputs(buffer, stdout);
     WriteFile(LogFileHandle, buffer, (DWORD)strlen(buffer), nullptr, nullptr);
 }
@@ -94,8 +103,6 @@ InstrumentedMethod::InstrumentedMethod(const char *methodName)
     _ticks = 0;
     _next = InterlockedExchangeT<InstrumentedMethod *>(&s_list, this);
 }
-
-void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount);
 
 void InstrumentedMethod::DumpAllTiming()
 {
@@ -12376,16 +12383,13 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
 }
 
 int64_t GetPreciseTickCount();
-void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t tickCount);
-
-static int64_t TypeLoadCallCount = 0;
-static int64_t TypeLoadTickCount = 0;
 
 struct TypeLoadTiming
 {
-    uint32_t Thread;
-    int64_t Ticks;
+    int64_t InclusiveTicks;
+    int64_t SubtreeTicks;
     TypeHandle Type;
+    uint32_t Thread;
 };
 
 const int RING_BUFFER_SIZE = 65536;
@@ -12393,62 +12397,16 @@ const int RING_BUFFER_SIZE = 65536;
 static TypeLoadTiming TypeLoadTimingRingBuffer[RING_BUFFER_SIZE];
 static volatile long TypeLoadRingBufferIndex = 0;
 
-static const int TypeNameBufferSize = 65536;
-static char TypeNameBuffer[TypeNameBufferSize];
-
-char *FormatTypeName(char *typeBuffer, TypeHandle type)
+void RecordTypeLoadTime(const TypeHandle& type, int64_t inclusiveTicks, int64_t subtreeTicks)
 {
-    if (type.IsTypeDesc())
-    {
-        SString buffer;
-        type.AsTypeDesc()->GetName(buffer);
-        strcpy(typeBuffer, buffer.GetUTF8());
-        typeBuffer += strlen(typeBuffer);
-        return typeBuffer;
-    }
-    
-    MethodTable *pMT = type.AsMethodTable();
-    {
-        SString buffer;
-        pMT->_GetFullyQualifiedNameForClassNestedAware(buffer);
-        strcpy(typeBuffer, buffer.GetUTF8());
-    }
-    typeBuffer += strlen(typeBuffer);
-
-    Instantiation instantiation = pMT->GetInstantiation();
-    if (!instantiation.IsEmpty())
-    {
-        for (DWORD argIndex = 0; argIndex < instantiation.GetNumArgs(); argIndex++)
-        {
-            strcpy(typeBuffer, argIndex == 0 ? "<" : ", ");
-            typeBuffer += strlen(typeBuffer);
-            typeBuffer = FormatTypeName(typeBuffer, instantiation[argIndex]);
-        }
-        *typeBuffer++ = '>';
-        *typeBuffer = 0;
-    }
-    return typeBuffer;
-}
-
-void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks)
-{
-    InterlockedAdd64(&TypeLoadTickCount, ticks);
-    InterlockedIncrement64(&TypeLoadCallCount);
     long timingIndex = InterlockedIncrement(&TypeLoadRingBufferIndex) - 1;
     if (timingIndex >= 0 && timingIndex < RING_BUFFER_SIZE)
     {
         TypeLoadTimingRingBuffer[timingIndex].Thread = GetCurrentThreadId();
-        TypeLoadTimingRingBuffer[timingIndex].Ticks = ticks;
+        TypeLoadTimingRingBuffer[timingIndex].InclusiveTicks = inclusiveTicks;
+        TypeLoadTimingRingBuffer[timingIndex].SubtreeTicks = subtreeTicks;
         TypeLoadTimingRingBuffer[timingIndex].Type = type;
     }
-    /*
-    char stackBuffer[16384];
-    FormatTypeName(stackBuffer, type);
-    if (!strcmp(stackBuffer, "System.Numerics.IAdditiveIdentity`2<!0, !0>"))
-    {
-        DebugBreak();
-    }
-    */
 }
 
 void DumpTypeLoadTimingInfo()
@@ -12459,40 +12417,44 @@ void DumpTypeLoadTimingInfo()
     for (int32_t ringBufferIndex = 0; ringBufferIndex < TypeLoadRingBufferIndex; ringBufferIndex++)
     {
         const TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
-        char *typeBuffer = FormatTypeName(TypeNameBuffer, timing.Type);
-
-        if (typeBuffer >= TypeNameBuffer + TypeNameBufferSize)
-        {
-            CrashDumpAndTerminateProcess(STATUS_STACK_BUFFER_OVERRUN);
-        }
-        
-        DumpTimingInfo(TypeNameBuffer, timing.Thread, ringBufferIndex, timing.Ticks);
+        SString typeName;
+        timing.Type.GetName(typeName);
+        DumpTimingInfo(typeName.GetUTF8(), timing.Thread, ringBufferIndex, timing.InclusiveTicks, timing.SubtreeTicks);
         if (threadMap.LookupValue(timing.Thread, timing.Thread) == INVALIDENTRY)
         {
             threadMap.InsertValue(timing.Thread, timing.Thread);
         }
     }
 
+    int32_t totalCount = 0;
+    int64_t totalInclusiveTicks = 0;
+    int64_t totalSubtreeTicks = 0;
     for (HashMap::Iterator it = threadMap.begin(); !it.end(); ++it)
     {
         uint32_t threadID = (uint32_t)it.GetKey();
-        int32_t sumCount = 0;
-        int64_t sumTicks = 0;
+        int32_t threadCount = 0;
+        int64_t threadInclusiveTicks = 0;
+        int64_t threadSubtreeTicks = 0;
         for (int32_t ringBufferIndex = 0; ringBufferIndex < TypeLoadRingBufferIndex; ringBufferIndex++)
         {
             const TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
             if (timing.Thread == threadID)
             {
-                sumTicks += timing.Ticks;
-                sumCount++;
+                threadInclusiveTicks += timing.InclusiveTicks;
+                threadSubtreeTicks += timing.SubtreeTicks;
+                threadCount++;
             }
         }
         char buffer[100];
         sprintf(buffer, "LoadTypeHandleForTypeKey @ %08x", threadID);
-        DumpTimingInfo(buffer, threadID, sumCount, sumTicks);
+        DumpTimingInfo(buffer, threadID, threadCount, threadInclusiveTicks, threadSubtreeTicks);
+        
+        totalCount += threadCount;
+        totalInclusiveTicks += threadInclusiveTicks;
+        totalSubtreeTicks += threadSubtreeTicks;
     }
 
-    DumpTimingInfo("LoadTypeHandleForTypeKey", GetCurrentThreadId(), TypeLoadCallCount, TypeLoadTickCount);
+    DumpTimingInfo("LoadTypeHandleForTypeKey", GetCurrentThreadId(), totalCount, totalInclusiveTicks, totalSubtreeTicks);
 }
 
 //---------------------------------------------------------------------------------------

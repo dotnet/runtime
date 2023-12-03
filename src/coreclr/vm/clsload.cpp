@@ -3250,7 +3250,9 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     }
 }
 
-void RecordTypeLoadTime(const TypeHandle& type, int64_t ticks);
+void RecordTypeLoadTime(const TypeHandle& type, int64_t inclusiveTicks, int64_t subtreeTicks);
+
+thread_local int64_t *PendingTypeLoad = nullptr;
 
 //
 TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
@@ -3260,6 +3262,9 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 {
     INSTRUMENTED_METHOD("ClassLoader::LoadTypeHandleForTypeKey");
     int64_t startTicks = GetPreciseTickCount();
+    int64_t *parentTypeLoad = PendingTypeLoad;
+    int64_t subtreeTypeLoadTicks = 0;
+    PendingTypeLoad = &subtreeTypeLoadTicks;
     
     CONTRACTL
     {
@@ -3308,7 +3313,15 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     }
 #endif
 
-    RecordTypeLoadTime(typeHnd, GetPreciseTickCount() - startTicks);
+    int64_t inclusiveTicks = GetPreciseTickCount() - startTicks;
+    RecordTypeLoadTime(typeHnd, inclusiveTicks, subtreeTypeLoadTicks);
+
+    if (parentTypeLoad != nullptr)
+    {
+        *parentTypeLoad += inclusiveTicks;
+    }
+
+    PendingTypeLoad = parentTypeLoad;
 
     return typeHnd;
 }
