@@ -511,6 +511,12 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
                 ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
             {
+                // CI test
+                assert(varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[0])));
+                assert(vnStore->TypeOfVN(treeApp.m_args[0]) == vnStore->TypeOfVN(domApp.m_args[0]));
+                assert(vnStore->TypeOfVN(treeApp.m_args[1]) == vnStore->TypeOfVN(domApp.m_args[1]));
+                assert(vnStore->TypeOfVN(treeApp.m_args[0]) == vnStore->TypeOfVN(domApp.m_args[1]));
+
                 // Dominating "X relop CNS"
                 const genTreeOps domOper = static_cast<genTreeOps>(domApp.m_func);
                 const ssize_t    domCns  = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
