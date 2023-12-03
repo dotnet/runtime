@@ -76,8 +76,6 @@ FCFuncStart(gStringFuncs)
     FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_Int_Int_Encoding_RetVoid, ECall::CtorSBytePtrStartLengthEncodingManaged)
     FCFuncElement("SetTrailByte", COMString::FCSetTrailByte)
     FCFuncElement("TryGetTrailByte", COMString::FCTryGetTrailByte)
-    FCFuncElement("IsInterned", AppDomainNative::IsStringInterned)
-    FCFuncElement("Intern", AppDomainNative::GetOrInternString)
 FCFuncEnd()
 
 FCFuncStart(gValueTypeFuncs)
