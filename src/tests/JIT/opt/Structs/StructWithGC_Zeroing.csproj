@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
-  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
