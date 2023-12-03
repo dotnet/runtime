@@ -127,9 +127,7 @@ VOID ParseNativeType(Module*                     pModule,
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__CURRENCY));
             break;
         case MarshalInfo::MARSHAL_TYPE_DECIMAL:
-            // The decimal type can't be blittable since the managed and native alignment requirements differ.
-            // Native needs 8-byte alignment since one field is a 64-bit integer, but managed only needs 4-byte alignment since all fields are ints.
-            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__NATIVEDECIMAL));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__DECIMAL));
             break;
         case MarshalInfo::MARSHAL_TYPE_GUID:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__GUID));
@@ -163,7 +161,7 @@ VOID ParseNativeType(Module*                     pModule,
             break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_OBJECT:
-            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__NATIVEVARIANT));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__COMVARIANT));
             break;
 #endif
         case MarshalInfo::MARSHAL_TYPE_SAFEHANDLE:

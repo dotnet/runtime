@@ -370,7 +370,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 	}
 	case OP_IDIV_UN_IMM:
 	case OP_IDIV_IMM: {
-		if ((!COMPILE_LLVM (cfg)) && (!cfg->backend->optimized_div))
+		if (!COMPILE_LLVM (cfg))
 			allocated_vregs = mono_strength_reduction_division (cfg, ins);
 		break;
 	}
@@ -384,7 +384,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 			MONO_INST_NULLIFY_SREGS (ins);
 			ins->inst_c0 = 0;
 		} else if ((ins->inst_imm > 0) && (ins->inst_imm < (1LL << 32)) &&
-			   (power != -1) && (!cfg->backend->optimized_div)) {
+			   (power != -1)) {
 			gboolean is_long = ins->opcode == OP_LREM_IMM;
 			int compensator_reg = alloc_ireg (cfg);
 			int intermediate_reg;

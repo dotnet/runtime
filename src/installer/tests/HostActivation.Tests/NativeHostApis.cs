@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SdkResolutionFixture(SharedTestState state)
             {
-                Dotnet = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
+                Dotnet = new DotNetCli(TestContext.BuiltDotNet);
 
                 _fixture = state.HostApiInvokerAppFixture.Copy();
 
@@ -502,7 +502,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
-                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {RepoDirectoriesProvider.Default.BuildRID}")
+                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {TestContext.BuildRID}")
                 .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
                 .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}");
         }

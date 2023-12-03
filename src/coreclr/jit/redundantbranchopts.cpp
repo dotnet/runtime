@@ -152,6 +152,171 @@ struct RelopImplicationRule
     bool   reverse;
 };
 
+enum RelopResult
+{
+    Unknown,
+    AlwaysFalse,
+    AlwaysTrue
+};
+
+//------------------------------------------------------------------------
+// IsCmp2ImpliedByCmp1: given two constant range checks:
+//
+//   if (X oper1 bound1)
+//   {
+//        if (X oper2 bound2)
+//        {
+//
+// determine if the second range check is implied by the dominating first one.
+//
+// Arguments:
+//   oper1  - the first comparison operator
+//   bound1 - the first constant bound
+//   oper2  - the second comparison operator
+//   bound2 - the second constant bound
+//
+// Returns:
+//   Unknown     - the second check is not implied by the first one
+//   AlwaysFalse - the second check is implied by the first one and is always false
+//   AlwaysTrue  - the second check is implied by the first one and is always true
+//
+RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
+{
+    struct IntegralRange
+    {
+        ssize_t startIncl; // inclusive
+        ssize_t endIncl;   // inclusive
+
+        bool Intersects(const IntegralRange other) const
+        {
+            return (startIncl <= other.endIncl) && (other.startIncl <= endIncl);
+        }
+
+        bool Contains(const IntegralRange other) const
+        {
+            return (startIncl <= other.startIncl) && (other.endIncl <= endIncl);
+        }
+    };
+
+    // Start with the widest possible ranges
+    IntegralRange range1 = {SSIZE_T_MIN, SSIZE_T_MAX};
+    IntegralRange range2 = {SSIZE_T_MIN, SSIZE_T_MAX};
+
+    // Update ranges based on inputs
+    auto setRange = [](genTreeOps oper, ssize_t bound, IntegralRange* range) -> bool {
+        switch (oper)
+        {
+            case GT_LT:
+                // x < cns -> [SSIZE_T_MIN, cns - 1]
+                if (bound == SSIZE_T_MIN)
+                {
+                    // overflows
+                    return false;
+                }
+                range->endIncl = bound - 1;
+                return true;
+
+            case GT_LE:
+                // x <= cns -> [SSIZE_T_MIN, cns]
+                range->endIncl = bound;
+                return true;
+
+            case GT_GT:
+                // x > cns -> [cns + 1, SSIZE_T_MAX]
+                if (bound == SSIZE_T_MAX)
+                {
+                    // overflows
+                    return false;
+                }
+                range->startIncl = bound + 1;
+                return true;
+
+            case GT_GE:
+                // x >= cns -> [cns, SSIZE_T_MAX]
+                range->startIncl = bound;
+                return true;
+
+            case GT_EQ:
+            case GT_NE:
+                // x == cns -> [cns, cns]
+                // NE is special-cased below
+                range->startIncl = bound;
+                range->endIncl   = bound;
+                return true;
+
+            default:
+                // unsupported operator
+                return false;
+        }
+    };
+
+    if (setRange(oper1, bound1, &range1) && setRange(oper2, bound2, &range2))
+    {
+        // Special handling of GT_NE:
+        if ((oper1 == GT_NE) || (oper2 == GT_NE))
+        {
+            // if (x != 100)
+            //    if (x != 100) // always true
+            if (oper1 == oper2)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysTrue : RelopResult::Unknown;
+            }
+
+            // if (x == 100)
+            //    if (x != 100) // always false
+            //
+            // if (x == 100)
+            //    if (x != 101) // always true
+            if (oper1 == GT_EQ)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysFalse : RelopResult::AlwaysTrue;
+            }
+
+            // if (x > 100)
+            //    if (x != 10) // always true
+            if ((oper2 == GT_NE) && !range1.Intersects(range2))
+            {
+                return AlwaysTrue;
+            }
+
+            return RelopResult::Unknown;
+        }
+
+        // If ranges never intersect, then the 2nd range is never "true"
+        if (!range1.Intersects(range2))
+        {
+            // E.g.:
+            //
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [SSIZE_T_MIN ..  10]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x <= 10) // always false
+            //
+            return RelopResult::AlwaysFalse;
+        }
+
+        // If range1 is a subset of range2, then the 2nd range is always "true"
+        if (range2.Contains(range1))
+        {
+            // E.g.:
+            //
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [10  .. SSIZE_T_MAX]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x >= 10) // always true
+            //
+            return RelopResult::AlwaysTrue;
+        }
+    }
+    return RelopResult::Unknown;
+}
+
 //------------------------------------------------------------------------
 // s_implicationRules: rule table for unrelated relops
 //
@@ -257,8 +422,6 @@ static const RelopImplicationRule s_implicationRules[] =
 // We don't get all the cases here we could. Still to do:
 // * two unsigned compares, same operands
 // * mixture of signed/unsigned compares, same operands
-// * mixture of compares, one operand same, other operands different constants
-//   x > 1 ==> x >= 0
 //
 void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 {
@@ -334,6 +497,67 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
                     JITDUMP("Can infer %s from [%s] dominating %s\n", ValueNumStore::VNFuncName(treeFunc),
                             rii->canInferFromTrue ? "true" : "false", ValueNumStore::VNFuncName(domFunc));
+                    return;
+                }
+            }
+        }
+
+        // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+        // We assume cns1 and cns2 are always on the RHS of the compare.
+        if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
+            vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
+            varTypeIsIntOrI(vnStore->TypeOfVN(domApp.m_args[1])))
+        {
+            // We currently don't handle VNF_relop_UN funcs here
+            if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
+                ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
+            {
+                // Dominating "X relop CNS"
+                const genTreeOps domOper = static_cast<genTreeOps>(domApp.m_func);
+                const ssize_t    domCns  = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
+
+                // Dominated "X relop CNS"
+                const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
+                const ssize_t    treeCns  = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
+
+                // Example:
+                //
+                // void Test(int x)
+                // {
+                //     if (x > 100)
+                //         if (x > 10)
+                //             Console.WriteLine("Taken!");
+                // }
+                //
+
+                // Corresponding BB layout:
+                //
+                // BB1:
+                //   if (x <= 100)
+                //       goto BB4
+                //
+                // BB2:
+                //   // x is known to be > 100 here
+                //   if (x <= 10) // never true
+                //       goto BB4
+                //
+                // BB3:
+                //   Console.WriteLine("Taken!");
+                //
+                // BB4:
+                //   return;
+
+                // Check whether the dominating compare being "false" implies the dominated compare is known
+                // to be either "true" or "false".
+                RelopResult treeOperStatus =
+                    IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                if (treeOperStatus != RelopResult::Unknown)
+                {
+                    rii->canInfer          = true;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+                    rii->canInferFromTrue  = false;
+                    rii->canInferFromFalse = true;
+                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
                     return;
                 }
             }
@@ -1441,27 +1665,21 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         return false;
     }
 
-    bool modifiedFlow = false;
-
     if ((jti.m_numAmbiguousPreds > 0) && (jti.m_fallThroughPred != nullptr))
     {
-        // If fall through pred is BBJ_NONE, and we have only (ambiguous, true) or (ambiguous, false) preds,
-        // we can change the fall through to BBJ_ALWAYS.
-        //
+        // TODO: Simplify jti.m_fallThroughPred logic, now that implicit fallthrough is disallowed.
         const bool fallThroughIsTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
+        const bool predJumpsToNext = jti.m_fallThroughPred->KindIs(BBJ_ALWAYS) && jti.m_fallThroughPred->JumpsToNext();
 
-        if (jti.m_fallThroughPred->KindIs(BBJ_NONE) && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
-                                                        (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
+        if (predJumpsToNext && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
+                                (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
         {
             JITDUMP(FMT_BB " has ambiguous preds and a (%s) fall through pred and no (%s) preds.\n"
-                           "Converting fall through pred " FMT_BB " to BBJ_ALWAYS\n",
+                           "Fall through pred " FMT_BB " is BBJ_ALWAYS\n",
                     jti.m_block->bbNum, fallThroughIsTruePred ? "true" : "false",
                     fallThroughIsTruePred ? "false" : "true", jti.m_fallThroughPred->bbNum);
 
-            // Possibly defer this until after early out below.
-            //
-            jti.m_fallThroughPred->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_block);
-            modifiedFlow = true;
+            assert(jti.m_fallThroughPred->HasJumpTo(jti.m_block));
         }
         else
         {
@@ -1496,7 +1714,6 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         // This is possible, but also should be rare.
         //
         JITDUMP(FMT_BB " now only has ambiguous preds, not jump threading\n", jti.m_block->bbNum);
-        assert(!modifiedFlow);
         return false;
     }
 
@@ -1540,7 +1757,9 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
-        jti.m_block->SetJumpKindAndTarget(BBJ_NONE);
+        jti.m_block->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget);
+        jti.m_block->bbFlags |= BBF_NONE_QUIRK;
+        assert(jti.m_block->JumpsToNext());
     }
 
     // Now reroute the flow from the predecessors.
