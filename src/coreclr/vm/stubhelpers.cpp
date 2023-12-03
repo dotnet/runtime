@@ -476,17 +476,14 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 }
 FCIMPLEND
 
-
-
-FCIMPL2(void, StubHelpers::ThrowInteropParamException, UINT resID, UINT paramIdx)
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
     ::ThrowInteropParamException(resID, paramIdx);
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef PROFILING_SUPPORTED
 FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretParam, Thread* pThread, Object* unsafe_pThis)

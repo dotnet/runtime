@@ -574,7 +574,6 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)
-    FCFuncElement("ThrowInteropParamException", StubHelpers::ThrowInteropParamException)
     FCFuncElement("InternalGetHRExceptionObject", StubHelpers::GetHRExceptionObject)
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("InternalGetCOMHRExceptionObject", StubHelpers::GetCOMHRExceptionObject)

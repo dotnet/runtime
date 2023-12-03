@@ -1142,8 +1142,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetLastError();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ThrowInteropParamException(int resID, int paramIdx);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
+        internal static partial void ThrowInteropParamException(int resID, int paramIdx);
 
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {
