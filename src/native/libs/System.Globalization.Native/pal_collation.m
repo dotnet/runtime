@@ -334,9 +334,26 @@ int32_t GlobalizationNative_GetSortKeyNative(
             dataToUse = [NSData dataWithBytes:utf8Bytes length:utf8Length];
         }
         else {
-            // Convert the string to UTF-16 representation
-            dataToUse = [transformedString dataUsingEncoding:NSUTF16StringEncoding];            
-            utf8Length = ([dataToUse length] / sizeof(uint16_t)) * 2;
+            // // Convert the string to UTF-16 representation
+            // dataToUse = [transformedString dataUsingEncoding:NSUTF16StringEncoding];            
+            // utf8Length = ([dataToUse length] / sizeof(uint16_t)) * 2;
+            // In case of invalid characters, we need to iterate through the string character by character
+            NSMutableString *cleanString = [NSMutableString stringWithCapacity:[transformedString length]];
+
+            [transformedString enumerateSubstringsInRange:NSMakeRange(0, [transformedString length])
+                               options:NSStringEnumerationByComposedCharacterSequences
+                               usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop){
+                // Check if the substring can be encoded in UTF-8
+                if ([substring lengthOfBytesUsingEncoding:NSUTF8StringEncoding] > 0) {
+                    [cleanString appendString:substring];
+                } else {
+                    // Handle invalid characters (if needed)
+                    NSLog(@"Invalid character found and omitted: %@", substring);
+                }
+            }];
+            utf8Bytes = [cleanString UTF8String];
+            utf8Length = [cleanString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+            dataToUse = [NSData dataWithBytes:utf8Bytes length:utf8Length];
         }
 
         if (dataToUse != nil) {
