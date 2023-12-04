@@ -618,8 +618,11 @@ static LPVOID ReserveVirtualMemory(
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
 #ifdef MADV_DONTDUMP
-    // Do not include reserved memory in coredump.
-    madvise(pRetVal, MemSize, MADV_DONTDUMP);
+    // Do not include reserved uncommitted memory in coredump.
+    if (!(fAllocationType & MEM_COMMIT))
+    {
+        madvise(pRetVal, MemSize, MADV_DONTDUMP);
+    }
 #endif
 
     return pRetVal;
@@ -646,6 +649,7 @@ VIRTUALCommitMemory(
     PCMI pInformation           = 0;
     LPVOID pRetVal              = NULL;
     BOOL IsLocallyReserved      = FALSE;
+    BOOL IsNewMemory            = FALSE;
     INT nProtect;
 
     if ( lpAddress )
@@ -663,6 +667,9 @@ VIRTUALCommitMemory(
 
     if ( !pInformation )
     {
+        /* Set if VIRTUALReserveMemory will allocate new memory from the kernel. */
+        IsNewMemory = (((flAllocationType & MEM_RESERVE_EXECUTABLE) != 0) && (lpAddress == NULL));
+
         /* According to the new MSDN docs, if MEM_COMMIT is specified,
         and the memory is not reserved, you reserve and then commit.
         */
@@ -710,8 +717,11 @@ VIRTUALCommitMemory(
     }
 
 #ifdef MADV_DODUMP
-    // Include committed memory in coredump.
-    madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
+    // Include committed memory in coredump. Any newly allocated memory included by default.
+    if (!IsNewMemory)
+    {
+        madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
+    }
 #endif
 
     pRetVal = (void *) StartBoundary;
