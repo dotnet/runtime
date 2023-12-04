@@ -2088,7 +2088,7 @@ namespace System.Net.Tests
                 Exception? exception = await Record.ExceptionAsync(() => server.AcceptConnectionAsync(_ =>
                 {
                     return Task.CompletedTask;
-                });
+                }));
                 Assert.Null(exception);
             }).WaitAsync(TestHelper.PassingTestTimeout);
         }
