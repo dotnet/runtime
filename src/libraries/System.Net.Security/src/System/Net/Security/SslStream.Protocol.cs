@@ -928,7 +928,7 @@ namespace System.Net.Security
 
             _headerSize = streamSizes.Header;
             _trailerSize = streamSizes.Trailer;
-            _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
+            _maxDataSize = streamSizes.MaximumMessage;
             Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
