@@ -2111,6 +2111,7 @@ public:
     }
 
     bool ContainsBlock(BasicBlock* block);
+    bool ContainsLoop(FlowGraphNaturalLoop* childLoop);
 
     unsigned NumLoopBlocks();
 
@@ -2144,6 +2145,11 @@ class FlowGraphNaturalLoops
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, jitstd::list<BasicBlock*>& worklist);
 public:
+    const FlowGraphDfsTree* GetDfsTree()
+    {
+        return m_dfs;
+    }
+
     size_t NumLoops()
     {
         return m_loops.size();
@@ -2154,7 +2160,8 @@ public:
         return m_improperLoopHeaders > 0;
     }
 
-    FlowGraphNaturalLoop* GetLoopFromHeader(BasicBlock* header);
+    FlowGraphNaturalLoop* GetLoopByIndex(unsigned index);
+    FlowGraphNaturalLoop* GetLoopByHeader(BasicBlock* header);
 
     bool IsLoopBackEdge(FlowEdge* edge);
     bool IsLoopExitEdge(FlowEdge* edge);
@@ -2242,6 +2249,22 @@ public:
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfs);
 };
 
+// Represents a reverse mapping from block back to its (most nested) containing loop.
+class BlockToNaturalLoopMap
+{
+    FlowGraphNaturalLoops* m_loops;
+    unsigned* m_indices;
+
+    BlockToNaturalLoopMap(FlowGraphNaturalLoops* loops, unsigned* indices)
+        : m_loops(loops), m_indices(indices)
+    {
+    }
+
+public:
+    FlowGraphNaturalLoop* GetLoop(BasicBlock* block);
+
+    static BlockToNaturalLoopMap* Build(FlowGraphNaturalLoops* loops);
+};
 
 //  The following holds information about instr offsets in terms of generated code.
 
@@ -4787,12 +4810,17 @@ public:
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
     FlowGraphDfsTree* m_dfs;
+
+    // The next members are annotations on the flow graph used during the
+    // optimization phases. They are invalidated once RBO runs and modifies the
+    // flow graph.
     FlowGraphNaturalLoops* m_loops;
     struct LoopDsc;
     LoopDsc** m_newToOldLoop;
     FlowGraphNaturalLoop** m_oldToNewLoop;
     struct LoopSideEffects* m_loopSideEffects;
     struct HoistCounts* m_loopHoistCounts;
+    BlockToNaturalLoopMap* m_blockToLoop;
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -5380,10 +5408,10 @@ public:
     // Perform value-numbering for the trees in "blk".
     void fgValueNumberBlock(BasicBlock* blk);
 
-    // Requires that "entryBlock" is the entry block of loop "loopNum", and that "loopNum" is the
+    // Requires that "entryBlock" is the header block of "loop" and that "loop" is the
     // innermost loop of which "entryBlock" is the entry.  Returns the value number that should be
     // assumed for the memoryKind at the start "entryBlk".
-    ValueNum fgMemoryVNForLoopSideEffects(MemoryKind memoryKind, BasicBlock* entryBlock, unsigned loopNum);
+    ValueNum fgMemoryVNForLoopSideEffects(MemoryKind memoryKind, BasicBlock* entryBlock, FlowGraphNaturalLoop* loop);
 
     // Called when an operation (performed by "tree", described by "msg") may cause the GcHeap to be mutated.
     // As GcHeap is a subset of ByrefExposed, this will also annotate the ByrefExposed mutation.
@@ -6582,7 +6610,7 @@ protected:
     void optHoistLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
 
     // Return true if the tree looks profitable to hoist out of "loop"
-    bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop);
+    bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
 
     // Performs the hoisting 'tree' into the PreHeader for "loop"
     void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
@@ -6636,6 +6664,8 @@ public:
     PhaseStatus optFindLoopsPhase(); // Finds loops and records them in the loop table
 
     void optFindLoops();
+    void optFindNewLoops();
+    void optCrossCheckIterInfo(const NaturalLoopIterInfo& iterInfo, const LoopDsc& dsc);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
@@ -6718,15 +6748,6 @@ public:
         ClassHandleSet* lpArrayElemTypesModified; // Bits set indicate the set of sz array element types such that
                                                   // arrays of that type are modified
                                                   // in the loop.
-
-        // Adds the variable liveness information for 'blk' to 'this' LoopDsc
-        void AddVariableLiveness(Compiler* comp, BasicBlock* blk);
-
-        inline void AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
-        // This doesn't *always* take a class handle -- it can also take primitive types, encoded as class handles
-        // (shifted left, with a low-order bit set to distinguish.)
-        // Use the {Encode/Decode}ElemType methods to construct/destruct these.
-        inline void AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd);
 
         /* The following values are set only for iterator loops, i.e. has the flag LPFLG_ITER set */
 
@@ -11956,7 +11977,7 @@ private:
         {
             static_cast<TVisitor*>(this)->PreOrderVisit(block);
 
-            next = tree[block->bbPostorderNum].firstChild;
+            next = tree[block->bbNewPostorderNum].firstChild;
 
             if (next != nullptr)
             {
@@ -11968,7 +11989,7 @@ private:
             {
                 static_cast<TVisitor*>(this)->PostOrderVisit(block);
 
-                next = tree[block->bbPostorderNum].nextSibling;
+                next = tree[block->bbNewPostorderNum].nextSibling;
 
                 if (next != nullptr)
                 {
@@ -12107,8 +12128,7 @@ public:
     void Append(char chr);
 };
 
-typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
-                FieldHandleSet;
+typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN> FieldHandleSet;
 
 typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
 
@@ -12129,8 +12149,8 @@ struct LoopSideEffects
     // arrays of that type are modified
     // in the loop.
     ClassHandleSet* ArrayElemTypesModified = nullptr;
-    bool ContainsCall = false;
-    bool HasNestedLoops = false;
+    bool            ContainsCall           = false;
+    bool            HasNestedLoops         = false;
 
     LoopSideEffects();
 

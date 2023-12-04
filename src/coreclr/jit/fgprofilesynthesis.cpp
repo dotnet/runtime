@@ -721,7 +721,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
         }
         else
         {
-            FlowGraphNaturalLoop* const nestedLoop = m_loops->GetLoopFromHeader(block);
+            FlowGraphNaturalLoop* const nestedLoop = m_loops->GetLoopByHeader(block);
 
             if (nestedLoop != nullptr)
             {
@@ -1015,7 +1015,7 @@ void ProfileSynthesis::ComputeBlockWeights()
 //
 void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
 {
-    FlowGraphNaturalLoop* const loop      = m_loops->GetLoopFromHeader(block);
+    FlowGraphNaturalLoop* const loop      = m_loops->GetLoopByHeader(block);
     weight_t                    newWeight = block->bbWeight;
     const char*                 kind      = "";
 

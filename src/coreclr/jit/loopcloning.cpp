@@ -3116,6 +3116,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
         {
             if (loop->AnalyzeIteration(&iterInfo))
             {
+                INDEBUG(optCrossCheckIterInfo(iterInfo, optLoopTable[i]));
                 context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
             }
         }
@@ -3269,8 +3270,8 @@ PhaseStatus Compiler::optCloneLoops()
         // TODO: recompute the loop table, to include the slow loop path in the table?
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
 
-        m_dfs   = fgComputeDfs();
-        m_loops = FlowGraphNaturalLoops::Find(m_dfs);
+        m_dfs = fgComputeDfs();
+        optFindNewLoops();
     }
 
 #ifdef DEBUG

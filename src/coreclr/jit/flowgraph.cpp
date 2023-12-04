@@ -3999,7 +3999,7 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 //
 bool FlowGraphDfsTree::Contains(BasicBlock* block) const
 {
-    return (block->bbPostorderNum < m_postOrderCount) && (m_postOrder[block->bbPostorderNum] == block);
+    return (block->bbNewPostorderNum < m_postOrderCount) && (m_postOrder[block->bbNewPostorderNum] == block);
 }
 
 //------------------------------------------------------------------------
@@ -4021,7 +4021,7 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 {
     assert(Contains(ancestor) && Contains(descendant));
     return (ancestor->bbPreorderNum <= descendant->bbPreorderNum) &&
-           (descendant->bbPostorderNum <= ancestor->bbPostorderNum);
+           (descendant->bbNewPostorderNum <= ancestor->bbNewPostorderNum);
 }
 
 //------------------------------------------------------------------------
@@ -4069,7 +4069,7 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
             {
                 blocks.Pop();
                 postOrder[postOrderIndex] = block;
-                block->bbPostorderNum     = postOrderIndex++;
+                block->bbNewPostorderNum  = postOrderIndex++;
             }
         }
 
@@ -4136,7 +4136,7 @@ unsigned FlowGraphNaturalLoop::LoopBlockBitVecIndex(BasicBlock* block)
 {
     assert(m_tree->Contains(block));
 
-    unsigned index = m_header->bbPostorderNum - block->bbPostorderNum;
+    unsigned index = m_header->bbNewPostorderNum - block->bbNewPostorderNum;
     assert(index < m_blocksSize);
     return index;
 }
@@ -4159,12 +4159,12 @@ unsigned FlowGraphNaturalLoop::LoopBlockBitVecIndex(BasicBlock* block)
 //
 bool FlowGraphNaturalLoop::TryGetLoopBlockBitVecIndex(BasicBlock* block, unsigned* pIndex)
 {
-    if (block->bbPostorderNum > m_header->bbPostorderNum)
+    if (block->bbNewPostorderNum > m_header->bbNewPostorderNum)
     {
         return false;
     }
 
-    unsigned index = m_header->bbPostorderNum - block->bbPostorderNum;
+    unsigned index = m_header->bbNewPostorderNum - block->bbNewPostorderNum;
     if (index >= m_blocksSize)
     {
         return false;
@@ -4212,6 +4212,20 @@ bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// ContainsLoop: Returns true if this loop contains the specified other loop.
+//
+// Parameters:
+//   childLoop - The potential candidate child loop
+//
+// Returns:
+//   True if the child loop is contained in this loop.
+//
+bool FlowGraphNaturalLoop::ContainsLoop(FlowGraphNaturalLoop* childLoop)
+{
+    return ContainsBlock(childLoop->GetHeader());
+}
+
+//------------------------------------------------------------------------
 // NumLoopBlocks: Get the number of blocks in the SCC of the loop.
 //
 // Returns:
@@ -4235,7 +4249,21 @@ FlowGraphNaturalLoops::FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs)
 {
 }
 
-// GetLoopFromHeader: See if a block is a loop header, and if so return the
+// GetLoopByIndex: Get loop by a specified index.
+//
+// Parameters:
+//    index - Index of loop. Must be less than NumLoops()
+//
+// Returns:
+//    Loop with the specified index.
+//
+FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
+{
+    assert(index < m_loops.size());
+    return m_loops[index];
+}
+
+// GetLoopByHeader: See if a block is a loop header, and if so return the
 // associated loop.
 //
 // Parameters:
@@ -4244,7 +4272,7 @@ FlowGraphNaturalLoops::FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs)
 // Returns:
 //    Loop headed by block, or nullptr
 //
-FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopFromHeader(BasicBlock* block)
+FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByHeader(BasicBlock* block)
 {
     // TODO-TP: This can use binary search based on post order number.
     for (FlowGraphNaturalLoop* loop : m_loops)
@@ -4331,7 +4359,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfs)
         unsigned          rpoNum = dfs->GetPostOrderCount() - i;
         BasicBlock* const block  = dfs->GetPostOrder()[i - 1];
         JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum + 1, block->bbNum, block->bbPreorderNum + 1,
-                block->bbPostorderNum + 1);
+                block->bbNewPostorderNum + 1);
     }
 #endif
 
@@ -4375,7 +4403,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfs)
         //
 
         worklist.clear();
-        loop->m_blocksSize = loop->m_header->bbPostorderNum + 1;
+        loop->m_blocksSize = loop->m_header->bbNewPostorderNum + 1;
 
         BitVecTraits loopTraits = loop->LoopBlockTraits();
         loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
@@ -4477,7 +4505,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfs)
     {
         if (loop->m_parent != nullptr)
         {
-            loop->m_sibling = loop->m_parent->m_child;
+            loop->m_sibling         = loop->m_parent->m_child;
             loop->m_parent->m_child = loop;
         }
     }
@@ -5240,7 +5268,7 @@ BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock
         {
             return nullptr;
         }
-        while (finger1 != nullptr && finger1->bbPostorderNum < finger2->bbPostorderNum)
+        while (finger1 != nullptr && finger1->bbNewPostorderNum < finger2->bbNewPostorderNum)
         {
             finger1 = finger1->bbIDom;
         }
@@ -5248,7 +5276,7 @@ BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock
         {
             return nullptr;
         }
-        while (finger2 != nullptr && finger2->bbPostorderNum < finger1->bbPostorderNum)
+        while (finger2 != nullptr && finger2->bbNewPostorderNum < finger1->bbNewPostorderNum)
         {
             finger2 = finger2->bbIDom;
         }
@@ -5288,8 +5316,8 @@ bool FlowGraphDominatorTree::Dominates(BasicBlock* dominator, BasicBlock* domina
     //
     // where the equality holds when you ask if A dominates itself.
     //
-    return (m_preorderNum[dominator->bbPostorderNum] <= m_preorderNum[dominated->bbPostorderNum]) &&
-           (m_postorderNum[dominator->bbPostorderNum] >= m_postorderNum[dominated->bbPostorderNum]);
+    return (m_preorderNum[dominator->bbNewPostorderNum] <= m_preorderNum[dominated->bbNewPostorderNum]) &&
+           (m_postorderNum[dominator->bbNewPostorderNum] >= m_postorderNum[dominated->bbNewPostorderNum]);
 }
 
 //------------------------------------------------------------------------
@@ -5342,7 +5370,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
                     continue; // Unreachable pred
                 }
 
-                if ((numIters <= 0) && (domPred->bbPostorderNum <= poNum))
+                if ((numIters <= 0) && (domPred->bbNewPostorderNum <= poNum))
                 {
                     continue; // Pred not yet visited
                 }
@@ -5382,11 +5410,11 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
             continue;
         }
 
-        unsigned    poNum  = block->bbPostorderNum;
+        unsigned    poNum  = block->bbNewPostorderNum;
         BasicBlock* parent = block->bbIDom;
 
-        domTree[poNum].nextSibling                 = domTree[parent->bbPostorderNum].firstChild;
-        domTree[parent->bbPostorderNum].firstChild = block;
+        domTree[poNum].nextSibling                    = domTree[parent->bbNewPostorderNum].firstChild;
+        domTree[parent->bbNewPostorderNum].firstChild = block;
     }
 
 //// Skip the root since it has no siblings.
@@ -5414,7 +5442,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
             printf(FMT_BB " :", postOrder[poNum]->bbNum);
             for (BasicBlock* child = domTree[poNum].firstChild; child != nullptr;
-                 child             = domTree[child->bbPostorderNum].nextSibling)
+                 child             = domTree[child->bbNewPostorderNum].nextSibling)
             {
                 printf(" " FMT_BB, child->bbNum);
             }
@@ -5440,12 +5468,12 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
         void PreOrderVisit(BasicBlock* block)
         {
-            m_preorderNums[block->bbPostorderNum] = m_preNum++;
+            m_preorderNums[block->bbNewPostorderNum] = m_preNum++;
         }
 
         void PostOrderVisit(BasicBlock* block)
         {
-            m_postorderNums[block->bbPostorderNum] = m_postNum++;
+            m_postorderNums[block->bbNewPostorderNum] = m_postNum++;
         }
     };
 
@@ -5456,4 +5484,61 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     number.WalkTree(domTree);
 
     return new (comp, CMK_DominatorMemory) FlowGraphDominatorTree(dfs, domTree, preorderNums, postorderNums);
+}
+
+//------------------------------------------------------------------------
+// BlockToNaturalLoopMap::GetLoop: Map a block back to its most nested
+// containing loop.
+//
+// Parameters:
+//   block - The block
+//
+// Returns:
+//   Loop or nullptr if the block is not contained in any loop.
+//
+FlowGraphNaturalLoop* BlockToNaturalLoopMap::GetLoop(BasicBlock* block)
+{
+    const FlowGraphDfsTree* dfs = m_loops->GetDfsTree();
+    if (!dfs->Contains(block))
+    {
+        return nullptr;
+    }
+
+    unsigned index = m_indices[block->bbNewPostorderNum];
+    if (index == 0)
+    {
+        return nullptr;
+    }
+
+    return m_loops->GetLoopByIndex(index - 1);
+}
+
+//------------------------------------------------------------------------
+// BlockToNaturalLoopMap::Build: Build the map.
+//
+// Parameters:
+//   loops - Data structure describing loops
+//
+// Returns:
+//   The map.
+//
+BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops)
+{
+    const FlowGraphDfsTree* dfs  = loops->GetDfsTree();
+    Compiler*               comp = dfs->GetCompiler();
+    // Indices are 1-based, with 0 meaning "no loop".
+    unsigned* indices =
+        dfs->GetPostOrderCount() == 0 ? nullptr : (new (comp, CMK_Loops) unsigned[dfs->GetPostOrderCount()]{});
+
+    // Now visit all loops in reverse post order, meaning that we see inner
+    // loops last and thus write their indices into the map last.
+    for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
+    {
+        loop->VisitLoopBlocks([=](BasicBlock* block) {
+            indices[block->bbNewPostorderNum] = loop->GetIndex() + 1;
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
 }

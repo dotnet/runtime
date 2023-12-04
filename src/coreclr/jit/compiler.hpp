@@ -3624,26 +3624,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     }
 }
 
-inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
-{
-    if (lpFieldsModified == nullptr)
-    {
-        lpFieldsModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
-    }
-    lpFieldsModified->Set(fldHnd, fieldKind, FieldHandleSet::Overwrite);
-}
-
-inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
-{
-    if (lpArrayElemTypesModified == nullptr)
-    {
-        lpArrayElemTypesModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::ClassHandleSet(comp->getAllocatorLoopHoist());
-    }
-    lpArrayElemTypesModified->Set(structHnd, true, ClassHandleSet::Overwrite);
-}
-
 inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 {
 #ifdef DEBUG
@@ -4959,7 +4939,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
         // loop block rpo index = head block rpoIndex + index
         // loop block po index = PostOrderCount - 1 - loop block rpo index
         //                     = headPreOrderIndex - index
-        unsigned poIndex = m_header->bbPostorderNum - index;
+        unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_tree->GetPostOrderCount());
         return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
     });
@@ -4987,7 +4967,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
 {
     BitVecTraits traits(m_blocksSize, m_tree->GetCompiler());
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
-        unsigned poIndex = m_header->bbPostorderNum - index;
+        unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_tree->GetPostOrderCount());
         return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
     });
