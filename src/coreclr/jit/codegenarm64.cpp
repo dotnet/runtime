@@ -10352,11 +10352,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
 // IF_SVE_AG_3A
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-    theEmitter->emitIns_R_R_R(INS_sve_andqv, EA_1BYTE, REG_V4, REG_P4, REG_V4, INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR);
+    theEmitter->emitIns_R_R_R(INS_sve_andqv, EA_8BYTE, REG_V4, REG_P4, REG_V4, INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR);
     /* ANDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    theEmitter->emitIns_R_R_R(INS_sve_eorqv, EA_2BYTE, REG_V5, REG_P5, REG_V5, INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR);
+    theEmitter->emitIns_R_R_R(INS_sve_eorqv, EA_8BYTE, REG_V5, REG_P5, REG_V5, INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR);
     /* EORQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_4BYTE, REG_V6, REG_P6, REG_V6, INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR);
+    theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_V6, REG_P6, REG_V6, INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR);
     /* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
     theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_V7, REG_P7, REG_V7, INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR);
 /* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
@@ -10388,11 +10388,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
 // IF_SVE_AL_3A
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-    theEmitter->emitIns_R_R_R(INS_sve_smaxqv, EA_1BYTE, REG_V0, REG_P5, REG_V25, INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR);
+    theEmitter->emitIns_R_R_R(INS_sve_smaxqv, EA_8BYTE, REG_V0, REG_P5, REG_V25, INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR);
     /* SMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    theEmitter->emitIns_R_R_R(INS_sve_sminqv, EA_2BYTE, REG_V1, REG_P4, REG_V24, INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR);
+    theEmitter->emitIns_R_R_R(INS_sve_sminqv, EA_8BYTE, REG_V1, REG_P4, REG_V24, INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR);
     /* SMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
-    theEmitter->emitIns_R_R_R(INS_sve_umaxqv, EA_4BYTE, REG_V2, REG_P3, REG_V23, INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR);
+    theEmitter->emitIns_R_R_R(INS_sve_umaxqv, EA_8BYTE, REG_V2, REG_P3, REG_V23, INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR);
     /* UMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
     theEmitter->emitIns_R_R_R(INS_sve_uminqv, EA_8BYTE, REG_V3, REG_P2, REG_V22, INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR);
 /* UMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */

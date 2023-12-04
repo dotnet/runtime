@@ -1035,12 +1035,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_AG_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (quadwords)
         case IF_SVE_AJ_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer add reduction (quadwords)
         case IF_SVE_AL_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (quadwords)
-            elemsize = id->idOpSize();
+            datasize = id->idOpSize();
             assert(insOptsScalableWithSimdVector(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));                // ddddd
             assert(isLowPredicateRegister(id->idReg2()));          // ggg
             assert(isVectorRegister(id->idReg3()));                // mmmmm
-            assert(isValidVectorElemsize(elemsize));
+            assert(datasize == EA_8BYTE);
             break;
 
         // Scalable, widening to scalar SIMD.
