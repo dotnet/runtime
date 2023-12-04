@@ -1130,7 +1130,7 @@ static size_t GetCurrentVirtualMemorySize()
 
 // Return the size of the available user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, (size_t)-1 if not available
+//  non zero if it has succeeded, GetVirtualMemoryMaxAddress() if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
     rlimit addressSpaceLimit;
@@ -1140,7 +1140,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     }
 
     // No virtual memory limit
-    return (size_t)-1;
+    return GetVirtualMemoryMaxAddress();
 }
 
 // Return the maximum address of the of the virtual address space of this process.
