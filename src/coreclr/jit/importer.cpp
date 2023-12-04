@@ -10240,25 +10240,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    if (opcode == CEE_INITBLK)
-                    {
-                        if (!op2->IsIntegralConst(0))
-                        {
-                            op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
-                        }
-                    }
-                    else
-                    {
-                        op2 = gtNewIndir(TYP_STRUCT, op2);
-                    }
-
 #ifdef TARGET_64BIT
-                    // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
                     op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
 #endif
-
-                    op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    op1->gtFlags |= indirFlags;
+                    op1 = gtNewHelperCallNode(opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY,
+                                              TYP_VOID, op1, op2, op3);
+                    // TODO: volatile flag
                 }
                 goto SPILL_APPEND;
             }
