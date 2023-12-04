@@ -27,62 +27,104 @@ TypeHandle Instantiation::CustomSpecialInstantiationTypes[NUMBER_OF_EXTRA_SPECIA
 // RESULT: a bool indicating whether or not this is the particular instantiation which can be efficiently represented by the Special Marker Type.
 bool Instantiation::ContainsExpectedSpecialInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner)
 {
-    mdToken tkCheck = pMTGenericType->GetModule()->IsSystem() ? pMTGenericType->GetCl() : 0;
-    DWORD specialInstantiationIndex = UINT32_MAX;
-    TypeHandle thExtraSpecial;
+    Instantiation instOwner = pMTInterfaceMapOwner->GetInstantiation();
+    return ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(pMTGenericType, pMTInterfaceMapOwner, instOwner);
+}
 
-    for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
+bool Instantiation::ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner, const Instantiation& instForOwnerMT)
+{
+    // Handle case which might need to allocate if we construct the instantiation
+    if (pMTGenericType->IsGenericCollectionsInterface() && instForOwnerMT.GetNumArgs() == 2 && GetNumArgs() == 1)
     {
-        if (tkCheck == CustomSpecialInstantiationTokens[i])
+        MethodTable* pMTPossibleKeyValuePair = (*this)[0].GetMethodTable();
+        if (pMTPossibleKeyValuePair != NULL && pMTPossibleKeyValuePair->GetCl() == CoreLibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)->GetCl() && pMTPossibleKeyValuePair->GetModule()->IsSystem())
         {
-            specialInstantiationIndex = CustomSpecialInstantiationIndices[i];
-            thExtraSpecial = CustomSpecialInstantiationTypes[i];
+            Instantiation instKeyValuePair = pMTPossibleKeyValuePair->GetInstantiation();
+            if (instForOwnerMT[0] == instKeyValuePair[0] && instForOwnerMT[0] == instKeyValuePair[1])
+            {
+                return true;
+            }
         }
+        return false;
     }
-    TypeHandle th = pMTInterfaceMapOwner->GetSpecialInstantiationType();
+
+    TypeHandle ownerAsInst[MethodTable::MaxGenericParametersForSpecialMarkerType];
+    Instantiation inst;
+    MethodTable::ConstructInstantiationForSpecialMarkerType(pMTGenericType, pMTInterfaceMapOwner, instForOwnerMT, &ownerAsInst, &inst);
+
+    if (GetNumArgs() != inst.GetNumArgs())
+        return false;
 
     for (auto i = GetNumArgs(); i > 0;)
     {
-        TypeHandle thInstantiationToCheck = th;
-
-        if ((i - 1) == specialInstantiationIndex)
-        {
-            thInstantiationToCheck = thExtraSpecial;
-        }
-        if ((*this)[--i] != thInstantiationToCheck)
+        i--;
+        if ((*this)[i] != inst[i])
             return false;
     }
     return true;
 }
 
-bool Instantiation::ContainsExpectedSpecialInstantiationForInterfaceInstantiatedWithFirstGenericParameterOf(MethodTable *pMTGenericType, TypeHandle thFirstGenericParameter)
+void MethodTable::ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult)
 {
-    mdToken tkCheck = pMTGenericType->GetModule()->IsSystem() ? pMTGenericType->GetCl() : 0;
-    DWORD specialInstantiationIndex = UINT32_MAX;
-    TypeHandle thExtraSpecial;
+    Instantiation instOwner = pMTOwner->GetInstantiation();
+    ConstructInstantiationForSpecialMarkerType(pMTOpenInterface, pMTOwner, instOwner, ownerAsInst, instResult);
+}
 
-    for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
+void MethodTable::ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, const Instantiation& instOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult)
+{
+    if (pMTOpenInterface->IsGenericCollectionsInterface())
     {
-        if (tkCheck == CustomSpecialInstantiationTokens[i])
+        if (instOwner.GetNumArgs() == 2 && pMTOpenInterface->GetInstantiation().GetNumArgs() == 1)
         {
-            specialInstantiationIndex = CustomSpecialInstantiationIndices[i];
-            thExtraSpecial = CustomSpecialInstantiationTypes[i];
+            MethodTable* pMTKeyValuePair = CoreLibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC);
+            (*ownerAsInst)[0] = ClassLoader::LoadGenericInstantiationThrowing(pMTKeyValuePair->GetModule(), pMTKeyValuePair->GetCl(), instOwner, ClassLoader::LoadTypes, CLASS_LOAD_APPROXPARENTS);
+            *instResult = Instantiation(*ownerAsInst, 1);
+            return;
+        }
+
+        if (pMTOpenInterface->GetInstantiation().GetNumArgs() > MaxGenericParametersForSpecialMarkerType)
+        {
+            *instResult = Instantiation();
+            return;
+        }
+
+        if (pMTOpenInterface->GetInstantiation().GetNumArgs() != instOwner.GetNumArgs())
+        {
+            *instResult = Instantiation();
+            return;
+        }
+
+        memcpy(*ownerAsInst, instOwner.GetRawArgs(), sizeof(ownerAsInst[0]) * instOwner.GetNumArgs());
+        *instResult = Instantiation(*ownerAsInst, instOwner.GetNumArgs());
+        return;
+    }
+
+    TypeHandle thInstTypeStandard;
+
+    if (pMTOwner->IsInterface() && pMTOwner->HasInstantiation())
+    {
+        thInstTypeStandard = instOwner[0];
+    }
+    else
+    {
+        thInstTypeStandard = TypeHandle(pMTOwner);
+    }
+
+    for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
+        (*ownerAsInst)[i] = thInstTypeStandard;
+
+    if (pMTOpenInterface->GetModule()->IsSystem())
+    {
+        for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
+        {
+            if (pMTOpenInterface->GetCl() == Instantiation::CustomSpecialInstantiationTokens[i])
+            {
+                (*ownerAsInst)[Instantiation::CustomSpecialInstantiationIndices[i]] = Instantiation::CustomSpecialInstantiationTypes[i];
+            }
         }
     }
-    TypeHandle th = thFirstGenericParameter;
 
-    for (auto i = GetNumArgs(); i > 0;)
-    {
-        TypeHandle thInstantiationToCheck = th;
-
-        if ((i - 1) == specialInstantiationIndex)
-        {
-            thInstantiationToCheck = thExtraSpecial;
-        }
-        if ((*this)[--i] != thInstantiationToCheck)
-            return false;
-    }
-    return true;
+    *instResult = Instantiation(*ownerAsInst, min(MaxGenericParametersForSpecialMarkerType, pMTOpenInterface->GetInstantiation().GetNumArgs()));
 }
 
 #ifdef _DEBUG_IMPL

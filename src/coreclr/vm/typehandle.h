@@ -746,7 +746,7 @@ public:
     //     pMTInterfaceMapOwner - MethodTable where an instantiation of the generic type def defined by pMTGenerictype will be instantiated over this instantiation.
     // RESULT: a bool indicating whether or not this is the particular instantiation which can be efficiently represented by the Special Marker Type.
     bool ContainsExpectedSpecialInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner);
-    bool ContainsExpectedSpecialInstantiationForInterfaceInstantiatedWithFirstGenericParameterOf(MethodTable *pMTGenericType, TypeHandle thFirstGenericParameter);
+    bool ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner, const Instantiation& instForOwnerMT);
 
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.

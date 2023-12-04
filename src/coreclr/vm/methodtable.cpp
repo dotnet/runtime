@@ -1491,16 +1491,19 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
     {
         pClass = pTargetMT->GetClass();
         Instantiation inst = GetInstantiation();
+
+        TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
+        if (pMTInterfaceMapOwner && IsSpecialMarkerTypeForGenericCasting())
+        {
+            ConstructInstantiationForSpecialMarkerType(this, pMTInterfaceMapOwner, &ownerAsInst, &inst);
+        }
+
         Instantiation targetInst = pTargetMT->GetInstantiation();
+
 
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
-            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner)
-            {
-                thArg = pMTInterfaceMapOwner->GetSpecialInstantiationType();
-            }
-
             TypeHandle thTargetArg = targetInst[i];
 
             // If argument types are not equivalent, test them for compatibility
@@ -6287,15 +6290,15 @@ void ThrowExceptionForConflictingOverride(
 
 namespace
 {
-    bool IsSameMethodTable(MethodTable* pMTPossiblyWithAlternateInstantiation, Instantiation *pInst, MethodTable* pMTToCompare)
+    bool IsSameMethodTable(MethodTable* pInterfaceMTPossiblyWithAlternateInstantiation, Instantiation *pInst, MethodTable* pMTToCompare)
     {
         if (pInst == NULL)
         {
-            return pMTPossiblyWithAlternateInstantiation == pMTToCompare;
+            return pInterfaceMTPossiblyWithAlternateInstantiation == pMTToCompare;
         }
         else
         {
-            if (!pMTPossiblyWithAlternateInstantiation->HasSameTypeDefAs(pMTToCompare))
+            if (!pInterfaceMTPossiblyWithAlternateInstantiation->HasSameTypeDefAs(pMTToCompare))
             {
                 return false;
             }
@@ -6314,30 +6317,30 @@ namespace
         }
     }
 
-    bool CanCastToInterfaceCheck(MethodTable*& pMTPossiblyWithAlternateInstantiation, Instantiation *&pInst, MethodTable* pMTToCompare, ClassLoadLevel level)
+    bool CanCastToInterfaceCheck(MethodTable*& pInterfaceMTPossiblyWithAlternateInstantiation, Instantiation *&pInst, MethodTable* pMTToCompare, ClassLoadLevel level)
     {
 restart:
         if ((pInst == NULL) || !pMTToCompare->HasInstantiation())
         {
-            return pMTPossiblyWithAlternateInstantiation->CanCastToInterface(pMTToCompare);
+            return pInterfaceMTPossiblyWithAlternateInstantiation->CanCastToInterface(pMTToCompare);
         }
         else
         {
-            MethodTable::InterfaceMapIterator it = pMTPossiblyWithAlternateInstantiation->IterateInterfaceMap();
+            MethodTable::InterfaceMapIterator it = pInterfaceMTPossiblyWithAlternateInstantiation->IterateInterfaceMap();
             while (it.Next())
             {
                 if (it.GetInterfaceApprox()->HasSameTypeDefAs(pMTToCompare))
                 {
                     // At this point we might have a match. If its a special marker type, then we can determine the instantiation from pInst, 
-                    // otherwise we need to re-instantiate pMTPossiblyWithAlternateInstantiation and try again
+                    // otherwise we need to re-instantiate pInterfaceMTPossiblyWithAlternateInstantiation and try again
                     if (pMTToCompare->HasVariance() || !it.GetInterfaceApprox()->IsSpecialMarkerTypeForGenericCasting())
                     {
-                        pMTPossiblyWithAlternateInstantiation = ClassLoader::LoadGenericInstantiationThrowing(pMTPossiblyWithAlternateInstantiation->GetModule(), pMTPossiblyWithAlternateInstantiation->GetCl(), *pInst, ClassLoader::LoadTypes, level).AsMethodTable();
+                        pInterfaceMTPossiblyWithAlternateInstantiation = ClassLoader::LoadGenericInstantiationThrowing(pInterfaceMTPossiblyWithAlternateInstantiation->GetModule(), pInterfaceMTPossiblyWithAlternateInstantiation->GetCl(), *pInst, ClassLoader::LoadTypes, level).AsMethodTable();
                         pInst = NULL;
                         goto restart;
                     }
                     
-                    return (pMTToCompare->GetInstantiation().ContainsExpectedSpecialInstantiationForInterfaceInstantiatedWithFirstGenericParameterOf(pMTToCompare, (*pInst)[0]));
+                    return (pMTToCompare->GetInstantiation().ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(pMTToCompare, pInterfaceMTPossiblyWithAlternateInstantiation, *pInst));
                 }
             }
 
@@ -9668,26 +9671,6 @@ EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
 }
 
 #ifndef DACCESS_COMPILE
-void MethodTable::ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult)
-{
-    for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
-        (*ownerAsInst)[i] = pMTOwner->GetSpecialInstantiationType();
-
-    if (pMTOpenInterface->GetModule()->IsSystem())
-    {
-        for (int i = 0; i < NUMBER_OF_EXTRA_SPECIAL_INTERFACE_TYPES; i++)
-        {
-            if (pMTOpenInterface->GetCl() == Instantiation::CustomSpecialInstantiationTokens[i])
-            {
-                (*ownerAsInst)[Instantiation::CustomSpecialInstantiationIndices[i]] = Instantiation::CustomSpecialInstantiationTypes[i];
-            }
-        }
-    }
-
-    _ASSERTE(pMTOpenInterface->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
-    *instResult = Instantiation(*ownerAsInst, pMTOpenInterface->GetInstantiation().GetNumArgs());
-}
-
 PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMTOwner, ClassLoadLevel loadLevel /*= CLASS_LOADED*/)
 {
     CONTRACT(PTR_MethodTable)

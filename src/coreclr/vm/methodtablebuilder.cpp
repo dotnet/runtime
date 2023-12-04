@@ -9970,6 +9970,19 @@ void MethodTableBuilder::CheckForSystemTypes()
     // We can exit early for generic types - there are just a few cases to check for.
     if (bmtGenerics->HasInstantiation())
     {
+        if (pMT->IsInterface())
+        {
+            if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+            }
+
+            if (strcmp(nameSpace, g_CollectionsGenericNS) == 0)
+            {
+                pMT->SetIsGenericCollectionsInterface();
+            }
+        }
+
         if (pMT->IsIntrinsicType() && pClass->HasLayout())
         {
             if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))

@@ -1097,8 +1097,10 @@ public:
     // of the fully loaded type. This is to reduce the amount of type loading
     // performed at process startup.
     //
-    // When placed on a valuetype or a non-generic interface, the special marker will indicate that the interface should be considered instantiated over the valuetype
-    // When placed on an interface, the special marker will indicate that the interface should be considered instantiated over the first generic parameter of the interface
+    // When special marker type is a generic collections interface, if it has 1 generic parameter, and the owner has 2, then it will be considered to be instantiated over KeyValuePair<OwnerInstantiationType[0], OwnerInstantiationType[1]>
+    // Otherwise when special marker type is a generic collections interface, the instantiation will be over exactly the same instantiation as the owner type
+    // Otherwise when placed on a valuetype or a non-generic interface, the special marker will indicate that the interface should be considered instantiated over the valuetype
+    // Otherwise when placed on an interface, the special marker will indicate that the interface should be considered instantiated over the first generic parameter of the interface
     //
     // The current rule is that these interfaces can only appear
     // on valuetypes and interfaces that are not shared generic, and that the special
@@ -1109,22 +1111,11 @@ public:
         return IsGenericTypeDefinition();
     }
 
-    // See comment on IsSpecialMarkerTypeForGenericCasting for details
-    inline TypeHandle GetSpecialInstantiationType()
-    {
-        if (IsInterface() && HasInstantiation())
-        {
-            return GetInstantiation()[0];
-        }
-        else
-        {
-            return TypeHandle(this);
-        }
-    }
 
     static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
     typedef TypeHandle SpecialMarkerTypeHandleArray[MaxGenericParametersForSpecialMarkerType];
     static void ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult);
+    static void ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, const Instantiation& instOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult);
 
 
     static BOOL ComputeContainsGenericVariables(Instantiation inst);
@@ -1169,6 +1160,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsByRefLike);
+    }
+
+    BOOL IsGenericCollectionsInterface()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetFlag(enum_flag_IsGenericCollectionsInterface);
+    }
+
+    void SetIsGenericCollectionsInterface()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetFlag(enum_flag_IsGenericCollectionsInterface);
     }
 
     // class is a com object class
@@ -3358,7 +3361,7 @@ private:
 
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
+        enum_flag_IsGenericCollectionsInterface = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
 
 #define SET_FALSE(flag)     ((flag) & 0)
