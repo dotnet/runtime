@@ -415,7 +415,13 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         codeOffset
     );
 
-    return decoder.IsInterruptible();
+    if (decoder.IsInterruptible())
+        return true;
+
+    if (decoder.IsSafePoint())
+        return true;
+
+    return false;
 #else
     // Extract the necessary information from the info block header
     hdrInfo info;
@@ -452,12 +458,27 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
         codeOffset--;
     }
+    else
+    {
+        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
+        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
+        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
+        //           does not seem possible.
+        GcInfoDecoder decoder1(
+            GCInfoToken(gcInfo),
+            GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
+            codeOffset
+        );
+
+        if (decoder1.IsSafePoint())
+            codeOffset--;
+    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
-        );
+    );
 
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
