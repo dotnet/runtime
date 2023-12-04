@@ -1115,13 +1115,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isLowPredicateRegister(id->idReg2()));      // ggg
             assert(isGeneralRegisterOrZR(id->idReg3()));       // mmmmm
             assert(isValidScalarDatasize(elemsize));
+            break;
   
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-          elemsize = id->idOpSize();
-          assert(isVectorRegister(id->idReg1())); // nnnn
-          assert(isVectorRegister(id->idReg2())); // ddddd
-          assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
-          break;
+            elemsize = id->idOpSize();
+            assert(isVectorRegister(id->idReg1())); // nnnn
+            assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            break;
 
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
