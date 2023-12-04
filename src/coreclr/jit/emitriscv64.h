@@ -27,8 +27,6 @@ struct CnsVal
 
 const char* emitFPregName(unsigned reg, bool varName = true);
 const char* emitVectorRegName(regNumber reg);
-
-void emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
@@ -61,6 +59,8 @@ private:
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
+
+void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned offset, instrDesc* id);
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
