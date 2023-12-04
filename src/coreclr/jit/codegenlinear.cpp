@@ -704,8 +704,7 @@ void CodeGen::genCodeForBBlist()
                 }
                 // Do likewise for blocks that end in DOES_NOT_RETURN calls
                 // that were not caught by the above rules. This ensures that
-                // gc register liveness doesn't change across call instructions
-                // in fully-interruptible mode.
+                // gc register liveness doesn't change to some random state after call instructions
                 else
                 {
                     GenTree* call = block->lastNode();
@@ -756,6 +755,16 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
             {
+#if DEBUG
+                GenTree* call = block->lastNode();
+                if ((call != nullptr) && (call->gtOper == GT_CALL))
+                {
+                    if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+                    {
+                        assert(!"Unexpected fallthrough after GTF_CALL_M_DOES_NOT_RETURN");
+                    }
+                }
+#endif
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
                 {
