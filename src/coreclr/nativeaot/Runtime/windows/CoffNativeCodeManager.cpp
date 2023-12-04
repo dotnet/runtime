@@ -367,11 +367,17 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         codeOffset
     );
 
-    return decoder.IsInterruptible();
+    if (decoder.IsInterruptible())
+        return true;
+
+    if (decoder.IsSafePoint())
+        return true;
+
+    return false;
 #else
-    // x86 has custom GC info, see DecodeGCHdrInfo in eetwain.cpp
-    PORTABILITY_ASSERT("IsSafePoint");
-    RhFailFast();
+  // x86 has custom GC info, see DecodeGCHdrInfo in eetwain.cpp
+  PORTABILITY_ASSERT("IsSafePoint");
+  RhFailFast();
 #endif
 }
 
@@ -395,12 +401,27 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         // revisit the GcInfoEncoder/Decoder
         codeOffset--;
     }
+    else
+    {
+        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
+        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
+        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
+        //           does not seem possible.
+        GcInfoDecoder decoder1(
+            GCInfoToken(gcInfo),
+            GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
+            codeOffset
+        );
+
+        if (decoder1.IsSafePoint())
+            codeOffset--;
+    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
-        );
+    );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
     if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)

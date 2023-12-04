@@ -943,6 +943,8 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
     else
         return FALSE;
 
+    // TODO: VS add ARM64
+
 #elif defined(TARGET_AMD64)
 
     _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
@@ -963,6 +965,8 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
             | (1 << 13)  // r13
             | (1 << 14)  // r14
             | (1 << 15); // r15
+
+        PreservedRegMask |= 1; // rax - may contain return value
 
         return !(PreservedRegMask & (1 << regNum));
     }
