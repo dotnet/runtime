@@ -80,6 +80,8 @@ namespace System.Net
         private static readonly object s_syncRoot = new object();
         private static volatile HttpClient? s_cachedHttpClient;
         private static HttpClientParameters? s_cachedHttpClientParameters;
+        private bool _disposeRequired;
+        private HttpClient? _httpClient;
 
         //these should be safe.
         [Flags]
@@ -1136,73 +1138,62 @@ namespace System.Net
             }
 
             var request = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
-
-            bool disposeRequired = false;
-            HttpClient? client = null;
-            try
+            _sendRequestCts = new CancellationTokenSource();
+            _httpClient = GetCachedOrCreateHttpClient(async, out _disposeRequired);
+            if (content is not null)
             {
-                _sendRequestCts = new CancellationTokenSource();
-                client = GetCachedOrCreateHttpClient(async, out disposeRequired);
-                if (content is not null)
+                request.Content = content;
+            }
+
+            if (_hostUri is not null)
+            {
+                request.Headers.Host = Host;
+            }
+
+            AddCacheControlHeaders(request);
+
+            // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
+            // HttpRequestMessage.Content.Headers.
+            foreach (string headerName in _webHeaderCollection)
+            {
+                // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
+                // collection and the request content headers collection for all well-known header names.  And custom headers
+                // are only allowed in the request headers collection and not in the request content headers collection.
+                if (IsWellKnownContentHeader(headerName))
                 {
-                    request.Content = content;
-                }
+                    // Create empty content so that we can send the entity-body header.
+                    request.Content ??= new ByteArrayContent(Array.Empty<byte>());
 
-                if (_hostUri is not null)
-                {
-                    request.Headers.Host = Host;
-                }
-
-                AddCacheControlHeaders(request);
-
-                // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
-                // HttpRequestMessage.Content.Headers.
-                foreach (string headerName in _webHeaderCollection)
-                {
-                    // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
-                    // collection and the request content headers collection for all well-known header names.  And custom headers
-                    // are only allowed in the request headers collection and not in the request content headers collection.
-                    if (IsWellKnownContentHeader(headerName))
-                    {
-                        // Create empty content so that we can send the entity-body header.
-                        request.Content ??= new ByteArrayContent(Array.Empty<byte>());
-
-                        request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
-                    }
-                    else
-                    {
-                        request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
-                    }
-                }
-
-                request.Headers.TransferEncodingChunked = SendChunked;
-
-                if (KeepAlive)
-                {
-                    request.Headers.Connection.Add(HttpKnownHeaderNames.KeepAlive);
+                    request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
                 else
                 {
-                    request.Headers.ConnectionClose = true;
+                    request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
-
-                request.Version = ProtocolVersion;
-                HttpCompletionOption completionOption = _allowReadStreamBuffering ?
-                                HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
-                _sendRequestTask = async ?
-                    client.SendAsync(request, completionOption, _sendRequestCts!.Token) :
-                    Task.Run(() => client.Send(request, completionOption, _sendRequestCts!.Token));
-
-                return _sendRequestTask!;
             }
-            finally
+
+            request.Headers.TransferEncodingChunked = SendChunked;
+
+            if (KeepAlive)
             {
-                if (disposeRequired)
-                {
-                    client?.Dispose();
-                    _requestStream = null;
-                }
+                request.Headers.Connection.Add(HttpKnownHeaderNames.KeepAlive);
             }
+            else
+            {
+                request.Headers.ConnectionClose = true;
+            }
+
+            _httpClient ??= GetCachedOrCreateHttpClient(async, out _disposeRequired);
+
+
+            request.Version = ProtocolVersion;
+            HttpCompletionOption completionOption = _allowReadStreamBuffering ?
+                            HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
+            _sendRequestTask = async ?
+                _httpClient.SendAsync(request, completionOption, _sendRequestCts!.Token) :
+                Task.Run(() => _httpClient.Send(request, completionOption, _sendRequestCts!.Token));
+
+            return _sendRequestTask!;
         }
 
         private async Task<WebResponse> HandleResponse(bool async)
@@ -1221,6 +1212,12 @@ namespace System.Net
                     null,
                     WebExceptionStatus.ProtocolError,
                     response);
+            }
+
+            if (_disposeRequired)
+            {
+                _httpClient?.Dispose();
+                _httpClient = null;
             }
 
             return response;

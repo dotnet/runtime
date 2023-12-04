@@ -2134,6 +2134,7 @@ namespace System.Net.Tests
                 request.ContentType = "application/text";
                 request.ContentLength = size;
                 request.Method = "POST";
+                request.Timeout = (size/16 * delaySec) + request.Timeout;
                 var stream = request.GetRequestStream();
                 await server.AcceptConnectionAsync(async connection =>
                 {
