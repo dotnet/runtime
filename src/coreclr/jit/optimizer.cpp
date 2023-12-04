@@ -7117,7 +7117,7 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 // Arguments:
 //   comp - Compiler instance
 //   blk  - Block whose liveness is to be added
-// 
+//
 void LoopSideEffects::AddVariableLiveness(Compiler* comp, BasicBlock* blk)
 {
     VarSetOps::UnionD(comp, VarInOut, blk->bbLiveIn);
@@ -7134,7 +7134,7 @@ void LoopSideEffects::AddVariableLiveness(Compiler* comp, BasicBlock* blk)
 //   comp      - Compiler instance
 //   fldHnd    - Field handle being modified
 //   fieldKind - Kind of field
-// 
+//
 void LoopSideEffects::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
 {
     if (FieldsModified == nullptr)
@@ -7152,7 +7152,7 @@ void LoopSideEffects::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldH
 //   comp      - Compiler instance
 //   structHnd - Handle for struct. Can also be an encoding of a primitive
 //               handle, see {Encode/Decode}ElemType.
-// 
+//
 void LoopSideEffects::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
 {
     if (ArrayElemTypesModified == nullptr)
