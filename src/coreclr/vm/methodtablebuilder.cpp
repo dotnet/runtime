@@ -423,7 +423,7 @@ MethodTableBuilder::ExpandApproxInterface(
     // to have found all of the interfaces that the type implements, and to place them in the interface list itself. Also
     // we can assume no ambiguous interfaces
     // Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    if (!(GetModule()->IsSystem() && (IsValueClass() || IsInterface())))
+    if (!(GetModule()->IsSystem() && (IsValueClass() || IsInterface() || GetParentMethodTable()->IsObjectClass())))
     {
         // Make sure to pass in the substitution from the new itf type created above as
         // these methods assume that substitutions are allocated in the stacking heap,
@@ -9330,12 +9330,9 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     BOOL duplicates;
     bool retry = false;
 
-    // Always use exact loading behavior with normal classes or shared generics, as they have to deal with inheritance, and the
+    // Always use exact loading behavior with normal classes that derive from some other type, as they have to deal with inheritance, and the
     // inexact matching logic for classes would be more complex to write.
-    // Also always use the exact loading behavior with any generic that contains generic variables, as the open type is used
-    // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
-    // and we make this case distinguishable by simply disallowing the optimization in those cases.
-    bool retryWithExactInterfaces = !(pMT->IsValueType() || pMT->IsInterface()) || pMT->IsSharedByGenericInstantiations();
+    bool retryWithExactInterfaces = !(pMT->IsValueType() || pMT->IsInterface() || pMT->GetParentMethodTable()->IsObjectClass());
 
     DWORD nAssigned = 0;
     do
@@ -9371,26 +9368,73 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
             // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
             // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-            if (!(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface())))
+            if (!(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface() || pMT->GetParentMethodTable()->IsObjectClass())))
             {
+                Instantiation newIntfMTInst;
+                MethodTable::SpecialMarkerTypeHandleArray arrayForpMT;
+                if (pNewIntfMT->IsSpecialMarkerTypeForGenericCasting())
+                {
+                    MethodTable::ConstructInstantiationForSpecialMarkerType(pNewIntfMT, pMT, &arrayForpMT, &newIntfMTInst);
+                }
+                else if (pNewIntfMT->HasInstantiation())
+                {
+                    newIntfMTInst = pNewIntfMT->GetInstantiation();
+                }
+                else
+                {
+                    newIntfMTInst = Instantiation();
+                }
+
                 MethodTable::InterfaceMapIterator intIt = pNewIntfMT->IterateInterfaceMap();
                 while (intIt.Next())
                 {
                     MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
-                    if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
+                    MethodTable* pItfToInsert;
+                    if (pItfPossiblyApprox->HasInstantiation())
                     {
-                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the
-                        // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
-                        // so that the fallback instantiating logic works efficiently
-                        if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()) && pItfPossiblyApprox->GetInstantiation().GetNumArgs() <= MethodTable::MaxGenericParametersForSpecialMarkerType)
+                        MethodTable::SpecialMarkerTypeHandleArray arrayForpItfPossiblyApproxOnpNewIntfMT;
+                        Instantiation itfPossiblyApproxInstOnpNewIntfMT;
+                        if (pItfPossiblyApprox->IsSpecialMarkerTypeForGenericCasting())
                         {
-                            pItfPossiblyApprox = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                            MethodTable::ConstructInstantiationForSpecialMarkerType(pItfPossiblyApprox, pNewIntfMT, newIntfMTInst, &arrayForpItfPossiblyApproxOnpNewIntfMT, &itfPossiblyApproxInstOnpNewIntfMT);
                         }
                         else
                         {
-                            retry = true;
-                            break;
+                            itfPossiblyApproxInstOnpNewIntfMT = pItfPossiblyApprox->GetInstantiation();
                         }
+
+                        MethodTable::SpecialMarkerTypeHandleArray arrayForpItfPossiblyApproxOnpMT;
+                        Instantiation itfPossiblyApproxInstOnpMT;
+                        MethodTable::ConstructInstantiationForSpecialMarkerType(pItfPossiblyApprox, pMT, pMT->GetInstantiation(), &arrayForpItfPossiblyApproxOnpMT, &itfPossiblyApproxInstOnpMT);
+
+                        if (itfPossiblyApproxInstOnpNewIntfMT.Equals(itfPossiblyApproxInstOnpMT) && itfPossiblyApproxInstOnpMT.GetNumArgs() != 0)
+                        {
+                            // Then we can use the special marker type on pMT
+                            pItfToInsert = pItfPossiblyApprox;
+                            if (!pItfToInsert->IsSpecialMarkerTypeForGenericCasting())
+                            {
+                                // This is for the case where the approx type isn't the special marker, but we could use it
+                                pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                            }
+                        }
+                        else
+                        {
+                            // We need to instantiate the interface type correctly
+                            if (pItfPossiblyApprox->ContainsGenericVariables() && uninstGenericCase)
+                            {
+                                pItfToInsert = ClassLoader::LoadGenericInstantiationThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), itfPossiblyApproxInstOnpNewIntfMT, ClassLoader::LoadTypes, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                            }
+                            else
+                            {
+                                ClassLoader::EnsureLoaded(pItfPossiblyApprox, CLASS_LOAD_EXACTPARENTS);
+                                pItfToInsert = pItfPossiblyApprox;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ClassLoader::EnsureLoaded(pItfPossiblyApprox, CLASS_LOAD_EXACTPARENTS);
+                        pItfToInsert = pItfPossiblyApprox;
                     }
                     duplicates |= InsertMethodTable(intIt.GetInterface(pNewIntfMT, CLASS_LOAD_EXACTPARENTS), pExactMTs, nInterfacesCount, &nAssigned);
                 }
@@ -9425,7 +9469,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 #endif
     // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
     // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface())));
+    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface() || pMT->GetParentMethodTable()->IsObjectClass())));
 
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)

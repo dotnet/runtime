@@ -748,6 +748,18 @@ public:
     bool ContainsExpectedSpecialInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner);
     bool ContainsExpectedSpecialInstantiationWithOwnerWithSpecificInstantiation(MethodTable *pMTGenericType, MethodTable *pMTInterfaceMapOwner, const Instantiation& instForOwnerMT);
 
+    bool Equals(const Instantiation& other)
+    {
+        if (GetNumArgs() != other.GetNumArgs())
+            return false;
+        for (DWORD iArg = 0; iArg < m_nArgs; iArg++)
+        {
+            if (m_pArgs[iArg] != other.m_pArgs[iArg])
+                return false;
+        }
+        return true;
+    }
+    
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.
     TypeHandle* m_pArgs;

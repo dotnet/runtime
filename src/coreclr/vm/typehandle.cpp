@@ -40,7 +40,7 @@ bool Instantiation::ContainsExpectedSpecialInstantiationWithOwnerWithSpecificIns
         if (pMTPossibleKeyValuePair != NULL && pMTPossibleKeyValuePair->GetCl() == CoreLibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)->GetCl() && pMTPossibleKeyValuePair->GetModule()->IsSystem())
         {
             Instantiation instKeyValuePair = pMTPossibleKeyValuePair->GetInstantiation();
-            if (instForOwnerMT[0] == instKeyValuePair[0] && instForOwnerMT[0] == instKeyValuePair[1])
+            if (instForOwnerMT[0] == instKeyValuePair[0] && instForOwnerMT[1] == instKeyValuePair[1])
             {
                 return true;
             }
@@ -51,17 +51,7 @@ bool Instantiation::ContainsExpectedSpecialInstantiationWithOwnerWithSpecificIns
     TypeHandle ownerAsInst[MethodTable::MaxGenericParametersForSpecialMarkerType];
     Instantiation inst;
     MethodTable::ConstructInstantiationForSpecialMarkerType(pMTGenericType, pMTInterfaceMapOwner, instForOwnerMT, &ownerAsInst, &inst);
-
-    if (GetNumArgs() != inst.GetNumArgs())
-        return false;
-
-    for (auto i = GetNumArgs(); i > 0;)
-    {
-        i--;
-        if ((*this)[i] != inst[i])
-            return false;
-    }
-    return true;
+    return Equals(inst);
 }
 
 void MethodTable::ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpenInterface, MethodTable* pMTOwner, SpecialMarkerTypeHandleArray* ownerAsInst, Instantiation* instResult)
@@ -94,7 +84,7 @@ void MethodTable::ConstructInstantiationForSpecialMarkerType(MethodTable *pMTOpe
             return;
         }
 
-        memcpy(*ownerAsInst, instOwner.GetRawArgs(), sizeof(ownerAsInst[0]) * instOwner.GetNumArgs());
+        memcpy(*ownerAsInst, instOwner.GetRawArgs(), sizeof(TypeHandle) * instOwner.GetNumArgs());
         *instResult = Instantiation(*ownerAsInst, instOwner.GetNumArgs());
         return;
     }

@@ -1103,8 +1103,7 @@ public:
     // Otherwise when placed on an interface, the special marker will indicate that the interface should be considered instantiated over the first generic parameter of the interface
     //
     // The current rule is that these interfaces can only appear
-    // on valuetypes and interfaces that are not shared generic, and that the special
-    // marker type is the open generic type.
+    // on valuetypes, interfaces and classes which derive directly from System.Object
     //
     inline bool IsSpecialMarkerTypeForGenericCasting()
     {
