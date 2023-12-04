@@ -547,6 +547,7 @@ namespace System.Globalization
         private static CultureData CreateCultureWithInvariantData()
         {
             // Make a new culturedata
+            System.Diagnostics.Debug.Write("CreateCultureWithInvariantData CultureData ctor: Making new culturedata for: ");
             CultureData invariant = new CultureData();
 
             // Basics
@@ -633,8 +634,8 @@ namespace System.Globalization
             if (!GlobalizationMode.Invariant)
             {
                 // Store for specific data about each calendar
-                invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-                invariant._calendars[0] = CalendarData.Invariant;
+                //invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
+               // invariant._calendars[0] = CalendarData.Invariant;
             }
 
             // Text information
