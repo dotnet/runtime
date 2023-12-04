@@ -69,11 +69,6 @@
     <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TestSingleFile)' == 'true'" />
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
-    <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __TestArchitecture=$(TargetArchitecture);set __IsXUnitLogCheckerSupported=1" />
-    <SetScriptCommands  Condition="'$(TargetOS)' != 'windows'" Include="export __TestArchitecture=$(TargetArchitecture);export __IsXUnitLogCheckerSupported=1"/>
-  </ItemGroup>
-
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(BuildTestsOnHelix)' == 'true')"
@@ -107,6 +102,7 @@
 
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
+
     </PropertyGroup>
 
     <!-- Set $(TestDebugger) to eg c:\debuggers\windbg.exe to run tests under a debugger. -->
@@ -135,6 +131,23 @@
     <PropertyGroup Condition="'$(RunScriptOutputDirectory)' != ''">
       <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(RunScriptOutputDirectory)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and
+                              '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                              $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
+      <SetScriptCommand Condition="'$(TargetOS)' == 'windows'">$(SetScriptCommand)
+set __TestArchitecture=$(TargetArchitecture);
+set __IsXUnitLogCheckerSupported=1
+      </SetScriptCommand>
+      <SetScriptCommand Condition="'$(TargetOS)' != 'windows'">$(SetScriptCommand)
+export __TestArchitecture=$(TargetArchitecture);
+export __IsXUnitLogCheckerSupported=1
+      </SetScriptCommand>        
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SetScriptCommands Include="$(SetScriptCommand)" />
+    </ItemGroup>
 
     <GenerateRunScript RunCommands="@(RunScriptCommands)"
                        SetCommands="@(SetScriptCommands)"
