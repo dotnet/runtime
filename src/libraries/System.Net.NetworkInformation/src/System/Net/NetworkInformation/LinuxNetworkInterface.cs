@@ -73,10 +73,10 @@ namespace System.Net.NetworkInformation
         {
             var systemProperties = new LinuxNetworkInterfaceSystemProperties();
 
-            int interfaceCount=0;
-            int addressCount=0;
-            Interop.Sys.NetworkInterfaceInfo * nii = null;
-            Interop.Sys.IpAddressInfo * ai = null;
+            int interfaceCount = 0;
+            int addressCount = 0;
+            Interop.Sys.NetworkInterfaceInfo* nii = null;
+            Interop.Sys.IpAddressInfo* ai = null;
             IntPtr globalMemory = (IntPtr)null;
 
             if (Interop.Sys.GetNetworkInterfaces(&interfaceCount, &nii, &addressCount, &ai) != 0)
