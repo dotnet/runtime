@@ -635,7 +635,7 @@ namespace System.Globalization
                 // Store for specific data about each calendar
                 invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
                 // Make sure that calendar has data
-                if (invariant._calendars != null && invariant._calendars.Count > 0)
+                if (invariant._calendars != null && invariant._calendars?.Length > 0)
                 {
                     invariant._calendars[0] = CalendarData.Invariant;
                 }
