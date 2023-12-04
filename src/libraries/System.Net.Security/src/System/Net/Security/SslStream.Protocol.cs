@@ -945,14 +945,10 @@ namespace System.Net.Security
         /*++
             Encrypt - Encrypts our bytes before we send them over the wire
 
-            PERF: make more efficient, this does an extra copy when the offset
-            is non-zero.
-
             Input:
                 buffer - bytes for sending
-                offset -
-                size   -
                 output - Encrypted bytes
+                resultSize - number of bytes in the output buffer
         --*/
         internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
         {

@@ -248,7 +248,7 @@ internal static partial class Interop
                 SCH_CRED_IGNORE_REVOCATION_OFFLINE = 0x1000,
                 SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE = 0x2000,
                 SCH_SEND_ROOT_CERT = 0x40000,
-                SCH_SEND_AUX_RECORD =   0x00200000,
+                SCH_SEND_AUX_RECORD = 0x00200000,
                 SCH_USE_STRONG_CRYPTO = 0x00400000,
                 SCH_USE_PRESHAREDKEY_ONLY = 0x800000,
                 SCH_ALLOW_NULL_ENCRYPTION = 0x02000000,
@@ -374,7 +374,7 @@ internal static partial class Interop
             ref CredHandle contextHandle,
             in SecBufferDesc input,
             uint sequenceNumber,
-            uint *qualityOfProtection);
+            uint* qualityOfProtection);
 
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int QuerySecurityContextToken(
@@ -513,5 +513,29 @@ internal static partial class Interop
             long ulAttribute,
             in SecPkgCred_ClientCertPolicy pBuffer,
             long cbBuffer);
+
+        internal enum SecTrafficSecretType
+        {
+            None,
+            Client,
+            Server
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct SecTrafficSecrets
+        {
+            public fixed char SymmetricAlgId[64];
+            public fixed char ChainingMode[64];
+            public fixed char HashAlgId[64];
+
+            public ushort KeySize;
+            public ushort IvSize;
+            public ushort MsgSequenceStart;
+            public ushort MsgSequenceEnd;
+            public SecTrafficSecretType TrafficSecretType;
+            public ushort TrafficSecretSize;
+            public fixed byte TrafficSecret[100];
+        }
+
     }
 }
