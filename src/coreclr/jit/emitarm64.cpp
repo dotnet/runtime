@@ -1116,7 +1116,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isGeneralRegisterOrZR(id->idReg3()));       // mmmmm
             assert(isValidScalarDatasize(elemsize));
             break;
-  
+
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             elemsize = id->idOpSize();
             assert(isVectorRegister(id->idReg1())); // nnnn
@@ -14342,7 +14342,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeSveElemsize(id->idInsOpt());  // xx
             dst += emitOutput_Instr(dst, code);
             break;
-        
+
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             imm = emitGetInsSC(id);
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
@@ -16688,7 +16688,7 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
             emitDispReg(encodingZRtoSP(id->idReg3()), size, false);    // mmmmm
             break;
-        
+
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
             emitDispSveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
