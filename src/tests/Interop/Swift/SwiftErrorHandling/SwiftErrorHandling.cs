@@ -59,12 +59,12 @@ public class ErrorHandlingTests
         SetErrorMessage(messageBytes, messageBytes.Length);
     }
 
-    private static string GetErrorMessageFromSwift(SwiftError error, int length)
+    private unsafe static string GetErrorMessageFromSwift(SwiftError error, int length)
     {
         IntPtr pointer = GetErrorMessage(error.Value);
-        byte[] byteArray = new byte[length];
-        Marshal.Copy(pointer, byteArray, 0, length);
+        ReadOnlySpan<byte> byteArraySpan = new ReadOnlySpan<byte>((void*)pointer, length);
+        string errorMessage = Encoding.UTF8.GetString(byteArraySpan);
         NativeLibrary.Free(pointer);
-        return Encoding.UTF8.GetString(byteArray);
+        return errorMessage;
     }
 }
