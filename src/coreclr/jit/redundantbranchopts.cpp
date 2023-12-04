@@ -19,13 +19,12 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
-    class OptRedundantBranchesDomTreeVisitor : public DomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
+    class OptRedundantBranchesDomTreeVisitor : public NewDomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
     {
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), madeChanges(false)
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : NewDomTreeVisitor(compiler), madeChanges(false)
         {
         }
 
@@ -96,7 +95,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     optReachableBitVecTraits = nullptr;
     OptRedundantBranchesDomTreeVisitor visitor(this);
-    visitor.WalkTree();
+    visitor.WalkTree(fgSsaDomTree);
 
 #if DEBUG
     if (verbose && visitor.madeChanges)
@@ -819,7 +818,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     {
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (!fgDominate(domBlock, predBlock))
+            if (!fgSsaDomTree->Dominates(domBlock, predBlock))
             {
                 JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
                         predBlock->bbNum);
