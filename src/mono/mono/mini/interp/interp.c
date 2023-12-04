@@ -1392,11 +1392,6 @@ retry:
 #if SIZEOF_VOID_P == 4
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-#ifdef TARGET_ARM
-			/* pairs begin at even registers */
-			if (i8_align == 8 && margs->ilen & 1)
-				ilen++;
-#endif
 			info->arg_types [i] = PINVOKE_ARG_INT_PAIR;
 			ilen += 2;
 			break;
@@ -1487,11 +1482,6 @@ retry:
 static void
 build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, BuildArgsFromSigInfo *info, InterpFrame *frame)
 {
-#ifdef TARGET_ARM
-	g_assert (mono_arm_eabi_supported ());
-	int i8_align = mono_arm_i8_align ();
-#endif
-
 #ifdef TARGET_WASM
 	margs->sig = sig;
 #endif
@@ -1558,11 +1548,6 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 			int_i++;
 			break;
 		case PINVOKE_ARG_INT_PAIR: {
-#ifdef TARGET_ARM
-			/* pairs begin at even registers */
-			if (i8_align == 8 && int_i & 1)
-				int_i++;
-#endif
 			margs->iargs [int_i] = (gpointer)(gssize)sp_arg->data.pair.lo;
 			int_i++;
 			margs->iargs [int_i] = (gpointer)(gssize)sp_arg->data.pair.hi;
