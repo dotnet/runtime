@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json
 {
-    internal readonly struct RawIndentation : IEquatable<RawIndentation>
+    internal readonly struct JsonWriterIndentationData : IEquatable<JsonWriterIndentationData>
     {
         private readonly Memory<byte> _bytes;
         private readonly int? _length;
@@ -17,9 +17,9 @@ namespace System.Text.Json
         public readonly ReadOnlySpan<byte> Bytes => _bytes.Span;
         public readonly int Length => _length ?? 2;
 
-        public static RawIndentation FromString(string value) => new(value);
+        public static JsonWriterIndentationData FromString(string value) => new(value);
 
-        private RawIndentation(string value)
+        private JsonWriterIndentationData(string value)
         {
             if (value is null)
             {
@@ -31,7 +31,7 @@ namespace System.Text.Json
 
             foreach (byte b in indentBytes)
             {
-                if (JsonConstants.IndentChars.IndexOf(b) is -1)
+                if (JsonConstants.ValidIndentChars.IndexOf(b) is -1)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), $"{nameof(value)} contains an invalid character. Allowed characters are space and horizontal tab.");
                 }
@@ -56,13 +56,13 @@ namespace System.Text.Json
             }
         }
 
-        public readonly bool Equals(RawIndentation other) =>
+        public readonly bool Equals(JsonWriterIndentationData other) =>
             _byte == other._byte &&
             _length == other._length &&
             _bytes.Span.SequenceEqual(other._bytes.Span);
 
         public override bool Equals(object? obj) =>
-            obj is RawIndentation indentation && Equals(indentation);
+            obj is JsonWriterIndentationData indentation && Equals(indentation);
 
         public override readonly int GetHashCode()
         {

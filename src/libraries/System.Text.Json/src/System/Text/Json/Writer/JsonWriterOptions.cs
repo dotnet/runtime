@@ -55,12 +55,12 @@ namespace System.Text.Json
             readonly get => _indentText ?? JsonConstants.DefaultIndent;
             set
             {
-                RawIndent = RawIndentation.FromString(value);
+                IndentData = JsonWriterIndentationData.FromString(value);
                 _indentText = value;
             }
         }
 
-        internal RawIndentation RawIndent { get; set; }
+        internal JsonWriterIndentationData IndentData { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum depth allowed when writing JSON, with the default (i.e. 0) indicating a max depth of 1000.

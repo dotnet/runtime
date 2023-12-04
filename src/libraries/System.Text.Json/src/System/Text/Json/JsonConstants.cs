@@ -47,7 +47,7 @@ namespace System.Text.Json
         // Explicitly skipping ReverseSolidus since that is handled separately
         public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
 
-        public static ReadOnlySpan<byte> IndentChars => " \t"u8;
+        public static ReadOnlySpan<byte> ValidIndentChars => " \t"u8;
 
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 

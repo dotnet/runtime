@@ -80,7 +80,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonWriterOptions Options => _options;
 
-        private int IndentLength => _options.RawIndent.Length;
+        private int IndentLength => _options.IndentData.Length;
 
         private int Indentation => CurrentDepth * IndentLength;
 
@@ -1035,7 +1035,7 @@ namespace System.Text.Json
         {
             Debug.Assert(_options.Indented);
 
-            _options.RawIndent.Write(buffer, indentation);
+            _options.IndentData.Write(buffer, indentation);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
