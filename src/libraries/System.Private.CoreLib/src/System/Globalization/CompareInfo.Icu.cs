@@ -718,7 +718,7 @@ namespace System.Globalization
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                     if (GlobalizationMode.Hybrid)
                     {
-                        if (Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, null, 0, options) != sortKeyLength)
+                        if (Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
                         {
                             throw new ArgumentException(SR.Arg_ExternalException);
                         }

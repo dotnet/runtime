@@ -60,7 +60,7 @@ namespace System.Globalization.Tests
             new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(GetHashCodeTestData))]
         public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
@@ -294,11 +294,6 @@ namespace System.Globalization.Tests
 
                 yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.IgnoreKanaType, 0 };
                 yield return new object[] { s_invariantCompare, "c", "C", CompareOptions.IgnoreKanaType, -1 };
-                // Zero-weight code points
-                // In both NLS (Windows) and ICU the code point U+200C ZERO WIDTH NON-JOINER has a zero weight,
-                // so it's compared as equal to the empty string. This means that we can't special-case GetHashCode("")
-                // and return a fixed value; we actually need to call the underlying OS or ICU API to calculate the sort key.
-                yield return new object[] { s_invariantCompare, "", "\u200c", CompareOptions.None, 0 };
 
                 yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.IgnoreSymbols, 0 };
                 yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.StringSort, -1 };
@@ -308,6 +303,11 @@ namespace System.Globalization.Tests
                 yield return new object[] { s_invariantCompare, "\uFF65", "\u30FB", CompareOptions.IgnoreSymbols, 0 };
                 yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.IgnoreSymbols, s_expectedHalfToFullFormsComparison };
             }
+            // Zero-weight code points
+            // In both NLS (Windows) and ICU the code point U+200C ZERO WIDTH NON-JOINER has a zero weight,
+            // so it's compared as equal to the empty string. This means that we can't special-case GetHashCode("")
+            // and return a fixed value; we actually need to call the underlying OS or ICU API to calculate the sort key.
+            yield return new object[] { s_invariantCompare, "", "\u200c", CompareOptions.None, 0 };
         }
 
         public static IEnumerable<object[]> IndexOf_TestData()
@@ -536,7 +536,7 @@ namespace System.Globalization.Tests
             Assert.NotEqual(sv1.SortId, sv2.SortId);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(GetHashCodeTestData))]
         public void GetHashCode_Span(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expectSameHashCode)
         {
@@ -553,7 +553,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectSameHashCode, hashOfSource1AsSpan == hashOfSource2AsSpan);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void GetHashCode_NullAndEmptySpan()
         {
             // Ensure that null spans and non-null empty spans produce the same hash code.
