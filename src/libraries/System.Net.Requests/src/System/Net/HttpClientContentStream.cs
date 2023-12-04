@@ -133,9 +133,5 @@ namespace System.Net
             [StackTraceHidden]
             static void ThrowDisposedException() => throw new ObjectDisposedException(nameof(HttpClientContentStream));
         }
-
-        [DoesNotReturn]
-        private static void ThrowNotSupportedException() =>
-            throw new NotSupportedException();
     }
 }

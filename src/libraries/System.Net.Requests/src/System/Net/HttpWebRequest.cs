@@ -1064,13 +1064,12 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            // Let's create stream buffer for transferring data from RequestStream to the StreamContent.
+            // Create stream buffer for transferring data from RequestStream to the StreamContent.
             StrongBox<int> box = new StrongBox<int>();
             StreamBuffer streamBuffer = new StreamBuffer();
-            //s_cachedHttpClient = GetCachedOrCreateHttpClient(async, out bool disposeRequired);
             _sendRequestTask = SendRequest(async, new StreamContent(new HttpClientContentStream(streamBuffer, box)));
 
-            // If any parameter changed let's change the RequestStream.
+            // If any parameter changed, change the RequestStream.
             _requestStream ??= new RequestStream(box, streamBuffer, AllowWriteStreamBuffering);
 
             return Task.FromResult((Stream)_requestStream);
