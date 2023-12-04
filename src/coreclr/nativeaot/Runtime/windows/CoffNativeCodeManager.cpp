@@ -393,12 +393,8 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
     if (!isActiveStackFrame)
     {
-        // If we are not in the active method, we are currently pointing
-        // to the return address. That may not be reachable after a call (if call does not return)
-        // or reachable via a jump and thus have a different live set.
-        // Therefore we simply adjust the offset to inside of call instruction.
-        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
-        // revisit the GcInfoEncoder/Decoder
+        // For historical reasons GC liveness at return sites in partially interruptible
+        // code is recorded with -1 skew, so we must adjust accordingly.
         codeOffset--;
     }
     else
