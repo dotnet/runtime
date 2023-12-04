@@ -1277,7 +1277,7 @@ namespace System.Data.SqlTypes
             // negate all operands including result.
             if (!fMySignPos)
             {
-                fMySignPos = !fMySignPos;
+                // fMySignPos = !fMySignPos;
                 fOpSignPos = !fOpSignPos;
                 fResSignPos = !fResSignPos;
             }
