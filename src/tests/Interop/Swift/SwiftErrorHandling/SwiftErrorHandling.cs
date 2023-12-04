@@ -64,7 +64,7 @@ public class ErrorHandlingTests
         IntPtr pointer = GetErrorMessage(error.Value);
         ReadOnlySpan<byte> byteArraySpan = new ReadOnlySpan<byte>((void*)pointer, length);
         string errorMessage = Encoding.UTF8.GetString(byteArraySpan);
-        NativeMemory.Free(pointer);
+        NativeMemory.Free((void*)pointer);
         return errorMessage;
     }
 }
