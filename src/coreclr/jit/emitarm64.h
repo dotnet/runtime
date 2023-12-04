@@ -52,6 +52,7 @@ void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
+void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispArrangement(insOpts opt);
@@ -377,6 +378,10 @@ static code_t insEncodeReg_V_20_to_17(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '9' thru '6' position.
 static code_t insEncodeReg_V_9_to_6(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
+// This encoding requires that the register number be divisible by two.
+static code_t insEncodeReg_V_9_to_6_Times_Two(regNumber reg);
 
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);

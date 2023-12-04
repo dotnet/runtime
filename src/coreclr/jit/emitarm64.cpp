@@ -1117,6 +1117,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidScalarDatasize(elemsize));
             break;
 
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            elemsize = id->idOpSize();
+            assert(isVectorRegister(id->idReg1())); // nnnn
+            assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -1713,6 +1720,18 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) info,
     #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) info,
     #include "instrs.h"
+    #define INST1(id, nm, info, fmt, e1                                                     ) info,
+    #define INST2(id, nm, info, fmt, e1, e2                                                 ) info,
+    #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) info,
+    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) info,
+    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) info,
+    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) info,
+    #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) info,
+    #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) info,
+    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) info,
+    #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) info,
+    #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) info,
+    #include "instrsarm64sve.h"
 };
 // clang-format on
 
@@ -7367,6 +7386,18 @@ void emitter::emitIns_R_R_I(
             fmt  = IF_LS_2E;
             break;
 
+        case INS_sve_sqrshrn:
+        case INS_sve_sqrshrun:
+        case INS_sve_uqrshrn:
+            isRightShift = emitInsIsVectorRightShift(ins);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isRightShift); // These are always right-shift.
+            assert(isValidVectorShiftAmount(imm, EA_4BYTE, isRightShift));
+            fmt = IF_SVE_GA_2A;
+            break;
+
         default:
             unreached();
             break;
@@ -11456,6 +11487,22 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
+ *  This encoding requires that the register number be divisible by two.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_V_9_to_6_Times_Two(regNumber reg)
+{
+    assert(isVectorRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
+    assert(ureg % 2 == 0);
+    ureg /= 2u;
+    assert((ureg >= 0) && (ureg <= 32));
+    return ureg << 6;
+}
+
+/*****************************************************************************
+ *
  *  Returns an encoding for the specified condition code.
  */
 
@@ -14296,6 +14343,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            imm = emitGetInsSC(id);
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            assert(emitInsIsVectorRightShift(id->idIns()));
+            assert(isValidVectorShiftAmount(imm, EA_4BYTE, /* rightShift */ true));
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeVectorShift(EA_4BYTE, /* right-shift */ -imm); // iiii
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                    // ddddd
+            code |= insEncodeReg_V_9_to_6_Times_Two(id->idReg2());          // nnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -14841,6 +14900,30 @@ void emitter::emitDispVectorElemList(
     }
     printf("}");
     printf("[%d]", index);
+
+    if (addComma)
+    {
+        emitDispComma();
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispSveRegList: Display a SVE vector register list
+//
+void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma)
+{
+    assert(isVectorRegister(firstReg));
+
+    regNumber currReg = firstReg;
+
+    printf("{ ");
+    for (unsigned i = 0; i < listSize; i++)
+    {
+        const bool notLastRegister = (i != listSize - 1);
+        emitDispSveReg(currReg, opt, notLastRegister);
+        currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+    }
+    printf(" }");
 
     if (addComma)
     {
@@ -16604,6 +16687,12 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
             emitDispPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
             emitDispReg(encodingZRtoSP(id->idReg3()), size, false);    // mmmmm
+            break;
+
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
+            emitDispSveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
+            emitDispImm(emitGetInsSC(id), false);                           // iiii
             break;
 
         default:
@@ -19004,6 +19093,32 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_AL_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (quadwords)
             result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
             result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+            break;
+
+        // Not available in Arm Neoverse N2 Software Optimization Guide.
+        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+            switch (ins)
+            {
+                case INS_sve_sqrshrn:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
+                    break;
+
+                case INS_sve_sqrshrun:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
+                    break;
+
+                case INS_sve_uqrshrn:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         default:
