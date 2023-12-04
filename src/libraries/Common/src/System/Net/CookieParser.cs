@@ -140,7 +140,7 @@ namespace System.Net
             {
                 tokenString = Quoted ?
                     _tokenStream.Substring(_start, _tokenLength) :
-                    _tokenStream.AsSpan().Slice(_start, _tokenLength).Trim().ToString();
+                    _tokenStream.AsSpan(_start, _tokenLength).Trim().ToString();
             }
             return tokenString;
         }
