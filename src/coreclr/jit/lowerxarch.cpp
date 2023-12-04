@@ -338,7 +338,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
+        if ((size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
         {
             if (!src->OperIs(GT_CNS_INT))
             {
@@ -417,7 +417,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
 
         ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        bool         doCpObj              = layout->HasGCPtr();
         unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false);
 
 #ifndef JIT32_GCENCODER
@@ -497,7 +497,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+            assert(blkNode->OperIs(GT_STORE_BLK));
 
 #ifdef TARGET_AMD64
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;

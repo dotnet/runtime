@@ -82,7 +82,6 @@ GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                     
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
 GTNODE(BLK              , GenTreeBlk         ,0,1,GTK_UNOP|GTK_EXOP)                        // Struct load
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Struct store
-GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,1,GTK_SPECIAL|GTK_NOVALUE)                  // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,1,GTK_UNOP|GTK_NOVALUE)                     // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length

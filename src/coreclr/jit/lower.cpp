@@ -570,8 +570,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            FALLTHROUGH;
-        case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
 
@@ -8858,14 +8856,14 @@ void Lowering::LowerLclHeap(GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStoreCommon: a common logic to lower STORE_BLK/DYN_BLK.
+// LowerBlockStoreCommon: a common logic to lower STORE_BLK.
 //
 // Arguments:
 //    blkNode - the store blk/obj node we are lowering.
 //
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
 
     // Lose the type information stored in the source - we no longer need it.
     if (blkNode->Data()->OperIs(GT_BLK))
@@ -8898,13 +8896,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
     if (!comp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
     }

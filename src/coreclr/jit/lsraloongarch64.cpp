@@ -394,7 +394,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
 
@@ -1169,7 +1168,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
     }
 
-    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
+    if (sizeRegMask != RBM_NONE)
     {
         // Reserve a temp register for the block size argument.
         buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
@@ -1198,12 +1197,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             useCount += BuildAddrUses(srcAddrOrFill->AsAddrMode()->Base());
         }
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        useCount++;
-        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
     buildInternalRegisterUses();

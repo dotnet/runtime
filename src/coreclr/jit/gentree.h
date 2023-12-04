@@ -1215,7 +1215,7 @@ public:
 
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_DYN_BLK);
+        return gtOper == GT_STORE_BLK;
     }
 
     bool OperIsStoreBlk() const
@@ -1538,7 +1538,7 @@ public:
     static bool OperIsIndir(genTreeOps gtOper)
     {
         static_assert_no_msg(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND,
-                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
+                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_NULLCHECK));
         return (GT_LOCKADD <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -2829,7 +2829,6 @@ class GenTreeUseEdgeIterator final
     // Advance functions for special nodes
     void AdvanceCmpXchg();
     void AdvanceArrElem();
-    void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
@@ -7293,7 +7292,7 @@ public:
 
     void SetLayout(ClassLayout* layout)
     {
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
+        assert(layout != nullptr);
         m_layout = layout;
     }
 
@@ -7310,8 +7309,8 @@ public:
     // The size of the buffer to be copied.
     unsigned Size() const
     {
-        assert((m_layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        return (m_layout != nullptr) ? m_layout->GetSize() : 0;
+        assert(m_layout != nullptr);
+        return m_layout->GetSize();
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using
@@ -7358,7 +7357,7 @@ public:
 
     void Initialize(ClassLayout* layout)
     {
-        assert(OperIsBlk(OperGet()) && ((layout != nullptr) || OperIs(GT_STORE_DYN_BLK)));
+        assert(OperIsBlk(OperGet()) && (layout != nullptr));
         assert((layout == nullptr) || (layout->GetSize() != 0));
 
         m_layout    = layout;
@@ -7372,38 +7371,6 @@ public:
 protected:
     friend GenTree;
     GenTreeBlk() : GenTreeIndir()
-    {
-    }
-#endif // DEBUGGABLE_GENTREE
-};
-
-// GenTreeStoreDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).
-//
-// This node is used to represent stores that have a dynamic size - the "cpblk" and "initblk"
-// IL instructions are implemented with it. Note that such stores assume the input has no GC
-// pointers in it, and as such do not ever use write barriers.
-//
-// The "Data()" member of this node will either be a "dummy" IND(struct) node, for "cpblk", or
-// the zero constant/INIT_VAL for "initblk".
-//
-struct GenTreeStoreDynBlk : public GenTreeBlk
-{
-public:
-    GenTree* gtDynamicSize;
-
-    GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
-        : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
-    {
-        // Conservatively the 'dstAddr' could be null or point into the global heap.
-        // Likewise, this is a store and so must be marked with the GTF_ASG flag.
-        gtFlags |= (GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
-        gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
-    }
-
-#if DEBUGGABLE_GENTREE
-protected:
-    friend GenTree;
-    GenTreeStoreDynBlk() : GenTreeBlk()
     {
     }
 #endif // DEBUGGABLE_GENTREE
@@ -8823,15 +8790,10 @@ struct GenTreeCCMP final : public GenTreeOpCC
 
 inline bool GenTree::OperIsBlkOp()
 {
-    if (OperIs(GT_STORE_DYN_BLK))
-    {
-        return true;
-    }
     if (OperIsStore())
     {
         return varTypeIsStruct(this);
     }
-
     return false;
 }
 
@@ -9235,7 +9197,7 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 
 inline GenTree*& GenTree::Data()
 {
-    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK));
+    assert(OperIsStore());
     return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
