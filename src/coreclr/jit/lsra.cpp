@@ -11949,18 +11949,30 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
                 continue;
             }
 
-            if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
-                                                   !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+
+            if (reloadRefPosition != nullptr)
             {
-                // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
-                // is not an actual ref. In those cases, we will reload in future (next) refPosition.
-                // For such cases, consider the spill cost of next refposition.
-                // See notes in "spillInterval()".
-                RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
-                if (reloadRefPosition != nullptr)
+                if ((recentRefPosition != nullptr) &&
+                    (recentRefPosition->RegOptional() &&
+                     !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
                 {
+                    // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+                    // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+                    // For such cases, consider the spill cost of next refposition.
+                    // See notes in "spillInterval()".
                     currentSpillWeight = linearScan->getWeight(reloadRefPosition);
                 }
+#ifdef TARGET_ARM64
+                else if (assignedInterval->getNextRefPosition()->needsConsecutive)
+                {
+                    // if next refposition is part of consecutive registers and there is already a register
+                    // assigned to it then do not reassign for currentRefPosition, because with that, other
+                    // registers for the next consecutive register assignment would have to be copied to
+                    // different consecutive registers since this register is busy from this point onwards.
+                    continue;
+                }
+#endif
             }
         }
 #ifdef TARGET_ARM64
