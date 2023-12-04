@@ -572,7 +572,7 @@ extends:
             - browser_wasm
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /v:diag
 
       # Wasm Debugger tests
       - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
