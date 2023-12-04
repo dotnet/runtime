@@ -878,7 +878,7 @@ namespace System.Globalization
                             sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKey.Length, options);
                         }
                         else
-    #endif
+#endif
                         {
                             sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
                         }
