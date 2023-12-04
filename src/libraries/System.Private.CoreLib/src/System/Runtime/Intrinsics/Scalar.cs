@@ -149,7 +149,7 @@ namespace System.Runtime.Intrinsics
                 short v = (short)(object)value;
                 if (v < 0)
                 {
-                    v = -v;
+                    v = (short)-v;
                 }
                 return (T)(object)v;
             }
@@ -185,7 +185,7 @@ namespace System.Runtime.Intrinsics
                 sbyte v = (sbyte)(object)value;
                 if (v < 0)
                 {
-                    v = -v;
+                    v = (sbyte)-v;
                 }
                 return (T)(object)v;
             }
