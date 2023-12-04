@@ -367,7 +367,11 @@ GcInfoDecoder::GcInfoDecoder(
     {
         if(m_NumSafePoints)
         {
-            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
+            // Safepoints are encoded with a -1 adjustment
+            // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
+            // adjust here
+            UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
+            m_SafePointIndex = FindSafePoint(offset);
         }
     }
     else if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
@@ -391,6 +395,12 @@ bool GcInfoDecoder::IsInterruptible()
 {
     _ASSERTE( m_Flags & DECODE_INTERRUPTIBILITY );
     return m_IsInterruptible;
+}
+
+bool GcInfoDecoder::IsSafePoint()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_SafePointIndex != m_NumSafePoints;
 }
 
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
