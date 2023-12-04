@@ -399,8 +399,9 @@ ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // Current thread is available at this stage since EventPipe is initiating this call (and will crash here if not).
+    // Current thread is available at this stage since EventPipe is initiating this call.
     ep_rt_thread_handle_t thread_handle = ThreadStore::GetCurrentThreadIfAvailable();
+    EP_ASSERT (thread_handle != NULL);
     return thread_handle->GetPalThreadIdForLogging();
 }
 
