@@ -64,7 +64,7 @@ public class ErrorHandlingTests
         IntPtr pointer = GetErrorMessage(error.Value);
         byte[] byteArray = new byte[length];
         Marshal.Copy(pointer, byteArray, 0, length);
-        NativeLibrary.Free(pointer);
+        NativeMemory.Free(pointer);
         return Encoding.UTF8.GetString(byteArray);
     }
 }
