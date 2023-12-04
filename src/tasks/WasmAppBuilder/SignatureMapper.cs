@@ -13,29 +13,39 @@ internal static class SignatureMapper
 {
     private static char? TypeToChar(Type t, LogAdapter log)
     {
-        char? c = t.Name switch
-        {
-            nameof(String) => 'I',
-            nameof(Boolean) => 'I',
-            nameof(Char) => 'I',
-            nameof(Byte) => 'I',
-            nameof(Int16) => 'I',
-            nameof(UInt16) => 'I',
-            nameof(Int32) => 'I',
-            nameof(UInt32) => 'I',
-            nameof(IntPtr) => 'I',
-            nameof(UIntPtr) => 'I',
-            nameof(Int64) => 'L',
-            nameof(UInt64) => 'L',
-            nameof(Single) => 'F',
-            nameof(Double) => 'D',
-            "Void" => 'V',
-            _ => null
-        };
+        char? c = null;
+        if (t.Namespace == "System") {
+            c = t.Name switch
+            {
+                nameof(String) => 'I',
+                nameof(Boolean) => 'I',
+                nameof(Char) => 'I',
+                nameof(Byte) => 'I',
+                nameof(Int16) => 'I',
+                nameof(UInt16) => 'I',
+                nameof(Int32) => 'I',
+                nameof(UInt32) => 'I',
+                nameof(Int64) => 'L',
+                nameof(UInt64) => 'L',
+                nameof(Single) => 'F',
+                nameof(Double) => 'D',
+                // FIXME: These will need to be L for wasm64
+                nameof(IntPtr) => 'I',
+                nameof(UIntPtr) => 'I',
+                "Void" => 'V',
+                _ => null
+            };
+        }
 
         if (c == null)
         {
+            // FIXME: Most of these need to be L for wasm64
             if (t.IsArray)
+                c = 'I';
+            else if (t.IsByRef)
+                c = 'I';
+            else if (typeof(Delegate).IsAssignableFrom(t))
+                // FIXME: Should we narrow this to only certain types of delegates?
                 c = 'I';
             else if (t.IsClass)
                 c = 'I';
@@ -55,6 +65,8 @@ internal static class SignatureMapper
                 else if (PInvokeTableGenerator.IsBlittable(t, log))
                     c = 'I';
             }
+            else
+                log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
         }
 
         return c;
