@@ -599,7 +599,7 @@ void CodeGen::genCodeForBBlist()
         noway_assert(genStackLevel == 0);
 
 #ifdef TARGET_AMD64
-        bool emitNop = false;
+        bool emitNopBeforeEHRegion = false;
         // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
         // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
         // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
@@ -624,7 +624,7 @@ void CodeGen::genCodeForBBlist()
                     case BBJ_ALWAYS:
                         // We might skip generating the jump via a peephole optimization.
                         // If that happens, make sure a NOP is emitted as the last instruction in the block.
-                        emitNop = true;
+                        emitNopBeforeEHRegion = true;
                         break;
 
                     case BBJ_THROW:
@@ -737,7 +737,7 @@ void CodeGen::genCodeForBBlist()
                 if (block->CanRemoveJumpToNext(compiler))
                 {
 #ifdef TARGET_AMD64
-                    if (emitNop)
+                    if (emitNopBeforeEHRegion)
                     {
                         instGen(INS_nop);
                     }
@@ -756,7 +756,7 @@ void CodeGen::genCodeForBBlist()
                 // AMD64 requires an instruction after a call instruction for unwinding
                 // inside an EH region so if the last instruction generated was a call instruction
                 // do not allow this jump to be marked for possible later removal.
-                isRemovableJmpCandidate = isRemovableJmpCandidate && !emitNop;
+                isRemovableJmpCandidate = isRemovableJmpCandidate && !emitNopBeforeEHRegion;
 #endif // TARGET_AMD64
 
                 inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
