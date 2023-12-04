@@ -603,7 +603,7 @@ void CodeGen::genCodeForBBlist()
         // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
         // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
         // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
-        // The document "X64 and ARM ABIs.docx" has more details. The situations:
+        // The document "clr-abi.md" has more details. The situations:
         // 1. If the call instruction is in a different EH region as the instruction that follows it.
         // 2. If the call immediately precedes an OS epilog. (Note that what the JIT or VM consider an epilog might
         //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters
