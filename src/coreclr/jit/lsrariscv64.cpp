@@ -326,9 +326,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CAST:
             assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildCast(tree->AsCast());
-            buildInternalRegisterUses();
             break;
 
         case GT_NEG:
@@ -1270,6 +1268,12 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 {
     int srcCount = BuildOperandUses(cast->CastOp());
     BuildDef(cast);
+
+    if (varTypeIsFloating(cast->gtOp1) && !varTypeIsFloating(cast->TypeGet()))
+    {
+        buildInternalIntRegisterDefForNode(cast);
+        buildInternalRegisterUses();
+    }
 
     return srcCount;
 }
