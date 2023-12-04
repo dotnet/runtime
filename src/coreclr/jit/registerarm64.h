@@ -117,7 +117,7 @@ REGALIAS(P15, V15)
 // The registers with values 64 (NBASE) and above are not real register numbers
 #define NBASE 64
 
-REGDEF(SP,    0+NBASE, 0x0000,    "sp",  "wsp")
+REGDEF(SP,    0+NBASE, 0x0000,    "sp",  "wsp?")
 // This must be last!
 REGDEF(STK,   1+NBASE, 0x0000,    "STK", "STK")
 

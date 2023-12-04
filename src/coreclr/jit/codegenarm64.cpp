@@ -10462,14 +10462,14 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_CQ_3A
     // Note: EA_4BYTE used for B and H (source register is W)
-    theEmitter->emitIns_R_R_R(INS_sve_cpy, EA_4BYTE, REG_V10, REG_P5, REG_SP,
-                              INS_OPTS_SCALABLE_B_WITH_SCALAR); /* CPY     <Zd>.<T>, <Pg>/M, <R><n|SP> */
+    theEmitter->emitIns_R_R_R(INS_sve_cpy, EA_8BYTE, REG_V10, REG_P5, REG_SP,
+                              INS_OPTS_SCALABLE_D_WITH_SCALAR); /* CPY     <Zd>.<T>, <Pg>/M, <R><n|SP> */
     theEmitter->emitIns_R_R_R(INS_sve_cpy, EA_4BYTE, REG_V9, REG_P6, REG_R30,
                               INS_OPTS_SCALABLE_H_WITH_SCALAR); /* CPY     <Zd>.<T>, <Pg>/M, <R><n|SP> */
     theEmitter->emitIns_R_R_R(INS_sve_mov, EA_4BYTE, REG_V8, REG_P7, REG_R29,
                               INS_OPTS_SCALABLE_S_WITH_SCALAR); /* MOV     <Zd>.<T>, <Pg>/M, <R><n|SP> */
-    theEmitter->emitIns_R_R_R(INS_sve_mov, EA_8BYTE, REG_V7, REG_P0, REG_R28,
-                              INS_OPTS_SCALABLE_D_WITH_SCALAR); /* MOV     <Zd>.<T>, <Pg>/M, <R><n|SP> */
+    theEmitter->emitIns_R_R_R(INS_sve_mov, EA_4BYTE, REG_V7, REG_P0, REG_R28,
+                              INS_OPTS_SCALABLE_B_WITH_SCALAR); /* MOV     <Zd>.<T>, <Pg>/M, <R><n|SP> */
 
     // IF_SVE_CR_3A
     theEmitter->emitIns_R_R_R(INS_sve_lasta, EA_1BYTE, REG_V6, REG_P1, REG_V27,
