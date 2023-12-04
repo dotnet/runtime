@@ -4667,13 +4667,13 @@ void Compiler::fgDebugCheckSsa()
     // This class visits the flow graph the same way the SSA builder does.
     // In particular it may skip over blocks that SSA did not rename.
     //
-    class SsaCheckDomTreeVisitor : public DomTreeVisitor<SsaCheckDomTreeVisitor>
+    class SsaCheckDomTreeVisitor : public NewDomTreeVisitor<SsaCheckDomTreeVisitor>
     {
         SsaCheckVisitor& m_checkVisitor;
 
     public:
         SsaCheckDomTreeVisitor(Compiler* compiler, SsaCheckVisitor& checkVisitor)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_checkVisitor(checkVisitor)
+            : NewDomTreeVisitor(compiler), m_checkVisitor(checkVisitor)
         {
         }
 
@@ -4692,7 +4692,7 @@ void Compiler::fgDebugCheckSsa()
     //
     SsaCheckVisitor        scv(this);
     SsaCheckDomTreeVisitor visitor(this, scv);
-    visitor.WalkTree();
+    visitor.WalkTree(fgSsaDomTree);
 
     // Also visit any blocks added after SSA was built
     //
