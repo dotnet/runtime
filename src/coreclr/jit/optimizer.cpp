@@ -6726,8 +6726,8 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
             dumpConvertedVarSet(this, lvaLongVars);
         }
 #endif
-        hoistedCtxt->m_loopVarCount += VarSetOps::Count(this, loopLongVars);
-        hoistedCtxt->m_loopVarInOutCount += VarSetOps::Count(this, inOutLongVars);
+        hoistCtxt->m_loopVarCount += VarSetOps::Count(this, loopLongVars);
+        hoistCtxt->m_loopVarInOutCount += VarSetOps::Count(this, inOutLongVars);
     }
 #endif // !TARGET_64BIT
 

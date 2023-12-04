@@ -5408,8 +5408,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
         BasicBlock* parent = block->bbIDom;
         assert(dfs->Contains(block) && dfs->Contains(parent));
 
-        domTree[i].nextSibling                     = domTree[parent->bbPostorderNum].firstChild;
-        domTree[parent->bbPostorderNum].firstChild = block;
+        domTree[i].nextSibling                        = domTree[parent->bbNewPostorderNum].firstChild;
+        domTree[parent->bbNewPostorderNum].firstChild = block;
     }
 
 #ifdef DEBUG
