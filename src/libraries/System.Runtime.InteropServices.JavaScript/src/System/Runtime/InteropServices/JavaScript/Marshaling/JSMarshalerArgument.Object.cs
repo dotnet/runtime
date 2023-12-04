@@ -344,7 +344,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg.ToManaged(out val);
                 value[i] = val;
             }
+#if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
+#endif
             Marshal.FreeHGlobal(slot.IntPtrValue);
         }
 
@@ -366,7 +368,9 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.Type = MarshalerType.Array;
             JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
+#if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.RegisterGCRoot((IntPtr)payload, bytes, IntPtr.Zero);
+#endif
             for (int i = 0; i < slot.Length; i++)
             {
                 ref JSMarshalerArgument arg = ref payload[i];

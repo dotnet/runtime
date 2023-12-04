@@ -5,10 +5,11 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
 import { TypedArray, VoidPtr } from "./types/emscripten";
+import { utf16ToString } from "./strings";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
@@ -19,15 +20,12 @@ export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 
 export const JavaScriptMarshalerArgSize = 16;
 export const JSMarshalerTypeSize = 32;
-export const JSMarshalerSignatureHeaderSize = 4 + 4; // without Exception and Result
+export const JSMarshalerSignatureHeaderSize = 4 * 8; // without Exception and Result
 
 export function alloc_stack_frame(size: number): JSMarshalerArguments {
-    const args = Module.stackAlloc(JavaScriptMarshalerArgSize * size) as any;
-    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
-    const exc = get_arg(args, 0);
-    set_arg_type(exc, MarshalerType.None);
-    const res = get_arg(args, 1);
-    set_arg_type(res, MarshalerType.None);
+    const bytes = JavaScriptMarshalerArgSize * size;
+    const args = Module.stackAlloc(bytes) as any;
+    _zero_region(args, bytes);
     return args;
 }
 
@@ -80,6 +78,28 @@ export function get_signature_argument_count(signature: JSFunctionSignature): nu
 export function get_signature_version(signature: JSFunctionSignature): number {
     mono_assert(signature, "Null signatures");
     return <any>getI32(signature);
+}
+
+export function get_signature_handle(signature: JSFunctionSignature): number {
+    mono_assert(signature, "Null signatures");
+    return <any>getI32(<any>signature + 8);
+}
+
+export function get_signature_function_name(signature: JSFunctionSignature): string | null {
+    mono_assert(signature, "Null signatures");
+    const functionNameOffset = <any>getI32(<any>signature + 16);
+    if (functionNameOffset === 0) return null;
+    const functionNameLength = <any>getI32(<any>signature + 20);
+    mono_assert(functionNameOffset, "Null name");
+    return utf16ToString(<any>signature + functionNameOffset, <any>signature + functionNameOffset + functionNameLength);
+}
+
+export function get_signature_module_name(signature: JSFunctionSignature): string | null {
+    mono_assert(signature, "Null signatures");
+    const moduleNameOffset = <any>getI32(<any>signature + 24);
+    if (moduleNameOffset === 0) return null;
+    const moduleNameLength = <any>getI32(<any>signature + 28);
+    return utf16ToString(<any>signature + moduleNameOffset, <any>signature + moduleNameOffset + moduleNameLength);
 }
 
 export function get_sig_type(sig: JSMarshalerType): MarshalerType {

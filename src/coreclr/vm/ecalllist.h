@@ -45,7 +45,7 @@
 //
 
 FCFuncStart(gDependentHandleFuncs)
-    FCFuncElement("InternalInitialize",            DependentHandle::InternalInitialize)
+    FCFuncElement("InternalAlloc",                 DependentHandle::InternalAlloc)
     FCFuncElement("InternalGetTarget",             DependentHandle::InternalGetTarget)
     FCFuncElement("InternalGetDependent",          DependentHandle::InternalGetDependent)
     FCFuncElement("InternalGetTargetAndDependent", DependentHandle::InternalGetTargetAndDependent)
@@ -469,10 +469,6 @@ FCFuncEnd()
 FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetLastPInvokeError", MarshalNative::GetLastPInvokeError)
     FCFuncElement("SetLastPInvokeError", MarshalNative::SetLastPInvokeError)
-    FCFuncElement("SizeOfHelper", MarshalNative::SizeOfClass)
-    FCFuncElement("StructureToPtr", MarshalNative::StructureToPtr)
-    FCFuncElement("PtrToStructureHelper", MarshalNative::PtrToStructureHelper)
-    FCFuncElement("DestroyStructure", MarshalNative::DestroyStructure)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
 
@@ -518,14 +514,10 @@ FCFuncStart(gMonitorFuncs)
     FCFuncElement("ReliableEnter", JIT_MonReliableEnter)
     FCFuncElement("ReliableEnterTimeout", JIT_MonTryEnter)
     FCFuncElement("Exit", JIT_MonExit)
-    FCFuncElement("ObjWait", ObjectNative::WaitTimeout)
-    FCFuncElement("ObjPulse", ObjectNative::Pulse)
-    FCFuncElement("ObjPulseAll", ObjectNative::PulseAll)
     FCFuncElement("IsEnteredNative", ObjectNative::IsLockHeld)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)
-    FCFuncElement("GetObjectValue", ObjectNative::GetObjectValue)
     FCFuncElement("InitializeArray", ArrayNative::InitializeArray)
     FCFuncElement("GetSpanDataFrom", ArrayNative::GetSpanDataFrom)
     FCFuncElement("PrepareDelegate", ReflectionInvocation::PrepareDelegate)
@@ -564,17 +556,6 @@ FCFuncStart(gMngdNativeArrayMarshalerFuncs)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
-FCFuncStart(gObjectMarshalerFuncs)
-    FCFuncElement("ConvertToNative", StubHelpers::ObjectMarshaler__ConvertToNative)
-    FCFuncElement("ConvertToManaged", StubHelpers::ObjectMarshaler__ConvertToManaged)
-    FCFuncElement("ClearNative", StubHelpers::ObjectMarshaler__ClearNative)
-FCFuncEnd()
-
-FCFuncStart(gInterfaceMarshalerFuncs)
-    FCFuncElement("ConvertToNative", StubHelpers::InterfaceMarshaler__ConvertToNative)
-    FCFuncElement("ConvertToManaged", StubHelpers::InterfaceMarshaler__ConvertToManaged)
-FCFuncEnd()
-
 FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdSafeArrayMarshaler::CreateMarshaler)
     FCFuncElement("ConvertSpaceToNative", MngdSafeArrayMarshaler::ConvertSpaceToNative)
@@ -583,7 +564,6 @@ FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("ConvertContentsToManaged", MngdSafeArrayMarshaler::ConvertContentsToManaged)
     FCFuncElement("ClearNative", MngdSafeArrayMarshaler::ClearNative)
 FCFuncEnd()
-
 #endif // FEATURE_COMINTEROP
 
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
@@ -608,7 +588,6 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("ProfilerBeginTransitionCallback", StubHelpers::ProfilerBeginTransitionCallback)
     FCFuncElement("ProfilerEndTransitionCallback", StubHelpers::ProfilerEndTransitionCallback)
 #endif
-    FCFuncElement("CreateCustomMarshalerHelper", StubHelpers::CreateCustomMarshalerHelper)
     FCFuncElement("FmtClassUpdateNativeInternal", StubHelpers::FmtClassUpdateNativeInternal)
     FCFuncElement("FmtClassUpdateCLRInternal", StubHelpers::FmtClassUpdateCLRInternal)
     FCFuncElement("LayoutDestroyNativeInternal", StubHelpers::LayoutDestroyNativeInternal)
@@ -630,8 +609,8 @@ FCFuncStart(gStubHelperFuncs)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)
-    FCFuncElement("InternalAlloc", MarshalNative::GCHandleInternalAlloc)
-    FCFuncElement("InternalFree", MarshalNative::GCHandleInternalFree)
+    FCFuncElement("_InternalAlloc", MarshalNative::GCHandleInternalAlloc)
+    FCFuncElement("_InternalFree", MarshalNative::GCHandleInternalFree)
     FCFuncElement("InternalGet", MarshalNative::GCHandleInternalGet)
     FCFuncElement("InternalSet", MarshalNative::GCHandleInternalSet)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
@@ -701,7 +680,6 @@ FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
 FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
 FCClassElement("IEnumerator", "System.Collections", gStdMngIEnumeratorFuncs)
 FCClassElement("IReflect", "System.Reflection", gStdMngIReflectFuncs)
-FCClassElement("InterfaceMarshaler", "System.StubHelpers", gInterfaceMarshalerFuncs)
 #endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("JitInfo", "System.Runtime", gJitInfoFuncs)
@@ -722,9 +700,6 @@ FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif
 FCClassElement("Object", "System", gObjectFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
-#endif
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
