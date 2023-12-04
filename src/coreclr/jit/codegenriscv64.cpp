@@ -5461,6 +5461,13 @@ void CodeGen::genRangeCheck(GenTree* oper)
     genConsumeRegs(src1);
     genConsumeRegs(src2);
 
+    if (genActualType(src1->TypeGet()) == TYP_INT)
+    {
+        regNumber tempReg = oper->GetSingleTempReg();
+        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, reg1, 0); // sign-extend
+        reg1 = tempReg;
+    }
+
 #ifdef DEBUG
     var_types bndsChkType = genActualType(src2->TypeGet());
     var_types src1ChkType = genActualType(src1->TypeGet());
