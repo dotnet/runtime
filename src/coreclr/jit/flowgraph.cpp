@@ -3516,6 +3516,21 @@ const char* sckName(SpecialCodeKind codeKind)
 #endif
 
 //------------------------------------------------------------------------
+// fgGetAddCodeDscMap; create or return the add code desc map
+//
+// Returns:
+//   add code desc map
+//
+Compiler::AddCodeDscMap* Compiler::fgGetAddCodeDscMap()
+{
+    if (fgAddCodeDscMap == nullptr)
+    {
+        fgAddCodeDscMap = new (getAllocator(CMK_Unknown)) AddCodeDscMap(getAllocator(CMK_Unknown));
+    }
+    return fgAddCodeDscMap;
+}
+
+//------------------------------------------------------------------------
 // fgAddCodeRef: Indicate that a particular throw helper block will
 //   be needed by the method.
 //
@@ -3557,13 +3572,6 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 
     assert(!fgRngChkThrowAdded);
 
-    // If the mapping table isn't set up yet, set it up now.
-    //
-    if (fgAddCodeDscMap == nullptr)
-    {
-        fgAddCodeDscMap = new AddCodeDscMap(getAllocator(CMK_Unknown));
-    }
-
     // Allocate a new entry and prepend it to the list
     //
     add          = new (this, CMK_Unknown) AddCodeDsc;
@@ -3587,8 +3595,9 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 
     // Add to map
     //
-    AddCodeDscKey key(kind, refData);
-    fgAddCodeDscMap->Set(key, add);
+    AddCodeDscMap* const map = fgGetAddCodeDscMap();
+    AddCodeDscKey        key(kind, refData);
+    map->Set(key, add);
 }
 
 //------------------------------------------------------------------------
@@ -3779,13 +3788,10 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
-    AddCodeDsc* add = nullptr;
-
-    if (fgAddCodeDscMap != nullptr)
-    {
-        AddCodeDscKey key(kind, refData);
-        fgAddCodeDscMap->Lookup(key, &add);
-    }
+    AddCodeDsc*          add = nullptr;
+    AddCodeDscMap* const map = fgGetAddCodeDscMap();
+    AddCodeDscKey        key(kind, refData);
+    map->Lookup(key, &add);
 
     if (add == nullptr)
     {

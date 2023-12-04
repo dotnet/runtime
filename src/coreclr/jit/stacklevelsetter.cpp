@@ -151,10 +151,6 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             {
                 SetThrowHelperBlocks(node, block);
             }
-            else
-            {
-                // assert(((node->gtFlags & GTF_CALL) != 0) || !node->OperMayThrow(comp));
-            }
         }
     }
     assert(currentStackLevel == 0);
