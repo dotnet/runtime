@@ -348,7 +348,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public static void ArrayRangeHelperTest()
+        public static void ArrayGetSubArrayTest()
         {
             int[] a = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
             Range range = Range.All;
@@ -359,6 +359,18 @@ namespace System.Runtime.CompilerServices.Tests
 
             range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
+        }
+
+        [Fact]
+        public static void ArrayGetSubArrayCoVarianceTest()
+        {
+            object[] arr = new string[10];
+            object[] slice = RuntimeHelpers.GetSubArray<object>(arr, new Range(Index.FromStart(1), Index.FromEnd(2)));
+            Assert.IsType<string[]>(slice);
+
+            uint[] arr2 = (uint[])(object)new int[10];
+            uint[] slice2 = RuntimeHelpers.GetSubArray<uint>(arr2, new Range(Index.FromStart(1), Index.FromEnd(2)));
+            Assert.IsType<int[]>(slice2);
         }
 
         [Fact]

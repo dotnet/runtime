@@ -89,7 +89,7 @@ namespace Microsoft.NET.HostModel.Tests
                 Command.Create(symlink.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .DotNetRoot(RepoDirectoriesProvider.Default.BuiltDotnet)
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World");
@@ -105,7 +105,7 @@ namespace Microsoft.NET.HostModel.Tests
             {
                 var dotnetSymlink = Path.Combine(testDir.Location, "dotnet");
 
-                using var symlink = new SymLink(dotnetSymlink, RepoDirectoriesProvider.Default.BuiltDotnet);
+                using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.BinPath);
                 Command.Create(sharedTestState.FrameworkDependentApp.AppExe)
                     .EnvironmentVariable("DOTNET_ROOT", symlink.SrcPath)
                     .CaptureStdErr()
@@ -141,12 +141,11 @@ namespace Microsoft.NET.HostModel.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_dotnet_behind_symlink()
         {
-            var dotnet = new DotNet.Cli.Build.DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
             using (var testDir = TestArtifact.Create("symlink"))
             {
                 var dotnetSymlink = Path.Combine(testDir.Location, Binaries.DotNet.FileName);
 
-                using var symlink = new SymLink(dotnetSymlink, dotnet.DotnetExecutablePath);
+                using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.DotnetExecutablePath);
                 Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
                     .CaptureStdErr()
                     .CaptureStdOut()
@@ -161,7 +160,6 @@ namespace Microsoft.NET.HostModel.Tests
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
             var app = sharedTestState.SelfContainedApp.Copy();
-            var dotnet = new DotNet.Cli.Build.DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
 
             using (var newAppDir = TestArtifact.Create("PutTheBinDirSomewhereElse"))
             {
@@ -169,7 +167,7 @@ namespace Microsoft.NET.HostModel.Tests
                 Directory.Move(app.Location, newAppDir.Location);
 
                 using var symlink = new SymLink(app.Location, newAppDir.Location);
-                dotnet.Exec(app.AppDll)
+                TestContext.BuiltDotNet.Exec(app.AppDll)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute()

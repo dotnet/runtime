@@ -580,7 +580,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Dragon4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Formatting.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Grisu3.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToFloatingPointBits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BitOperations.cs" />
@@ -668,13 +667,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\DynamicMethod.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EmptyCAHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ILGenerator.cs" />
@@ -682,7 +681,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilderInstantiation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
@@ -1420,6 +1419,12 @@
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs">
+      <Link>System\Number.NumberBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Number.Parsing.Common.cs">
+      <Link>System\Number.Parsing.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Numerics\Crc32ReflectedTable.cs">
       <Link>Common\System\Numerics\Crc32ReflectedTable.cs</Link>

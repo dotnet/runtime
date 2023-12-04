@@ -63,14 +63,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void PtrToStructureInternal(IntPtr ptr, object structure, bool allowValueClasses);
-
-        private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
-        {
-            ArgumentNullException.ThrowIfNull(structure);
-            ArgumentNullException.ThrowIfNull(ptr);
-            PtrToStructureInternal(ptr, structure, allowValueClasses);
-        }
+        private static extern void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetDelegateForFunctionPointerInternal(QCallTypeHandle t, IntPtr ptr, ObjectHandleOnStack res);
@@ -92,9 +85,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int SizeOfHelper(QCallTypeHandle t, bool throwIfNotMarshalable);
 
-        private static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        private static int SizeOfHelper(RuntimeType rttype, bool throwIfNotMarshalable)
         {
-            RuntimeType rttype = (RuntimeType)t;
             return SizeOfHelper(new QCallTypeHandle(ref rttype), throwIfNotMarshalable);
         }
 

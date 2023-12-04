@@ -126,7 +126,7 @@ namespace System.Diagnostics.Tracing
             data[4].DataPointer = (nint)(&LockOwnerThreadID);
             data[4].Size = sizeof(ulong);
             data[4].Reserved = 0;
-            WriteEventCore(81, 3, data);
+            WriteEventCore(81, 5, data);
         }
 
         [NonEvent]

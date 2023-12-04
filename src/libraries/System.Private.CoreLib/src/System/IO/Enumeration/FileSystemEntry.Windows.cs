@@ -75,5 +75,18 @@ namespace System.IO.Enumeration
         /// <returns>A string representing the full path.</returns>
         public string ToFullPath() =>
             Path.Join(Directory, FileName);
+
+        private static string Join(
+            ReadOnlySpan<char> originalRootDirectory,
+            ReadOnlySpan<char> relativePath,
+            ReadOnlySpan<char> fileName)
+        {
+            if (originalRootDirectory.Length == 2 && originalRootDirectory[1] == Path.VolumeSeparatorChar)
+            {
+                return string.Concat(originalRootDirectory, Path.Join(relativePath, fileName));
+            }
+
+            return Path.Join(originalRootDirectory, relativePath, fileName);
+        }
     }
 }

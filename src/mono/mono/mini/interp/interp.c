@@ -446,12 +446,10 @@ interp_free_context (gpointer ctx)
 	g_free (context);
 }
 
-/* Continue unwinding if there is an exception that needs to be handled in an AOTed frame above us */
-static void
-check_pending_unwind (ThreadContext *context)
+static gboolean
+need_native_unwind (ThreadContext *context)
 {
-	if (context->has_resume_state && !context->handler_frame)
-		mono_llvm_cpp_throw_exception ();
+	return context->has_resume_state && !context->handler_frame;
 }
 
 void
@@ -1466,9 +1464,13 @@ retry:
 
 #ifdef HOST_WASM
 			{
+				MonoType *etype;
+
 				/* Scalar vtypes are passed by value */
-				if (mini_wasm_is_scalar_vtype (sig->params [i]))
+				// FIXME: r4/r8
+				if (mini_wasm_is_scalar_vtype (sig->params [i], &etype) && etype->type != MONO_TYPE_R4 && etype->type != MONO_TYPE_R8) {
 					margs->iargs [int_i] = *(gpointer*)margs->iargs [int_i];
+				}
 			}
 #endif
 			int_i++;
@@ -2113,7 +2115,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 		 * EH processing will continue when control returns to the interpreter.
 		 */
 		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
-			mono_llvm_cpp_throw_exception ();
+			mono_llvm_start_native_unwind ();
 		return NULL;
 	}
 	// The return value is at the bottom of the stack
@@ -2211,12 +2213,18 @@ interp_entry (InterpEntryData *data)
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
 
-	check_pending_unwind (context);
+	if (need_native_unwind (context)) {
+		mono_llvm_start_native_unwind ();
+		return;
+	}
 
 	if (mono_llvm_only) {
-		if (context->has_resume_state)
+		if (context->has_resume_state) {
 			/* The exception will be handled in a frame above us */
-			mono_llvm_cpp_throw_exception ();
+			mono_llvm_start_native_unwind ();
+			// FIXME: Set dummy return value ?
+			return;
+		}
 	} else {
 		g_assert (!context->has_resume_state);
 	}
@@ -2369,7 +2377,7 @@ typedef struct {
 	MonoFtnDesc ftndesc;
 } JitCallCbData;
 
-/* Callback called by mono_llvm_cpp_catch_exception () */
+/* Callback called by mono_llvm_catch_exception () */
 static void
 jit_call_cb (gpointer arg)
 {
@@ -2725,7 +2733,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 
 	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
 		/* Catch the exception thrown by the native code using a try-catch */
-		mono_llvm_cpp_catch_exception (jit_call_cb, &cb_data, &thrown);
+		mono_llvm_catch_exception (jit_call_cb, &cb_data, &thrown);
 	} else {
 		jit_call_cb (&cb_data);
 	}
@@ -3092,7 +3100,10 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
 
-	check_pending_unwind (context);
+	if (need_native_unwind (context)) {
+		mono_llvm_start_native_unwind ();
+		return;
+	}
 
 	/* Write back the return value */
 	/* 'frame' is still valid */
@@ -7974,7 +7985,10 @@ interp_run_finally (StackFrameInfo *frame, int clause_index)
 	iframe->next_free = next_free;
 	iframe->state.ip = state_ip;
 
-	check_pending_unwind (context);
+	if (need_native_unwind (context)) {
+		mono_llvm_start_native_unwind ();
+		return TRUE;
+	}
 
 	if (context->has_resume_state) {
 		return TRUE;
@@ -8027,7 +8041,10 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 
 	context->stack_pointer = (guchar*)child_frame.stack;
 
-	check_pending_unwind (context);
+	if (need_native_unwind (context)) {
+		mono_llvm_start_native_unwind ();
+		return TRUE;
+	}
 
 	/* ENDFILTER stores the result into child_frame->retval */
 	return retval.data.i ? TRUE : FALSE;
@@ -8171,7 +8188,10 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 	memset (sp, 0, (guint8*)context->stack_pointer - (guint8*)sp);
 	context->stack_pointer = (guchar*)sp;
 
-	check_pending_unwind (context);
+	if (need_native_unwind (context)) {
+		mono_llvm_start_native_unwind ();
+		return FALSE;
+	}
 
 	return context->has_resume_state;
 }
@@ -8751,7 +8771,12 @@ mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source
 MONO_ALWAYS_INLINE void
 mono_jiterp_check_pending_unwind (ThreadContext *context)
 {
-	return check_pending_unwind (context);
+	if (need_native_unwind (context)) {
+		// FIXME: Caller needs to check this
+		if (mono_opt_llvm_emulate_unwind)
+			g_assert_not_reached ();
+		mono_llvm_start_native_unwind ();
+	}
 }
 
 MONO_ALWAYS_INLINE void *
@@ -8816,9 +8841,11 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, void *res)
 	mono_jiterp_check_pending_unwind (header.context);
 
 	if (mono_llvm_only) {
-		if (header.context->has_resume_state)
+		if (header.context->has_resume_state) {
 			/* The exception will be handled in a frame above us */
-			mono_llvm_cpp_throw_exception ();
+			mono_llvm_start_native_unwind ();
+			return;
+		}
 	} else {
 		g_assert (!header.context->has_resume_state);
 	}
