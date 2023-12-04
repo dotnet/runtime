@@ -186,11 +186,9 @@ namespace System.Tests
                 yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
-                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
-                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
             }
         }
 

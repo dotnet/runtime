@@ -69,6 +69,11 @@
     <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TestSingleFile)' == 'true'" />
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+    <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __TestArchitecture=$(TargetArchitecture);set __IsXUnitLogCheckerSupported=1" />
+    <SetScriptCommands  Condition="'$(TargetOS)' != 'windows'" Include="export __TestArchitecture=$(TargetArchitecture);export __IsXUnitLogCheckerSupported=1"/>
+  </ItemGroup>
+
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(BuildTestsOnHelix)' == 'true')"

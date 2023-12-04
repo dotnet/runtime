@@ -387,6 +387,9 @@ fi
 
 if [[ ! -z "$experimentname" ]]; then
     configurations="$configurations ExperimentName=$experimentname"
+    if [[ "$experimentname" == "memoryrandomization" ]]; then
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memoryRandomization true"
+    fi
 fi
 
 if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test

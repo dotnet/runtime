@@ -100,6 +100,9 @@ if ($NoR2R) {
 
 if ($ExperimentName) {
     $Configurations += " ExperimentName=$ExperimentName"
+    if ($ExperimentName -eq "memoryrandomization") {
+        $ExtraBenchmarkDotNetArguments += " --memoryRandomization true"
+    }
 }
 
 if ($iOSMono) {
