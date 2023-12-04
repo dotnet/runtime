@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Net.Http.Functional.Tests;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -2087,9 +2088,9 @@ namespace System.Net.Tests
                 Exception? exception = await Record.ExceptionAsync(() => server.AcceptConnectionAsync(_ =>
                 {
                     return Task.CompletedTask;
-                }).WaitAsync(10_000));
+                });
                 Assert.Null(exception);
-            });
+            }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
         [Fact]
@@ -2116,7 +2117,7 @@ namespace System.Net.Tests
                     var data = await connection.ReadRequestDataAsync();
                     Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
 
-                }).WaitAsync(30_000);
+                }).WaitAsync(TestHelper.PassingTestTimeout);
             });
         }
 
@@ -2151,7 +2152,7 @@ namespace System.Net.Tests
                     var data = await connection.ReadRequestDataAsync();
                     Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
 
-                }).WaitAsync(30_000);
+                }).WaitAsync(TestHelper.PassingTestTimeout);
             });
         }
 
