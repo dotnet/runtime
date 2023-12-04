@@ -2132,15 +2132,17 @@ namespace System.Net.Tests
             ).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
-        [Fact]
-        public async Task SendHttpPostRequest_WithExpected100Continue_And_RequestShouldContainExpectedHeader()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendHttpPostRequest_When100ContinueSet_ReceivedByServer(bool expect100Continue)
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
-                    request.ServicePoint.Expect100Continue = true;
+                    request.ServicePoint.Expect100Continue = expect100Continue;
                     var _ = request.GetResponseAsync();
                     return Task.CompletedTask;
                 },
@@ -2150,32 +2152,14 @@ namespace System.Net.Tests
                         async (client) =>
                         {
                             List<string> headers = await client.ReadRequestHeaderAsync();
-                            Assert.Contains("Expect: 100-continue", headers);
-                        }
-                    );
-                }
-            );
-        }
-
-        [Fact]
-        public async Task SendHttpPostRequest_WithExpected100Continue_And_RequestShouldNotContainExpectedHeader()
-        {
-            await LoopbackServer.CreateClientAndServerAsync(
-                (uri) =>
-                {
-                    HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.Method = "POST";
-                    request.ServicePoint.Expect100Continue = false;
-                    var _ = request.GetResponseAsync();
-                    return Task.CompletedTask;
-                },
-                async (server) =>
-                {
-                    await server.AcceptConnectionAsync(
-                        async (client) =>
-                        {
-                            List<string> headers = await client.ReadRequestHeaderAsync();
-                            Assert.DoesNotContain("Expect: 100-continue", headers);
+                            if (expect100Continue)
+                            {
+                                Assert.Contains("Expect: 100-continue", headers);
+                            }
+                            else
+                            {
+                                Assert.DoesNotContain("Expect: 100-continue", headers);
+                            }
                         }
                     );
                 }
