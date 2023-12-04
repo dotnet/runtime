@@ -2122,7 +2122,7 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData(0)]
-        [InlineData(2)]
+        [InlineData(0.1)]
         public async Task SendHttpPost_WriteBufferingEnabled(int delaySec)
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
