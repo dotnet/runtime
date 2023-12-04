@@ -9328,127 +9328,161 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     DWORD nInterfacesCount = pMT->GetNumInterfaces();
     MethodTable **pExactMTs = (MethodTable**) _alloca(sizeof(MethodTable *) * nInterfacesCount);
     BOOL duplicates;
-    bool retry = false;
-
-    // Always use exact loading behavior with normal classes that derive from some other type, as they have to deal with inheritance, and the
-    // inexact matching logic for classes would be more complex to write.
-    bool retryWithExactInterfaces = !(pMT->IsValueType() || pMT->IsInterface() || pMT->GetParentMethodTable()->IsObjectClass());
 
     DWORD nAssigned = 0;
-    do
+    nAssigned = 0;
+    duplicates = false;
+    if (pParentMT != NULL)
     {
-        nAssigned = 0;
-        retry = false;
-        duplicates = false;
-        if (pParentMT != NULL)
+        MethodTable::InterfaceMapIterator parentIt = pParentMT->IterateInterfaceMap();
+        while (parentIt.Next())
         {
-            MethodTable::InterfaceMapIterator parentIt = pParentMT->IterateInterfaceMap();
-            while (parentIt.Next())
+            MethodTable* pMTApprox = parentIt.GetInterfaceApprox();
+            MethodTable* pMTToInsert;
+            if (!pMTApprox->HasInstantiation())
             {
-                duplicates |= InsertMethodTable(parentIt.GetInterface(pParentMT, CLASS_LOAD_EXACTPARENTS), pExactMTs, nInterfacesCount, &nAssigned);
+                ClassLoader::EnsureLoaded(pMTApprox, CLASS_LOAD_EXACTPARENTS);
+                pMTToInsert = pMTApprox;
             }
-        }
-        InterfaceImplEnum ie(pMT->GetModule(), pMT->GetCl(), NULL);
-        while ((hr = ie.Next()) == S_OK)
-        {
-            MethodTable *pNewIntfMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pMT->GetModule(),
-                                                                                ie.CurrentToken(),
-                                                                                &typeContext,
-                                                                                ClassLoader::ThrowIfNotFound,
-                                                                                ClassLoader::FailIfUninstDefOrRef,
-                                                                                ClassLoader::LoadTypes,
-                                                                                CLASS_LOAD_EXACTPARENTS,
-                                                                                TRUE,
-                                                                                (const Substitution*)0,
-                                                                                retryWithExactInterfaces ? NULL : pMT).GetMethodTable();
-
-            bool uninstGenericCase = !retryWithExactInterfaces && pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
-
-            duplicates |= InsertMethodTable(pNewIntfMT, pExactMTs, nInterfacesCount, &nAssigned);
-
-            // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
-            // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-            if (!(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface() || pMT->GetParentMethodTable()->IsObjectClass())))
+            else
             {
-                Instantiation newIntfMTInst;
-                MethodTable::SpecialMarkerTypeHandleArray arrayForpMT;
-                if (pNewIntfMT->IsSpecialMarkerTypeForGenericCasting())
+                // Check for SpecialMarkerType scenario
+                MethodTable::SpecialMarkerTypeHandleArray arrayForpMTToInsert;
+                MethodTable::SpecialMarkerTypeHandleArray arrayForpMTOnParent;
+                Instantiation pMTOnParentInst;
+                if (pMTApprox->IsSpecialMarkerTypeForGenericCasting())
                 {
-                    MethodTable::ConstructInstantiationForSpecialMarkerType(pNewIntfMT, pMT, &arrayForpMT, &newIntfMTInst);
-                }
-                else if (pNewIntfMT->HasInstantiation())
-                {
-                    newIntfMTInst = pNewIntfMT->GetInstantiation();
+                    MethodTable::ConstructInstantiationForSpecialMarkerType(pMTApprox, pParentMT, &arrayForpMTOnParent, &pMTOnParentInst);
                 }
                 else
                 {
-                    newIntfMTInst = Instantiation();
+                    pMTOnParentInst = pMTApprox->GetInstantiation();
                 }
 
-                MethodTable::InterfaceMapIterator intIt = pNewIntfMT->IterateInterfaceMap();
-                while (intIt.Next())
+                Instantiation pMTApproxUsingSpecialMarkerOnpMTInst;
+                MethodTable::ConstructInstantiationForSpecialMarkerType(pMTApprox, pMT, &arrayForpMTToInsert, &pMTApproxUsingSpecialMarkerOnpMTInst);
+                if (pMTApproxUsingSpecialMarkerOnpMTInst.GetNumArgs() != 0 && pMTApproxUsingSpecialMarkerOnpMTInst.Equals(pMTOnParentInst))
                 {
-                    MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
-                    MethodTable* pItfToInsert;
-                    if (pItfPossiblyApprox->HasInstantiation())
+                    // We should use a special marker type.
+                    if (pMTApprox->IsSpecialMarkerTypeForGenericCasting())
                     {
-                        MethodTable::SpecialMarkerTypeHandleArray arrayForpItfPossiblyApproxOnpNewIntfMT;
-                        Instantiation itfPossiblyApproxInstOnpNewIntfMT;
-                        if (pItfPossiblyApprox->IsSpecialMarkerTypeForGenericCasting())
-                        {
-                            MethodTable::ConstructInstantiationForSpecialMarkerType(pItfPossiblyApprox, pNewIntfMT, newIntfMTInst, &arrayForpItfPossiblyApproxOnpNewIntfMT, &itfPossiblyApproxInstOnpNewIntfMT);
-                        }
-                        else
-                        {
-                            itfPossiblyApproxInstOnpNewIntfMT = pItfPossiblyApprox->GetInstantiation();
-                        }
+                        ClassLoader::EnsureLoaded(pMTApprox, CLASS_LOAD_EXACTPARENTS);
+                        pMTToInsert = pMTApprox;
+                    }
+                    else
+                    {
+                        pMTToInsert = ClassLoader::LoadTypeDefThrowing(pMTApprox->GetModule(), pMTApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                    }
+                }
+                else
+                {
+                    // We need to use an exact interface
+                    if (pMTApprox->IsSpecialMarkerTypeForGenericCasting())
+                    {
+                        pMTToInsert = parentIt.GetInterface(pParentMT, CLASS_LOAD_EXACTPARENTS);
+                    }
+                    else
+                    {
+                        ClassLoader::EnsureLoaded(pMTApprox, CLASS_LOAD_EXACTPARENTS);
+                        pMTToInsert = pMTApprox;
+                    }
+                }
+            }
+            duplicates |= InsertMethodTable(pMTToInsert, pExactMTs, nInterfacesCount, &nAssigned);
+        }
+    }
+    InterfaceImplEnum ie(pMT->GetModule(), pMT->GetCl(), NULL);
+    while ((hr = ie.Next()) == S_OK)
+    {
+        MethodTable *pNewIntfMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pMT->GetModule(),
+                                                                            ie.CurrentToken(),
+                                                                            &typeContext,
+                                                                            ClassLoader::ThrowIfNotFound,
+                                                                            ClassLoader::FailIfUninstDefOrRef,
+                                                                            ClassLoader::LoadTypes,
+                                                                            CLASS_LOAD_EXACTPARENTS,
+                                                                            TRUE,
+                                                                            (const Substitution*)0,
+                                                                            pMT).GetMethodTable();
 
-                        MethodTable::SpecialMarkerTypeHandleArray arrayForpItfPossiblyApproxOnpMT;
-                        Instantiation itfPossiblyApproxInstOnpMT;
-                        MethodTable::ConstructInstantiationForSpecialMarkerType(pItfPossiblyApprox, pMT, pMT->GetInstantiation(), &arrayForpItfPossiblyApproxOnpMT, &itfPossiblyApproxInstOnpMT);
+        bool uninstGenericCase = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
 
-                        if (itfPossiblyApproxInstOnpNewIntfMT.Equals(itfPossiblyApproxInstOnpMT) && itfPossiblyApproxInstOnpMT.GetNumArgs() != 0)
+        duplicates |= InsertMethodTable(pNewIntfMT, pExactMTs, nInterfacesCount, &nAssigned);
+
+        // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
+        // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
+        if (!(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface() || pMT->GetParentMethodTable()->IsObjectClass())))
+        {
+            Instantiation newIntfMTInst;
+            MethodTable::SpecialMarkerTypeHandleArray arrayForpMT;
+            if (pNewIntfMT->IsSpecialMarkerTypeForGenericCasting())
+            {
+                MethodTable::ConstructInstantiationForSpecialMarkerType(pNewIntfMT, pMT, &arrayForpMT, &newIntfMTInst);
+            }
+            else if (pNewIntfMT->HasInstantiation())
+            {
+                newIntfMTInst = pNewIntfMT->GetInstantiation();
+            }
+            else
+            {
+                newIntfMTInst = Instantiation();
+            }
+
+            MethodTable::InterfaceMapIterator intIt = pNewIntfMT->IterateInterfaceMap();
+            while (intIt.Next())
+            {
+                MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
+                MethodTable* pItfToInsert;
+                if (pItfPossiblyApprox->HasInstantiation())
+                {
+                    MethodTable::SpecialMarkerTypeHandleArray arrayForpItfPossiblyApproxOnpNewIntfMT;
+                    Instantiation itfPossiblyApproxInstOnpNewIntfMT;
+                    if (pItfPossiblyApprox->IsSpecialMarkerTypeForGenericCasting())
+                    {
+                        MethodTable::ConstructInstantiationForSpecialMarkerType(pItfPossiblyApprox, pNewIntfMT, newIntfMTInst, &arrayForpItfPossiblyApproxOnpNewIntfMT, &itfPossiblyApproxInstOnpNewIntfMT);
+                    }
+                    else
+                    {
+                        itfPossiblyApproxInstOnpNewIntfMT = pItfPossiblyApprox->GetInstantiation();
+                    }
+
+                    MethodTable::SpecialMarkerTypeHandleArray arrayForpItfPossiblyApproxOnpMT;
+                    Instantiation itfPossiblyApproxInstOnpMT;
+                    MethodTable::ConstructInstantiationForSpecialMarkerType(pItfPossiblyApprox, pMT, pMT->GetInstantiation(), &arrayForpItfPossiblyApproxOnpMT, &itfPossiblyApproxInstOnpMT);
+
+                    if (itfPossiblyApproxInstOnpNewIntfMT.Equals(itfPossiblyApproxInstOnpMT) && itfPossiblyApproxInstOnpMT.GetNumArgs() != 0)
+                    {
+                        // Then we can use the special marker type on pMT
+                        pItfToInsert = pItfPossiblyApprox;
+                        if (!pItfToInsert->IsSpecialMarkerTypeForGenericCasting())
                         {
-                            // Then we can use the special marker type on pMT
-                            pItfToInsert = pItfPossiblyApprox;
-                            if (!pItfToInsert->IsSpecialMarkerTypeForGenericCasting())
-                            {
-                                // This is for the case where the approx type isn't the special marker, but we could use it
-                                pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
-                            }
-                        }
-                        else
-                        {
-                            // We need to instantiate the interface type correctly
-                            if (pItfPossiblyApprox->ContainsGenericVariables() && uninstGenericCase)
-                            {
-                                pItfToInsert = ClassLoader::LoadGenericInstantiationThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), itfPossiblyApproxInstOnpNewIntfMT, ClassLoader::LoadTypes, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
-                            }
-                            else
-                            {
-                                ClassLoader::EnsureLoaded(pItfPossiblyApprox, CLASS_LOAD_EXACTPARENTS);
-                                pItfToInsert = pItfPossiblyApprox;
-                            }
+                            // This is for the case where the approx type isn't the special marker, but we could use it
+                            pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
                         }
                     }
                     else
                     {
-                        ClassLoader::EnsureLoaded(pItfPossiblyApprox, CLASS_LOAD_EXACTPARENTS);
-                        pItfToInsert = pItfPossiblyApprox;
+                        // We need to instantiate the interface type correctly
+                        if (pItfPossiblyApprox->ContainsGenericVariables() && uninstGenericCase)
+                        {
+                            pItfToInsert = ClassLoader::LoadGenericInstantiationThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), itfPossiblyApproxInstOnpNewIntfMT, ClassLoader::LoadTypes, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                        }
+                        else
+                        {
+                            ClassLoader::EnsureLoaded(pItfPossiblyApprox, CLASS_LOAD_EXACTPARENTS);
+                            pItfToInsert = pItfPossiblyApprox;
+                        }
                     }
-                    duplicates |= InsertMethodTable(intIt.GetInterface(pNewIntfMT, CLASS_LOAD_EXACTPARENTS), pExactMTs, nInterfacesCount, &nAssigned);
                 }
+                else
+                {
+                    ClassLoader::EnsureLoaded(pItfPossiblyApprox, CLASS_LOAD_EXACTPARENTS);
+                    pItfToInsert = pItfPossiblyApprox;
+                }
+                duplicates |= InsertMethodTable(intIt.GetInterface(pNewIntfMT, CLASS_LOAD_EXACTPARENTS), pExactMTs, nInterfacesCount, &nAssigned);
             }
-
-            if (retry)
-                break;
         }
-
-        if (retry)
-        {
-            retryWithExactInterfaces = true;
-        }
-    } while (retry);
+    }
 
     if (FAILED(hr))
     {
@@ -9530,7 +9564,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                 pParentSubstForTypeLoad,
                 pParentSubstForComparing,
                 pStackingAllocator,
-                retryWithExactInterfaces ? NULL : pMT);
+                pMT);
         }
 #ifdef _DEBUG
         //#ExactInterfaceMap_SupersetOfParent
@@ -9587,7 +9621,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
             NULL,
             NULL,
             pStackingAllocator,
-            retryWithExactInterfaces ? NULL : pMT
+            pMT
             COMMA_INDEBUG(pMT));
         CONSISTENCY_CHECK(bmtExactInterface.nAssigned == pMT->GetNumInterfaces());
 
