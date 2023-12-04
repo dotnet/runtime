@@ -3,10 +3,10 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
     <DefineConstants Condition="'$(OS)' == 'Windows_NT'">WINDOWS;$(DefineConstants)</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- CS8981 - The type name only contains lower-cased ascii characters. -->
+    <NoWarn>$(NoWarn);CS8981</NoWarn>
   </PropertyGroup>
 
 </Project>
