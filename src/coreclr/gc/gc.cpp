@@ -48184,9 +48184,41 @@ HRESULT GCHeap::Initialize()
         return E_OUTOFMEMORY;
     }
 
+    /*
+     * Allocation requests less than loh_size_threshold will be allocated on the small object heap.
+     * For regions, we constrainted that objects must stay on a single region, so it is impossible to allocate
+     * an object larger than the available space on a single region.
+     *
+     * Note that that available space on the region is not the region size, but a bit smaller.
+     * The adjustment formula is based on these three implementation details:
+     *
+     * 1.) heap_segment_mem is set to the new pages + sizeof(aligned_plug_and_gap) in make_heap_segment,
+     *     effectively making the bytes before that unusable for objects.
+     * 2.) a_fit_segment_end_p set pad to Align(min_obj_size, align_const), effectively making some end bytes
+     *     unusable
+     * 3.) a_size_fit_p requires the available space to be larger than the allocated size + Align(min_obj_size, align_const)
+     *     again, effectively making some end bytes unusable.
+     *
+     * It is guaranteed that allocation request with exactly this amount or less will either succeed or fail (because we either
+     * cannot get new region or cannot commit memory), but never run into an infinite loop.
+     */
+    int align_const = get_alignment_constant (TRUE);
+    size_t effective_max_small_object_size = gc_region_size - sizeof(aligned_plug_and_gap) - Align(min_obj_size, align_const) * 2;
+
+#ifdef FEATURE_STRUCTALIGN
+    /*
+     * The above assumed FEATURE_STRUCTALIGN is not turned on for platforms where USE_REGIONS is supported, otherwise it is possible
+     * that the allocation size is inflated by ComputeMaxStructAlignPad in GCHeap::Alloc and we have to compute an upper bound of that 
+     * function.
+     *
+     * Note that ComputeMaxStructAlignPad is defined to be 0 if FEATURE_STRUCTALIGN is turned off.
+     */
+#error "FEATURE_STRUCTALIGN is not supported for USE_REGIONS"
+#endif //FEATURE_STRUCTALIGN
+
     loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
     loh_size_threshold = max (loh_size_threshold, LARGE_OBJECT_SIZE);
-    loh_size_threshold = min (loh_size_threshold, gc_region_size);
+    loh_size_threshold = min (loh_size_threshold, effective_max_small_object_size);
     GCConfig::SetLOHThreshold(loh_size_threshold);
 
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
