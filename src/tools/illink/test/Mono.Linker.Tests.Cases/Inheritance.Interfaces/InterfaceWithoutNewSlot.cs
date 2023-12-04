@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 {
 	// Tests the case where the interface method doesn't have 'newslot' flag set
 	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
+	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/InterfaceWithoutNewSlot.il" })]
 	class InterfaceWithoutNewSlot
