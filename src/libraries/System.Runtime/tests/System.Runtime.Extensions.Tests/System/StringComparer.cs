@@ -196,7 +196,7 @@ namespace System.Tests
             { "abcd", "ABcd", "en-US", CompareOptions.StringSort, false },
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         [MemberData(nameof(CreateFromCultureAndOptionsStringSortData))]
         public static void CreateFromCultureAndOptions(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)

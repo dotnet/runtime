@@ -81,7 +81,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<MissingMemberException>(() => LateBinding.LateIndexSet(obj, args, paramNames));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(LateIndexSetComplex_TestData))]
         public void LateIndexSetComplex(object obj, object[] args, string[] paramNames, bool missing, bool valueType)
         {

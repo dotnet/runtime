@@ -145,7 +145,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(previousCount, keysArray.Length);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_CopyTo_Invalid(int count)

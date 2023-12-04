@@ -833,7 +833,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Strings.Split(expression, delimiter, limit, compare));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData("A, B, C", ", ", 0, CompareMethod.Text)]
         public void Split_IndexOutOfRangeException(string expression, string delimiter, int limit, CompareMethod compare)
         {

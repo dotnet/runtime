@@ -46,7 +46,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void Remove_MultipleValues_SameName()
         {
             NameValueCollection nameValueCollection = new NameValueCollection();

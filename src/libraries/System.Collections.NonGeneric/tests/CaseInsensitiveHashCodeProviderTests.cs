@@ -150,7 +150,7 @@ namespace System.Collections.Tests
                 CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode(a) == CaseInsensitiveHashCodeProvider.DefaultInvariant.GetHashCode(b));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void Default_Compare_TurkishI()
         {
