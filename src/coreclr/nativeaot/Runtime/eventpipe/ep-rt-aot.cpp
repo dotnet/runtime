@@ -399,12 +399,9 @@ ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
-#else
-    return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+    // Current thread is available at this stage since EventPipe is initiating this call (and will crash here if not).
+    ep_rt_thread_handle_t thread_handle = ThreadStore::GetCurrentThreadIfAvailable();
+    return thread_handle->GetPalThreadIdForLogging();
 }
 
 int64_t
