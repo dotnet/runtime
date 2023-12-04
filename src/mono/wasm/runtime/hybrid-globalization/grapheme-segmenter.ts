@@ -26,6 +26,13 @@ type SegmentationTypeRaw = {
     rules: Record<string, SegmentationRuleRaw>
 }
 
+function is_surrogate_pair(str: string, index: number): boolean {
+    const high = str.charCodeAt(index - 1);
+    const low = str.charCodeAt(index);
+
+    return 0xD800 <= high && high <= 0xDBFF && 0xDC00 <= low && low <= 0xDFFF;
+}
+
 function replace_variables(variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
     return input.replaceAll(findVarRegex, match => {
@@ -50,7 +57,6 @@ export class GraphemeSegmenter {
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
 
-
     /**
      * Returns the next grapheme in the given string starting from the specified index.
      * @param str - The input string.
@@ -61,7 +67,6 @@ export class GraphemeSegmenter {
         const breakIdx = this.next_grapheme_break(str, startIndex);
         return str.substring(startIndex, breakIdx);
     }
-
 
     /**
      * Finds the index of the next grapheme break in a given string starting from a specified index.
@@ -79,31 +84,29 @@ export class GraphemeSegmenter {
     
         let prev = String.fromCodePoint(str.codePointAt(startIndex)!);
         for (let i = startIndex + 1; i < str.length; i++) {
-            // check if we are in the middle of surrogate pair
-            let high, low;
-            if ((0xD800 <= (high = str.charCodeAt(i - 1)) && high <= 0xDBFF) &&
-                (0xDC00 <= (low = str.charCodeAt(i)) && low <= 0xDFFF)) {
+            // Don't break surrogate pairs
+            if (is_surrogate_pair(str, i)) {
                 continue;
             }
 
-            const next = String.fromCodePoint(str.codePointAt(i)!);
-            if (this.is_grapheme_break(prev, next))
+            const curr = String.fromCodePoint(str.codePointAt(i)!);
+            if (this.is_grapheme_break(prev, curr))
                 return i;
     
-            prev = next;
+            prev = curr;
         }
     
         return str.length;
     }
 
-    private is_grapheme_break(prev: string, next: string): boolean {
+    private is_grapheme_break(previous: string, current: string): boolean {
         for (const key of this.ruleSortedKeys) {
             const {before, after, breaks} = this.rules[key];
             // match before and after rules
-            if (before && !before.test(prev)) {
+            if (before && !before.test(previous)) {
                 continue;
             }
-            if (after && !after.test(next)) {
+            if (after && !after.test(current)) {
                 continue;
             }
 
