@@ -752,13 +752,6 @@ void CodeGen::genCodeForBBlist()
                 bool isRemovableJmpCandidate =
                     !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetJumpDest());
 
-#ifdef TARGET_AMD64
-                // AMD64 requires an instruction after a call instruction for unwinding
-                // inside an EH region so if the last instruction generated was a call instruction
-                // do not allow this jump to be marked for possible later removal.
-                isRemovableJmpCandidate = isRemovableJmpCandidate && !emitNopBeforeEHRegion;
-#endif // TARGET_AMD64
-
                 inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
 #else
                 inst_JMP(EJ_jmp, block->GetJumpDest());

@@ -1869,14 +1869,20 @@ protected:
         // beginning of the function -- of the target instruction of the jump, used to
         // determine if this jump needs to be patched.
         unsigned idjOffs :
-#if defined(TARGET_XARCH)
-            29;
-        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+#if defined(TARGET_AMD64)
+            28;
+        // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+        // Indicates the jump succeeds a call instruction; if this jump is removed,
+        // a nop will need to be emitted instead (see clr-abi.md for details)
+        unsigned idjIsAfterCall : 1;
+#elif defined(TARGET_XARCH)
+            29;
         unsigned idjIsRemovableJmpCandidate : 1;
 #else
             30;
-#endif
+#endif                            // !defined(TARGET_XARCH)
         unsigned idjShort : 1;    // is the jump known to be a short one?
         unsigned idjKeepLong : 1; // should the jump be kept long? (used for hot to cold and cold to hot jumps)
     };

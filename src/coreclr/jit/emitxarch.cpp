@@ -3493,11 +3493,28 @@ const emitJumpKind emitReverseJumpKinds[] = {
 //
 /* static */ bool emitter::emitJmpInstHasNoCode(instrDesc* id)
 {
-    bool result = (id->idIns() == INS_jmp) && (id->idCodeSize() == 0);
+    bool result = (id->idIns() == INS_jmp) && ((instrDescJmp*)id)->idjIsRemovableJmpCandidate;
 
-    // A zero size jump instruction can only be the one that is marked
-    // as removable candidate.
-    assert(!result || ((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+// For a jump that is considered for removal but not removed,
+// idjIsRemovableJmpCandidate should be set to false.
+// Else if the jump was removed, idjIsRemovableJmpCandidate should still be true.
+
+#ifdef TARGET_AMD64
+    // On AMD64, if the removed jump instruction was after a call instruction,
+    // a nop should have been inserted, hence a code size of 1.
+    // (See clr-abi.md for details on why the nop is needed)
+    if (result && (id->idCodeSize() != 0))
+    {
+        assert(id->idCodeSize() == 1);
+        assert(((instrDescJmp*)id)->idjIsAfterCall);
+    }
+    else
+#endif // TARGET_AMD64
+    {
+        // A zero size jump instruction can only be the one that is marked
+        // as removable candidate.
+        assert(!result || (id->idCodeSize() == 0));
+    }
 
     return result;
 }
@@ -9082,6 +9099,11 @@ void emitter::emitIns_J(instruction ins,
                         int         instrCount /* = 0 */,
                         bool        isRemovableJmpCandidate /* = false */)
 {
+#ifdef TARGET_AMD64
+    // Check emitter::emitLastIns before it is updated
+    const bool lastInsIsCall = emitIsLastInsCall();
+#endif // TARGET_AMD64
+
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
 
@@ -9109,9 +9131,20 @@ void emitter::emitIns_J(instruction ins,
     }
 #endif // DEBUG
 
-    emitContainsRemovableJmpCandidates |= isRemovableJmpCandidate;
-    id->idjIsRemovableJmpCandidate = isRemovableJmpCandidate ? 1 : 0;
-    id->idjShort                   = 0;
+    if (isRemovableJmpCandidate)
+    {
+        emitContainsRemovableJmpCandidates = true;
+        id->idjIsRemovableJmpCandidate     = 1;
+#ifdef TARGET_AMD64
+        id->idjIsAfterCall = lastInsIsCall ? 1 : 0;
+#endif // TARGET_AMD64
+    }
+    else
+    {
+        id->idjIsRemovableJmpCandidate = 0;
+    }
+
+    id->idjShort = 0;
     if (dst != nullptr)
     {
         /* Assume the jump will be long */
@@ -16179,16 +16212,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(id->idGCref() == GCT_NONE);
             assert(id->idIsBound() || emitJmpInstHasNoCode(id));
+            instrDescJmp* jmp = (instrDescJmp*)id;
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
-            if (id->idCodeSize() != 0)
+            if (!jmp->idjIsRemovableJmpCandidate)
             {
                 dst = emitOutputLJ(ig, dst, id);
             }
-            else
+#ifdef TARGET_AMD64
+            else if (id->idCodeSize() == 1)
             {
-                assert(((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+                // Need to insert a nop if the removed jump was after a call
+                assert(jmp->idjIsAfterCall);
+                dst = emitOutputNOP(dst, 1);
             }
+#endif // TARGET_AMD64
             sz = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
         }
