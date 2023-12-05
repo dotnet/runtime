@@ -98,9 +98,6 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;%(_RuntimePackVersions.EnvVarName)=%(_RuntimePackVersions.Identity)&quot;" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SHOW_BUILD_OUTPUT=1" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SHOW_BUILD_OUTPUT=1" />
-
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
     </ItemGroup>
