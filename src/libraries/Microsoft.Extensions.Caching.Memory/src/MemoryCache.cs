@@ -483,7 +483,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 long lowWatermark = sizeLimit - (long)(sizeLimit * _options.CompactionPercentage);
                 if (currentSize > lowWatermark)
                 {
-                     Compact(currentSize - (long)lowWatermark, entry => entry.Size, coherentState);
+                    Compact(currentSize - (long)lowWatermark, entry => entry.Size, coherentState);
                 }
             }
 

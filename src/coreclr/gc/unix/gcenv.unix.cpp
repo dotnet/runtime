@@ -1089,7 +1089,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 
 #if HAVE_PROCFS_STATM
 // Return the size of the user-mode portion of the virtual address space of this process.
-size_t GetCurrentVirtualMemorySize()
+static size_t GetCurrentVirtualMemorySize()
 {
     size_t result = (size_t)-1;
     size_t linelen;
@@ -1130,7 +1130,7 @@ size_t GetCurrentVirtualMemorySize()
 
 // Return the size of the available user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, (size_t)-1 if not available
+//  non zero if it has succeeded, GetVirtualMemoryMaxAddress() if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
     rlimit addressSpaceLimit;
@@ -1140,7 +1140,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     }
 
     // No virtual memory limit
-    return (size_t)-1;
+    return GetVirtualMemoryMaxAddress();
 }
 
 // Return the maximum address of the of the virtual address space of this process.

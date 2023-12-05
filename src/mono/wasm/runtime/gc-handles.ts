@@ -105,7 +105,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
         _cs_owned_objects_by_js_handle[<any>js_handle] = undefined;
         _js_handle_free_list.push(js_handle);
     }
-    if (is_jsv_handle(js_handle)) {
+    else if (is_jsv_handle(js_handle)) {
         obj = _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
         _cs_owned_objects_by_jsv_handle[0 - <any>js_handle] = undefined;
     }

@@ -6599,6 +6599,8 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
 
+    pThread->IncPreventAbort();
+
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
     CALL_MANAGED_METHOD_NORET(args)
 

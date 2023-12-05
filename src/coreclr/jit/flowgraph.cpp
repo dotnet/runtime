@@ -3343,6 +3343,21 @@ const char* sckName(SpecialCodeKind codeKind)
 #endif
 
 //------------------------------------------------------------------------
+// fgGetAddCodeDscMap; create or return the add code desc map
+//
+// Returns:
+//   add code desc map
+//
+Compiler::AddCodeDscMap* Compiler::fgGetAddCodeDscMap()
+{
+    if (fgAddCodeDscMap == nullptr)
+    {
+        fgAddCodeDscMap = new (getAllocator(CMK_Unknown)) AddCodeDscMap(getAllocator(CMK_Unknown));
+    }
+    return fgAddCodeDscMap;
+}
+
+//------------------------------------------------------------------------
 // fgAddCodeRef: Indicate that a particular throw helper block will
 //   be needed by the method.
 //
@@ -3395,11 +3410,21 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add->acdStkLvlInit = false;
 #endif // !FEATURE_FIXED_OUT_ARGS
 
+    // This gets set true in the stack level setter
+    // if there's still a need for this helper
+    add->acdUsed = false;
+
     fgAddCodeList = add;
 
     // Defer creating of the blocks until later.
     //
     add->acdDstBlk = srcBlk;
+
+    // Add to map
+    //
+    AddCodeDscMap* const map = fgGetAddCodeDscMap();
+    AddCodeDscKey        key(kind, refData);
+    map->Set(key, add);
 }
 
 //------------------------------------------------------------------------
@@ -3580,41 +3605,28 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 //
 // Arguments:
 //    kind - kind of exception to throw
-//    block - block where we need to throw an exception
+//    refData -- bbThrowIndex of the block that will jump to the throw helper
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
 //    descriptor exists
 //
-// Notes:
-//   We maintain a cache of one AddCodeDsc for each kind, to make searching fast.
-//
-//   Each block in an EH region uses the same (maybe shared) block as the jump target for
-//   this exception kind.
-//
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
+    AddCodeDsc*          add = nullptr;
+    AddCodeDscMap* const map = fgGetAddCodeDscMap();
+    AddCodeDscKey        key(kind, refData);
+    map->Lookup(key, &add);
 
-    if (!(fgExcptnTargetCache[kind] && // Try the cached value first
-          fgExcptnTargetCache[kind]->acdData == refData))
+    if (add == nullptr)
     {
-        // Too bad, have to search for the jump target for the exception
-
-        AddCodeDsc* add = nullptr;
-
-        for (add = fgAddCodeList; add != nullptr; add = add->acdNext)
-        {
-            if (add->acdData == refData && add->acdKind == kind)
-            {
-                break;
-            }
-        }
-
-        fgExcptnTargetCache[kind] = add;
+        // We should't be asking for these blocks late in compilation
+        // unless we know there are entries to be found.
+        assert(!fgRngChkThrowAdded);
     }
 
-    return fgExcptnTargetCache[kind];
+    return add;
 }
 
 //------------------------------------------------------------------------
@@ -4197,8 +4209,7 @@ BitVecTraits FlowGraphNaturalLoop::LoopBlockTraits()
 // Remarks:
 //   Containment here means that the block is in the SCC of the loop; i.e. it
 //   is in a cycle with the header block. Note that EH successors are taken
-//   into acount; for example, a BBJ_RETURN may still be a loop block provided
-//   that its handler can reach the loop header.
+//   into account.
 //
 bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
 {
@@ -4210,6 +4221,18 @@ bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
 
     BitVecTraits traits = LoopBlockTraits();
     return BitVecOps::IsMember(&traits, m_blocks, index);
+}
+
+//------------------------------------------------------------------------
+// NumLoopBlocks: Get the number of blocks in the SCC of the loop.
+//
+// Returns:
+//   Count of blocks.
+//
+unsigned FlowGraphNaturalLoop::NumLoopBlocks()
+{
+    BitVecTraits loopTraits = LoopBlockTraits();
+    return BitVecOps::Count(&loopTraits, m_blocks);
 }
 
 //------------------------------------------------------------------------
@@ -4542,4 +4565,876 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitDefs: Visit all definitions contained in the
+// loop.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Parameters:
+//   func - Callback functor that accepts a GenTreeLclVarCommon* and returns a
+//   bool. On true, continue looking for defs; on false, abort.
+//
+// Returns:
+//   True if all defs were visited and the functor never returned false; otherwise false.
+//
+template <typename TFunc>
+bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
+{
+    class VisitDefsVisitor : public GenTreeVisitor<VisitDefsVisitor>
+    {
+        using GenTreeVisitor<VisitDefsVisitor>::m_compiler;
+
+        TFunc& m_func;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        VisitDefsVisitor(Compiler* comp, TFunc& func) : GenTreeVisitor<VisitDefsVisitor>(comp), m_func(func)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            if ((tree->gtFlags & GTF_ASG) == 0)
+            {
+                return Compiler::WALK_SKIP_SUBTREES;
+            }
+
+            GenTreeLclVarCommon* lclDef;
+            if (tree->DefinesLocal(m_compiler, &lclDef))
+            {
+                if (!m_func(lclDef))
+                    return Compiler::WALK_ABORT;
+            }
+
+            return Compiler::WALK_CONTINUE;
+        }
+    };
+
+    VisitDefsVisitor visitor(m_tree->GetCompiler(), func);
+
+    BasicBlockVisit result = VisitLoopBlocks([&](BasicBlock* loopBlock) {
+        for (Statement* stmt : loopBlock->Statements())
+        {
+            if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == Compiler::WALK_ABORT)
+                return BasicBlockVisit::Abort;
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    return result == BasicBlockVisit::Continue;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::FindDef: Find a def of the specified local number.
+//
+// Parameters:
+//   lclNum - The local.
+//
+// Returns:
+//   Tree that represents a def of the local; nullptr if no def was found.
+//
+// Remarks:
+//   Does not take promotion into account.
+//
+GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
+{
+    GenTreeLclVarCommon* result = nullptr;
+    VisitDefs([&result, lclNum](GenTreeLclVarCommon* def) {
+        if (def->GetLclNum() == lclNum)
+        {
+            result = def;
+            return false;
+        }
+
+        return true;
+    });
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::AnalyzeIteration: Analyze the induction structure of
+// the loop.
+//
+// Parameters:
+//   info - [out] Loop information
+//
+// Returns:
+//   True if the structure was analyzed and we can make guarantees about it;
+//   otherwise false.
+//
+// Remarks:
+//   The function guarantees that at all definitions of the iteration local,
+//   the loop condition is reestablished before iteration continues. In other
+//   words, if this function returns true the loop invariant is guaranteed to
+//   be upheld in all blocks in the loop (but see below for establishing the
+//   base case).
+//
+//   Currently we do not validate that there is a zero-trip test ensuring the
+//   condition is true, so it is up to the user to validate that. This is
+//   normally done via GTF_RELOP_ZTT set by loop inversion.
+//
+bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
+{
+    JITDUMP("Analyzing iteration for " FMT_LP " with header " FMT_BB "\n", m_index, m_header->bbNum);
+
+    const FlowGraphDfsTree* dfs  = m_tree;
+    Compiler*               comp = dfs->GetCompiler();
+    assert((m_entryEdges.size() == 1) && "Expected preheader");
+
+    BasicBlock* preheader = m_entryEdges[0]->getSourceBlock();
+
+    JITDUMP("  Preheader = " FMT_BB "\n", preheader->bbNum);
+
+    // TODO-Quirk: For backwards compatibility always try the lexically
+    // bottom-most block for the loop variable.
+    BasicBlock* bottom = GetLexicallyBottomMostBlock();
+    JITDUMP("  Bottom = " FMT_BB "\n", bottom->bbNum);
+
+    BasicBlock* cond      = bottom;
+    BasicBlock* initBlock = preheader;
+    GenTree*    init;
+    GenTree*    test;
+    if (!cond->KindIs(BBJ_COND) ||
+        !comp->optExtractInitTestIncr(&initBlock, bottom, m_header, &init, &test, &info->IterTree))
+    {
+        // TODO-CQ: Try all exit edges here to see if we can find an induction variable.
+        JITDUMP("  Could not extract induction variable from bottom\n");
+        return false;
+    }
+
+    info->IterVar = comp->optIsLoopIncrTree(info->IterTree);
+
+    assert(info->IterVar != BAD_VAR_NUM);
+    LclVarDsc* const iterVarDsc = comp->lvaGetDesc(info->IterVar);
+
+    // Bail on promoted case, otherwise we'd have to search the loop
+    // for both iterVar and its parent.
+    // TODO-CQ: Fix this
+    //
+    if (iterVarDsc->lvIsStructField)
+    {
+        JITDUMP("  iterVar V%02u is a promoted field\n", info->IterVar);
+        return false;
+    }
+
+    // Bail on the potentially aliased case.
+    //
+    if (iterVarDsc->IsAddressExposed())
+    {
+        JITDUMP("  iterVar V%02u is address exposed\n", info->IterVar);
+        return false;
+    }
+
+    if (init == nullptr)
+    {
+        JITDUMP("  Init = <none>, test = [%06u], incr = [%06u]\n", Compiler::dspTreeID(test),
+                Compiler::dspTreeID(info->IterTree));
+    }
+    else
+    {
+        JITDUMP("  Init = [%06u], test = [%06u], incr = [%06u]\n", Compiler::dspTreeID(init), Compiler::dspTreeID(test),
+                Compiler::dspTreeID(info->IterTree));
+    }
+
+    if (!MatchLimit(info, test))
+    {
+        return false;
+    }
+
+    MatchInit(info, initBlock, init);
+
+    bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
+        if ((def->GetLclNum() != info->IterVar) || (def == info->IterTree))
+            return true;
+
+        JITDUMP("  Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
+        return false;
+    });
+
+    if (!result)
+    {
+        return false;
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("  IterVar = V%02u\n", info->IterVar);
+
+        if (info->HasConstInit)
+            printf("  Const init with value %d in " FMT_BB "\n", info->ConstInitValue, info->InitBlock->bbNum);
+
+        printf("  Test is [%06u] (", Compiler::dspTreeID(info->TestTree));
+        if (info->HasConstLimit)
+            printf("const limit ");
+        if (info->HasSimdLimit)
+            printf("simd limit ");
+        if (info->HasInvariantLocalLimit)
+            printf("invariant local limit ");
+        if (info->HasArrayLengthLimit)
+            printf("array length limit ");
+        printf(")\n");
+    }
+#endif
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::MatchInit: Try to pattern match the initialization of
+// an induction variable.
+//
+// Parameters:
+//   info      - [in, out] Info structure to query and fill out
+//   initBlock - Block containing the initialization tree
+//   init      - Initialization tree
+//
+// Remarks:
+//   We do not necessarily guarantee or require to be able to find any
+//   initialization.
+//
+void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init)
+{
+    if ((init == nullptr) || !init->OperIs(GT_STORE_LCL_VAR) || (init->AsLclVarCommon()->GetLclNum() != info->IterVar))
+        return;
+
+    GenTree* initValue = init->AsLclVar()->Data();
+    if (!initValue->IsCnsIntOrI() || !initValue->TypeIs(TYP_INT))
+        return;
+
+    info->HasConstInit   = true;
+    info->ConstInitValue = (int)initValue->AsIntCon()->IconValue();
+    info->InitBlock      = initBlock;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::MatchLimit: Try to pattern match the loop test of an
+// induction variable.
+//
+// Parameters:
+//   info      - [in, out] Info structure to query and fill out
+//   test      - Loop condition test
+//
+// Returns:
+//   True if the loop condition was recognized and "info" was filled out.
+//
+// Remarks:
+//   Unlike the initialization, we do require that we are able to match the
+//   loop condition.
+//
+bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
+{
+    // Obtain the relop from the "test" tree.
+    GenTree* relop;
+    if (test->OperIs(GT_JTRUE))
+    {
+        relop = test->gtGetOp1();
+    }
+    else
+    {
+        assert(test->OperIs(GT_STORE_LCL_VAR));
+        relop = test->AsLclVar()->Data();
+    }
+
+    noway_assert(relop->OperIsCompare());
+
+    GenTree* opr1 = relop->AsOp()->gtOp1;
+    GenTree* opr2 = relop->AsOp()->gtOp2;
+
+    GenTree* iterOp;
+    GenTree* limitOp;
+
+    // Make sure op1 or op2 is the iterVar.
+    if (opr1->gtOper == GT_LCL_VAR && opr1->AsLclVarCommon()->GetLclNum() == info->IterVar)
+    {
+        iterOp  = opr1;
+        limitOp = opr2;
+    }
+    else if (opr2->gtOper == GT_LCL_VAR && opr2->AsLclVarCommon()->GetLclNum() == info->IterVar)
+    {
+        iterOp  = opr2;
+        limitOp = opr1;
+    }
+    else
+    {
+        return false;
+    }
+
+    if (iterOp->gtType != TYP_INT)
+    {
+        return false;
+    }
+
+    // Mark the iterator node.
+    iterOp->gtFlags |= GTF_VAR_ITERATOR;
+
+    // Check what type of limit we have - constant, variable or arr-len.
+    if (limitOp->gtOper == GT_CNS_INT)
+    {
+        info->HasConstLimit = true;
+        if ((limitOp->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
+        {
+            info->HasSimdLimit = true;
+        }
+    }
+    else if (limitOp->OperIs(GT_LCL_VAR))
+    {
+        // See if limit var is a loop invariant
+        //
+        GenTreeLclVarCommon* def = FindDef(limitOp->AsLclVarCommon()->GetLclNum());
+        if (def != nullptr)
+        {
+            JITDUMP("  Limit var V%02u modified by [%06u]\n", limitOp->AsLclVarCommon()->GetLclNum(),
+                    Compiler::dspTreeID(def));
+            return false;
+        }
+
+        info->HasInvariantLocalLimit = true;
+    }
+    else if (limitOp->OperIs(GT_ARR_LENGTH))
+    {
+        // See if limit array is a loop invariant
+        //
+        GenTree* const array = limitOp->AsArrLen()->ArrRef();
+
+        if (!array->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP("  Array limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
+            return false;
+        }
+
+        GenTreeLclVarCommon* def = FindDef(array->AsLclVar()->GetLclNum());
+        if (def != nullptr)
+        {
+            JITDUMP("  Array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),
+                    Compiler::dspTreeID(def));
+            return false;
+        }
+
+        info->HasArrayLengthLimit = true;
+    }
+    else
+    {
+        JITDUMP("  Loop limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
+        return false;
+    }
+
+    // Were we able to successfully analyze the limit?
+    //
+    assert(info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit);
+
+    info->TestTree = relop;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// GetLexicallyTopMostBlock: Get the lexically top-most block contained within
+// the loop.
+//
+// Returns:
+//   Block with highest bbNum.
+//
+// Remarks:
+//   Mostly exists as a quirk while transitioning from the old loop
+//   representation to the new one.
+//
+BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
+{
+    BasicBlock* top = m_header;
+    VisitLoopBlocks([&top](BasicBlock* loopBlock) {
+        if (loopBlock->bbNum < top->bbNum)
+            top = loopBlock;
+        return BasicBlockVisit::Continue;
+    });
+
+    return top;
+}
+
+//------------------------------------------------------------------------
+// GetLexicallyBottomMostBlock: Get the lexically bottom-most block contained
+// within the loop.
+//
+// Returns:
+//   Block with highest bbNum.
+//
+// Remarks:
+//   Mostly exists as a quirk while transitioning from the old loop
+//   representation to the new one.
+//
+BasicBlock* FlowGraphNaturalLoop::GetLexicallyBottomMostBlock()
+{
+    BasicBlock* bottom = m_header;
+    VisitLoopBlocks([&bottom](BasicBlock* loopBlock) {
+        if (loopBlock->bbNum > bottom->bbNum)
+            bottom = loopBlock;
+        return BasicBlockVisit::Continue;
+    });
+
+    return bottom;
+}
+
+//------------------------------------------------------------------------
+// HasDef: Check if a local is defined anywhere in the loop.
+//
+// Parameters:
+//   lclNum - Local to check for a def for.
+//
+// Returns:
+//   True if the local has any def.
+//
+bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
+{
+    Compiler*  comp = m_tree->GetCompiler();
+    LclVarDsc* dsc  = comp->lvaGetDesc(lclNum);
+
+    assert(!comp->lvaVarAddrExposed(lclNum));
+    // Currently does not handle promoted locals, only fields.
+    assert(!dsc->lvPromoted);
+
+    unsigned defLclNum1 = lclNum;
+    unsigned defLclNum2 = BAD_VAR_NUM;
+    if (dsc->lvIsStructField)
+    {
+        defLclNum2 = dsc->lvParentLcl;
+    }
+
+    bool result = VisitDefs([=](GenTreeLclVarCommon* lcl) {
+        if ((lcl->GetLclNum() == defLclNum1) || (lcl->GetLclNum() == defLclNum2))
+        {
+            return false;
+        }
+
+        return true;
+    });
+
+    // If we stopped early we found a def.
+    return !result;
+}
+
+//------------------------------------------------------------------------
+// IterConst: Get the constant with which the iterator is modified
+//
+// Returns:
+//   Constant value.
+//
+int NaturalLoopIterInfo::IterConst()
+{
+    GenTree* value = IterTree->AsLclVar()->Data();
+    return (int)value->gtGetOp2()->AsIntCon()->IconValue();
+}
+
+//------------------------------------------------------------------------
+// IterOper: Get the type of the operation on the iterator
+//
+// Returns:
+//   Oper
+//
+genTreeOps NaturalLoopIterInfo::IterOper()
+{
+    return IterTree->AsLclVar()->Data()->OperGet();
+}
+
+//------------------------------------------------------------------------
+// IterOperType: Get the type of the operation on the iterator.
+//
+// Returns:
+//   Type, used for overflow instructions.
+//
+var_types NaturalLoopIterInfo::IterOperType()
+{
+    assert(genActualType(IterTree) == TYP_INT);
+    return IterTree->TypeGet();
+}
+
+//------------------------------------------------------------------------
+// IsReversed: Returns true if the iterator node is the second operand in the
+// loop condition.
+//
+// Returns:
+//   True if so.
+//
+bool NaturalLoopIterInfo::IsReversed()
+{
+    return TestTree->gtGetOp2()->OperIs(GT_LCL_VAR) && ((TestTree->gtGetOp2()->gtFlags & GTF_VAR_ITERATOR) != 0);
+}
+
+//------------------------------------------------------------------------
+// TestOper: The type of the comparison between the iterator and the limit
+// (GT_LE, GT_GE, etc.)
+//
+// Returns:
+//   Oper.
+//
+genTreeOps NaturalLoopIterInfo::TestOper()
+{
+    genTreeOps op = TestTree->OperGet();
+    return IsReversed() ? GenTree::SwapRelop(op) : op;
+}
+
+//------------------------------------------------------------------------
+// IsIncreasingLoop: Returns true if the loop iterator increases from low to
+// high value.
+//
+// Returns:
+//   True if so.
+//
+bool NaturalLoopIterInfo::IsIncreasingLoop()
+{
+    // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
+    bool isLessThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_LT, GT_LE);
+    return (isLessThanLimitCheck &&
+            (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0))));
+}
+
+//------------------------------------------------------------------------
+// IsIncreasingLoop: Returns true if the loop iterator decreases from high to
+// low value.
+//
+// Returns:
+//   True if so.
+//
+bool NaturalLoopIterInfo::IsDecreasingLoop()
+{
+    // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
+    // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
+    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_GT, GT_GE);
+    return (isGreaterThanLimitCheck &&
+            (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0))));
+}
+
+//------------------------------------------------------------------------
+// Iterator: Get the iterator node in the loop test
+//
+// Returns:
+//   Iterator node.
+//
+GenTree* NaturalLoopIterInfo::Iterator()
+{
+    return IsReversed() ? TestTree->gtGetOp2() : TestTree->gtGetOp1();
+}
+
+//------------------------------------------------------------------------
+// Limit: Get the limit node in the loop test.
+//
+// Returns:
+//   Iterator node.
+//
+GenTree* NaturalLoopIterInfo::Limit()
+{
+    return IsReversed() ? TestTree->gtGetOp1() : TestTree->gtGetOp2();
+}
+
+//------------------------------------------------------------------------
+// ConstLimit: Get the constant value of the iterator limit, i.e. when the loop
+// condition is "i RELOP const".
+//
+// Returns:
+//   Limit constant.
+//
+// Remarks:
+//   Only valid if HasConstLimit is true.
+//
+int NaturalLoopIterInfo::ConstLimit()
+{
+    assert(HasConstLimit);
+    GenTree* limit = Limit();
+    assert(limit->OperIsConst());
+    return (int)limit->AsIntCon()->gtIconVal;
+}
+
+//------------------------------------------------------------------------
+// VarLimit: Get the local var num used in the loop condition, i.e. when the
+// loop condition is "i RELOP lclVar" with a loop invariant local.
+//
+// Returns:
+//   Local var number.
+//
+// Remarks:
+//   Only valid if HasInvariantLocalLimit is true.
+//
+unsigned NaturalLoopIterInfo::VarLimit()
+{
+    assert(HasInvariantLocalLimit);
+
+    GenTree* limit = Limit();
+    assert(limit->OperGet() == GT_LCL_VAR);
+    return limit->AsLclVarCommon()->GetLclNum();
+}
+
+//------------------------------------------------------------------------
+// ArrLenLimit: Get the array length used in the loop condition, i.e. when the
+// loop condition is "i RELOP arr.len".
+//
+// Parameters:
+//   comp  - Compiler instance
+//   index - [out] Array index information
+//
+// Returns:
+//   True if the array length was extracted.
+//
+// Remarks:
+//   Only valid if HasArrayLengthLimit is true.
+//
+bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
+{
+    assert(HasArrayLengthLimit);
+
+    GenTree* limit = Limit();
+    assert(limit->OperIs(GT_ARR_LENGTH));
+
+    // Check if we have a.length or a[i][j].length
+    if (limit->AsArrLen()->ArrRef()->OperIs(GT_LCL_VAR))
+    {
+        index->arrLcl = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
+        index->rank   = 0;
+        return true;
+    }
+    // We have a[i].length, extract a[i] pattern.
+    else if (limit->AsArrLen()->ArrRef()->OperIs(GT_COMMA))
+    {
+        return comp->optReconstructArrIndex(limit->AsArrLen()->ArrRef(), index);
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::IntersectDom:
+//   Find common IDom parent, much like least common ancestor.
+//
+// Parameters:
+//   finger1 - A basic block that might share IDom ancestor with finger2.
+//   finger2 - A basic block that might share IDom ancestor with finger1.
+//
+// Returns:
+//   A basic block whose IDom is the dominator for finger1 and finger2, or else
+//   nullptr. This may be called while immediate dominators are being computed,
+//   and if the input values are members of the same loop (each reachable from
+//   the other), then one may not yet have its immediate dominator computed
+//   when we are attempting to find the immediate dominator of the other. So a
+//   nullptr return value means that the the two inputs are in a cycle, not
+//   that they don't have a common dominator ancestor.
+//
+// Remarks:
+//   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
+//   Harvey, Ken Kennedy.
+//
+BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
+{
+    while (finger1 != finger2)
+    {
+        if (finger1 == nullptr || finger2 == nullptr)
+        {
+            return nullptr;
+        }
+        while (finger1 != nullptr && finger1->bbPostorderNum < finger2->bbPostorderNum)
+        {
+            finger1 = finger1->bbIDom;
+        }
+        if (finger1 == nullptr)
+        {
+            return nullptr;
+        }
+        while (finger2 != nullptr && finger2->bbPostorderNum < finger1->bbPostorderNum)
+        {
+            finger2 = finger2->bbIDom;
+        }
+    }
+    return finger1;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::Intersect:
+//   See FlowGraphDominatorTree::IntersectDom.
+//
+BasicBlock* FlowGraphDominatorTree::Intersect(BasicBlock* block1, BasicBlock* block2)
+{
+    return IntersectDom(block1, block2);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::Dominates:
+//   Check if node "dominator" is an ancestor of node "dominated".
+//
+// Parameters:
+//   dominator - Node that may dominate
+//   dominated - Node that may be dominated
+//
+// Returns:
+//   True "dominator" dominates "dominated".
+//
+bool FlowGraphDominatorTree::Dominates(BasicBlock* dominator, BasicBlock* dominated)
+{
+    assert(m_dfs->Contains(dominator) && m_dfs->Contains(dominated));
+
+    // What we want to ask here is basically if A is in the middle of the path
+    // from B to the root (the entry node) in the dominator tree. Turns out
+    // that can be translated as:
+    //
+    //   A dom B <-> preorder(A) <= preorder(B) && postorder(A) >= postorder(B)
+    //
+    // where the equality holds when you ask if A dominates itself.
+    //
+    return (m_preorderNum[dominator->bbPostorderNum] <= m_preorderNum[dominated->bbPostorderNum]) &&
+           (m_postorderNum[dominator->bbPostorderNum] >= m_postorderNum[dominated->bbPostorderNum]);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::Build: Compute the dominator tree for the blocks in
+// the DFS tree.
+//
+// Parameters:
+//   dfs - DFS tree.
+//
+// Returns:
+//   Data structure representing dominator tree. Immediate dominators are
+//   marked directly into the BasicBlock structures, in the bbIDom field, so
+//   multiple instances cannot be simultaneously used.
+//
+// Remarks:
+//   As a precondition it is required that the flow graph has a unique root.
+//   This might require creating a scratch root block in case the first block
+//   has backedges or is in a try region.
+//
+FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* dfs)
+{
+    Compiler*    comp      = dfs->GetCompiler();
+    BasicBlock** postOrder = dfs->GetPostOrder();
+    unsigned     count     = dfs->GetPostOrderCount();
+
+    assert((comp->fgFirstBB->bbPreds == nullptr) && !comp->fgFirstBB->hasTryIndex());
+    assert(postOrder[count - 1] == comp->fgFirstBB);
+    comp->fgFirstBB->bbIDom = nullptr;
+
+    // First compute immediate dominators.
+    unsigned numIters = 0;
+    bool     changed  = true;
+    while (changed)
+    {
+        changed = false;
+
+        // In reverse post order, except for the entry block (count - 1 is entry BB).
+        for (unsigned i = count - 1; i > 0; i--)
+        {
+            unsigned    poNum = i - 1;
+            BasicBlock* block = postOrder[poNum];
+
+            // Intersect DOM, if computed, for all predecessors.
+            BasicBlock* bbIDom = nullptr;
+            for (FlowEdge* pred = comp->BlockDominancePreds(block); pred; pred = pred->getNextPredEdge())
+            {
+                BasicBlock* domPred = pred->getSourceBlock();
+                if (!dfs->Contains(domPred))
+                {
+                    continue; // Unreachable pred
+                }
+
+                if ((numIters <= 0) && (domPred->bbPostorderNum <= poNum))
+                {
+                    continue; // Pred not yet visited
+                }
+
+                if (bbIDom == nullptr)
+                {
+                    bbIDom = domPred;
+                }
+                else
+                {
+                    bbIDom = IntersectDom(bbIDom, domPred);
+                }
+            }
+
+            // Did we change the bbIDom value?  If so, we go around the outer loop again.
+            if (block->bbIDom != bbIDom)
+            {
+                changed       = true;
+                block->bbIDom = bbIDom;
+            }
+        }
+
+        numIters++;
+    }
+
+    // Now build dominator tree.
+    DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
+
+    // Build the child and sibling links based on the immediate dominators.
+    // Running this loop in post-order means we end up with sibling links in
+    // reverse post-order. Skip the root since it has no siblings.
+    for (unsigned i = 0; i < count - 1; i++)
+    {
+        BasicBlock* block  = postOrder[i];
+        BasicBlock* parent = block->bbIDom;
+        assert(dfs->Contains(block) && dfs->Contains(parent));
+
+        domTree[i].nextSibling                     = domTree[parent->bbPostorderNum].firstChild;
+        domTree[parent->bbPostorderNum].firstChild = block;
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("After computing the dominance tree:\n");
+        for (unsigned i = count; i > 0; i--)
+        {
+            unsigned poNum = i - 1;
+            if (domTree[poNum].firstChild == nullptr)
+            {
+                continue;
+            }
+
+            printf(FMT_BB " :", postOrder[poNum]->bbNum);
+            for (BasicBlock* child = domTree[poNum].firstChild; child != nullptr;
+                 child             = domTree[child->bbPostorderNum].nextSibling)
+            {
+                printf(" " FMT_BB, child->bbNum);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+#endif
+
+    // Assign preorder/postorder nums for fast "domnates" queries.
+    class NumberDomTreeVisitor : public NewDomTreeVisitor<NumberDomTreeVisitor>
+    {
+        unsigned* m_preorderNums;
+        unsigned* m_postorderNums;
+        unsigned  m_preNum  = 0;
+        unsigned  m_postNum = 0;
+
+    public:
+        NumberDomTreeVisitor(Compiler* comp, unsigned* preorderNums, unsigned* postorderNums)
+            : NewDomTreeVisitor(comp), m_preorderNums(preorderNums), m_postorderNums(postorderNums)
+        {
+        }
+
+        void PreOrderVisit(BasicBlock* block)
+        {
+            m_preorderNums[block->bbPostorderNum] = m_preNum++;
+        }
+
+        void PostOrderVisit(BasicBlock* block)
+        {
+            m_postorderNums[block->bbPostorderNum] = m_postNum++;
+        }
+    };
+
+    unsigned* preorderNums  = new (comp, CMK_DominatorMemory) unsigned[count];
+    unsigned* postorderNums = new (comp, CMK_DominatorMemory) unsigned[count];
+
+    NumberDomTreeVisitor number(comp, preorderNums, postorderNums);
+    number.WalkTree(domTree);
+
+    return new (comp, CMK_DominatorMemory) FlowGraphDominatorTree(dfs, domTree, preorderNums, postorderNums);
 }

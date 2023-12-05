@@ -84,6 +84,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static nint AllocJSVHandle()
         {
+#if FEATURE_WASM_THREADS
+            // TODO, when Task is passed to JSImport as parameter, it could be sent from another thread (in the future)
+            // and so we need to use JSVHandleFreeList of the target thread
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
+
             if (JSVHandleFreeList.Count > 0)
             {
                 var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count];

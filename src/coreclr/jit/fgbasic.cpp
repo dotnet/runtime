@@ -65,7 +65,8 @@ void Compiler::fgInit()
     fgBBVarSetsInited = false;
     fgReturnCount     = 0;
 
-    m_dfs = nullptr;
+    m_dfs   = nullptr;
+    m_loops = nullptr;
 
     // Initialize BlockSet data.
     fgCurBBEpoch             = 0;
@@ -96,13 +97,8 @@ void Compiler::fgInit()
 
     // Initialize the logic for adding code. This is used to insert code such
     // as the code that raises an exception when an array range check fails.
-
-    fgAddCodeList = nullptr;
-
-    for (int i = 0; i < SCK_COUNT; i++)
-    {
-        fgExcptnTargetCache[i] = nullptr;
-    }
+    fgAddCodeList   = nullptr;
+    fgAddCodeDscMap = nullptr;
 
     /* Keep track of the max count of pointer arguments */
     fgPtrArgCntMax = 0;

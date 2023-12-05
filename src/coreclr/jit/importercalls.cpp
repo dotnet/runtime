@@ -5329,7 +5329,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 
         return true;
     }
-#endif // TARGET_64BIT
+#endif // USE_PER_FRAME_PINVOKE_INIT
 
     return true;
 }
@@ -5407,9 +5407,10 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) || IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
+    if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
+                               (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
     {
-        // PInvoke in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
+        // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
         // converted to regular method calls earlier using convertPInvokeCalliToCall.
 
         // PInvoke CALLI in IL stubs must be inlined
@@ -6875,7 +6876,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // See what we know about the type of 'this' in the call.
     assert(call->gtArgs.HasThisPointer());
     CallArg*             thisArg      = call->gtArgs.GetThisArg();
-    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal(false);
+    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal();
     bool                 isExact      = false;
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
