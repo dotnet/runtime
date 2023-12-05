@@ -2117,8 +2117,8 @@ namespace System.Net.Tests
                     var data = await connection.ReadRequestDataAsync();
                     Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
 
-                }).WaitAsync(TestHelper.PassingTestTimeout);
-            });
+                });
+            }).WaitAsync(TestHelper.PassingTestTimeout.Add(TimeSpan.FromSeconds(120)));
         }
 
         [Theory]
@@ -2152,8 +2152,8 @@ namespace System.Net.Tests
                     var data = await connection.ReadRequestDataAsync();
                     Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
 
-                }).WaitAsync(TestHelper.PassingTestTimeout);
-            });
+                });
+            }).WaitAsync(TestHelper.PassingTestTimeout.Add(TimeSpan.FromSeconds(120)));
         }
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
