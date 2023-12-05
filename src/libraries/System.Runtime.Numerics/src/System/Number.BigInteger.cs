@@ -883,6 +883,7 @@ namespace System
                 }
                 else
                 {
+                    Debug.Assert(formatString != null);
                     charsWritten = 0;
                     spanSuccess = false;
                     return value._sign.ToString(formatString, info);
@@ -899,84 +900,94 @@ namespace System
             Debug.Assert(cuSrc < int.MaxValue / kcchBase / 2);
 
             int cuMax = cuSrc * 10 / 9 + 2;
-            uint[] base1E9Buffer = ArrayPool<uint>.Shared.Rent(cuMax);
+            uint[]? bufferToReturn = null;
+            Span<uint> base1E9Buffer = cuMax < BigIntegerCalculator.StackAllocThreshold ?
+                stackalloc uint[cuMax] :
+                (bufferToReturn = ArrayPool<uint>.Shared.Rent(cuMax));
 
-            try
+            int cuDst = 0;
+
+            for (int iuSrc = cuSrc; --iuSrc >= 0;)
             {
-                int cuDst = 0;
-
-                for (int iuSrc = cuSrc; --iuSrc >= 0;)
+                uint uCarry = value._bits[iuSrc];
+                for (int iuDst = 0; iuDst < cuDst; iuDst++)
                 {
-                    uint uCarry = value._bits[iuSrc];
-                    for (int iuDst = 0; iuDst < cuDst; iuDst++)
-                    {
-                        Debug.Assert(base1E9Buffer[iuDst] < kuBase);
+                    Debug.Assert(base1E9Buffer[iuDst] < kuBase);
 
-                        // Use X86Base.DivRem when stable
-                        ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
-                        (ulong quo, ulong rem) = Math.DivRem(uuRes, kuBase);
-                        uCarry = (uint)quo;
-                        base1E9Buffer[iuDst] = (uint)rem;
-                    }
-                    if (uCarry != 0)
-                    {
-                        (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, kuBase);
-                        if (uCarry != 0)
-                            base1E9Buffer[cuDst++] = uCarry;
-                    }
+                    // Use X86Base.DivRem when stable
+                    ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
+                    (ulong quo, ulong rem) = Math.DivRem(uuRes, kuBase);
+                    uCarry = (uint)quo;
+                    base1E9Buffer[iuDst] = (uint)rem;
                 }
-
-                ReadOnlySpan<uint> base1E9Value = base1E9Buffer.AsSpan(0, cuDst);
-
-                int valueDigits = (base1E9Value.Length - 1) * 9 + FormattingHelpers.CountDigits(base1E9Value[^1]);
-
-                if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
+                if (uCarry != 0)
                 {
-                    int strDigits = Math.Max(digits, valueDigits);
-                    string? sNegative = value.Sign < 0 ? info.NegativeSign : null;
-                    int strLength = digits + (sNegative?.Length ?? 0);
+                    (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, kuBase);
+                    if (uCarry != 0)
+                        base1E9Buffer[cuDst++] = uCarry;
+                }
+            }
 
-                    if (targetSpan)
-                    {
-                        if (destination.Length < strLength)
-                        {
-                            spanSuccess = false;
-                            charsWritten = 0;
-                        }
-                        else
-                        {
-                            sNegative?.CopyTo(destination);
-                            fixed (char* ptr = &MemoryMarshal.GetReference(destination))
-                            {
-                                BigIntegerToDecChars(ptr + strLength, base1E9Value, digits);
-                            }
-                            charsWritten = strLength;
-                            spanSuccess = true;
-                        }
-                        return null;
-                    }
-                    else
+            ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..cuDst];
+
+            int valueDigits = (base1E9Value.Length - 1) * 9 + FormattingHelpers.CountDigits(base1E9Value[^1]);
+
+            string? strResult;
+
+            if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
+            {
+                int strDigits = Math.Max(digits, valueDigits);
+                string? sNegative = value.Sign < 0 ? info.NegativeSign : null;
+                int strLength = digits + (sNegative?.Length ?? 0);
+
+                if (targetSpan)
+                {
+                    if (destination.Length < strLength)
                     {
                         spanSuccess = false;
                         charsWritten = 0;
-                        return string.Create(strLength, (digits, base1E9Buffer, base1E9Value.Length, sNegative), static (span, state) =>
+                    }
+                    else
+                    {
+                        sNegative?.CopyTo(destination);
+                        fixed (char* ptr = &MemoryMarshal.GetReference(destination))
+                        {
+                            BigIntegerToDecChars(ptr + strLength, base1E9Value, digits);
+                        }
+                        charsWritten = strLength;
+                        spanSuccess = true;
+                    }
+                    strResult = null;
+                }
+                else
+                {
+                    spanSuccess = false;
+                    charsWritten = 0;
+                    fixed (uint* ptr = base1E9Value)
+                    {
+                        strResult = string.Create(strLength, (digits, ptr: (IntPtr)ptr, base1E9Value.Length, sNegative), static (span, state) =>
                         {
                             state.sNegative?.CopyTo(span);
                             fixed (char* ptr = &MemoryMarshal.GetReference(span))
                             {
-                                BigIntegerToDecChars(ptr + span.Length, state.base1E9Buffer.AsSpan(0, state.Length), state.digits);
+                                BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((void*)state.ptr, state.Length), state.digits);
                             }
                         });
                     }
                 }
-
-                byte[]? buffer = ArrayPool<byte>.Shared.Rent(valueDigits + 1);
-                fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
+            }
+            else
+            {
+                byte[]? numberBufferToReturn = null;
+                Span<byte> numberBuffer = valueDigits + 1 <= 256 ?
+                    stackalloc byte[valueDigits + 1] :
+                    (numberBufferToReturn = ArrayPool<byte>.Shared.Rent(valueDigits + 1));
+                fixed (byte* ptr = numberBuffer) // NumberBuffer expects pinned Digits
                 {
                     scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, ptr, valueDigits + 1);
                     BigIntegerToDecChars(ptr + valueDigits, base1E9Value, valueDigits);
                     number.Digits[^1] = 0;
-                    number.DigitsCount = valueDigits;
+                    number.DigitsCount = DecimalPrecision;
                     number.Scale = valueDigits;
                     number.IsNegative = value.Sign < 0;
 
@@ -994,23 +1005,29 @@ namespace System
                     if (targetSpan)
                     {
                         spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
-                        vlb.Dispose();
-                        return null;
+                        strResult = null;
                     }
                     else
                     {
                         charsWritten = 0;
                         spanSuccess = false;
-                        string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
-                        vlb.Dispose();
-                        return result;
+                        strResult = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
+                    }
+
+                    vlb.Dispose();
+                    if (numberBufferToReturn != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(numberBufferToReturn);
                     }
                 }
             }
-            finally
+
+            if (bufferToReturn != null)
             {
-                ArrayPool<uint>.Shared.Return(base1E9Buffer);
+                ArrayPool<uint>.Shared.Return(bufferToReturn);
             }
+
+            return strResult;
         }
 
         private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
