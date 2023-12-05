@@ -4981,8 +4981,6 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyBottomMostBlock()
 // Returns:
 //   True if the local has any def.
 //
-// Remarks:
-//
 bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
 {
     Compiler*  comp = m_tree->GetCompiler();

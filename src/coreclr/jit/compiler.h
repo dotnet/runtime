@@ -1961,6 +1961,10 @@ inline LoopFlags& operator&=(LoopFlags& a, LoopFlags b)
 class FlowGraphDfsTree
 {
     Compiler* m_comp;
+
+    // Post-order that we saw reachable basic blocks in. This order can be
+    // particularly useful to iterate in reverse, as reverse post-order ensures
+    // that all predecessors are visited before successors whenever possible.
     BasicBlock** m_postOrder;
     unsigned m_postOrderCount;
 
@@ -1996,17 +2000,43 @@ public:
     bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
 };
 
+// Represents the result of induction variable analysis. See
+// FlowGraphNaturalLoop::AnalyzeIteration.
 struct NaturalLoopIterInfo
 {
+    // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
+
+    // Constant value that the induction variable is initialized with, outside
+    // the loop. Only valid if HasConstInit is true.
     int ConstInitValue = 0;
+
+    // Block outside the loop that initializes the induction variable. Only
+    // value if HasConstInit is true.
     BasicBlock* InitBlock = nullptr;
+
+    // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
+
+    // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
+
+    // Whether or not we found an initialization of the induction variable.
     bool HasConstInit : 1;
+
+    // Whether or not the loop test compares the induction variable with a
+    // constant value.
     bool HasConstLimit : 1;
+
+    // Whether or not the loop test constant value is a SIMD vector element count.
     bool HasSimdLimit : 1;
+
+    // Whether or not the loop test compares the induction variable with an
+    // invariant local.
     bool HasInvariantLocalLimit : 1;
+
+    // Whether or not the loop test compares the induction variable with the
+    // length of an invariant array.
     bool HasArrayLengthLimit : 1;
 
     NaturalLoopIterInfo()
@@ -2032,20 +2062,58 @@ struct NaturalLoopIterInfo
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
 };
 
+// Represents a natural loop in the flow graph. Natural loops are characterized
+// by the following properties:
+//
+// * All loop blocks are strongly connected, meaning that every block of the
+//   loop can reach every other block of the loop.
+//
+// * All loop blocks are dominated by the header block, i.e. the header block
+//   is guaranteed to be entered on every iteration.
+//
+// * From the above it follows that the loop can only be entered at the header
+//   block. FlowGraphNaturalLoop::EntryEdges() gives a vector of these edges.
+//   After loop canonicalization it is expected that this vector has exactly one
+//   edge, from the "preheader".
+//
+// * The loop can have multiple exits. The regular exit edges are recorded in
+//   FlowGraphNaturalLoop::ExitEdges(). The loop can also be exited by
+//   exceptional flow.
+//
 class FlowGraphNaturalLoop
 {
     friend class FlowGraphNaturalLoops;
 
+    // The DFS tree that contains the loop blocks.
     const FlowGraphDfsTree* m_tree;
+
+    // The header block; dominates all other blocks in the loop, and is the
+    // only block branched to from outside the loop.
     BasicBlock* m_header;
+
+    // Parent loop. By loop properties, well-scopedness is always guaranteed.
+    // That is, the parent loop contains all blocks of this loop.
     FlowGraphNaturalLoop* m_parent = nullptr;
+
     // Bit vector of blocks in the loop; each index is the RPO index a block,
     // with the head block's RPO index subtracted.
     BitVec m_blocks;
+
+    // Side of m_blocks.
     unsigned m_blocksSize = 0;
+
+    // Edges from blocks inside the loop back to the header.
     jitstd::vector<FlowEdge*> m_backEdges;
+
+    // Edges from blocks outside the loop to the header.
     jitstd::vector<FlowEdge*> m_entryEdges;
+
+    // Edges from inside the loop to outside the loop. Note that exceptional
+    // flow can also exit the loop and is not modelled.
     jitstd::vector<FlowEdge*> m_exitEdges;
+
+    // Index of the loop in the range [0..FlowGraphNaturalLoops::NumLoops()).
+    // Can be used to store additional annotations for this loop on the side.
     unsigned m_index = 0;
 
     FlowGraphNaturalLoop(const FlowGraphDfsTree* tree, BasicBlock* head);
@@ -2122,10 +2190,22 @@ public:
     bool HasDef(unsigned lclNum);
 };
 
+// Represents a collection of the natural loops in the flow graph. See
+// FlowGraphNaturalLoop for the characteristics of these loops.
+//
+// Loops are stored in a vector, with easily accessible indices (see
+// FlowGraphNaturalLoop::GetIndex()). These indices can be used to store
+// additional annotations for each loop on the side.
+//
 class FlowGraphNaturalLoops
 {
     const FlowGraphDfsTree* m_dfs;
+
+    // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
+
+    // Whether or not we saw any non-natural loop cycles, also known as
+    // irreducible loops.
     unsigned m_improperLoopHeaders = 0;
 
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
@@ -2204,6 +2284,7 @@ public:
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
 };
 
+// Represents the dominator tree of the flow graph.
 class FlowGraphDominatorTree
 {
     template<typename TVisitor>
