@@ -169,7 +169,7 @@ namespace System
             this._dateData = dateData;
         }
 
-        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong) ticks);
+        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong)ticks);
 
         public DateTime(long ticks, DateTimeKind kind)
         {
