@@ -168,6 +168,7 @@
 
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
     <PropertyGroup>
+      <BuildWasiAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasiAppsJobsList.txt</BuildWasiAppsJobsList>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
     </PropertyGroup>
@@ -180,9 +181,15 @@
       <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
     </PropertyGroup>
 
+    <ReadLinesFromFile File="$(BuildWasiAppsJobsList)" Condition="Exists($(BuildWasiAppsJobsList)) and '$(TestUsingWorkloads)' == 'true'">
+      <Output TaskParameter="Lines" ItemName="BuildWasiApps_PerJobList" />
+    </ReadLinesFromFile>
+
     <ItemGroup>
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasi.Build.Tests" Condition="'$(TestUsingWorkloads)' == 'true'">
+      <HelixWorkItem Include="@(BuildWasiApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
