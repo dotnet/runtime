@@ -10250,15 +10250,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op3 = impCloneExpr(op3, &clonedOp3, CHECK_SPILL_ALL, nullptr DEBUGARG("spill size"));
 
                     // Add explicit nullchecks to op1 (and op2 if it's a CPBLK)
-                    op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtNewNullCheck(op1, compCurBB), gtCloneExpr(op1));
-                    if (opcode == CEE_CPBLK)
+                    if (fgAddrCouldBeNull(op1))
+                    {
+                        op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtNewNullCheck(op1, compCurBB), gtCloneExpr(op1));
+                    }
+                    if ((opcode == CEE_CPBLK) && fgAddrCouldBeNull(op2))
                     {
                         op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), gtNewNullCheck(op2, compCurBB), gtCloneExpr(op2));
                     }
 
-                    GenTree* helperCall =
-                        gtNewHelperCallNode(opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY, TYP_VOID,
-                                            op1, op2, clonedOp3);
+                    CorInfoHelpFunc helper     = opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
+                    GenTree*        helperCall = gtNewHelperCallNode(helper, TYP_VOID, op1, op2, clonedOp3);
 
                     // Add a zero size check
                     GenTreeOp*    sizeIsZero = gtNewOperNode(GT_EQ, TYP_INT, op3, gtNewIconNode(0, TYP_I_IMPL));
