@@ -207,7 +207,7 @@ For non-rude thread abort, the VM walks the stack, running any catch handler tha
 
 For example:
 
-```
+```cs
 try { // try 1
     try { // try 2
         System.Threading.Thread.CurrentThread.Abort();
@@ -223,7 +223,7 @@ L:
 
 In this case, if the address returned in catch 2 corresponding to label L is outside try 1, then the ThreadAbortException re-raised by the VM will not be caught by catch 1, as is expected. The JIT needs to insert a block such that this is the effective code generation:
 
-```
+```cs
 try { // try 1
     try { // try 2
         System.Threading.Thread.CurrentThread.Abort();
@@ -240,7 +240,7 @@ L:
 
 Similarly, the automatic re-raise address for a ThreadAbortException can't be within a finally handler, or the VM will abort the re-raise and swallow the exception. This can happen due to call-to-finally thunks marked as "cloned finally", as described above. For example (this is pseudo-assembly-code, not C#):
 
-```
+```cs
 try { // try 1
     try { // try 2
         System.Threading.Thread.CurrentThread.Abort();
@@ -256,7 +256,7 @@ L:
 
 This would generate something like:
 
-```
+```asm
 	// beginning of 'try 1'
 	// beginning of 'try 2'
 	System.Threading.Thread.CurrentThread.Abort();
@@ -281,7 +281,7 @@ Finally1:
 
 Note that the JIT must already insert a "step" block so the finally will be called. However, this isn't sufficient to support ThreadAbortException processing, because "L1" is marked as "cloned finally". In this case, the JIT must insert another step block that is within "try 1" but outside the cloned finally block, that will allow for correct re-raise semantics. For example:
 
-```
+```asm
 	// beginning of 'try 1'
 	// beginning of 'try 2'
 	System.Threading.Thread.CurrentThread.Abort();
@@ -399,7 +399,7 @@ To implement this requirement, for any function with EH, we create a frame-local
 
 Note that the since a slot on x86 is 4 bytes, the minimum size is 16 bytes. The idea is to have 1 slot for each handler that could be possibly be invoked at the same time. For example, for:
 
-```
+```cs
 	try {
 		...
 	} catch {
@@ -419,7 +419,7 @@ When calling a finally, we set the appropriate level to 0xFC (aka "finally call"
 
 Thus, calling a finally from JIT generated code looks like:
 
-```
+```asm
 	mov      dword ptr [L_02+0x4 ebp-10H], 0 // This must happen before the 0xFC is written
 	mov      dword ptr [L_02+0x8 ebp-0CH], 252 // 0xFC
 	push     G_M52300_IG07
@@ -430,7 +430,7 @@ In this case, `G_M52300_IG07` is not the address after the 'jmp', so a simple 'c
 
 The code this finally returns to looks like this:
 
-```
+```asm
 	mov      dword ptr [L_02+0x8 ebp-0CH], 0
 	jmp      SHORT G_M52300_IG05
 ```
@@ -479,7 +479,7 @@ Because a main function body will **always** be on the stack when one of its fun
 
 There is one "corner case" in the VM implementation of WantsReportOnlyLeaf model that has implications for the code the JIT is allowed to generate. Consider this function with nested exception handling:
 
-```
+```cs
 public void runtest() {
     try {
         try {
@@ -804,3 +804,29 @@ In addition to the usual registers it also preserves all float registers and `rc
 `CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `rax` and it reserves the right to use and trash `r10` and `r11`.
 The JIT uses the dispatch helper on x64 whenever possible as it is expected that the code size benefits outweighs the less accurate branch prediction.
 However, note that the use of `r11` in the dispatcher makes it incompatible with VSD calls where the JIT must fall back to the validator and a manual call.
+
+# Notes on Memset/Memcpy
+
+Generally, `memset` and `memcpy` do not provide any guarantees of atomicity. This implies that they should only be used when the memory being modified by `memset`/`memcpy` is not observable by any other thread (including GC), or when there are no atomicity requirements according to our [Memory Model](../../specs/Memory-model.md). It's especially important when we modify heap containing managed pointers - those must be updated atomically, e.g. using pointer-sized `mov` instruction (managed pointers are always aligned) - see [Atomic Memory Access](../../specs/Memory-model.md#Atomic-memory-accesses). It's worth noting that by "update" it's implied "set to zero", otherwise, we need a write barrier.
+
+Examples:
+
+```cs
+struct MyStruct
+{
+	long a;
+	string b;
+}
+
+void Test1(ref MyStruct m)
+{
+	// We're not allowed to use memset here
+	m = default;
+}
+
+MyStruct Test2()
+{
+	// We can use memset here
+	return default;
+}
+```
