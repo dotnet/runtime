@@ -139,14 +139,10 @@ namespace System.Net.Security
             ref SafeDeleteSslContext context,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            ProtocolToken token;
-            token.Status = Interop.OpenSsl.SslRenegotiate((SafeSslHandle)context, out _);
+            SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate((SafeSslHandle)context, out _);
 
-            if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                token.Size = 0;
-                token.Payload = null;
-                token.RentBuffer = false;
                 return default;
             }
             return HandshakeInternal(ref context!, null, sslAuthenticationOptions);

@@ -1356,14 +1356,13 @@ namespace System.Net.Security
         internal void ReleasePayload()
         {
             Debug.Assert(Payload != null || Size == 0);
-            if (Payload != null)
+
+            byte[]? toReturn = Payload;
+            Payload = null;
+            Size = 0;
+            if (RentBuffer && toReturn != null)
             {
-                if (RentBuffer)
-                {
-                    ArrayPool<byte>.Shared.Return(Payload);
-                }
-                Payload = null;
-                Size = 0;
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
         }
 

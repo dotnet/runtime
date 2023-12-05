@@ -774,13 +774,10 @@ namespace System.Net.Security
                         int index = outUnmanagedBuffer[0].cbBuffer == 0 && outUnmanagedBuffer[1].cbBuffer > 0 ? 1 : 0;
 
                         int length = outUnmanagedBuffer[index].cbBuffer;
-                        if (isSspiAllocated)
+                        if (isSspiAllocated && length > 0)
                         {
-                            if (length > 0)
-                            {
-                                outToken.EnsureAvailableSpace(length);
-                                new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, length).CopyTo(outToken.AvailableSpan);
-                            }
+                            outToken.EnsureAvailableSpace(length);
+                            new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, length).CopyTo(outToken.AvailableSpan);
                         }
                         outToken.Size = length;
 
