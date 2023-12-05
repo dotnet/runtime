@@ -1152,7 +1152,7 @@ insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
     switch (mode)
     {
         case 1:
-            return INS_OPTS_EVEX_er_rd;
+            return INS_OPTS_EVEX_eb_er_rd;
         case 2:
             return INS_OPTS_EVEX_er_ru;
         case 3:

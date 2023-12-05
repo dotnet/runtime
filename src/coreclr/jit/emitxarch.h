@@ -345,7 +345,7 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 //    instOptions - emit options
 void SetEvexBroadcastIfNeeded(instrDesc* id, insOpts instOptions)
 {
-    if((instOptions & INS_OPTS_b_MASK) == INS_OPTS_EVEX_eb_er_rn)
+    if((instOptions & INS_OPTS_b_MASK) == INS_OPTS_EVEX_eb_er_rd)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);

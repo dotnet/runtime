@@ -1546,7 +1546,7 @@ protected:
         void idSetEvexbContext(insOpts instOptions)
         {
             assert(_idEvexbContext == 0);
-            if (instOptions == INS_OPTS_EVEX_eb_er_rn)
+            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
             {
                 _idEvexbContext = 1;
             }

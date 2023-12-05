@@ -205,15 +205,13 @@ enum insOpts: unsigned
 {
     INS_OPTS_NONE = 0,
 
-    INS_OPTS_EVEX_eb_er_rn = 1, // Round to even
+    INS_OPTS_EVEX_eb_er_rd = 1, // Embedded Broadcast or Round down
 
-    INS_OPTS_EVEX_er_rd = 2, // Round down
+    INS_OPTS_EVEX_er_ru = 2, // Round up
 
-    INS_OPTS_EVEX_er_ru = 3, // Round up
+    INS_OPTS_EVEX_er_rz = 3, // Round towards zero
 
-    INS_OPTS_EVEX_er_rz = 4, // Round towards zero
-
-    INS_OPTS_b_MASK = (INS_OPTS_EVEX_eb_er_rn | INS_OPTS_EVEX_er_rd | INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_er_rz), // mask for Evex.b related features.
+    INS_OPTS_b_MASK = (INS_OPTS_EVEX_eb_er_rd | INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_er_rz), // mask for Evex.b related features.
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
