@@ -12,14 +12,18 @@
 
 namespace
 {
-    // The byte values of the ECMA pseudo public key and its token.
-    const BYTE g_rbNeutralPublicKey[] = { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
-    const BYTE g_rbNeutralPublicKeyToken[] = { 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 };
-
     // The byte values of the real public keys and their corresponding tokens
     // for assemblies we ship.
     // These blobs allow us to skip the token calculation for our assemblies.
-    static const BYTE g_rbMicrosoftKey[] =
+    // Each of these keys corresponds to the public key in a file in the Arcade SDK.
+
+    // The byte values of the ECMA pseudo public key and its token.
+    // Arcade SDK StrongNameKeyId: ECMA
+    const BYTE NeutralPublicKey[] = { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
+    const BYTE NeutralPublicKeyToken[] = { 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 };
+
+    // Arcade SDK StrongNameKeyId: Microsoft
+    static const BYTE MicrosoftKey[] =
     {
         0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
         0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
@@ -33,9 +37,10 @@ namespace
         0x26,0x1c,0x8a,0x12,0x43,0x65,0x18,0x20,0x6d,0xc0,0x93,0x34,0x4d,0x5a,0xd2,0x93
     };
 
-    static const BYTE g_rbMicrosoftKeyToken[] = {0xb0,0x3f,0x5f,0x7f,0x11,0xd5,0x0a,0x3a};
+    static const StrongNameToken MicrosoftKeyToken = {{0xb0,0x3f,0x5f,0x7f,0x11,0xd5,0x0a,0x3a}};
 
-    static const BYTE g_rbTheSilverlightPlatformKey[] =
+    // Arcade SDK StrongNameKeyId: SilverlightPlatform
+    static const BYTE SilverlightPlatformKey[] =
     {
         0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
         0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
@@ -49,9 +54,10 @@ namespace
         0x00,0xae,0xc2,0x32,0xf6,0xc6,0xb1,0xc7,0x85,0xb4,0x30,0x5c,0x12,0x3b,0x37,0xab
     };
 
-    static const BYTE g_rbTheSilverlightPlatformKeyToken[] = {0x7c,0xec,0x85,0xd7,0xbe,0xa7,0x79,0x8e};
+    static const StrongNameToken SilverlightPlatformKeyToken = {{0x7c,0xec,0x85,0xd7,0xbe,0xa7,0x79,0x8e}};
 
-    static const BYTE g_rbTheSilverlightKey[] =
+    // Arcade SDK StrongNameKeyId: MicrosoftShared
+    static const BYTE SilverlightKey[] =
     {
         0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
         0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
@@ -65,7 +71,78 @@ namespace
         0xf4,0x6b,0x2a,0x2b,0x12,0x47,0xad,0xc3,0x65,0x2b,0xf5,0xc3,0x08,0x05,0x5d,0xa9
     };
 
-    static const BYTE g_rbTheSilverlightKeyToken[] = {0x31,0xBF,0x38,0x56,0xAD,0x36,0x4E,0x35};
+    static const StrongNameToken SilverlightKeyToken = {{0x31,0xBF,0x38,0x56,0xAD,0x36,0x4E,0x35}};
+
+    // Arcade SDK StrongNameKeyId: MicrosoftAspNetCore
+    static const BYTE AspNetCoreKey[] =
+    {
+        0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
+        0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
+        0xF3,0x3A,0x29,0x04,0x4F,0xA9,0xD7,0x40,0xC9,0xB3,0x21,0x3A,0x93,0xE5,0x7C,0x84,
+        0xB4,0x72,0xC8,0x4E,0x0B,0x8A,0x0E,0x1A,0xE4,0x8E,0x67,0xA9,0xF8,0xF6,0xDE,0x9D,
+        0x5F,0x7F,0x3D,0x52,0xAC,0x23,0xE4,0x8A,0xC5,0x18,0x01,0xF1,0xDC,0x95,0x0A,0xBE,
+        0x90,0x1D,0xA3,0x4D,0x2A,0x9E,0x3B,0xAA,0xDB,0x14,0x1A,0x17,0xC7,0x7E,0xF3,0xC5,
+        0x65,0xDD,0x5E,0xE5,0x05,0x4B,0x91,0xCF,0x63,0xBB,0x3C,0x6A,0xB8,0x3F,0x72,0xAB,
+        0x3A,0xAF,0xE9,0x3D,0x0F,0xC3,0xC2,0x34,0x8B,0x76,0x4F,0xAF,0xB0,0xB1,0xC0,0x73,
+        0x3D,0xE5,0x14,0x59,0xAE,0xAB,0x46,0x58,0x03,0x84,0xBF,0x9D,0x74,0xC4,0xE2,0x81,
+        0x64,0xB7,0xCD,0xE2,0x47,0xF8,0x91,0xBA,0x07,0x89,0x1C,0x9D,0x87,0x2A,0xD2,0xBB
+    };
+
+    static const StrongNameToken AspNetCoreKeyToken =
+    {
+        {0xad, 0xb9, 0x79, 0x38, 0x29, 0xdd, 0xae, 0x60}
+    };
+
+    // Arcade SDK StrongNameKeyId: Open
+    static const BYTE OpenKey[] =
+    {
+        0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
+        0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
+        0x4B,0x86,0xC4,0xCB,0x78,0x54,0x9B,0x34,0xBA,0xB6,0x1A,0x3B,0x18,0x00,0xE2,0x3B,
+        0xFE,0xB5,0xB3,0xEC,0x39,0x00,0x74,0x04,0x15,0x36,0xA7,0xE3,0xCB,0xD9,0x7F,0x5F,
+        0x04,0xCF,0x0F,0x85,0x71,0x55,0xA8,0x92,0x8E,0xAA,0x29,0xEB,0xFD,0x11,0xCF,0xBB,
+        0xAD,0x3B,0xA7,0x0E,0xFE,0xA7,0xBD,0xA3,0x22,0x6C,0x6A,0x8D,0x37,0x0A,0x4C,0xD3,
+        0x03,0xF7,0x14,0x48,0x6B,0x6E,0xBC,0x22,0x59,0x85,0xA6,0x38,0x47,0x1E,0x6E,0xF5,
+        0x71,0xCC,0x92,0xA4,0x61,0x3C,0x00,0xB8,0xFA,0x65,0xD6,0x1C,0xCE,0xE0,0xCB,0xE5,
+        0xF3,0x63,0x30,0xC9,0xA0,0x1F,0x41,0x83,0x55,0x9F,0x1B,0xEF,0x24,0xCC,0x29,0x17,
+        0xC6,0xD9,0x13,0xE3,0xA5,0x41,0x33,0x3A,0x1D,0x05,0xD9,0xBE,0xD2,0x2B,0x38,0xCB
+    };
+
+    static const StrongNameToken OpenKeyToken =
+    {
+        {0xcc, 0x7b, 0x13, 0xff, 0xcd, 0x2d, 0xdd, 0x51}
+    };
+
+    struct WellKnownKey
+    {
+        BYTE const* const PublicKey;
+        const ULONG PublicKeyLen;
+        StrongNameToken const* const Token;
+    };
+
+    static const WellKnownKey WellKnownKeys[] =
+    {
+        { MicrosoftKey, sizeof(MicrosoftKey), &MicrosoftKeyToken },
+        { SilverlightPlatformKey, sizeof(SilverlightPlatformKey), &SilverlightPlatformKeyToken },
+        { SilverlightKey, sizeof(SilverlightKey), &SilverlightKeyToken },
+        { AspNetCoreKey, sizeof(AspNetCoreKey), &AspNetCoreKeyToken },
+        { OpenKey, sizeof(OpenKey), &OpenKeyToken },
+    };
+
+    bool GetTokenForWellKnownKey(BYTE* key, ULONG keyLength, StrongNameToken* token)
+    {
+        for (size_t i = 0; i < ARRAYSIZE(WellKnownKeys); i++)
+        {
+            if (keyLength == WellKnownKeys[i].PublicKeyLen &&
+                memcmp(key, WellKnownKeys[i].PublicKey, keyLength) == 0)
+            {
+                *token = *WellKnownKeys[i].Token;
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     //---------------------------------------------------------------------------------------
     //
@@ -105,8 +182,8 @@ namespace
         }
         CONTRACTL_END;
 
-        return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(g_rbNeutralPublicKey) &&
-            memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), g_rbNeutralPublicKey, sizeof(g_rbNeutralPublicKey)) == 0;
+        return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(NeutralPublicKey) &&
+            memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), NeutralPublicKey, sizeof(NeutralPublicKey)) == 0;
     }
 
     //---------------------------------------------------------------------------------------
@@ -128,7 +205,7 @@ namespace
         CONTRACTL_END;
 
         // The key should be the same size as the ECMA key
-        if (cbKey != sizeof(g_rbNeutralPublicKey))
+        if (cbKey != sizeof(NeutralPublicKey))
         {
             return false;
         }
@@ -225,37 +302,8 @@ namespace
     }
 }
 
-BYTE const* const g_coreLibPublicKey = g_rbTheSilverlightPlatformKey;
-const ULONG g_coreLibPublicKeyLen = ARRAY_SIZE(g_rbTheSilverlightPlatformKey);
-
-// Determine the size of a PublicKeyBlob structure given the size of the key
-// portion.
-#define SN_SIZEOF_KEY(_pKeyBlob) (offsetof(PublicKeyBlob, PublicKey) + GET_UNALIGNED_VAL32(&(_pKeyBlob)->cbPublicKey))
-
-
-#define SN_MICROSOFT_KEY() ((PublicKeyBlob*)g_rbMicrosoftKey)
-#define SN_SIZEOF_MICROSOFT_KEY() sizeof(g_rbMicrosoftKey)
-
-#define SN_MICROSOFT_KEYTOKEN() ((PublicKeyBlob*)g_rbMicrosoftKeyToken)
-
-// Determine if the given public key blob is the neutral key.
-#define SN_IS_NEUTRAL_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbNeutralPublicKey) && \
-                                memcmp((_pk), g_rbNeutralPublicKey, sizeof(g_rbNeutralPublicKey)) == 0)
-
-#define SN_IS_MICROSOFT_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbMicrosoftKey) && \
-                                memcmp((_pk), g_rbMicrosoftKey, sizeof(g_rbMicrosoftKey)) == 0)
-
-
-// Silverlight platform key
-#define SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN() ((PublicKeyBlob*)g_rbTheSilverlightPlatformKeyToken)
-#define SN_IS_THE_SILVERLIGHT_PLATFORM_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbTheSilverlightPlatformKey) && \
-                                memcmp((_pk), g_rbTheSilverlightPlatformKey, sizeof(g_rbTheSilverlightPlatformKey)) == 0)
-
-// Silverlight key
-#define SN_IS_THE_SILVERLIGHT_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbTheSilverlightKey) && \
-                                memcmp((_pk), g_rbTheSilverlightKey, sizeof(g_rbTheSilverlightKey)) == 0)
-
-#define SN_THE_SILVERLIGHT_KEYTOKEN() ((PublicKeyBlob*)g_rbTheSilverlightKeyToken)
+BYTE const* const g_coreLibPublicKey = SilverlightPlatformKey;
+const ULONG g_coreLibPublicKeyLen = ARRAY_SIZE(SilverlightPlatformKey);
 
 // Create a strong name token from a public key blob.
 HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
@@ -263,9 +311,11 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
                                    StrongNameToken* pToken     // [out] strong name token
 )
 {
+#ifdef DACCESS_COMPILE
+    DacNotImpl();
+    return S_OK;
+#endif
     HRESULT         hr = S_OK;
-
-#ifndef DACCESS_COMPILE
 
     SHA1Hash        sha1;
     BYTE            *pHash = NULL;
@@ -275,33 +325,15 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
 
     if (!StrongNameIsValidPublicKey(pbPublicKeyBlob, cbPublicKeyBlob))
     {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Exit;
+        return CORSEC_E_INVALID_PUBLICKEY;
     }
-
-    // Allocate a buffer for the output token.
 
     // We cache a couple of common cases.
-    if (SN_IS_NEUTRAL_KEY(pbPublicKeyBlob)) {
-        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, g_rbNeutralPublicKeyToken, StrongNameToken::SIZEOF_TOKEN);
-        goto Exit;
-    }
-    if (cbPublicKeyBlob == SN_SIZEOF_MICROSOFT_KEY() &&
-        memcmp(pbPublicKeyBlob, SN_MICROSOFT_KEY(), cbPublicKeyBlob) == 0) {
-        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, SN_MICROSOFT_KEYTOKEN(), StrongNameToken::SIZEOF_TOKEN);
-        goto Exit;
-    }
-
-    if (SN_IS_THE_SILVERLIGHT_PLATFORM_KEY(pbPublicKeyBlob))
+    // This allows us to speed up assembly loading for assemblies we ship in the .NET SDK
+    // and member resolution from other assemblies into those assemblies.
+    if (GetTokenForWellKnownKey(pbPublicKeyBlob, cbPublicKeyBlob, pToken))
     {
-        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN(), StrongNameToken::SIZEOF_TOKEN);
-        goto Exit;
-    }
-
-    if (SN_IS_THE_SILVERLIGHT_KEY(pbPublicKeyBlob))
-    {
-        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, SN_THE_SILVERLIGHT_KEYTOKEN(), StrongNameToken::SIZEOF_TOKEN);
-        goto Exit;
+        return S_OK;
     }
 
     // Compute a hash over the public key.
@@ -315,13 +347,6 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     // order of these bytes in the output buffer to get host byte order.
     for (i = 0; i < StrongNameToken::SIZEOF_TOKEN; i++)
         pToken->m_token[StrongNameToken::SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
-
-    goto Exit;
-
-Exit:
-#else
-    DacNotImpl();
-#endif // #ifndef DACCESS_COMPILE
 
     return hr;
 }
