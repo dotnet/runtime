@@ -18,12 +18,15 @@ typedef struct {
     BYTE         PublicKey[1];   // variable length byte array containing the key value in format output by CryptoAPI
 } PublicKeyBlob;
 
-// Number of bytes for a strong name token.
-constexpr ULONG SN_SIZEOF_TOKEN = 8;
+struct StrongNameToken
+{
+    static constexpr ULONG SIZEOF_TOKEN = 8;
+    BYTE m_token[SIZEOF_TOKEN];
+};
 
 HRESULT StrongNameTokenFromPublicKey(BYTE* pbPublicKeyBlob,  // [in] public key blob
     ULONG    cbPublicKeyBlob,
-    BYTE(&tokenBuffer)[SN_SIZEOF_TOKEN]     // [out] strong name token
+    StrongNameToken* token     // [out] strong name token
 );
 
 #endif // !_STRONGNAME_INTERNAL_H

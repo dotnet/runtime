@@ -92,13 +92,13 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
     }
     CONTRACTL_END;
 
-    BYTE strongNameToken[SN_SIZEOF_TOKEN];
+    StrongNameToken strongNameToken;
     IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
         m_cbPublicKeyOrToken,
-        strongNameToken));
+        &strongNameToken));
 
-    BYTE *temp = new BYTE [SN_SIZEOF_TOKEN];
-    memcpy(temp, strongNameToken, SN_SIZEOF_TOKEN);
+    BYTE *temp = new BYTE [StrongNameToken::SIZEOF_TOKEN];
+    memcpy(temp, &strongNameToken, StrongNameToken::SIZEOF_TOKEN);
 
     if (m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED)
         delete [] m_pbPublicKeyOrToken;
@@ -106,7 +106,7 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
         m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;
 
     m_pbPublicKeyOrToken = temp;
-    m_cbPublicKeyOrToken = SN_SIZEOF_TOKEN;
+    m_cbPublicKeyOrToken = StrongNameToken::SIZEOF_TOKEN;
     m_dwFlags &= ~afPublicKey;
 }
 

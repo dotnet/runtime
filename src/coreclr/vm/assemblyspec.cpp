@@ -330,14 +330,14 @@ void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
     else
     {
         // Ref has a token
-        BYTE strongNameToken[SN_SIZEOF_TOKEN];
+        StrongNameToken strongNameToken;
 
         IfFailThrow(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
             cbPublicKey,
-            strongNameToken));
+            &strongNameToken));
 
-        if ((m_cbPublicKeyOrToken != SN_SIZEOF_TOKEN) ||
-            memcmp(m_pbPublicKeyOrToken, strongNameToken, SN_SIZEOF_TOKEN))
+        if ((m_cbPublicKeyOrToken != StrongNameToken::SIZEOF_TOKEN) ||
+            memcmp(m_pbPublicKeyOrToken, &strongNameToken, StrongNameToken::SIZEOF_TOKEN))
         {
             ThrowHR(FUSION_E_REF_DEF_MISMATCH);
         }
@@ -573,13 +573,13 @@ HRESULT AssemblySpec::EmitToken(
         // If we've been asked to emit a public key token in the reference but we've
         // been given a public key then we need to generate the token now.
         if (m_cbPublicKeyOrToken && IsAfPublicKey(m_dwFlags)) {
-            BYTE strongNameToken[SN_SIZEOF_TOKEN];
+            StrongNameToken strongNameToken;
             IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
                 m_cbPublicKeyOrToken,
-                strongNameToken));
+                &strongNameToken));
 
-            hr = pEmit->DefineAssemblyRef(strongNameToken,
-                                          SN_SIZEOF_TOKEN,
+            hr = pEmit->DefineAssemblyRef(&strongNameToken,
+                                          StrongNameToken::SIZEOF_TOKEN,
                                           ssName.GetUnicode(),
                                           &AMD,
                                           NULL,

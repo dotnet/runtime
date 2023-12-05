@@ -260,7 +260,7 @@ const ULONG g_coreLibPublicKeyLen = ARRAY_SIZE(g_rbTheSilverlightPlatformKey);
 // Create a strong name token from a public key blob.
 HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
                                    ULONG    cbPublicKeyBlob,
-                                   BYTE(&tokenBuffer)[SN_SIZEOF_TOKEN]     // [out] strong name token
+                                   StrongNameToken* pToken     // [out] strong name token
 )
 {
     HRESULT         hr = S_OK;
@@ -283,38 +283,38 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
 
     // We cache a couple of common cases.
     if (SN_IS_NEUTRAL_KEY(pbPublicKeyBlob)) {
-        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, g_rbNeutralPublicKeyToken, SN_SIZEOF_TOKEN);
+        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, g_rbNeutralPublicKeyToken, StrongNameToken::SIZEOF_TOKEN);
         goto Exit;
     }
     if (cbPublicKeyBlob == SN_SIZEOF_MICROSOFT_KEY() &&
         memcmp(pbPublicKeyBlob, SN_MICROSOFT_KEY(), cbPublicKeyBlob) == 0) {
-        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, SN_MICROSOFT_KEYTOKEN(), SN_SIZEOF_TOKEN);
+        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, SN_MICROSOFT_KEYTOKEN(), StrongNameToken::SIZEOF_TOKEN);
         goto Exit;
     }
 
     if (SN_IS_THE_SILVERLIGHT_PLATFORM_KEY(pbPublicKeyBlob))
     {
-        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN(), SN_SIZEOF_TOKEN);
+        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN(), StrongNameToken::SIZEOF_TOKEN);
         goto Exit;
     }
 
     if (SN_IS_THE_SILVERLIGHT_KEY(pbPublicKeyBlob))
     {
-        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, SN_THE_SILVERLIGHT_KEYTOKEN(), SN_SIZEOF_TOKEN);
+        memcpy_s(pToken, StrongNameToken::SIZEOF_TOKEN, SN_THE_SILVERLIGHT_KEYTOKEN(), StrongNameToken::SIZEOF_TOKEN);
         goto Exit;
     }
 
     // Compute a hash over the public key.
     sha1.AddData(pbPublicKeyBlob, cbPublicKeyBlob);
     pHash = sha1.GetHash();
-    static_assert(SHA1_HASH_SIZE >= SN_SIZEOF_TOKEN, "SN_SIZEOF_TOKEN must be smaller or equal to the SHA1_HASH_SIZE");
-    dwHashLenMinusTokenSize = SHA1_HASH_SIZE - SN_SIZEOF_TOKEN;
+    static_assert(SHA1_HASH_SIZE >= StrongNameToken::SIZEOF_TOKEN, "StrongNameToken::SIZEOF_TOKEN must be smaller or equal to the SHA1_HASH_SIZE");
+    dwHashLenMinusTokenSize = SHA1_HASH_SIZE - StrongNameToken::SIZEOF_TOKEN;
 
     // Take the last few bytes of the hash value for our token. (These are the
     // low order bytes from a network byte order point of view). Reverse the
     // order of these bytes in the output buffer to get host byte order.
-    for (i = 0; i < SN_SIZEOF_TOKEN; i++)
-        (tokenBuffer)[SN_SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
+    for (i = 0; i < StrongNameToken::SIZEOF_TOKEN; i++)
+        pToken->m_token[StrongNameToken::SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
 
     goto Exit;
 
