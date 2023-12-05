@@ -20,7 +20,7 @@ namespace
     // The byte values of the ECMA pseudo public key and its token.
     // Arcade SDK StrongNameKeyId: ECMA
     const BYTE NeutralPublicKey[] = { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
-    const BYTE NeutralPublicKeyToken[] = { 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 };
+    const StrongNameToken NeutralPublicKeyToken = {{ 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 }};
 
     // Arcade SDK StrongNameKeyId: Microsoft
     static const BYTE MicrosoftKey[] =
@@ -122,6 +122,7 @@ namespace
 
     static const WellKnownKey WellKnownKeys[] =
     {
+        { NeutralPublicKey, sizeof(NeutralPublicKey), &NeutralPublicKeyToken },
         { MicrosoftKey, sizeof(MicrosoftKey), &MicrosoftKeyToken },
         { SilverlightPlatformKey, sizeof(SilverlightPlatformKey), &SilverlightPlatformKeyToken },
         { SilverlightKey, sizeof(SilverlightKey), &SilverlightKeyToken },
