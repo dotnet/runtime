@@ -59,7 +59,7 @@ namespace System
                     return true;
                 }
                 int value = c >> 3;
-                if ((AsciiBitmap[value] & (ulong)(1UL << (c - (value << 3)))) == 0)
+                if ((AsciiBitmap[value] & (1 << (c & 7))) == 0)
                 {
                     return true;
                 }
