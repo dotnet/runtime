@@ -173,28 +173,7 @@ internal sealed class PInvokeCollector {
 
     private static void Error(string msg) => throw new LogAsErrorException(msg);
 
-    private static bool HasAttribute(MemberInfo element, params string[] attributeNames)
-    {
-        foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(element))
-        {
-            try
-            {
-                for (int i = 0; i < attributeNames.Length; ++i)
-                {
-                    if (cattr.AttributeType.FullName == attributeNames [i] ||
-                        cattr.AttributeType.Name == attributeNames[i])
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch
-            {
-                // Assembly not found, ignore
-            }
-        }
-        return false;
-    }
+    internal static bool HasAttribute(MemberInfo element, params string[] attributeNames) => PInvokeTableGenerator.HasAttribute(element, attributeNames);
 
     private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
     {

@@ -448,6 +448,10 @@ internal sealed class PInvokeTableGenerator
             if (IsFunctionPointer(type))
                 return true;
 
+            // HACK: SkiaSharp has pinvokes that rely on this
+            if (HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
+                return true;
+
             if (type.Name == "__NonBlittableTypeForAutomatedTests__")
                 return false;
 
@@ -480,6 +484,29 @@ internal sealed class PInvokeTableGenerator
             // log.Info("WASM0069", "ValueType {0} is blittable", type);
             return true;
         }
+    }
+
+    public static bool HasAttribute(MemberInfo element, params string[] attributeNames)
+    {
+        foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(element))
+        {
+            try
+            {
+                for (int i = 0; i < attributeNames.Length; ++i)
+                {
+                    if (cattr.AttributeType.FullName == attributeNames [i] ||
+                        cattr.AttributeType.Name == attributeNames[i])
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Assembly not found, ignore
+            }
+        }
+        return false;
     }
 
     private static void Error(string msg) => throw new LogAsErrorException(msg);
