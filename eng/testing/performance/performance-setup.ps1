@@ -100,7 +100,7 @@ if ($NoR2R) {
 
 if ($ExperimentName) {
     $Configurations += " ExperimentName=$ExperimentName"
-    if ($ExperimentName -eq "memoryrandomization") {
+    if ($ExperimentName -eq "memoryRandomization") {
         $ExtraBenchmarkDotNetArguments += " --memoryRandomization true"
     }
 }
