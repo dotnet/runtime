@@ -1563,7 +1563,7 @@ interp_mark_reachable_bblocks (TransformData *td)
 	// FIXME There is no need to force eh bblocks to remain alive
 	current = td->entry_bb;
 	while (current != NULL) {
-		if (current->eh_block || current->patchpoint_data) {
+		if (current->eh_block) {
 			queue [next_position++] = current;
 			current->reachable = TRUE;
 		} else {
@@ -1677,6 +1677,12 @@ interp_reorder_bblocks (TransformData *td)
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		if (bb->eh_block)
+			continue;
+		// We do optimizations below where we reduce the in count of bb, but it is ideal to have
+		// this bblock remain alive so we can correctly resolve mapping from unoptimized method.
+		// We could in theory address this and attempt to remove bb, but this scenario is extremely
+		// rare and doesn't seem worth the investment.
+		if (bb->patchpoint_data)
 			continue;
 		InterpInst *first = interp_first_ins (bb);
 		if (!first)
