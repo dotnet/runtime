@@ -4009,6 +4009,10 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 // Return Value:
 //    True if the block is reachable from the root.
 //
+// Remarks:
+//    If the block was added after the DFS tree was computed, then this
+//    function returns false.
+//
 bool FlowGraphDfsTree::Contains(BasicBlock* block) const
 {
     return (block->bbPostorderNum < m_postOrderCount) && (m_postOrder[block->bbPostorderNum] == block);
@@ -4213,6 +4217,11 @@ BitVecTraits FlowGraphNaturalLoop::LoopBlockTraits()
 //
 bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
 {
+    if (!m_tree->Contains(block))
+    {
+        return false;
+    }
+
     unsigned index;
     if (!TryGetLoopBlockBitVecIndex(block, &index))
     {
