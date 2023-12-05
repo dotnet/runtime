@@ -10569,7 +10569,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_sve_uqxtnb, EA_SCALABLE, REG_V3, REG_V9, INS_OPTS_SCALABLE_S);  // UQXTNB  <Zd>.<T>,
                                                                                                 // <Zn>.<Tb>
     theEmitter->emitIns_R_R(INS_sve_uqxtnt, EA_SCALABLE, REG_V0, REG_V3, INS_OPTS_SCALABLE_S);  // UQXTNT  <Zd>.<T>,
-                                                                                                // <Zn>.<Tb> 
+                                                                                                // <Zn>.<Tb>
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 

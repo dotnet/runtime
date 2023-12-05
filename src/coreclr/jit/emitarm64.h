@@ -576,7 +576,8 @@ static emitAttr optGetSveElemsize(insOpts arrangement);
 //  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
 static insOpts optWidenElemsizeArrangement(insOpts arrangement);
 
-//  For the given SVE 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
+//  For the given SVE 'arrangement' returns the one with the element width that is double that of the 'arrangement'
+//  element.
 static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
 
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
