@@ -5988,11 +5988,14 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 
     //// TODO: implement on RISC-V:
 
-    // The loop is reversed (it makes it smaller)
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
     //// GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
     if (size > TARGET_POINTER_SIZE)
     {
-        const regNumber offsetReg = initBlkNode->ExtractTempReg();
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
 
         BasicBlock* loop = genCreateTempLabel();

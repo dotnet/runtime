@@ -3347,11 +3347,14 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     const unsigned size = initBlkNode->GetLayout()->GetSize();
     assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
 
-    // The loop is reversed (it makes it smaller)
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
     GetEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, 0);
     if (size > TARGET_POINTER_SIZE)
     {
-        const regNumber offsetReg = initBlkNode->ExtractTempReg();
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
 
         BasicBlock* loop = genCreateTempLabel();
