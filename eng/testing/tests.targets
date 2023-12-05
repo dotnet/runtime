@@ -102,7 +102,6 @@
 
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
-
     </PropertyGroup>
 
     <!-- Set $(TestDebugger) to eg c:\debuggers\windbg.exe to run tests under a debugger. -->
