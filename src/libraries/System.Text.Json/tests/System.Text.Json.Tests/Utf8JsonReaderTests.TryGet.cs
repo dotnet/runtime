@@ -277,7 +277,7 @@ namespace System.Text.Json.Tests
                         }
                         catch (Exception except)
                         {
-                            Assert.True(false, string.Format("Unexpected exception: {0}. Message: {1}", except.Source, except.Message));
+                            Assert.Fail(string.Format("Unexpected exception: {0}. Message: {1}", except.Source, except.Message));
                         }
 
                     }
@@ -312,7 +312,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetByte();
-                        Assert.True(false, "Expected GetByte to throw FormatException.");
+                        Assert.Fail("Expected GetByte to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -351,7 +351,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetSByte();
-                        Assert.True(false, "Expected GetSByte to throw FormatException.");
+                        Assert.Fail("Expected GetSByte to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -390,7 +390,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetInt16();
-                        Assert.True(false, "Expected GetInt16 to throw FormatException.");
+                        Assert.Fail("Expected GetInt16 to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -429,7 +429,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetInt32();
-                        Assert.True(false, "Expected GetInt32 to throw FormatException.");
+                        Assert.Fail("Expected GetInt32 to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -467,7 +467,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetInt64();
-                        Assert.True(false, "Expected GetInt64 to throw FormatException.");
+                        Assert.Fail("Expected GetInt64 to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -506,7 +506,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetUInt16();
-                        Assert.True(false, "Expected GetUInt16 to throw FormatException.");
+                        Assert.Fail("Expected GetUInt16 to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -545,7 +545,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetUInt32();
-                        Assert.True(false, "Expected GetUInt32 to throw FormatException.");
+                        Assert.Fail("Expected GetUInt32 to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -583,7 +583,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetUInt64();
-                        Assert.True(false, "Expected GetInt64 to throw FormatException.");
+                        Assert.Fail("Expected GetInt64 to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -619,7 +619,7 @@ namespace System.Text.Json.Tests
                         try
                         {
                             json.GetSingle();
-                            Assert.True(false, $"Expected {nameof(FormatException)}.");
+                            Assert.Fail($"Expected {nameof(FormatException)}.");
                         }
                         catch (FormatException)
                         {
@@ -665,7 +665,7 @@ namespace System.Text.Json.Tests
                         try
                         {
                             json.GetDouble();
-                            Assert.True(false, $"Expected {nameof(FormatException)}.");
+                            Assert.Fail($"Expected {nameof(FormatException)}.");
                         }
                         catch (FormatException)
                         {
@@ -705,7 +705,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetDecimal();
-                        Assert.True(false, "Expected GetDecimal to throw FormatException.");
+                        Assert.Fail("Expected GetDecimal to throw FormatException.");
                     }
                     catch (FormatException)
                     {
@@ -743,7 +743,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         byte[] value = json.GetBytesFromBase64();
-                        Assert.True(false, "Expected GetBytesFromBase64 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetBytesFromBase64 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -751,7 +751,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetBytesFromBase64(out byte[] value);
-                        Assert.True(false, "Expected TryGetBytesFromBase64 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetBytesFromBase64 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -759,7 +759,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         DateTime value = json.GetDateTime();
-                        Assert.True(false, "Expected GetDateTime to throw InvalidOperationException due to mismatched token type.");
+                        Assert.Fail("Expected GetDateTime to throw InvalidOperationException due to mismatched token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -767,7 +767,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetDateTime(out DateTime value);
-                        Assert.True(false, "Expected TryGetDateTime to throw InvalidOperationException due to mismatched token type.");
+                        Assert.Fail("Expected TryGetDateTime to throw InvalidOperationException due to mismatched token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -775,7 +775,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         DateTimeOffset value = json.GetDateTimeOffset();
-                        Assert.True(false, "Expected GetDateTimeOffset to throw InvalidOperationException due to mismatched token type.");
+                        Assert.Fail("Expected GetDateTimeOffset to throw InvalidOperationException due to mismatched token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -783,7 +783,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetDateTimeOffset(out DateTimeOffset value);
-                        Assert.True(false, "Expected TryGetDateTimeOffset to throw InvalidOperationException due to mismatched token type.");
+                        Assert.Fail("Expected TryGetDateTimeOffset to throw InvalidOperationException due to mismatched token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -798,7 +798,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         string value = json.GetComment();
-                        Assert.True(false, "Expected GetComment to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetComment to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -809,7 +809,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         bool value = json.GetBoolean();
-                        Assert.True(false, "Expected GetBoolean to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetBoolean to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -820,7 +820,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetByte(out byte value);
-                        Assert.True(false, "Expected TryGetByte to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetByte to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -828,7 +828,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetByte();
-                        Assert.True(false, "Expected GetByte to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetByte to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -836,7 +836,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetSByte(out sbyte value);
-                        Assert.True(false, "Expected TryGetSByte to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetSByte to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -844,7 +844,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetSByte();
-                        Assert.True(false, "Expected GetSByte to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetSByte to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -852,7 +852,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetInt16(out short value);
-                        Assert.True(false, "Expected TryGetInt16 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetInt16 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -860,7 +860,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetInt16();
-                        Assert.True(false, "Expected GetInt16 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetInt16 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -868,7 +868,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetInt32(out int value);
-                        Assert.True(false, "Expected TryGetInt32 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetInt32 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -876,7 +876,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetInt32();
-                        Assert.True(false, "Expected GetInt32 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetInt32 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -884,7 +884,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetInt64(out long value);
-                        Assert.True(false, "Expected TryGetInt64 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetInt64 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -892,7 +892,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetInt64();
-                        Assert.True(false, "Expected GetInt64 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetInt64 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -900,7 +900,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetUInt16(out ushort value);
-                        Assert.True(false, "Expected TryGetUInt16 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetUInt16 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -908,7 +908,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetUInt16();
-                        Assert.True(false, "Expected GetUInt16 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetUInt16 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -916,7 +916,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetUInt32(out uint value);
-                        Assert.True(false, "Expected TryGetUInt32 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetUInt32 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -924,7 +924,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetUInt32();
-                        Assert.True(false, "Expected GetUInt32 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetUInt32 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -932,7 +932,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetUInt64(out ulong value);
-                        Assert.True(false, "Expected TryGetUInt64 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetUInt64 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -940,7 +940,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetUInt64();
-                        Assert.True(false, "Expected GetUInt64 to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetUInt64 to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -948,7 +948,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetSingle(out float value);
-                        Assert.True(false, "Expected TryGetSingle to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetSingle to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -956,7 +956,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetSingle();
-                        Assert.True(false, "Expected GetSingle to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetSingle to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -964,7 +964,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetDouble(out double value);
-                        Assert.True(false, "Expected TryGetDouble to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetDouble to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -972,7 +972,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetDouble();
-                        Assert.True(false, "Expected GetDouble to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetDouble to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -980,7 +980,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.TryGetDecimal(out decimal value);
-                        Assert.True(false, "Expected TryGetDecimal to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected TryGetDecimal to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -988,7 +988,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.GetDecimal();
-                        Assert.True(false, "Expected GetDecimal to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Fail("Expected GetDecimal to throw InvalidOperationException due to mismatch token type.");
                     }
                     catch (InvalidOperationException)
                     { }
@@ -1315,7 +1315,7 @@ namespace System.Text.Json.Tests
             try
             {
                 byte[] val = json.GetBytesFromBase64();
-                Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
+                Assert.Fail("Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
             }
             catch (FormatException) { }
         }
@@ -1344,14 +1344,14 @@ namespace System.Text.Json.Tests
                 try
                 {
                     byte[] val = json.GetBytesFromBase64();
-                    Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
+                    Assert.Fail("Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
                 }
                 catch (InvalidOperationException) { }
 
                 try
                 {
                     json.TryGetBytesFromBase64(out byte[] val);
-                    Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
+                    Assert.Fail("Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
                 }
                 catch (InvalidOperationException) { }
             }
@@ -1382,7 +1382,7 @@ namespace System.Text.Json.Tests
                         try
                         {
                             byte[] val = json.GetBytesFromBase64();
-                            Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-8 JSON text.");
+                            Assert.Fail("Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-8 JSON text.");
                         }
                         catch (FormatException) { }
 
@@ -1433,7 +1433,7 @@ namespace System.Text.Json.Tests
                         Assert.NotEqual(Regex.Unescape(expected), comment);
                         break;
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
             }

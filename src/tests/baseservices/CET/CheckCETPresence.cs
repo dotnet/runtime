@@ -3,13 +3,15 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
-static class Program
+public static class Program
 {
     [DllImport("cet_check.dll")]
     private static extern long ReadShadowStackPointer();
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Checking whether codeflow enforcement technology (CET) is active");
         long ssp = ReadShadowStackPointer();

@@ -199,7 +199,7 @@ namespace Microsoft.NET.HostModel.Tests
             // work correctly in the presence of "."s in the hostName.
             using (var app = TestApp.CreateEmpty("App.With.Periods"))
             {
-                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion);
+                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
 
                 string hostName = Path.GetFileName(app.AppExe);
                 string depsJsonName = Path.GetFileName(app.DepsJson);
@@ -354,8 +354,7 @@ namespace Microsoft.NET.HostModel.Tests
             {
                 App = TestApp.CreateFromBuiltAssets(AppName);
 
-                var builtDotNet = new DotNet.Cli.Build.DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
-                SystemDll = Path.Combine(builtDotNet.GreatestVersionSharedFxPath, "System.dll");
+                SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
 
             public void Dispose()

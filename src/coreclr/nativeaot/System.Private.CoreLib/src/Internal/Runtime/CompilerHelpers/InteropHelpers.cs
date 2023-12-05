@@ -9,13 +9,13 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.ObjectiveC;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -98,7 +98,7 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 return null;
             }
-            return (byte *)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * Marshal.SystemMaxDBCSCharSize));
+            return (byte*)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * Marshal.SystemMaxDBCSCharSize));
         }
 
         public static unsafe char* AllocMemoryForUnicodeStringBuilder(StringBuilder sb)
@@ -107,7 +107,7 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 return null;
             }
-            return (char *)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * 2));
+            return (char*)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * 2));
         }
 
         public static unsafe byte* AllocMemoryForAnsiCharArray(char[] chArray)
@@ -299,7 +299,7 @@ namespace Internal.Runtime.CompilerHelpers
                 dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
             }
 
-            Assembly callingAssembly = RuntimeAugments.Callbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+            Assembly callingAssembly = ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
 
             // First check if there's a NativeLibrary callback and call it to attempt the resolution
             IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);
@@ -576,8 +576,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
 #if TARGET_WINDOWS
 #pragma warning disable CA1416
-            Variant* data = (Variant*)pDstNativeVariant;
-            data->Clear();
+            ComVariant* data = (ComVariant*)pDstNativeVariant;
+            data->Dispose();
 #pragma warning restore CA1416
 #else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

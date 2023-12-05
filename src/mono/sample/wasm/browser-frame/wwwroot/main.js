@@ -3,12 +3,8 @@
 
 import { dotnet } from './_framework/dotnet.js'
 
-const urlParams = new URLSearchParams(window.location.search);
-const myParam = urlParams.get('memorySnapshot');
-
 const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
     .withDiagnosticTracing(false)
-    .withStartupMemoryCache(myParam === "true")
     .withApplicationArgumentsFromQuery()
     .create();
 

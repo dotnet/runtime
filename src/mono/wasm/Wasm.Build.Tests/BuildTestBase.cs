@@ -25,8 +25,9 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net8.0";
-        public const string DefaultTargetFrameworkForBlazor = "net8.0";
+        public const string DefaultTargetFramework = "net9.0";
+        public const string DefaultTargetFrameworkForBlazor = "net9.0";
+        public const string TargetFrameworkForTasks = "net8.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
@@ -37,6 +38,13 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
         private ProjectProviderBase _providerOfBaseType;
+
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
+         * which will override the runtime pack with with the locally built one.
+         * But note that this only partially helps with "switching workloads" because
+         * the tasks/targets, aot compiler, etc would still be from the old version
+         */
+        public bool UseWBTOverridePackTargets = false;
 
         private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -53,9 +61,8 @@ namespace Wasm.Build.Tests
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
-        public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
-                                                                          // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
+        public static string GetNuGetConfigPathFor(string targetFramework)
+            => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == "net9.0" ? "nuget9.config" : "nuget8.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
             => (TProvider)_providerOfBaseType;
@@ -156,11 +163,14 @@ namespace Wasm.Build.Tests
             if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
-            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
+            var cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
                                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables)
-                                    .ExecuteWithCapturedOutput(commandLineArgs.ToArray());
+                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+            if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
+                cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
+
+            CommandResult res = cmd.ExecuteWithCapturedOutput(commandLineArgs.ToArray());
             if (buildProjectOptions.ExpectSuccess)
                 res.EnsureSuccessful();
             else if (res.ExitCode == 0)
@@ -334,12 +344,12 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_logPath);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false, string targetFramework = DefaultTargetFramework)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string targetFramework = DefaultTargetFramework)
         {
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
-            if (BuildEnvironment.UseWBTOverridePackTargets)
+            if (UseWBTOverridePackTargets)
                 File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
             string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");

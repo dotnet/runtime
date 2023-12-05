@@ -134,6 +134,7 @@ namespace Sample
             public override string Name => "Blazor Reach managed snapshot";
             public override int InitialSamples => 3;
             public override bool HasRunStepAsync => true;
+            protected override string FramePage => "start.html?memorySnapshot=true";
 
             public override async Task RunStepAsync()
             {
@@ -224,7 +225,7 @@ namespace Sample
             public override string Name => "Browser Reach managed snapshot";
             public override int InitialSamples => 3;
             public override bool HasRunStepAsync => true;
-            protected override string FramePage => "?memorySnapshot=true";
+            protected override string FramePage => "start.html?memorySnapshot=true";
 
             public override async Task RunStepAsync()
             {

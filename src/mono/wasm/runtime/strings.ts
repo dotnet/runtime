@@ -242,9 +242,6 @@ function stringToMonoStringNewRoot(string: string, result: WasmRoot<MonoString>)
 // When threading is enabled, TextDecoder does not accept a view of a
 // SharedArrayBuffer, we must make a copy of the array first.
 // See https://github.com/whatwg/encoding/issues/172
-// BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
-// Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
-// See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
 export function viewOrCopy(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
     // this condition should be eliminated by rollup on non-threading builds
     const needsCopy = isSharedArrayBuffer(view.buffer);

@@ -272,7 +272,7 @@ mono_ios_runtime_init (void)
 
     // build using DiagnosticPorts property in AppleAppBuilder
     // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
-    // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents=diagnostics_tracing
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif

@@ -259,7 +259,7 @@ public:
 
             if (value->OperGet() == GT_COMMA)
             {
-                GenTree* effectiveValue = value->gtEffectiveVal(/*commaOnly*/ true);
+                GenTree* effectiveValue = value->gtEffectiveVal();
 
                 noway_assert(
                     !varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
@@ -673,15 +673,16 @@ private:
                 tree->gtBashToNOP();
                 m_madeChanges = true;
 
-                if (!condTree->IsIntegralConst(0))
+                if (condTree->IsIntegralConst(0))
                 {
-                    block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(m_compiler));
-                    m_compiler->fgRemoveRefPred(block->Next(), block);
+                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
+                    block->bbFlags |= BBF_NONE_QUIRK;
                 }
                 else
                 {
-                    block->SetJumpKind(BBJ_NONE DEBUG_ARG(m_compiler));
-                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
+                    block->SetJumpKind(BBJ_ALWAYS);
+                    m_compiler->fgRemoveRefPred(block->Next(), block);
                 }
             }
         }
@@ -747,7 +748,7 @@ PhaseStatus Compiler::fgInline()
         for (Statement* const stmt : block->Statements())
         {
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
             // candidate stage. So scan the tree looking for those early failures.
@@ -1062,7 +1063,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
@@ -1495,7 +1496,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
 
+        // The newly split block is not special so doesn't need to be kept.
         //
+        bottomBlock->bbFlags &= ~BBF_DONT_REMOVE;
+
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //
         for (BasicBlock* const block : InlineeCompiler->Blocks())
@@ -1526,19 +1530,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-                if (block->IsLast())
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->SetJumpKind(BBJ_NONE DEBUG_ARG(this));
-                }
-                else
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
-                            block->bbNum, bottomBlock->bbNum);
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock);
-                }
+                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                        bottomBlock->bbNum);
 
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock);
                 fgAddRefPred(bottomBlock, block);
+
+                if (block == InlineeCompiler->fgLastBB)
+                {
+                    block->bbFlags |= BBF_NONE_QUIRK;
+                }
             }
         }
 
@@ -1547,7 +1548,11 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         InlineeCompiler->fgFirstBB->bbRefs--;
 
         // Insert inlinee's blocks into inliner's block list.
+        assert(topBlock->KindIs(BBJ_ALWAYS));
+        assert(topBlock->HasJumpTo(bottomBlock));
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
+        topBlock->SetJumpDest(topBlock->Next());
+        topBlock->bbFlags |= BBF_NONE_QUIRK;
         fgRemoveRefPred(bottomBlock, topBlock);
         fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);

@@ -35,7 +35,7 @@ public unsafe class Program
     [UnmanagedCallersOnly]
     public static void CallbackViaCalli(int val)
     {
-        Assert.True(false, $"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot be called via calli");
+        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot be called via calli");
     }
 
     public static void NegativeTest_ViaCalli()

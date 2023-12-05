@@ -2852,7 +2852,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
         {
             ssize_t v1 = refPosition->treeNode->AsIntCon()->IconValue();
             ssize_t v2 = otherTreeNode->AsIntCon()->IconValue();
-            if ((v1 == v2) && (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode) || v1 == 0))
+            if ((v1 == v2) && (varTypeIsGC(refPosition->treeNode) == varTypeIsGC(otherTreeNode) || v1 == 0))
             {
 #ifdef TARGET_64BIT
                 // If the constant is negative, only reuse registers of the same type.
@@ -3241,13 +3241,15 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 
     assert(allocatedReg != REG_NA);
 
+    // restore the related interval
+    currentInterval->relatedInterval = savedRelatedInterval;
+
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
 
     // Now restore the old info
-    currentInterval->relatedInterval = savedRelatedInterval;
-    currentInterval->physReg         = oldPhysReg;
-    currentInterval->assignedReg     = oldRegRecord;
-    currentInterval->isActive        = true;
+    currentInterval->physReg     = oldPhysReg;
+    currentInterval->assignedReg = oldRegRecord;
+    currentInterval->isActive    = true;
 
     return allocatedReg;
 }
@@ -6891,7 +6893,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         }
         else
         {
-            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
+            assert(block->KindIs(BBJ_ALWAYS));
             blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdUpperRestore));
         }
     }
@@ -7840,7 +7842,7 @@ void LinearScan::insertSwap(
         }
         else
         {
-            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
+            assert(block->KindIs(BBJ_ALWAYS));
             blockRange.InsertAtEnd(std::move(swapRange));
         }
     }
@@ -7946,8 +7948,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
 #ifdef TARGET_ARM
     if (type == TYP_DOUBLE)
     {
-        // Exclude any doubles for which the odd half isn't in freeRegs.
-        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE);
+        // Exclude any doubles for which the odd half isn't in freeRegs,
+        // and restrict down to just the even part of the even/odd pair.
+        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH) >> 1;
     }
 #endif
 
@@ -9669,6 +9672,8 @@ void Interval::dump(Compiler* compiler)
     printf(" Preferences=");
     compiler->dumpRegMask(this->registerPreferences);
 
+    printf(" Aversions=");
+    compiler->dumpRegMask(this->registerAversion);
     if (relatedInterval)
     {
         printf(" RelatedInterval ");
@@ -11545,7 +11550,11 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 
     regType     = linearScan->getRegisterType(currentInterval, refPosition);
     candidates  = refPosition->registerAssignment;
-    preferences = currentInterval->registerPreferences;
+    preferences = currentInterval->registerPreferences & ~currentInterval->registerAversion;
+    if (preferences == RBM_NONE)
+    {
+        preferences = linearScan->allRegs(regType) & ~currentInterval->registerAversion;
+    }
 
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.
@@ -11942,18 +11951,32 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
                 continue;
             }
 
-            if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
-                                                   !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+
+            if (reloadRefPosition != nullptr)
             {
-                // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
-                // is not an actual ref. In those cases, we will reload in future (next) refPosition.
-                // For such cases, consider the spill cost of next refposition.
-                // See notes in "spillInterval()".
-                RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
-                if (reloadRefPosition != nullptr)
+                if ((recentRefPosition != nullptr) &&
+                    (recentRefPosition->RegOptional() &&
+                     !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
                 {
+                    // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+                    // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+                    // For such cases, consider the spill cost of next refposition.
+                    // See notes in "spillInterval()".
                     currentSpillWeight = linearScan->getWeight(reloadRefPosition);
                 }
+#ifdef TARGET_ARM64
+                else if (assignedInterval->getNextRefPosition()->needsConsecutive)
+                {
+                    // If next refposition is part of consecutive registers and there is already a register
+                    // assigned to it then try not to reassign for currentRefPosition, because with that,
+                    // other registers for the next consecutive register assignment would have to be copied
+                    // to different consecutive registers since this register is busy from this point onwards.
+                    //
+                    // Have it as a candidate, but make its spill cost higher than others.
+                    currentSpillWeight = linearScan->getWeight(reloadRefPosition) * 10;
+                }
+#endif
             }
         }
 #ifdef TARGET_ARM64
@@ -12450,6 +12473,18 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // and we end up with that candidate is no longer available.
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
         candidates &= ~busyRegs;
+
+#ifdef TARGET_ARM
+        // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
+        // is also available. Thus, for every busyReg that is an odd floating-point register, we need to
+        // remove from candidates the corresponding even floating-point register. For example, if busyRegs
+        // contains `f3`, we need to remove `f2` from the candidates for a double register interval. The
+        // clause below creates a mask to do this.
+        if (currentInterval->registerType == TYP_DOUBLE)
+        {
+            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+        }
+#endif // TARGET_ARM
 
 #ifdef DEBUG
         inUseOrBusyRegsMask |= busyRegs;

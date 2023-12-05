@@ -1364,7 +1364,7 @@ void Compiler::compShutdown()
 
     emitter::emitDone();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // Finish reading and/or writing inline xml
     if (JitConfig.JitInlineDumpXmlFile() != nullptr)
     {
@@ -1379,7 +1379,7 @@ void Compiler::compShutdown()
             InlineStrategy::FinalizeXml();
         }
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if defined(DEBUG) || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     if (genMethodCnt == 0)
@@ -1818,9 +1818,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
@@ -1901,17 +1901,16 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         codeGen = nullptr;
     }
 
-    compJmpOpUsed                = false;
-    compLongUsed                 = false;
-    compTailCallUsed             = false;
-    compTailPrefixSeen           = false;
-    compMayConvertTailCallToLoop = false;
-    compLocallocSeen             = false;
-    compLocallocUsed             = false;
-    compLocallocOptimized        = false;
-    compQmarkRationalized        = false;
-    compQmarkUsed                = false;
-    compFloatingPointUsed        = false;
+    compJmpOpUsed         = false;
+    compLongUsed          = false;
+    compTailCallUsed      = false;
+    compTailPrefixSeen    = false;
+    compLocallocSeen      = false;
+    compLocallocUsed      = false;
+    compLocallocOptimized = false;
+    compQmarkRationalized = false;
+    compQmarkUsed         = false;
+    compFloatingPointUsed = false;
 
     compSuppressedZeroInit = false;
 
@@ -1946,6 +1945,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif
     m_switchDescMap  = nullptr;
     m_blockToEHPreds = nullptr;
+    m_dominancePreds = nullptr;
     m_fieldSeqStore  = nullptr;
     m_refAnyClass    = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
@@ -1965,7 +1965,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
-    fgSsaChecksEnabled         = false;
+    fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -2836,7 +2836,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
-    opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
     opts.disAddr         = false;
     opts.dspCode         = false;
@@ -2928,7 +2927,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 
 #ifdef LATE_DISASM
-        if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitLateDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
@@ -4614,14 +4613,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
-    // Update finally target flags after EH optimizations
-    //
-    DoPhase(this, PHASE_UPDATE_FINALLY_FLAGS, &Compiler::fgUpdateFinallyTargetFlags);
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
 #if DEBUG
     if (lvaEnregEHVars)
     {
@@ -4748,9 +4739,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
-    auto morphGlobalPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        fgMorphBlocks();
+    unsigned const preMorphBBCount = fgBBcount;
+    DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    auto postMorphPhase = [this]() {
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
@@ -4766,16 +4758,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         compCurBB = nullptr;
 #endif // DEBUG
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         // Enable IR checks
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
-    DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
+    DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
+
+    // If we needed to create any new BasicBlocks then renumber the blocks
+    //
+    if (fgBBcount > preMorphBBCount)
+    {
+        fgRenumberBlocks();
+    }
 
     // GS security checks for unsafe buffers
     //
@@ -4959,10 +4952,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             //
             // So, disable the ssa checks.
             //
-            if (fgSsaChecksEnabled)
+            if (fgSsaValid)
             {
-                JITDUMP("Disabling SSA checking before assertion prop\n");
-                fgSsaChecksEnabled = false;
+                JITDUMP("Marking SSA as invalid before assertion prop\n");
+                fgSsaValid = false;
             }
 
             if (doAssertionProp)
@@ -5038,6 +5031,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
+    // Create any throw helper blocks that might be needed
+    //
+    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
+
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions
@@ -5084,13 +5081,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     fgNodeThreading = NodeThreading::LIR;
 
-    // Here we do "simple lowering".  When the RyuJIT backend works for all
-    // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
-    // pass of "final lowering."  We must do this before (final) liveness analysis, because this creates
-    // range check throw blocks, in which the liveness must be correct.
-    //
-    DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
-
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
@@ -5115,14 +5105,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    if (!compMacOsArm64Abi())
-    {
-        // Set stack levels; this information is necessary for x86
-        // but on other platforms it is used only in asserts.
-        // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
-        StackLevelSetter stackLevelSetter(this);
-        stackLevelSetter.Run();
-    }
+    // Set stack levels and analyze throw helper usage.
+    StackLevelSetter stackLevelSetter(this);
+    stackLevelSetter.Run();
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5289,8 +5274,9 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail() &&
+            ((block->bbFlags & BBF_NONE_QUIRK) == 0))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5741,9 +5727,10 @@ void Compiler::ResetOptAnnotations()
     fgResetForSsa();
     vnStore              = nullptr;
     m_blockToEHPreds     = nullptr;
+    m_dominancePreds     = nullptr;
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
-    fgSsaChecksEnabled   = false;
+    fgSsaValid           = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -6014,6 +6001,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Dczva() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
+        }
+
+        if (JitConfig.EnableArm64Sve() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
         }
 #elif defined(TARGET_XARCH)
         if (JitConfig.EnableHWIntrinsic() != 0)
@@ -6294,7 +6286,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         return param.result;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 //------------------------------------------------------------------------
 // compMethodHash: get hash code for currently jitted method
 //
@@ -6350,7 +6342,7 @@ unsigned Compiler::compMethodHash(CORINFO_METHOD_HANDLE methodHnd)
     return methodHash;
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 void Compiler::compCompileFinish()
 {
@@ -6414,7 +6406,7 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_inlineStrategy->DumpData();
 
@@ -9122,7 +9114,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 
 void Compiler::RecordStateAtEndOfInlining()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_compCyclesAtEndOfInlining    = 0;
     m_compTickCountAtEndOfInlining = 0;
@@ -9133,7 +9125,7 @@ void Compiler::RecordStateAtEndOfInlining()
     }
     m_compTickCountAtEndOfInlining = GetTickCount();
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 //------------------------------------------------------------------------
@@ -9142,7 +9134,7 @@ void Compiler::RecordStateAtEndOfInlining()
 
 void Compiler::RecordStateAtEndOfCompilation()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Common portion
     m_compCycles = 0;
@@ -9156,7 +9148,7 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 #if FUNC_INFO_LOGGING
@@ -10031,6 +10023,26 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->IsExpRuntimeLookup())
                     {
                         chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
+                    {
+                        chars += printf("[CALL_MD_STRESS_TAILCALL]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_DEVIRTUALIZED)
+                    {
+                        chars += printf("[CALL_MD_DEVIRTUALIZED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_GUARDED)
+                    {
+                        chars += printf("[CALL_MD_GUARDED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_UNBOXED)
+                    {
+                        chars += printf("[CALL_MD_UNBOXED]");
                     }
                 }
                 break;

@@ -8,7 +8,7 @@
 
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
-#define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
+#define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
 #define SWITCH_MIN_TESTS 3
 
 //-----------------------------------------------------------------------------
@@ -79,9 +79,9 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
             GenTree* op1 = rootNode->gtGetOp1()->gtGetOp1();
             GenTree* op2 = rootNode->gtGetOp1()->gtGetOp2();
 
-            if (!varTypeIsIntegral(op1) || !varTypeIsIntegral(op2))
+            if (!varTypeIsIntOrI(op1) || !varTypeIsIntOrI(op2))
             {
-                // Only integral types are supported
+                // Only TYP_INT and TYP_LONG are supported
                 return false;
             }
 
@@ -253,6 +253,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
 bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest)
 {
     assert(firstBlock->KindIs(BBJ_COND));
+    assert(!varTypeIsSmall(nodeToTest));
 
     if (testsCount < SWITCH_MIN_TESTS)
     {
@@ -319,7 +320,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert(isTest);
 
     // Convert firstBlock to a switch block
-    firstBlock->SetJumpKindAndTarget(BBJ_SWITCH, new (this, CMK_BasicBlock) BBswtDesc);
+    firstBlock->SetSwitchKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 

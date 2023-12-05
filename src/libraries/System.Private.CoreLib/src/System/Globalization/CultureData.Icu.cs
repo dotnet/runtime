@@ -120,10 +120,23 @@ namespace System.Globalization
                 realNameBuffer = string.Concat(realNameBuffer.AsSpan(0, index), ICU_COLLATION_KEYWORD, alternateSortName);
             }
 
-            // Get the locale name from ICU
-            if (!GetLocaleName(realNameBuffer, out _sWindowsName))
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
             {
-                return false; // fail
+                _sWindowsName = GetLocaleNameNative(realNameBuffer);
+                if (_sWindowsName == null || _sWindowsName.Length == 0)
+                {
+                    return false;
+                }
+            }
+            else
+#endif
+            {
+                // Get the locale name from ICU
+                if (!GetLocaleName(realNameBuffer, out _sWindowsName))
+                {
+                    return false;
+                }
             }
 
             Debug.Assert(_sWindowsName != null);
@@ -162,17 +175,27 @@ namespace System.Globalization
 
         internal static unsafe bool GetDefaultLocaleName([NotNullWhen(true)] out string? windowsName)
         {
-            // Get the default (system) locale name from ICU
-            char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
-            if (!Interop.Globalization.GetDefaultLocaleName(buffer, ICU_ULOC_FULLNAME_CAPACITY))
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
             {
-                windowsName = null;
-                return false; // fail
+                windowsName = Interop.Globalization.GetDefaultLocaleNameNative();
+                return windowsName != null && windowsName.Length > 0;
             }
+            else
+#endif
+            {
+                // Get the default (system) locale name from ICU
+                char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
+                if (!Interop.Globalization.GetDefaultLocaleName(buffer, ICU_ULOC_FULLNAME_CAPACITY))
+                {
+                    windowsName = null;
+                    return false; // fail
+                }
 
-            // Success - use the locale name returned which may be different than realNameBuffer (casing)
-            windowsName = new string(buffer); // the name passed to subsequent ICU calls
-            return true;
+                // Success - use the locale name returned which may be different than realNameBuffer (casing)
+                windowsName = new string(buffer); // the name passed to subsequent ICU calls
+                return true;
+            }
         }
 
         private string IcuGetLocaleInfo(LocaleStringData type, string? uiCultureName = null)
@@ -287,7 +310,16 @@ namespace System.Globalization
         internal static bool IcuIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            return Interop.Globalization.IsPredefinedLocale(name);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                return Interop.Globalization.IsPredefinedLocaleNative(name);
+            }
+            else
+#endif
+            {
+                return Interop.Globalization.IsPredefinedLocale(name);
+            }
         }
 
         private static string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)
@@ -367,7 +399,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
-            return digitSubstitution == -1 ? (int) DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
+            return digitSubstitution == -1 ? (int)DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
         }
 
         private static string IcuGetListSeparator(string? cultureName)
@@ -420,15 +452,38 @@ namespace System.Globalization
                 return Array.Empty<CultureInfo>();
             }
 
-            int bufferLength = Interop.Globalization.GetLocales(null, 0);
+            int bufferLength;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                bufferLength = Interop.Globalization.GetLocalesNative(null, 0);
+            }
+            else
+            {
+                bufferLength = Interop.Globalization.GetLocales(null, 0);
+            }
+#else
+            bufferLength = Interop.Globalization.GetLocales(null, 0);
+#endif
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
             }
 
-            char [] chars = new char[bufferLength];
+            char[] chars = new char[bufferLength];
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                bufferLength = Interop.Globalization.GetLocalesNative(chars, bufferLength);
+            }
+            else
+            {
+                bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
+            }
+#else
             bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
+#endif
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
@@ -446,7 +501,7 @@ namespace System.Globalization
             int index = 0;
             while (index < bufferLength)
             {
-                int length = (int) chars[index++];
+                int length = (int)chars[index++];
                 if (index + length <= bufferLength)
                 {
                     CultureInfo ci = CultureInfo.GetCultureInfo(new string(chars, index, length));
@@ -520,7 +575,7 @@ namespace System.Globalization
                     {
                         if (indexOfExtensions < 0 && i < subject.Length - 2 && (subject[i + 1] is 'u' or 't') && subject[i + 2] == '-') // we have -u- or -t- which is an extension
                         {
-                            if (subject[i + 1] == 't' || i >= subject.Length - 6 || subject[i + 3] != 'c' || subject[i + 4] != 'o' || subject[i + 5] != '-' ) // not -u-co- collation extension
+                            if (subject[i + 1] == 't' || i >= subject.Length - 6 || subject[i + 3] != 'c' || subject[i + 4] != 'o' || subject[i + 5] != '-') // not -u-co- collation extension
                             {
                                 indexOfExtensions = i;
                             }

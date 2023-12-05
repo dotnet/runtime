@@ -35,21 +35,20 @@
 
 BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 {
-    // @TODO: until the below issue is fixed correctly
-    // https://github.com/dotnet/runtime/issues/88491
-    return FALSE;
+    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
+            TRACE_LEVEL_INFORMATION,
+            CLR_GCHEAPDUMP_KEYWORD);    
 }
 
 BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 {
-    // @TODO: until the below issue is fixed correctly
-    // https://github.com/dotnet/runtime/issues/88491
-    return FALSE;
+    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
+            TRACE_LEVEL_INFORMATION,
+            CLR_GCHEAPDUMP_KEYWORD);    
 }
 
 BOOL ETW::GCLog::ShouldTrackMovementForEtw()
 {
-    LIMITED_METHOD_CONTRACT;
     return RUNTIME_PROVIDER_CATEGORY_ENABLED(
         TRACE_LEVEL_INFORMATION,
         CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD);
@@ -57,13 +56,8 @@ BOOL ETW::GCLog::ShouldTrackMovementForEtw()
 
 BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw()
 {
-    // @TODO:
-    return FALSE;
-}
-
-void ETW::GCLog::WalkStaticsAndCOMForETW()
-{
-    // @TODO:
+    // @TODO
+    return false;
 }
 
 // Batches the list of moved/surviving references for the GCBulkMovedObjectRanges /
@@ -480,6 +474,14 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     pThread->EnablePreemptiveMode();
 
     return hr;
+}
+
+//---------------------------------------------------------------------------------------
+// WalkStaticsAndCOMForETW walks both CCW/RCW objects and static variables.
+//---------------------------------------------------------------------------------------
+
+void ETW::GCLog::WalkStaticsAndCOMForETW()
+{
 }
 
 // Holds state that batches of roots, nodes, edges, and types as the GC walks the heap

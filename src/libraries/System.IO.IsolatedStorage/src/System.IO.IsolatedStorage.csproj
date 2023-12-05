@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.IsolatedStorage_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
@@ -20,20 +24,25 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\IO\IsolatedStorage\Helper.AnyMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.AnyMobile.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'android' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'maccatalyst' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\IO\IsolatedStorage\Helper.NonMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.NonMobile.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Unix.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.IO.FileSystem.AccessControl" />
     <Reference Include="System.Linq" />
@@ -43,4 +52,5 @@
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+
 </Project>

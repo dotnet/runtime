@@ -5,10 +5,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-using NTSTATUS = Interop.BCrypt.NTSTATUS;
-using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
-using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 using BCryptAlgorithmCache = Interop.BCrypt.BCryptAlgorithmCache;
+using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
+using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
+using NTSTATUS = Interop.BCrypt.NTSTATUS;
 
 namespace System.Security.Cryptography
 {
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
                 // Use a pseudo-handle if available.
                 if (Interop.BCrypt.PseudoHandlesSupported)
                 {
-                    HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac : false, destination, out hashSize);
+                    HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac: false, destination, out hashSize);
                     return hashSize;
                 }
                 else

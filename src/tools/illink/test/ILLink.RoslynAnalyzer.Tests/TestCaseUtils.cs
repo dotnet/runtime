@@ -206,7 +206,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return token.ValueText;
 
 			default:
-				Assert.True (false, "Unsupported expr kind " + expr.Kind ());
+				Assert.Fail("Unsupported expr kind " + expr.Kind ());
 				return null!;
 			}
 		}

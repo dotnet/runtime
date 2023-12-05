@@ -2158,11 +2158,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genTableBasedSwitch(treeNode);
             break;
 
-        case GT_CLS_VAR_ADDR:
-            emit->emitIns_R_C(INS_lea, EA_PTRSIZE, targetReg, treeNode->AsClsVar()->gtClsVarHnd, 0);
-            genProduceReg(treeNode);
-            break;
-
 #if !defined(TARGET_64BIT)
         case GT_LONG:
             assert(treeNode->isUsedFromReg());
@@ -4400,9 +4395,9 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
 
-    GenTree* location  = tree->gtOpLocation;  // arg1
-    GenTree* value     = tree->gtOpValue;     // arg2
-    GenTree* comparand = tree->gtOpComparand; // arg3
+    GenTree* location  = tree->Addr();      // arg1
+    GenTree* value     = tree->Data();      // arg2
+    GenTree* comparand = tree->Comparand(); // arg3
 
     assert(location->GetRegNum() != REG_NA && location->GetRegNum() != REG_RAX);
     assert(value->GetRegNum() != REG_NA && value->GetRegNum() != REG_RAX);
@@ -5654,7 +5649,7 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
 
     // Do the xchg
     emitAttr size = EA_PTRSIZE;
-    if (varTypeGCtype(type1) != varTypeGCtype(type2))
+    if (varTypeIsGC(type1) != varTypeIsGC(type2))
     {
         // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
         // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
@@ -6884,7 +6879,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
         assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
         // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
-        assert(!(varTypeIsSmallInt(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
+        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
         // If op1 is smaller then it cannot be in memory, we're probably missing a cast
         assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
         // If op2 is smaller then it cannot be in memory, we're probably missing a cast

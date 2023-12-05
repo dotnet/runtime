@@ -101,12 +101,13 @@ private:
     // Arguments:
     //    jumpKind - jump kind for the new basic block
     //    insertAfter - basic block, after which compiler has to insert the new one.
+    //    jumpDest - jump target for the new basic block. Defaults to nullptr.
     //
     // Return Value:
     //    new basic block.
-    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
+    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
     {
-        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
+        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
         block->bbFlags |= BBF_IMPORTED;
         return block;
     }
@@ -142,13 +143,13 @@ private:
 
         // Current block now becomes the test block
         BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_NONE, block);
+        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block, block->Next());
 
         // Update flow and flags
         block->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
         block->bbFlags |= BBF_INTERNAL;
 
-        helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
+        helperBlock->bbFlags |= (BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
 
         compiler->fgAddRefPred(helperBlock, block);
         compiler->fgAddRefPred(remainderBlock, helperBlock);
@@ -232,8 +233,7 @@ private:
         }
 
         // Update flow
-        block->SetJumpDest(nullptr);
-        block->SetJumpKind(BBJ_THROW DEBUG_ARG(compiler));
+        block->SetJumpKindAndTarget(BBJ_THROW);
 
         // Add helper call
         //

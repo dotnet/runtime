@@ -5,10 +5,10 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { fn_wrapper_by_fn_handle } from "./invoke-js";
+import { js_import_wrapper_by_fn_handle } from "./invoke-js";
 import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
-import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull } from "./types/internal";
+import { GCHandle, GCHandleNull, JSHandle, WeakRefInternal } from "./types/internal";
 import { _use_weak_ref, create_weak_ref } from "./weak-ref";
 import { exportsByAssembly } from "./invoke-cs";
 
@@ -18,10 +18,38 @@ let _js_owned_object_registry: FinalizationRegistry<any>;
 // this is array, not map. We maintain list of gaps in _js_handle_free_list so that it could be as compact as possible
 // 0th element is always null, because JSHandle == 0 is invalid handle.
 const _cs_owned_objects_by_js_handle: any[] = [null];
+const _cs_owned_objects_by_jsv_handle: any[] = [null];
 const _js_handle_free_list: JSHandle[] = [];
 let _next_js_handle = 1;
 
-export const _js_owned_object_table = new Map();
+export const _js_owned_object_table = new Map<GCHandle, WeakRefInternal<any>>();
+
+const _gcv_handle_free_list: GCHandle[] = [];
+let _next_gcv_handle = -2;
+
+// GCVHandle is like GCHandle, but it's not tracked and allocated by the mono GC, but just by JS.
+// It's used when we need to create GCHandle-like identity ahead of time, before calling Mono.
+// they have negative values, so that they don't collide with GCHandles.
+export function alloc_gcv_handle(): GCHandle {
+    const gcv_handle = _gcv_handle_free_list.length ? _gcv_handle_free_list.pop() : _next_gcv_handle--;
+    return gcv_handle as any;
+}
+
+export function free_gcv_handle(gcv_handle: GCHandle): void {
+    _gcv_handle_free_list.push(gcv_handle);
+}
+
+export function is_jsv_handle(js_handle: JSHandle): boolean {
+    return (js_handle as any) < -1;
+}
+
+export function is_js_handle(js_handle: JSHandle): boolean {
+    return (js_handle as any) > 0;
+}
+
+export function is_gcv_handle(gc_handle: GCHandle): boolean {
+    return (gc_handle as any) < -1;
+}
 
 // NOTE: FinalizationRegistry and WeakRef are missing on Safari below 14.1
 if (_use_finalization_registry) {
@@ -34,14 +62,10 @@ export const do_not_force_dispose = Symbol.for("wasm do_not_force_dispose");
 
 
 export function mono_wasm_get_jsobj_from_js_handle(js_handle: JSHandle): any {
-    if (js_handle !== JSHandleNull && js_handle !== JSHandleDisposed)
+    if (is_js_handle(js_handle))
         return _cs_owned_objects_by_js_handle[<any>js_handle];
-    return null;
-}
-
-export function get_js_obj(js_handle: JSHandle): any {
-    if (js_handle !== JSHandleNull && js_handle !== JSHandleDisposed)
-        return mono_wasm_get_jsobj_from_js_handle(js_handle);
+    if (is_jsv_handle(js_handle))
+        return _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
     return null;
 }
 
@@ -50,8 +74,9 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
         return js_obj[cs_owned_js_handle_symbol];
     }
     const js_handle = _js_handle_free_list.length ? _js_handle_free_list.pop() : _next_js_handle++;
+
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
-    _cs_owned_objects_by_js_handle[<number>js_handle!] = js_obj;
+    _cs_owned_objects_by_js_handle[<any>js_handle] = js_obj;
 
     if (Object.isExtensible(js_obj)) {
         js_obj[cs_owned_js_handle_symbol] = js_handle;
@@ -64,49 +89,66 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
     return js_handle as JSHandle;
 }
 
-export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
-    const obj = _cs_owned_objects_by_js_handle[<any>js_handle];
-    if (typeof obj !== "undefined" && obj !== null) {
-        if (typeof obj[cs_owned_js_handle_symbol] !== "undefined") {
-            obj[cs_owned_js_handle_symbol] = undefined;
-        }
+export function register_with_jsv_handle(js_obj: any, jsv_handle: JSHandle) {
+    // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
+    _cs_owned_objects_by_jsv_handle[0 - <any>jsv_handle] = js_obj;
 
-        _cs_owned_objects_by_js_handle[<any>js_handle] = undefined;
-        _js_handle_free_list.push(js_handle);
+    if (Object.isExtensible(js_obj)) {
+        js_obj[cs_owned_js_handle_symbol] = jsv_handle;
     }
 }
 
-export function setup_managed_proxy(result: any, gc_handle: GCHandle): void {
+export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
+    let obj: any;
+    if (is_js_handle(js_handle)) {
+        obj = _cs_owned_objects_by_js_handle[<any>js_handle];
+        _cs_owned_objects_by_js_handle[<any>js_handle] = undefined;
+        _js_handle_free_list.push(js_handle);
+    }
+    else if (is_jsv_handle(js_handle)) {
+        obj = _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
+        _cs_owned_objects_by_jsv_handle[0 - <any>js_handle] = undefined;
+    }
+    mono_assert(obj !== undefined && obj !== null, "ObjectDisposedException");
+    if (typeof obj[cs_owned_js_handle_symbol] !== "undefined") {
+        obj[cs_owned_js_handle_symbol] = undefined;
+    }
+}
+
+export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
     // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
-    result[js_owned_gc_handle_symbol] = gc_handle;
+    owner[js_owned_gc_handle_symbol] = gc_handle;
 
     // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
     if (_use_finalization_registry) {
         // register for GC of the C# object after the JS side is done with the object
-        _js_owned_object_registry.register(result, gc_handle, result);
+        _js_owned_object_registry.register(owner, gc_handle, owner);
     }
 
     // register for instance reuse
     // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
-    const wr = create_weak_ref(result);
+    const wr = create_weak_ref(owner);
     _js_owned_object_table.set(gc_handle, wr);
 }
 
-export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
+export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipManaged?: boolean): void {
     // The JS object associated with this gc_handle has been collected by the JS GC.
     // As such, it's not possible for this gc_handle to be invoked by JS anymore, so
     //  we can release the tracking weakref (it's null now, by definition),
     //  and tell the C# side to stop holding a reference to the managed object.
     // "The FinalizationRegistry callback is called potentially multiple times"
-    if (result) {
-        gc_handle = result[js_owned_gc_handle_symbol];
-        result[js_owned_gc_handle_symbol] = GCHandleNull;
+    if (owner) {
+        gc_handle = owner[js_owned_gc_handle_symbol];
+        owner[js_owned_gc_handle_symbol] = GCHandleNull;
         if (_use_finalization_registry) {
-            _js_owned_object_registry.unregister(result);
+            _js_owned_object_registry.unregister(owner);
         }
     }
-    if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle)) {
+    if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle) && !skipManaged) {
         runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle(gc_handle);
+    }
+    if (is_gcv_handle(gc_handle)) {
+        free_gcv_handle(gc_handle);
     }
 }
 
@@ -129,9 +171,9 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
         return null;
     const wr = _js_owned_object_table.get(gc_handle);
     if (wr) {
-        return wr.deref();
-        // TODO: could this be null before _js_owned_object_finalized was called ?
+        // this could be null even before _js_owned_object_finalized was called
         // TODO: are there race condition consequences ?
+        return wr.deref();
     }
     return null;
 }
@@ -140,12 +182,13 @@ export function assertNoProxies(): void {
     if (!MonoWasmThreads) return;
     mono_assert(_js_owned_object_table.size === 0, "There should be no proxies on this thread.");
     mono_assert(_cs_owned_objects_by_js_handle.length === 1, "There should be no proxies on this thread.");
+    mono_assert(_cs_owned_objects_by_jsv_handle.length === 1, "There should be no proxies on this thread.");
     mono_assert(exportsByAssembly.size === 0, "There should be no exports on this thread.");
-    mono_assert(fn_wrapper_by_fn_handle.length === 1, "There should be no imports on this thread.");
+    mono_assert(js_import_wrapper_by_fn_handle.length === 1, "There should be no imports on this thread.");
 }
 
-// when we arrive here, the C# side is already done with the object. 
-// We don't have to call back to release them.
+// when we arrive here from UninstallWebWorkerInterop, the C# will unregister the handles too.
+// when called from elsewhere, C# side could be unbalanced!!
 export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): void {
     let keepSomeCsAlive = false;
     let keepSomeJsAlive = false;
@@ -158,7 +201,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
     const gc_handles = [..._js_owned_object_table.keys()];
     for (const gc_handle of gc_handles) {
         const wr = _js_owned_object_table.get(gc_handle);
-        const obj = wr.deref();
+        const obj = wr && wr.deref();
         if (_use_finalization_registry && obj) {
             _js_owned_object_registry.unregister(obj);
         }
@@ -184,7 +227,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 if (obj[js_owned_gc_handle_symbol] === gc_handle) {
                     obj[js_owned_gc_handle_symbol] = GCHandleNull;
                 }
-                if (!_use_weak_ref && wr) wr.dispose();
+                if (!_use_weak_ref && wr) wr.dispose!();
                 doneGCHandles++;
             } else {
                 keepSomeCsAlive = true;
@@ -197,13 +240,11 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
             _js_owned_object_registry = new globalThis.FinalizationRegistry(_js_owned_object_finalized);
         }
     }
-
-    // dispose all proxies to JS objects
-    for (let js_handle = 0; js_handle < _cs_owned_objects_by_js_handle.length; js_handle++) {
-        const obj = _cs_owned_objects_by_js_handle[js_handle];
+    const free_js_handle = (js_handle: number, list: any[]): void => {
+        const obj = list[js_handle];
         const keepAlive = obj && typeof obj[do_not_force_dispose] === "boolean" && obj[do_not_force_dispose];
         if (!keepAlive) {
-            _cs_owned_objects_by_js_handle[js_handle] = undefined;
+            list[js_handle] = undefined;
         }
         if (obj) {
             if (verbose) {
@@ -230,16 +271,26 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 keepSomeJsAlive = true;
             }
         }
+    };
+    // dispose all proxies to JS objects
+    for (let js_handle = 0; js_handle < _cs_owned_objects_by_js_handle.length; js_handle++) {
+        free_js_handle(js_handle, _cs_owned_objects_by_js_handle);
+    }
+    for (let jsv_handle = 0; jsv_handle < _cs_owned_objects_by_jsv_handle.length; jsv_handle++) {
+        free_js_handle(jsv_handle, _cs_owned_objects_by_jsv_handle);
     }
     if (!keepSomeJsAlive) {
         _cs_owned_objects_by_js_handle.length = 1;
+        _cs_owned_objects_by_jsv_handle.length = 1;
         _next_js_handle = 1;
         _js_handle_free_list.length = 0;
     }
+    _gcv_handle_free_list.length = 0;
+    _next_gcv_handle = -2;
 
     if (disposeMethods) {
         // dispose all [JSImport]
-        for (const bound_fn of fn_wrapper_by_fn_handle) {
+        for (const bound_fn of js_import_wrapper_by_fn_handle) {
             if (bound_fn) {
                 const closure = (<any>bound_fn)[imported_js_function_symbol];
                 if (closure) {
@@ -248,7 +299,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 }
             }
         }
-        fn_wrapper_by_fn_handle.length = 1;
+        js_import_wrapper_by_fn_handle.length = 1;
 
         // dispose all [JSExport]
         const assemblyExports = [...exportsByAssembly.values()];

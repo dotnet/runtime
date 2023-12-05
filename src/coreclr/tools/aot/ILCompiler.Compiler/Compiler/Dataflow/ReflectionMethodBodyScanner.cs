@@ -431,7 +431,7 @@ namespace ILCompiler.Dataflow
                         // type instead).
                         //
                         // At least until we have shared enum code, this needs extra handling to get it right.
-                        foreach (var value in argumentValues[0])
+                        foreach (var value in argumentValues[0].AsEnumerable ())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -466,7 +466,7 @@ namespace ILCompiler.Dataflow
                             ? 0 : 1;
 
                         // We need the data to do struct marshalling.
-                        foreach (var value in argumentValues[paramIndex])
+                        foreach (var value in argumentValues[paramIndex].AsEnumerable ())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -497,7 +497,7 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
                     {
                         // We need the data to do delegate marshalling.
-                        foreach (var value in argumentValues[1])
+                        foreach (var value in argumentValues[1].AsEnumerable ())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -521,7 +521,7 @@ namespace ILCompiler.Dataflow
                 //
                 case IntrinsicId.Object_GetType:
                     {
-                        foreach (var valueNode in instanceValue)
+                        foreach (var valueNode in instanceValue.AsEnumerable ())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
@@ -538,7 +538,7 @@ namespace ILCompiler.Dataflow
                             // In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
                             // currently it won't do.
 
-                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType;
+                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
@@ -619,7 +619,7 @@ namespace ILCompiler.Dataflow
             // Validate that the return value has the correct annotations as per the method return value annotations
             if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0)
             {
-                foreach (var uniqueValue in methodReturnValue)
+                foreach (var uniqueValue in methodReturnValue.AsEnumerable ())
                 {
                     if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes)
                     {

@@ -5540,6 +5540,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector256SingleCopyToTest()
+        {
+            float[] array = new float[8];
+            Vector256.Create(2.0f).CopyTo(array);
+            Assert.True(array.AsSpan().SequenceEqual([2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector256SingleCopyToOffsetTest()
+        {
+            float[] array = new float[9];
+            Vector256.Create(2.0f).CopyTo(array, 1);
+            Assert.True(array.AsSpan().SequenceEqual([0.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]

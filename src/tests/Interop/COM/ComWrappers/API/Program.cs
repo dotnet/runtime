@@ -729,7 +729,7 @@ namespace ComWrappersTests
                     case FailureMode.ThrowException:
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
-                        Assert.True(false, "Invalid failure mode");
+                        Assert.Fail("Invalid failure mode");
                         throw new UnreachableException();
                 }
             }
@@ -743,7 +743,7 @@ namespace ComWrappersTests
                     case FailureMode.ThrowException:
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
-                        Assert.True(false, "Invalid failure mode");
+                        Assert.Fail("Invalid failure mode");
                         throw new UnreachableException();
                 }
             }
