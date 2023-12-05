@@ -2184,8 +2184,6 @@ public:
 
     unsigned NumLoopBlocks();
 
-    unsigned NumLoopBlocks();
-
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocksReversePostOrder(TFunc func);
 
@@ -4893,12 +4891,8 @@ public:
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
-    FlowGraphDfsTree* m_dfs;
-    FlowGraphNaturalLoops* m_loops;
-    struct LoopDsc;
-    LoopDsc** m_newToOldLoop;
-    FlowGraphNaturalLoop** m_oldToNewLoop;
 
+    FlowGraphDfsTree* m_dfs;
     // The next members are annotations on the flow graph used during the
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
@@ -4909,6 +4903,9 @@ public:
     struct LoopSideEffects* m_loopSideEffects;
     struct HoistCounts* m_loopHoistCounts;
     BlockToNaturalLoopMap* m_blockToLoop;
+    // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
+    // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
+    FlowGraphDominatorTree* fgSsaDomTree;
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -4918,10 +4915,6 @@ public:
     // index). The arrays are of size fgBBNumMax + 1.
     unsigned* fgDomTreePreOrder;
     unsigned* fgDomTreePostOrder;
-
-    // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
-    // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
-    FlowGraphDominatorTree* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
 
