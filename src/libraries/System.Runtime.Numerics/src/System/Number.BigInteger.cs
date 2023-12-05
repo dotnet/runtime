@@ -960,7 +960,7 @@ namespace System
                     number.Scale = valueDigits;
                     number.IsNegative = value.Sign < 0;
 
-                    scoped var vlb = new ValueListBuilder<char>(stackalloc char[128]); // arbitrary stack cut-off
+                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[128]); // arbitrary stack cut-off
 
                     if (fmt != 0)
                     {
@@ -1073,7 +1073,7 @@ namespace System
         }
 
         private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
-            where TChar : unmanaged, INumberBase<TChar> // CoreLib uses IUtfChar<TChar>
+            where TChar : unmanaged, IBinaryInteger<TChar> // CoreLib uses IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(base1E9Value[^1] != 0, "Leading zeros should be trimmed by caller.");
@@ -1081,12 +1081,25 @@ namespace System
             // The base 10^9 value is in reverse order
             for (int i = 0; i < base1E9Value.Length - 1; i++)
             {
-                bufferEnd = UInt32ToDecChars(bufferEnd, base1E9Value[i], 9);
+                // TODO: is it worthy to introduce optimized UInt32ToDecChars from CoreLib?
                 digits -= 9;
+                uint value = base1E9Value[i];
+                for (int j = 0; j < 9; j++)
+                {
+                    (value, uint digit) = Math.DivRem(value, 10);
+                    *(--bufferEnd) = TChar.CreateTruncating('0' + digit);
+                }
             }
 
             Debug.Assert(digits >= FormattingHelpers.CountDigits(base1E9Value[^1]));
-            return UInt32ToDecChars(bufferEnd, base1E9Value[^1], digits);
+            for (uint value = base1E9Value[^1]; value > 0 || digits > 0;)
+            {
+                digits--;
+                (value, uint digit) = Math.DivRem(value, 10);
+                *(--bufferEnd) = TChar.CreateTruncating('0' + digit);
+            }
+
+            return bufferEnd;
         }
     }
 
