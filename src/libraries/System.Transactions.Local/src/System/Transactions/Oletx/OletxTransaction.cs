@@ -293,7 +293,7 @@ namespace System.Transactions.Oletx
             Debug.Assert(enlistmentNotification != null, "Argument is null");
             Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments )
+            if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments)
             {
                 throw TransactionException.Create(SR.TooLate, null, DistributedTxId);
             }
@@ -643,7 +643,7 @@ namespace System.Transactions.Oletx
                 _lastStateChangeTime = _creationTime;
 
                 // Connect this object with the OutcomeEnlistment.
-                InternalClone = new OletxTransaction( this );
+                InternalClone = new OletxTransaction(this);
 
                 // We have have been created without an outcome enlistment if it was too late to create
                 // a clone from the ITransactionNative that we were created from.
@@ -719,7 +719,7 @@ namespace System.Transactions.Oletx
                                 //been enlisted with DTC. So there is no race to worry about
                                 ReleaseContainerLock(localPhase0VolatileContainer, ref phase0ContainerLockAcquired);
 
-                                localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer( this );
+                                localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer(this);
                                 needPhase0Enlistment = true;
                             }
                             else
@@ -792,7 +792,7 @@ namespace System.Transactions.Oletx
                             if (needVoterEnlistment)
                             {
                                 Debug.Assert(Phase1EnlistVolatilementContainer == null,
-                                    "RealOletxTransaction.AddDependentClone - phase1VolContainer not null when expected" );
+                                    "RealOletxTransaction.AddDependentClone - phase1VolContainer not null when expected");
                                 Phase1EnlistVolatilementContainer = localPhase1VolatileContainer;
                             }
                             localPhase1VolatileContainer!.AddDependentClone();
@@ -1029,7 +1029,7 @@ namespace System.Transactions.Oletx
                 {
                     Doomed = true;
                 }
-                else if (TooLateForEnlistments )
+                else if (TooLateForEnlistments)
                 {
                     // It's too late for rollback to be called here.
                     throw TransactionException.Create(SR.TransactionAlreadyOver, null, DistributedTxId);
@@ -1234,7 +1234,7 @@ namespace System.Transactions.Oletx
 
                 // We may be getting this notification while there are still volatile prepare notifications outstanding.  Tell the
                 // container to drive the aborted notification in that case.
-                if ( localStatus is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
+                if (localStatus is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
                    realTx.Phase1EnlistVolatilementContainer != null)
                 {
                     realTx.Phase1EnlistVolatilementContainer.OutcomeFromTransaction(localStatus);
@@ -1283,13 +1283,13 @@ namespace System.Transactions.Oletx
                     {
                         foreach (OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in realOletxTransaction.Phase0EnlistVolatilementContainerList)
                         {
-                            phase0VolatileContainer.OutcomeFromTransaction( status );
+                            phase0VolatileContainer.OutcomeFromTransaction(status);
                         }
                     }
 
                     // We may be getting this notification while there are still volatile prepare notifications outstanding.  Tell the
                     // container to drive the aborted notification in that case.
-                    if ( status is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
+                    if (status is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
                            realOletxTransaction.Phase1EnlistVolatilementContainer != null)
                     {
                         realOletxTransaction.Phase1EnlistVolatilementContainer.OutcomeFromTransaction(status);
@@ -1307,7 +1307,7 @@ namespace System.Transactions.Oletx
         //
         internal static bool TransactionIsInDoubt(RealOletxTransaction realTx)
         {
-            if (realTx.CommittableTransaction is { CommitCalled: false } )
+            if (realTx.CommittableTransaction is { CommitCalled: false })
             {
                 // If this is a committable transaction and commit has not been called
                 // then we know the outcome.

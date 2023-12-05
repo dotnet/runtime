@@ -119,7 +119,7 @@ namespace System.Threading
         private bool UnregisterWindowsThreadPool(WaitHandle waitObject)
         {
             // Hold the lock during the synchronous part of Unregister (as in CoreCLR)
-            lock(_lock!)
+            lock (_lock!)
             {
                 if (!_unregistering)
                 {

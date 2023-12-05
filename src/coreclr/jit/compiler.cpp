@@ -5105,14 +5105,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    if (!compMacOsArm64Abi())
-    {
-        // Set stack levels; this information is necessary for x86
-        // but on other platforms it is used only in asserts.
-        // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
-        StackLevelSetter stackLevelSetter(this);
-        stackLevelSetter.Run();
-    }
+    // Set stack levels and analyze throw helper usage.
+    StackLevelSetter stackLevelSetter(this);
+    stackLevelSetter.Run();
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5279,8 +5274,9 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail() &&
+            ((block->bbFlags & BBF_NONE_QUIRK) == 0))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)

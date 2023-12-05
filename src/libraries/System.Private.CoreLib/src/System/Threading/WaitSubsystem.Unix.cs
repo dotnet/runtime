@@ -393,7 +393,7 @@ namespace System.Threading
                 WaitableObject waitableObject = waitableObjects[0]!;
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false);
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
             }
 
             return
