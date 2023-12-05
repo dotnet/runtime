@@ -4933,15 +4933,15 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func)
 {
-    BitVecTraits traits(m_blocksSize, m_tree->GetCompiler());
+    BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
     bool result = BitVecOps::VisitBits(&traits, m_blocks, [=](unsigned index) {
         // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
         // loop block rpo index = head block rpoIndex + index
         // loop block po index = PostOrderCount - 1 - loop block rpo index
         //                     = headPreOrderIndex - index
         unsigned poIndex = m_header->bbNewPostorderNum - index;
-        assert(poIndex < m_tree->GetPostOrderCount());
-        return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
@@ -4965,11 +4965,11 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
 {
-    BitVecTraits traits(m_blocksSize, m_tree->GetCompiler());
+    BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
         unsigned poIndex = m_header->bbNewPostorderNum - index;
-        assert(poIndex < m_tree->GetPostOrderCount());
-        return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;

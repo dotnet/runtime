@@ -65,7 +65,7 @@ void Compiler::fgInit()
     fgBBVarSetsInited = false;
     fgReturnCount     = 0;
 
-    m_dfs             = nullptr;
+    m_dfsTree         = nullptr;
     m_loops           = nullptr;
     m_newToOldLoop    = nullptr;
     m_oldToNewLoop    = nullptr;

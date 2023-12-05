@@ -3270,7 +3270,7 @@ PhaseStatus Compiler::optCloneLoops()
         // TODO: recompute the loop table, to include the slow loop path in the table?
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
 
-        m_dfs = fgComputeDfs();
+        m_dfsTree = fgComputeDfs();
         optFindNewLoops();
     }
 

@@ -415,9 +415,9 @@ void SsaBuilder::InsertPhiFunctions()
 {
     JITDUMP("*************** In SsaBuilder::InsertPhiFunctions()\n");
 
-    FlowGraphDfsTree* dfs       = m_pCompiler->m_dfs;
-    BasicBlock**      postOrder = dfs->GetPostOrder();
-    unsigned          count     = dfs->GetPostOrderCount();
+    FlowGraphDfsTree* dfsTree   = m_pCompiler->m_dfsTree;
+    BasicBlock**      postOrder = dfsTree->GetPostOrder();
+    unsigned          count     = dfsTree->GetPostOrderCount();
 
     // Compute dominance frontier.
     BlkToBlkVectorMap mapDF(m_allocator);
@@ -1304,8 +1304,8 @@ void SsaBuilder::Build()
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
 
-    m_pCompiler->m_dfs        = m_pCompiler->fgComputeDfs();
-    m_pCompiler->fgSsaDomTree = FlowGraphDominatorTree::Build(m_pCompiler->m_dfs);
+    m_pCompiler->m_dfsTree    = m_pCompiler->fgComputeDfs();
+    m_pCompiler->fgSsaDomTree = FlowGraphDominatorTree::Build(m_pCompiler->m_dfsTree);
     EndPhase(PHASE_BUILD_SSA_DOMS);
 
     // Compute liveness on the graph.

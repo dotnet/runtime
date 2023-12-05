@@ -2085,7 +2085,7 @@ class FlowGraphNaturalLoop
     friend class FlowGraphNaturalLoops;
 
     // The DFS tree that contains the loop blocks.
-    const FlowGraphDfsTree* m_tree;
+    const FlowGraphDfsTree* m_dfsTree;
 
     // The header block; dominates all other blocks in the loop, and is the
     // only block branched to from outside the loop.
@@ -2119,7 +2119,7 @@ class FlowGraphNaturalLoop
     // Can be used to store additional annotations for this loop on the side.
     unsigned m_index = 0;
 
-    FlowGraphNaturalLoop(const FlowGraphDfsTree* tree, BasicBlock* head);
+    FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, BasicBlock* head);
 
     unsigned LoopBlockBitVecIndex(BasicBlock* block);
     bool TryGetLoopBlockBitVecIndex(BasicBlock* block, unsigned* pIndex);
@@ -2141,7 +2141,7 @@ public:
 
     const FlowGraphDfsTree* GetDfsTree() const
     {
-        return m_tree;
+        return m_dfsTree;
     }
 
     FlowGraphNaturalLoop* GetParent() const
@@ -2213,7 +2213,7 @@ public:
 //
 class FlowGraphNaturalLoops
 {
-    const FlowGraphDfsTree* m_dfs;
+    const FlowGraphDfsTree* m_dfsTree;
 
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
@@ -2228,7 +2228,7 @@ class FlowGraphNaturalLoops
 public:
     const FlowGraphDfsTree* GetDfsTree()
     {
-        return m_dfs;
+        return m_dfsTree;
     }
 
     size_t NumLoops()
@@ -2310,14 +2310,14 @@ class FlowGraphDominatorTree
     template<typename TVisitor>
     friend class NewDomTreeVisitor;
 
-    const FlowGraphDfsTree* m_dfs;
-    const DomTreeNode* m_tree;
+    const FlowGraphDfsTree* m_dfsTree;
+    const DomTreeNode* m_domTree;
     const unsigned* m_preorderNum;
     const unsigned* m_postorderNum;
 
-    FlowGraphDominatorTree(const FlowGraphDfsTree* dfs, const DomTreeNode* tree, const unsigned* preorderNum, const unsigned* postorderNum)
-        : m_dfs(dfs)
-        , m_tree(tree)
+    FlowGraphDominatorTree(const FlowGraphDfsTree* dfsTree, const DomTreeNode* domTree, const unsigned* preorderNum, const unsigned* postorderNum)
+        : m_dfsTree(dfsTree)
+        , m_domTree(domTree)
         , m_preorderNum(preorderNum)
         , m_postorderNum(postorderNum)
     {
@@ -2328,7 +2328,7 @@ public:
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
 
-    static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfs);
+    static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
 };
 
 // Represents a reverse mapping from block back to its (most nested) containing loop.
@@ -4892,7 +4892,7 @@ public:
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
 
-    FlowGraphDfsTree* m_dfs;
+    FlowGraphDfsTree* m_dfsTree;
     // The next members are annotations on the flow graph used during the
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
@@ -12125,7 +12125,7 @@ public:
     //
     void WalkTree(const FlowGraphDominatorTree* domTree)
     {
-        WalkTree(domTree->m_tree);
+        WalkTree(domTree->m_domTree);
     }
 };
 

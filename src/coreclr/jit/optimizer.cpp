@@ -4637,7 +4637,7 @@ PhaseStatus Compiler::optUnrollLoops()
             fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
         }
 
-        m_dfs = fgComputeDfs();
+        m_dfsTree = fgComputeDfs();
         optFindNewLoops();
 
         DBEXEC(verbose, fgDispBasicBlocks());
@@ -5543,7 +5543,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
 {
     optFindLoops();
 
-    m_dfs = fgComputeDfs();
+    m_dfsTree = fgComputeDfs();
     optFindNewLoops();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -5554,7 +5554,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
 //
 void Compiler::optFindNewLoops()
 {
-    m_loops = FlowGraphNaturalLoops::Find(m_dfs);
+    m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     m_newToOldLoop = m_loops->NumLoops() == 0 ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
     m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
@@ -8421,8 +8421,8 @@ void Compiler::optComputeLoopSideEffects()
         m_loopSideEffects[loop->GetIndex()].VarUseDef = VarSetOps::MakeEmpty(this);
     }
 
-    BasicBlock** postOrder      = m_dfs->GetPostOrder();
-    unsigned     postOrderCount = m_dfs->GetPostOrderCount();
+    BasicBlock** postOrder      = m_dfsTree->GetPostOrder();
+    unsigned     postOrderCount = m_dfsTree->GetPostOrderCount();
 
     // The side effect code benefits from seeing things in RPO as it has some
     // limited treatment assignments it has seen the value of.
