@@ -1127,10 +1127,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             elemsize = id->idOpSize();
             assert(insOptsScalable(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));        // nnnnn
-            assert(isVectorRegister(id->idReg2()));        // ddddd
-            assert(isValidVectorElemsize(elemsize)); // xx
-            assert(isValidVectorElemsize(elemsize)); // x
+            assert(isVectorRegister(id->idReg1())); // nnnnn
+            assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(optGetSveElemsize(id->idInsOpt()) != EA_8BYTE);
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+                                                                              // x
+            assert(isScalableVectorSize(elemsize));
             break;
 
         default:
@@ -5207,6 +5209,46 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     }
 }
 
+//  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
+//  asserts and returns EA_UNKNOWN if an invalid 'arrangement' value is passed
+//
+/*static*/ emitAttr emitter::optGetSveElemsize(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+        case INS_OPTS_SCALABLE_WIDE_B:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_B_WITH_SCALAR:
+            return EA_1BYTE;
+
+        case INS_OPTS_SCALABLE_H:
+        case INS_OPTS_SCALABLE_WIDE_H:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_H_WITH_SCALAR:
+            return EA_2BYTE;
+
+        case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_WIDE_S:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_S_WITH_SCALAR:
+            return EA_4BYTE;
+
+        case INS_OPTS_SCALABLE_D:
+        case INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_D_WITH_SCALAR:
+            return EA_8BYTE;
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+            return EA_UNKNOWN;
+    }
+}
+
 /*static*/ insOpts emitter::optWidenElemsizeArrangement(insOpts arrangement)
 {
     if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_16B))
@@ -5225,6 +5267,25 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     {
         assert(!" invalid 'arrangement' value");
         return INS_OPTS_NONE;
+    }
+}
+
+/*static*/ insOpts emitter::optWidenSveElemsizeArrangement(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+            return INS_OPTS_SCALABLE_H;
+
+        case INS_OPTS_SCALABLE_H:
+            return INS_OPTS_SCALABLE_S;
+
+        case INS_OPTS_SCALABLE_S:
+            return INS_OPTS_SCALABLE_D;
+
+        default:
+            assert(!" invalid 'arrangement' value");
+            return INS_OPTS_NONE;
     }
 }
 
@@ -6695,6 +6756,21 @@ void emitter::emitIns_R_R(
                 assert(isValidVectorElemsize(size));
                 fmt = IF_DV_2L;
             }
+            break;
+
+        case INS_sve_sqxtnb:
+        case INS_sve_sqxtnt:
+        case INS_sve_uqxtnb:
+        case INS_sve_uqxtnt:
+        case INS_sve_sqxtunb:
+        case INS_sve_sqxtunt:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(optGetSveElemsize(opt) != EA_8BYTE);
+            assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_GD_2A;
             break;
 
         default:
@@ -12345,6 +12421,42 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return 0;
 }
 
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_tszh_22_tszl_20_to_19(insOpts opt)
+{
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B:
+        case INS_OPTS_SCALABLE_WIDE_B:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_B_WITH_SCALAR:
+            return 0b00000000000010000000000000000000; // set the bit at location 19
+
+        case INS_OPTS_SCALABLE_H:
+        case INS_OPTS_SCALABLE_WIDE_H:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_H_WITH_SCALAR:
+            return 0b00000000000100000000000000000000; // set the bit at location 20
+
+        case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_WIDE_S:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_S_WITH_SCALAR:
+            return 0b00000000010000000000000000000000; // set the bit at location 22
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
 {
     instruction ins    = id->idIns();
@@ -14366,10 +14478,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_9_to_5(id->idReg1());  // nnnnn
-            code |= insEncodeReg_V_4_to_0(id->idReg2());  // ddddd
-            code |= insEncodeSveElemsize(id->idInsOpt()); // xx
-            code |= insEncodeSveElemsize(id->idInsOpt()); // x
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                        // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                        // nnnnn
+            code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(id->idInsOpt()); // xx
+                                                                                // x
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -16714,8 +16826,8 @@ void emitter::emitDispInsHelp(
             break;
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // nnnnn
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), false); // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                  // ddddd
+            emitDispSveReg(id->idReg2(), optWidenSveElemsizeArrangement(id->idInsOpt()), false); // nnnnn
             break;
 
         default:
@@ -19150,21 +19262,27 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_sve_sqxtnb:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
                 case INS_sve_sqxtnt:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
                 case INS_sve_uqxtnb:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
                 case INS_sve_uqxtnt:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
                 case INS_sve_sqxtunb:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
                 case INS_sve_sqxtunt:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);

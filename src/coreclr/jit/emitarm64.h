@@ -468,6 +468,9 @@ static code_t insEncodeReg3Scale(bool isScaled);
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(insOpts opt);
 
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(insOpts opt);
+
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
 {
@@ -567,8 +570,14 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
+//  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
+static emitAttr optGetSveElemsize(insOpts arrangement);
+
 //  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
 static insOpts optWidenElemsizeArrangement(insOpts arrangement);
+
+//  For the given SVE 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
+static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
 
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
 static emitAttr widenDatasize(emitAttr datasize);
