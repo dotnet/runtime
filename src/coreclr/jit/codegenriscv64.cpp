@@ -5453,30 +5453,30 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree*  src1 = bndsChk->GetIndex();
-    GenTree*  src2 = bndsChk->GetArrayLength();
-    regNumber reg1 = src1->GetRegNum();
-    regNumber reg2 = src2->GetRegNum();
+    GenTree*  index     = bndsChk->GetIndex();
+    GenTree*  length    = bndsChk->GetArrayLength();
+    regNumber indexReg  = index->GetRegNum();
+    regNumber lengthReg = length->GetRegNum();
 
-    genConsumeRegs(src1);
-    genConsumeRegs(src2);
+    genConsumeRegs(index);
+    genConsumeRegs(length);
 
-    if (genActualType(src1->TypeGet()) == TYP_INT)
+    if (genActualType(index->TypeGet()) == TYP_INT)
     {
         regNumber tempReg = oper->GetSingleTempReg();
-        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, reg1, 0); // sign-extend
-        reg1 = tempReg;
+        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
+        indexReg = tempReg;
     }
 
 #ifdef DEBUG
-    var_types bndsChkType = genActualType(src2->TypeGet());
-    var_types src1ChkType = genActualType(src1->TypeGet());
+    var_types lengthType = genActualType(length->TypeGet());
+    var_types indexType  = genActualType(index->TypeGet());
     // Bounds checks can only be 32 or 64 bit sized comparisons.
-    assert(bndsChkType == TYP_INT || bndsChkType == TYP_LONG);
-    assert(src1ChkType == TYP_INT || src1ChkType == TYP_LONG);
+    assert(lengthType == TYP_INT || lengthType == TYP_LONG);
+    assert(indexType == TYP_INT || indexType == TYP_LONG);
 #endif // DEBUG
 
-    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, reg1, bndsChk->gtIndRngFailBB, reg2);
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, bndsChk->gtIndRngFailBB, lengthReg);
 }
 
 //---------------------------------------------------------------------
