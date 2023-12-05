@@ -161,11 +161,9 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("ms-BN").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
             yield return new object[] { new CultureInfo("ms-MY").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
             yield return new object[] { new CultureInfo("ms-SG").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
-            // ActiveIssue: https://github.com/dotnet/runtime/issues/95639
-            // string[] norwegianMonths = new string [] { "jan.", "feb.", "mars", "apr.", "mai", "juni", "juli", "aug.", "sep.", "okt.", "nov.", "des.", "" }; // "jan.", "feb.", "mar.", "apr.", "mai", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "des.", "
-            // string[] norwegianMonthsNodeJS = new string [] { "jan.", "feb.", "mar.", "apr.", "mai", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "des.", "" };
-            // yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, PlatformDetection.IsNodeJS ? norwegianMonthsNodeJS : norwegianMonths };
-            // yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, PlatformDetection.IsNodeJS ? norwegianMonthsNodeJS : norwegianMonths };
+            string[] norwegianMonths = new string [] { "jan.", "feb.", "mars", "apr.", "mai", "juni", "juli", "aug.", "sep.", "okt.", "nov.", "des.", "" }; // "jan.", "feb.", "mar.", "apr.", "mai", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "des.", "
+            yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, norwegianMonths };
+            yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, norwegianMonths };
             string[] dutchMonths = new string[] { "jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", "" }; // "jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec.", ""
             yield return new object[] { new CultureInfo("nl-AW").DateTimeFormat, dutchMonths };
             yield return new object[] { new CultureInfo("nl-BE").DateTimeFormat, dutchMonths };
