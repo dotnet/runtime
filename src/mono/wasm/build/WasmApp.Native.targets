@@ -250,7 +250,7 @@
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="-emit-llvm" />
 
-      <_EmccCFlags Include="-I&quot;%(_EmccIncludePaths.Identity)&quot;" />
+      <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
