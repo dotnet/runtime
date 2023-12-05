@@ -3,16 +3,19 @@ set(SOURCES
   metadataimport.cpp
   hcorenum.cpp
   pal.cpp
+  signatures.cpp
 )
 
 set(HEADERS
   ../inc/dnmd_interfaces.hpp
+  ../inc/internal/span.hpp
   ./metadataimportro.hpp
   ./hcorenum.hpp
   ./controllingiunknown.hpp
   ./tearoffbase.hpp
   ./pal.hpp
   ./dnmdowner.hpp
+  ./signatures.hpp
 )
 
 if(NOT MSVC)

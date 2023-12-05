@@ -7,7 +7,6 @@ set(SOURCES
   query.c
   streams.c
   tables.c
-  sig.c
   write.c
 )
 

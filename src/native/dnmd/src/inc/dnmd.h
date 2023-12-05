@@ -476,13 +476,6 @@ md_range_result_t md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, u
 bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk);
 bool md_find_cursor_of_range_element(mdcursor_t element, mdcursor_t* cursor);
 
-bool md_is_field_sig(uint8_t const* sig, size_t sig_len);
-
-// Create the equivalent MethodDefSig (II.23.2.1) from a MethodRefSig (II.23.2.2).
-// ref_sig is a pointer to a MethodRefSig blob.
-// If the return value is true, def_sig will be a pointer to malloc-d memory containing the MethodDefSig for the MethodRefSig.
-bool md_create_methoddefsig_from_methodrefsig(uint8_t const* ref_sig, size_t ref_sig_len, uint8_t** def_sig, size_t* def_sig_len);
-
 // Given a cursor, resolve any indirections to the final cursor or return the original cursor if it does not point to an indirection table.
 // Returns true if the cursor was not an indirect cursor or if the indirection was resolved, or false if the cursor pointed to an invalid indirection table entry.
 bool md_resolve_indirect_cursor(mdcursor_t c, mdcursor_t* target);
