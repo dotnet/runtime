@@ -6318,18 +6318,44 @@ public:
         BasicBlock*     acdDstBlk; // block  to  which we jump
         unsigned        acdData;
         SpecialCodeKind acdKind; // what kind of a special block is this?
+        bool            acdUsed; // do we need to keep this helper block?
 #if !FEATURE_FIXED_OUT_ARGS
         bool     acdStkLvlInit; // has acdStkLvl value been already set?
         unsigned acdStkLvl;     // stack level in stack slots.
 #endif                          // !FEATURE_FIXED_OUT_ARGS
     };
 
+    struct AddCodeDscKey
+    {
+    public:
+        AddCodeDscKey(): acdKind(SCK_NONE), acdData(0) {}
+        AddCodeDscKey(SpecialCodeKind kind, unsigned data): acdKind(kind), acdData(data) {}
+
+        static bool Equals(const AddCodeDscKey& x, const AddCodeDscKey& y)
+        {
+            return (x.acdData == y.acdData) && (x.acdKind == y.acdKind);
+        }
+
+        static unsigned GetHashCode(const AddCodeDscKey& x)
+        {
+            return (x.acdData << 3) | (unsigned) x.acdKind;
+        }
+
+    private:
+        SpecialCodeKind acdKind;
+        unsigned acdData;
+    };
+
+    typedef JitHashTable<AddCodeDscKey, AddCodeDscKey, AddCodeDsc*> AddCodeDscMap;
+
+    AddCodeDscMap* fgGetAddCodeDscMap();
+
 private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
     AddCodeDsc* fgAddCodeList;
     bool        fgRngChkThrowAdded;
-    AddCodeDsc* fgExcptnTargetCache[SCK_COUNT];
+    AddCodeDscMap* fgAddCodeDscMap;
 
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
     PhaseStatus fgCreateThrowHelperBlocks();

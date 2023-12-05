@@ -3342,6 +3342,21 @@ const char* sckName(SpecialCodeKind codeKind)
 #endif
 
 //------------------------------------------------------------------------
+// fgGetAddCodeDscMap; create or return the add code desc map
+//
+// Returns:
+//   add code desc map
+//
+Compiler::AddCodeDscMap* Compiler::fgGetAddCodeDscMap()
+{
+    if (fgAddCodeDscMap == nullptr)
+    {
+        fgAddCodeDscMap = new (getAllocator(CMK_Unknown)) AddCodeDscMap(getAllocator(CMK_Unknown));
+    }
+    return fgAddCodeDscMap;
+}
+
+//------------------------------------------------------------------------
 // fgAddCodeRef: Indicate that a particular throw helper block will
 //   be needed by the method.
 //
@@ -3394,11 +3409,21 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add->acdStkLvlInit = false;
 #endif // !FEATURE_FIXED_OUT_ARGS
 
+    // This gets set true in the stack level setter
+    // if there's still a need for this helper
+    add->acdUsed = false;
+
     fgAddCodeList = add;
 
     // Defer creating of the blocks until later.
     //
     add->acdDstBlk = srcBlk;
+
+    // Add to map
+    //
+    AddCodeDscMap* const map = fgGetAddCodeDscMap();
+    AddCodeDscKey        key(kind, refData);
+    map->Set(key, add);
 }
 
 //------------------------------------------------------------------------
@@ -3580,41 +3605,28 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 //
 // Arguments:
 //    kind - kind of exception to throw
-//    block - block where we need to throw an exception
+//    refData -- bbThrowIndex of the block that will jump to the throw helper
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
 //    descriptor exists
 //
-// Notes:
-//   We maintain a cache of one AddCodeDsc for each kind, to make searching fast.
-//
-//   Each block in an EH region uses the same (maybe shared) block as the jump target for
-//   this exception kind.
-//
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
+    AddCodeDsc*          add = nullptr;
+    AddCodeDscMap* const map = fgGetAddCodeDscMap();
+    AddCodeDscKey        key(kind, refData);
+    map->Lookup(key, &add);
 
-    if (!(fgExcptnTargetCache[kind] && // Try the cached value first
-          fgExcptnTargetCache[kind]->acdData == refData))
+    if (add == nullptr)
     {
-        // Too bad, have to search for the jump target for the exception
-
-        AddCodeDsc* add = nullptr;
-
-        for (add = fgAddCodeList; add != nullptr; add = add->acdNext)
-        {
-            if (add->acdData == refData && add->acdKind == kind)
-            {
-                break;
-            }
-        }
-
-        fgExcptnTargetCache[kind] = add;
+        // We should't be asking for these blocks late in compilation
+        // unless we know there are entries to be found.
+        assert(!fgRngChkThrowAdded);
     }
 
-    return fgExcptnTargetCache[kind];
+    return add;
 }
 
 //------------------------------------------------------------------------
