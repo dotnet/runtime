@@ -1356,8 +1356,6 @@ void SystemDomain::LoadBaseSystemClasses()
         // initialize cast cache here.
         CastCache::Initialize();
         ECall::PopulateManagedCastHelpers();
-        SetJitHelperFunction(CORINFO_HELP_MEMSET, &memset);
-        SetJitHelperFunction(CORINFO_HELP_MEMCPY, &memcpy);
 
         // used by IsImplicitInterfaceOfSZArray
         CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);

@@ -2492,7 +2492,6 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 }
 HCIMPLEND
 
-
 //========================================================================
 //
 //      STRING HELPERS
@@ -6356,6 +6355,20 @@ HCIMPLEND_RAW
 // These two do take args but have a custom calling convention.
 EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
+
+HCIMPL3(void, JIT_MemSet, void* dst, int val, size_t len)
+{
+    FCALL_CONTRACT;
+    memset(dst, val, len);
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_MemCpy, void* dst, void* src, size_t len)
+{
+    FCALL_CONTRACT;
+    memcpy(dst, src, len);
+}
+HCIMPLEND
 
 //========================================================================
 //
