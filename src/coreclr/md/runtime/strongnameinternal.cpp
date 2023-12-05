@@ -228,9 +228,6 @@ namespace
 BYTE const* const g_coreLibPublicKey = g_rbTheSilverlightPlatformKey;
 const ULONG g_coreLibPublicKeyLen = ARRAY_SIZE(g_rbTheSilverlightPlatformKey);
 
-// Size in bytes of strong name token.
-#define SN_SIZEOF_TOKEN     8
-
 // Determine the size of a PublicKeyBlob structure given the size of the key
 // portion.
 #define SN_SIZEOF_KEY(_pKeyBlob) (offsetof(PublicKeyBlob, PublicKey) + GET_UNALIGNED_VAL32(&(_pKeyBlob)->cbPublicKey))
@@ -260,20 +257,11 @@ const ULONG g_coreLibPublicKeyLen = ARRAY_SIZE(g_rbTheSilverlightPlatformKey);
 
 #define SN_THE_SILVERLIGHT_KEYTOKEN() ((PublicKeyBlob*)g_rbTheSilverlightKeyToken)
 
-
-// Free buffer allocated by routines below.
-VOID StrongNameFreeBuffer(BYTE *pbMemory)            // [in] address of memory to free
-{
-    if (pbMemory != (BYTE*)SN_MICROSOFT_KEY() && pbMemory != g_rbNeutralPublicKey)
-        delete [] pbMemory;
-}
-
-
 // Create a strong name token from a public key blob.
 HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
                                    ULONG    cbPublicKeyBlob,
-                                   BYTE   **ppbStrongNameToken,     // [out] strong name token
-                                   ULONG   *pcbStrongNameToken)
+                                   BYTE(&tokenBuffer)[SN_SIZEOF_TOKEN]     // [out] strong name token
+)
 {
     HRESULT         hr = S_OK;
 
@@ -292,33 +280,27 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     }
 
     // Allocate a buffer for the output token.
-    *ppbStrongNameToken = new (nothrow) BYTE[SN_SIZEOF_TOKEN];
-    if (*ppbStrongNameToken == NULL) {
-        hr = E_OUTOFMEMORY;
-        goto Exit;
-    }
-    *pcbStrongNameToken = SN_SIZEOF_TOKEN;
 
     // We cache a couple of common cases.
     if (SN_IS_NEUTRAL_KEY(pbPublicKeyBlob)) {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, g_rbNeutralPublicKeyToken, SN_SIZEOF_TOKEN);
+        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, g_rbNeutralPublicKeyToken, SN_SIZEOF_TOKEN);
         goto Exit;
     }
     if (cbPublicKeyBlob == SN_SIZEOF_MICROSOFT_KEY() &&
         memcmp(pbPublicKeyBlob, SN_MICROSOFT_KEY(), cbPublicKeyBlob) == 0) {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_MICROSOFT_KEYTOKEN(), SN_SIZEOF_TOKEN);
+        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, SN_MICROSOFT_KEYTOKEN(), SN_SIZEOF_TOKEN);
         goto Exit;
     }
 
     if (SN_IS_THE_SILVERLIGHT_PLATFORM_KEY(pbPublicKeyBlob))
     {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN(), SN_SIZEOF_TOKEN);
+        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN(), SN_SIZEOF_TOKEN);
         goto Exit;
     }
 
     if (SN_IS_THE_SILVERLIGHT_KEY(pbPublicKeyBlob))
     {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_SILVERLIGHT_KEYTOKEN(), SN_SIZEOF_TOKEN);
+        memcpy_s(tokenBuffer, SN_SIZEOF_TOKEN, SN_THE_SILVERLIGHT_KEYTOKEN(), SN_SIZEOF_TOKEN);
         goto Exit;
     }
 
@@ -332,7 +314,7 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     // low order bytes from a network byte order point of view). Reverse the
     // order of these bytes in the output buffer to get host byte order.
     for (i = 0; i < SN_SIZEOF_TOKEN; i++)
-        (*ppbStrongNameToken)[SN_SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
+        (tokenBuffer)[SN_SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
 
     goto Exit;
 

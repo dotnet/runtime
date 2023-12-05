@@ -13,7 +13,6 @@
 #include "common.h"
 
 #include "strongnameinternal.h"
-#include "strongnameholders.h"
 
 BOOL BaseAssemblySpec::IsCoreLib()
 {
@@ -93,15 +92,13 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
     }
     CONTRACTL_END;
 
-    StrongNameBufferHolder<BYTE> pbPublicKeyToken;
-    DWORD cbPublicKeyToken;
+    BYTE strongNameToken[SN_SIZEOF_TOKEN];
     IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
         m_cbPublicKeyOrToken,
-        &pbPublicKeyToken,
-        &cbPublicKeyToken));
+        strongNameToken));
 
-    BYTE *temp = new BYTE [cbPublicKeyToken];
-    memcpy(temp, pbPublicKeyToken, cbPublicKeyToken);
+    BYTE *temp = new BYTE [SN_SIZEOF_TOKEN];
+    memcpy(temp, strongNameToken, SN_SIZEOF_TOKEN);
 
     if (m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED)
         delete [] m_pbPublicKeyOrToken;
@@ -109,7 +106,7 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
         m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;
 
     m_pbPublicKeyOrToken = temp;
-    m_cbPublicKeyOrToken = cbPublicKeyToken;
+    m_cbPublicKeyOrToken = SN_SIZEOF_TOKEN;
     m_dwFlags &= ~afPublicKey;
 }
 
