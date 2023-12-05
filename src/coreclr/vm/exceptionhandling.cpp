@@ -7569,7 +7569,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     MarkInlinedCallFrameAsFuncletCall(pFrame);
     HandlerFn* pfnHandler = (HandlerFn*)pHandlerIP;
     exInfo->m_sfHighBound = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP;
-    DWORD_PTR dwResumePC;
+    DWORD_PTR dwResumePC = 0;
 
     if (pHandlerIP != NULL)
     {
