@@ -693,7 +693,7 @@ void emitter::emitIns_R_R_I(
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
-        assert(isValidSimm12(imm));
+        assert(isValidUimm12(imm));
         code |= reg1 << 7;
         code |= reg2 << 15;
         code |= imm << 20;
@@ -727,7 +727,7 @@ void emitter::emitIns_R_I_I(
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isValidUimm5(imm1));
-        assert(isValidSimm12(imm2));
+        assert(isValidUimm12(imm2));
         code |= reg1 << 7;
         code |= imm1 << 15;
         code |= imm2 << 20;
