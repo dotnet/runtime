@@ -133,8 +133,8 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and
-                              '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                              $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
+                          '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                           $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
       <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __TestArchitecture=$(TargetArchitecture)" />
       <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __IsXUnitLogCheckerSupported=1" />
       
