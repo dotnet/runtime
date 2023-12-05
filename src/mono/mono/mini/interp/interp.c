@@ -1735,13 +1735,8 @@ ves_pinvoke_method (
 #ifdef HOST_WASM
 	BuildArgsFromSigInfo *call_info = cache_data->call_info;
 #else
-	BuildArgsFromSigInfo *call_info= (BuildArgsFromSigInfo*)*cache;
-
-	if (!call_info) {
-		call_info = get_build_args_from_sig_info (get_default_mem_manager (), sig);
-		mono_memory_barrier ();
-		*cache = call_info;
-	}
+	BuildArgsFromSigInfo *call_info = NULL;
+	g_assert_not_reached ();
 #endif
 
 	InterpMethodArguments margs;
