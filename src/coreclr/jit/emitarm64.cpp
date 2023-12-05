@@ -12436,21 +12436,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR:
         case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
         case INS_OPTS_SCALABLE_B_WITH_SCALAR:
-            return 0b00000000000010000000000000000000; // set the bit at location 19
+            return 0x080000; // set the bit at location 19
 
         case INS_OPTS_SCALABLE_H:
         case INS_OPTS_SCALABLE_WIDE_H:
         case INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR:
         case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
         case INS_OPTS_SCALABLE_H_WITH_SCALAR:
-            return 0b00000000000100000000000000000000; // set the bit at location 20
+            return 0x100000; // set the bit at location 20
 
         case INS_OPTS_SCALABLE_S:
         case INS_OPTS_SCALABLE_WIDE_S:
         case INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR:
         case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
         case INS_OPTS_SCALABLE_S_WITH_SCALAR:
-            return 0b00000000010000000000000000000000; // set the bit at location 22
+            return 0x400000; // set the bit at location 22
 
         default:
             assert(!"Invalid insOpt for vector register");
@@ -16820,12 +16820,14 @@ void emitter::emitDispInsHelp(
             emitDispReg(encodingZRtoSP(id->idReg3()), size, false);    // mmmmm
             break;
 
+        // <Zd>.H, { <Zn1>.S-<Zn2>.S }, #<const>
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
             emitDispSveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
             emitDispImm(emitGetInsSC(id), false);                           // iiii
             break;
 
+        // <Zd>.<T>, <Zn>.<Tb>
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                  // ddddd
             emitDispSveReg(id->idReg2(), optWidenSveElemsizeArrangement(id->idInsOpt()), false); // nnnnn
@@ -19233,62 +19235,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         // Not available in Arm Neoverse N2 Software Optimization Guide.
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-            switch (ins)
-            {
-                case INS_sve_sqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
-
-                case INS_sve_sqrshrun:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
-
-                case INS_sve_uqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
-
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
+            result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+            result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
             break;
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
-            switch (ins)
-            {
-                case INS_sve_sqxtnb:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
-                    break;
-                case INS_sve_sqxtnt:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
-                    break;
-                case INS_sve_uqxtnb:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
-                    break;
-                case INS_sve_uqxtnt:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
-                    break;
-                case INS_sve_sqxtunb:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
-                    break;
-                case INS_sve_sqxtunt:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_4C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
         default:
