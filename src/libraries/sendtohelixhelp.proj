@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-browser.targets" Condition="'$(TargetOS)' == 'browser'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-superpmi-collect.targets" Condition="'$(SuperPmiCollect)' == 'true'" />
 

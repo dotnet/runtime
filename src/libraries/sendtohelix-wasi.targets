@@ -28,7 +28,7 @@
         <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
   -->
   
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.shared.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" />
 
   <PropertyGroup>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''">true</IsRunningLibraryTests>

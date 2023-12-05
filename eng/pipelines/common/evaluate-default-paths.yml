@@ -15,9 +15,9 @@ parameters:
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
         eng/testing/workloads-testing.targets
-        src/libraries/sendtohelix-wasm.targets
+        src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
-        src/libraries/sendtohelix-wasm.shared.targets
+        src/libraries/sendtohelix-wasm.targets
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
