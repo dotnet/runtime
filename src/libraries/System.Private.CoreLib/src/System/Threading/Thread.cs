@@ -496,12 +496,12 @@ namespace System.Threading
         [SupportedOSPlatform("windows")]
         public void SetApartmentState(ApartmentState state)
         {
-            SetApartmentState(state, throwOnError:true);
+            SetApartmentState(state, throwOnError: true);
         }
 
         public bool TrySetApartmentState(ApartmentState state)
         {
-            return SetApartmentState(state, throwOnError:false);
+            return SetApartmentState(state, throwOnError: false);
         }
 
 #pragma warning disable CA1822 // SetApartmentStateUnchecked should pass `this`

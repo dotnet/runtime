@@ -1096,8 +1096,8 @@ LC_ArrayDeref* LC_ArrayDeref::Find(JitExpandArrayStack<LC_ArrayDeref*>* children
 // optDeriveLoopCloningConditions: Derive loop cloning conditions.
 //
 // Arguments:
-//     loopNum     -  the current loop index for which conditions are derived.
-//     context     -  data structure where all loop cloning info is kept.
+//     loop    -  the current loop for which conditions are derived.
+//     context -  data structure where all loop cloning info is kept.
 //
 // Return Value:
 //     "false" if conditions cannot be obtained. "true" otherwise.
@@ -1390,8 +1390,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
 // optComputeDerefConditions: Derive loop cloning conditions for dereferencing arrays.
 //
 // Arguments:
-//     loopNum     -  the current loop index for which conditions are derived.
-//     context     -  data structure where all loop cloning info is kept.
+//     loop    - the current loop for which conditions are derived.
+//     context - data structure where all loop cloning info is kept.
 //
 // Return Value:
 //     "false" if conditions cannot be obtained. "true" otherwise.
@@ -1639,11 +1639,11 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 //      candidates gathered during the cloning phase.
 //
 // Arguments:
-//     loopNum     -  the current loop index for which the optimizations are performed.
-//     context     -  data structure where all loop cloning info is kept.
-//     dynamicPath -  If true, the optimization is performed in the fast path among the
-//                    cloned loops. If false, it means this is the only path (i.e.,
-//                    there is no slow path.)
+//     loop        - the current loop for which the optimizations are performed.
+//     context     - data structure where all loop cloning info is kept.
+//     dynamicPath - If true, the optimization is performed in the fast path among the
+//                   cloned loops. If false, it means this is the only path (i.e.,
+//                   there is no slow path.)
 //
 // Operation:
 //      Perform the optimizations on the fast path i.e., the path in which the
@@ -1768,7 +1768,7 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop* loop,
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
 // Arguments:
-//      loopInd     loop index which needs to be checked if it can be cloned.
+//      loop - loop index which needs to be checked if it can be cloned.
 //
 // Return Value:
 //      Returns true if the loop can be cloned. If it returns false,
@@ -2352,8 +2352,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 //  optIsStackLocalInvariant: Is stack local invariant in loop.
 //
 //  Arguments:
-//      loopNum      The loop in which the variable is tested for invariance.
-//      lclNum       The local that is tested for invariance in the loop.
+//      loop   - The loop in which the variable is tested for invariance.
+//      lclNum - The local that is tested for invariance in the loop.
 //
 //  Return Value:
 //      Returns true if the variable is loop invariant in loopNum.
@@ -3036,8 +3036,8 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pT
 // Also, check if the loop is suitable for the optimizations performed.
 //
 // Arguments:
-//     loop        -  Loop being analyzed
-//     context     -  data structure where all loop cloning candidates will be updated.
+//     loop    -  Loop being analyzed
+//     context -  data structure where all loop cloning candidates will be updated.
 //
 // Return Value:
 //     If the loop is not suitable for the optimizations, return false - context

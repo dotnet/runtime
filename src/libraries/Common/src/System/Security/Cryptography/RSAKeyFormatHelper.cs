@@ -205,7 +205,7 @@ namespace System.Security.Cryptography
 
         internal static AsnWriter WritePkcs8PrivateKey(
             ReadOnlySpan<byte> pkcs1PrivateKey,
-            AsnWriter? copyFrom=null)
+            AsnWriter? copyFrom = null)
         {
             Debug.Assert(copyFrom == null || pkcs1PrivateKey.IsEmpty);
 
