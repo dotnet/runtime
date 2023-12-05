@@ -11,7 +11,6 @@
 // ============================================================
 
 #include "common.h"
-#include "thekey.h"
 
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
@@ -72,12 +71,12 @@ BOOL BaseAssemblySpec::IsCoreLibSatellite() const
     size_t iNameLen = strlen(m_pAssemblyName);
 
     // we allow name to be of the form System.Private.CoreLib.resources.dll only
-    BOOL r = ( (m_cbPublicKeyOrToken == sizeof(CORELIB_PUBLICKEY)) &&
+    BOOL r = ( (m_cbPublicKeyOrToken == sizeof(g_coreLibPublicKey)) &&
              (iNameLen >= CoreLibSatelliteNameLen) &&
              (!SString::_strnicmp(m_pAssemblyName, g_psBaseLibrarySatelliteAssemblyName, CoreLibSatelliteNameLen)) &&
              ( (iNameLen == CoreLibSatelliteNameLen) || (m_pAssemblyName[CoreLibSatelliteNameLen] == ',') ) );
 
-    r = r && ( memcmp(m_pbPublicKeyOrToken,CORELIB_PUBLICKEY,sizeof(CORELIB_PUBLICKEY)) == 0);
+    r = r && ( memcmp(m_pbPublicKeyOrToken, g_coreLibPublicKey, g_coreLibPublicKeyLen) == 0);
 
     return r;
 }

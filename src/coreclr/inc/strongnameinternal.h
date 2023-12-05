@@ -7,6 +7,9 @@
 #ifndef _STRONGNAME_INTERNAL_H
 #define _STRONGNAME_INTERNAL_H
 
+extern BYTE const* const g_coreLibPublicKey;
+extern const ULONG g_coreLibPublicKeyLen;
+
 // Public key blob binary format.
 typedef struct {
     unsigned int SigAlgID;       // (ALG_ID) signature algorithm used to create the signature
