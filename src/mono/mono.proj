@@ -28,7 +28,7 @@
     <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibSuffix)</MonoStaticLibFileName>
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">$(MonoStaticLibFileName)</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(MonoSharedLibFileName)</MonoFileName>
-    <MonoAotCrossFileName>mono-aot-cross$(ExeSuffix)</MonoAotCrossFileName>
+    <MonoAotCrossName>mono-aot-cross</MonoAotCrossName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
@@ -968,7 +968,7 @@
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</_MonoIncludeInterpStaticFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
-      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossFileName)</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossName)$(ExeSuffix)</_MonoAotCrossFilePath>
     </PropertyGroup>
     <PropertyGroup>
       <_MonoLLVMHostArchitecture>$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
@@ -996,16 +996,16 @@
         <Destination>$(RuntimeBinDir)$(MonoStaticLibFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)" Condition="Exists($(_MonoAotCrossFilePath))">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName)$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dbg" Condition="Exists('$(_MonoAotCrossFilePath).dbg')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName).dbg</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dbg</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dwarf" Condition="Exists('$(_MonoAotCrossFilePath).dwarf')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName).dwarf</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dwarf</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossFileName).pdb" Condition="Exists('$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossFileName).pdb')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName).pdb</Destination>
+      <_MonoRuntimeArtifacts Include="$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb" Condition="Exists('$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb')">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).pdb</Destination>
       </_MonoRuntimeArtifacts>
       <!-- copy the mono runtime component shared or static libraries -->
       <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsStaticFilePath)">
