@@ -132,7 +132,7 @@ namespace
 
     bool GetTokenForWellKnownKey(BYTE* key, ULONG keyLength, StrongNameToken* token)
     {
-        for (size_t i = 0; i < ARRAYSIZE(WellKnownKeys); i++)
+        for (size_t i = 0; i < ARRAY_SIZE(WellKnownKeys); i++)
         {
             if (keyLength == WellKnownKeys[i].PublicKeyLen &&
                 memcmp(key, WellKnownKeys[i].PublicKey, keyLength) == 0)
