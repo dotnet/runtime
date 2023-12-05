@@ -34,7 +34,7 @@ public class ErrorHandlingTests
         conditionallyThrowError(true, &error);
         Assert.True(error.Value != IntPtr.Zero, "A Swift error was expected to be thrown.");
 
-        string errorMessage = GetErrorMessageFromSwift(error, expectedErrorMessage.Length);
+        string errorMessage = GetErrorMessageFromSwift(error);
         Assert.True(errorMessage == expectedErrorMessage, "The error message retrieved from Swift does not match the expected message.");
     }
 
@@ -59,11 +59,10 @@ public class ErrorHandlingTests
         SetErrorMessage(messageBytes, messageBytes.Length);
     }
 
-    private unsafe static string GetErrorMessageFromSwift(SwiftError error, int length)
+    private unsafe static string GetErrorMessageFromSwift(SwiftError error)
     {
         IntPtr pointer = GetErrorMessage(error.Value);
-        ReadOnlySpan<byte> byteArraySpan = new ReadOnlySpan<byte>((void*)pointer, length);
-        string errorMessage = Encoding.UTF8.GetString(byteArraySpan);
+        string errorMessage = Marshal.PtrToStringUTF8(pointer);
         NativeMemory.Free((void*)pointer);
         return errorMessage;
     }
