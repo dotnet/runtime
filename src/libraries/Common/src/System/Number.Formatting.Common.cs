@@ -460,7 +460,7 @@ namespace System
                     // The max is not bound since you can have formatting strings of the form "000,000..", and this
                     // should handle that case too.
 
-                    int[] groupDigits = info._numberGroupSizes;
+                    int[] groupDigits = info.NumberGroupSizes();
 
                     int groupSizeIndex = 0;     // Index into the groupDigits array.
                     int groupTotalSizeCount = 0;
@@ -706,7 +706,7 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref vlb, ref number, nMaxDigits, info._currencyGroupSizes, info.CurrencyDecimalSeparatorTChar<TChar>(), info.CurrencyGroupSeparatorTChar<TChar>());
+                        FormatFixed(ref vlb, ref number, nMaxDigits, info.CurrencyGroupSizes(), info.CurrencyDecimalSeparatorTChar<TChar>(), info.CurrencyGroupSeparatorTChar<TChar>());
                         break;
 
                     case '-':
@@ -881,7 +881,7 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref vlb, ref number, nMaxDigits, info._numberGroupSizes, info.NumberDecimalSeparatorTChar<TChar>(), info.NumberGroupSeparatorTChar<TChar>());
+                        FormatFixed(ref vlb, ref number, nMaxDigits, info.NumberGroupSizes(), info.NumberDecimalSeparatorTChar<TChar>(), info.NumberGroupSeparatorTChar<TChar>());
                         break;
 
                     case '-':
@@ -936,9 +936,16 @@ namespace System
                 }
             }
 
+#if SYSTEM_PRIVATE_CORELIB
             TChar* digits = stackalloc TChar[MaxUInt32DecDigits];
             TChar* p = UInt32ToDecChars(digits + MaxUInt32DecDigits, (uint)value, minDigits);
             vlb.Append(new ReadOnlySpan<TChar>(p, (int)(digits + MaxUInt32DecDigits - p)));
+#else
+            Debug.Assert(typeof(TChar) == typeof(char));
+            char* digits = stackalloc char[MaxUInt32DecDigits];
+            ((uint)value).TryFormat(new Span<char>(digits, MaxUInt32DecDigits), out int charsWritten);
+            vlb.Append(new Span<TChar>((TChar*)digits, charsWritten));
+#endif
         }
 
         private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IUtfChar<TChar>
@@ -1008,7 +1015,7 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref vlb, ref number, nMaxDigits, info._percentGroupSizes, info.PercentDecimalSeparatorTChar<TChar>(), info.PercentGroupSeparatorTChar<TChar>());
+                        FormatFixed(ref vlb, ref number, nMaxDigits, info.PercentGroupSizes(), info.PercentDecimalSeparatorTChar<TChar>(), info.PercentGroupSeparatorTChar<TChar>());
                         break;
 
                     case '-':
@@ -1161,5 +1168,20 @@ namespace System
                 }
             }
         }
+
+#if SYSTEM_PRIVATE_CORELIB
+        private static int[] NumberGroupSizes(this NumberFormatInfo info) => info._numberGroupSizes;
+
+        private static int[] CurrencyGroupSizes(this NumberFormatInfo info) => info._currencyGroupSizes;
+
+        private static int[] PercentGroupSizes(this NumberFormatInfo info) => info._percentGroupSizes;
+#else
+
+        private static int[] NumberGroupSizes(this NumberFormatInfo info) => info.NumberGroupSizes;
+
+        private static int[] CurrencyGroupSizes(this NumberFormatInfo info) => info.CurrencyGroupSizes;
+
+        private static int[] PercentGroupSizes(this NumberFormatInfo info) => info.PercentGroupSizes;
+#endif
     }
 }
