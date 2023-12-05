@@ -295,21 +295,6 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     }
 }
 
-NSString* RemoveInvalidCharacters(NSString* source)
-{
-    NSMutableString *validString = [NSMutableString stringWithCapacity:[source length]];
-
-    [source enumerateSubstringsInRange:NSMakeRange(0, [source length])
-                    options:NSStringEnumerationByComposedCharacterSequences
-                    usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop){
-        // Check if the substring can be encoded in UTF-8
-        if ([substring lengthOfBytesUsingEncoding:NSUTF8StringEncoding] > 0)
-            [validString appendString:substring];
-    }];
-
-    return validString;
-}
-
 int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t lNameLength, const UChar* lpStr, int32_t cwStrLength,
                                              uint8_t* sortKey, int32_t cbSortKeyLength, int32_t options)
 {
@@ -336,29 +321,14 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         // Generate a sort key for the original string based on the locale
         NSString *transformedString = [sourceStringCleaned stringByFoldingWithOptions:comparisonOptions locale:locale];
 
-        // Convert the string to UTF-8 representation
-        const char *utf8Bytes = [transformedString UTF8String];
-        NSData *dataToUse = nil;
-        NSUInteger utf8Length = 0;
-        if (utf8Bytes != NULL)
-        {
-            utf8Length = [transformedString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
-        }
-        else // If the string cannot be encoded in UTF-8, we need to remove the invalid characters
-        {
-            NSString *validString = RemoveInvalidCharacters(transformedString);
-            utf8Bytes = [validString UTF8String];
-            utf8Length = [validString lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
-        }
-
-        dataToUse = [NSData dataWithBytes:utf8Bytes length:utf8Length];
-        if (dataToUse != nil)
-        {
-            const uint8_t *bytesToCopy = (const uint8_t *)[dataToUse bytes];
-            if (sortKey != NULL)
-                memcpy(sortKey, bytesToCopy, utf8Length);
-            return utf8Length;
-        }
+        NSUInteger transformedStringBytes = [transformedString lengthOfBytesUsingEncoding: NSUTF16StringEncoding];
+        if (sortKey == NULL)
+            return (int32_t)transformedStringBytes;
+        NSRange range = NSMakeRange(0, [transformedString length]);
+        NSUInteger usedLength = 0;
+        BOOL result = [transformedString getBytes:sortKey maxLength:transformedStringBytes usedLength:&usedLength encoding:NSUTF16StringEncoding options:0 range:range remainingRange:NULL];
+        if (result)
+            return (int32_t)usedLength;
 
         return 0;
     }
