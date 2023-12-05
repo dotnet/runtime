@@ -851,6 +851,9 @@ namespace System
             return spanSuccess;
         }
 
+        private const uint kuBase = 1_000_000_000; // 10^9
+        private const int kcchBase = 9;
+
         private static unsafe string? FormatBigInteger(
             bool targetSpan, BigInteger value,
             string? formatString, ReadOnlySpan<char> formatSpan,
@@ -891,15 +894,12 @@ namespace System
             }
 
             // First convert to base 10^9.
-            const uint kuBase = 1_000_000_000; // 10^9
-            const int kcchBase = 9;
-
-            // Each uint contributes at most 9 digits to the decimal representation.
-            // The current max length is int32.MaxValue bits
             int cuSrc = value._bits.Length;
-            Debug.Assert(cuSrc < int.MaxValue / kcchBase / 2);
+            // A quick conservative max length of base 10^9 representation
+            // A uint contributes to no more than 10/9 of 10^9 block, +1 for ceiling of division
+            int cuMax = cuSrc * (kcchBase + 1) / kcchBase + 1;
+            Debug.Assert((long)BigInteger.MaxLength * (kcchBase + 1) / kcchBase + 1 < (long)int.MaxValue); // won't overflow
 
-            int cuMax = cuSrc * 10 / 9 + 2;
             uint[]? bufferToReturn = null;
             Span<uint> base1E9Buffer = cuMax < BigIntegerCalculator.StackAllocThreshold ?
                 stackalloc uint[cuMax] :
@@ -930,7 +930,7 @@ namespace System
 
             ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..cuDst];
 
-            int valueDigits = (base1E9Value.Length - 1) * 9 + FormattingHelpers.CountDigits(base1E9Value[^1]);
+            int valueDigits = (base1E9Value.Length - 1) * kcchBase + FormattingHelpers.CountDigits(base1E9Value[^1]);
 
             string? strResult;
 
@@ -979,7 +979,7 @@ namespace System
             else
             {
                 byte[]? numberBufferToReturn = null;
-                Span<byte> numberBuffer = valueDigits + 1 <= 256 ?
+                Span<byte> numberBuffer = valueDigits + 1 <= CharStackBufferSize ?
                     stackalloc byte[valueDigits + 1] :
                     (numberBufferToReturn = ArrayPool<byte>.Shared.Rent(valueDigits + 1));
                 fixed (byte* ptr = numberBuffer) // NumberBuffer expects pinned Digits
@@ -987,11 +987,11 @@ namespace System
                     scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, ptr, valueDigits + 1);
                     BigIntegerToDecChars(ptr + valueDigits, base1E9Value, valueDigits);
                     number.Digits[^1] = 0;
-                    number.DigitsCount = DecimalPrecision;
+                    number.DigitsCount = valueDigits;
                     number.Scale = valueDigits;
                     number.IsNegative = value.Sign < 0;
 
-                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[128]); // arbitrary stack cut-off
+                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[CharStackBufferSize]); // arbitrary stack cut-off
 
                     if (fmt != 0)
                     {
@@ -1040,9 +1040,9 @@ namespace System
             for (int i = 0; i < base1E9Value.Length - 1; i++)
             {
                 // TODO: is it worthy to introduce optimized UInt32ToDecChars from CoreLib?
-                digits -= 9;
+                digits -= kcchBase;
                 uint value = base1E9Value[i];
-                for (int j = 0; j < 9; j++)
+                for (int j = 0; j < kcchBase; j++)
                 {
                     (value, uint digit) = Math.DivRem(value, 10);
                     *(--bufferEnd) = TChar.CreateTruncating('0' + digit);
