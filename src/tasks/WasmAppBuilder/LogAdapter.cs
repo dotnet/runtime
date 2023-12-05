@@ -45,7 +45,9 @@ namespace WasmAppBuilder {
         }
 
         public void Info (string code, string message, params object[] args) {
-            Helper?.LogMessage(null, code, null, null, 0, 0, 0, 0, MessageImportance.Low, message, args);
+            // We use MessageImportance.High to ensure this appears in build output, since
+            //  warnaserror makes warnings hard to use
+            Helper?.LogMessage(null, code, null, null, 0, 0, 0, 0, MessageImportance.High, message, args);
             Output?.WriteLine($"info : {code}: {AutoFormat(message, args)}");
         }
 
