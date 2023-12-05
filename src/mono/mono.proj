@@ -28,8 +28,7 @@
     <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibSuffix)</MonoStaticLibFileName>
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">$(MonoStaticLibFileName)</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(MonoSharedLibFileName)</MonoFileName>
-    <MonoAotCrossFileName>mono-aot-cross$(ExeSuffix)</MonoAotCrossFileName>
-    <MonoAotCrossPdbFileName>mono-aot-cross.pdb</MonoAotCrossPdbFileName>
+    <MonoAotCrossName>mono-aot-cross</MonoAotCrossName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
@@ -933,8 +932,7 @@
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</_MonoIncludeInterpStaticFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
-      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossFileName)</_MonoAotCrossFilePath>
-      <_MonoAotCrossPdbFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossPdbFileName)</_MonoAotCrossPdbFilePath>
+      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossName)$(ExeSuffix)</_MonoAotCrossFilePath>
     </PropertyGroup>
     <PropertyGroup>
       <_MonoLLVMHostArchitecture>$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
@@ -961,15 +959,24 @@
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)" Condition="Exists($(_MonoRuntimeStaticFilePath)) and '$(_MonoRuntimeStaticFilePath)' != '$(_MonoRuntimeFilePath)'">
         <Destination>$(RuntimeBinDir)$(MonoStaticLibFileName)</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)" Condition="Exists($(_MonoAotCrossFilePath))">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName)$(ExeSuffix)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dbg" Condition="Exists('$(_MonoAotCrossFilePath).dbg')">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dbg</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dwarf" Condition="Exists('$(_MonoAotCrossFilePath).dwarf')">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dwarf</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb" Condition="Exists('$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb')">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).pdb</Destination>
+      </_MonoRuntimeArtifacts>
       <!-- copy the mono runtime component shared or static libraries -->
       <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsStaticFilePath)">
         <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsStaticFilePath.Filename)%(_MonoRuntimeComponentsStaticFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsSharedFilePath)">
         <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ('$(MonoBundleLLVMOptimizer)' == 'true' or '$(MonoEnableLLVM)' == 'true') and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
         <Destination>$(RuntimeBinDir)libc++.so.1</Destination>
@@ -982,9 +989,6 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\lib\libc++abi.so.1">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++abi.so.1</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossPdbFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\llc$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)\llc$(ExeSuffix)</Destination>
