@@ -250,8 +250,6 @@ namespace System
 
     internal static partial class Number
     {
-        internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
-
         // SinglePrecision and DoublePrecision represent the maximum number of digits required
         // to guarantee that any given Single or Double can roundtrip. Some numbers may require
         // less, but none will require more.

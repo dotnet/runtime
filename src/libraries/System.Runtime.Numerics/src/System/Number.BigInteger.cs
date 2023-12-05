@@ -271,6 +271,7 @@
 //
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -1031,44 +1032,6 @@ namespace System
             }
         }
 
-        internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
-        {
-            digits = -1;
-            if (format.Length == 0)
-            {
-                return 'R';
-            }
-
-            int i = 0;
-            char ch = format[i];
-            if (char.IsAsciiLetter(ch))
-            {
-                // The digits value must be >= 0 && <= 999_999_999,
-                // but it can begin with any number of 0s, and thus we may need to check more than 9
-                // digits.  Further, for compat, we need to stop when we hit a null char.
-                i++;
-                int n = 0;
-                while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
-                {
-                    // Check if we are about to overflow past our limit of 9 digits
-                    if (n >= 100_000_000)
-                    {
-                        throw new FormatException(SR.Argument_BadFormatSpecifier);
-                    }
-                    n = ((n * 10) + format[i++] - '0');
-                }
-
-                // If we're at the end of the digits rather than having stopped because we hit something
-                // other than a digit or overflowed, return the standard format info.
-                if (i >= format.Length || format[i] == '\0')
-                {
-                    digits = n;
-                    return ch;
-                }
-            }
-            return (char)0; // Custom format
-        }
-
         private static string? FormatBigIntegerToHex(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             Debug.Assert(format == 'x' || format == 'X');
@@ -1262,7 +1225,7 @@ namespace System
             return spanSuccess;
         }
 
-        private static string? FormatBigInteger(
+        private static unsafe string? FormatBigInteger(
             bool targetSpan, BigInteger value,
             string? formatString, ReadOnlySpan<char> formatSpan,
             NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
@@ -1391,23 +1354,44 @@ namespace System
             {
                 // sign = true for negative and false for 0 and positive values
                 bool sign = (value._sign < 0);
-                // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
-                int precision = 29;
                 int scale = cchMax - ichDst;
 
-                var sb = new ValueStringBuilder(stackalloc char[128]); // arbitrary stack cut-off
-                FormatProvider.FormatBigInteger(ref sb, precision, scale, sign, formatSpan, info, rgch, ichDst);
+                byte[]? buffer = ArrayPool<byte>.Shared.Rent(scale + 1);
+                fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
+                {
+                    scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
 
-                if (targetSpan)
-                {
-                    spanSuccess = sb.TryCopyTo(destination, out charsWritten);
-                    return null;
-                }
-                else
-                {
-                    charsWritten = 0;
-                    spanSuccess = false;
-                    return sb.ToString();
+                    for (int i = 0; i < rgch.Length - ichDst; i++)
+                        number.Digits[i] = (byte)rgch[ichDst + i];
+                    number.DigitsCount = DecimalPrecision; // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
+                    number.Scale = scale;
+                    number.IsNegative = sign;
+
+                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[128]); // arbitrary stack cut-off
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
+                    }
+
+                    if (targetSpan)
+                    {
+                        spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
+                        vlb.Dispose();
+                        return null;
+                    }
+                    else
+                    {
+                        charsWritten = 0;
+                        spanSuccess = false;
+                        string result = vlb.AsSpan().ToString();
+                        vlb.Dispose();
+                        return result;
+                    }
                 }
             }
 
