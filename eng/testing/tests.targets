@@ -132,21 +132,14 @@
       <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(RunScriptOutputDirectory)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and
+    <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and
                               '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                               $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
-      <SetScriptCommand Condition="'$(TargetOS)' == 'windows'">$(SetScriptCommand)
-set __TestArchitecture=$(TargetArchitecture);
-set __IsXUnitLogCheckerSupported=1
-      </SetScriptCommand>
-      <SetScriptCommand Condition="'$(TargetOS)' != 'windows'">$(SetScriptCommand)
-export __TestArchitecture=$(TargetArchitecture);
-export __IsXUnitLogCheckerSupported=1
-      </SetScriptCommand>        
-    </PropertyGroup>
-
-    <ItemGroup>
-      <SetScriptCommands Include="$(SetScriptCommand)" />
+      <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __TestArchitecture=$(TargetArchitecture)" />
+      <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __IsXUnitLogCheckerSupported=1" />
+      
+      <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export __TestArchitecture=$(TargetArchitecture)" />
+      <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export __IsXUnitLogCheckerSupported=1" />
     </ItemGroup>
 
     <GenerateRunScript RunCommands="@(RunScriptCommands)"
