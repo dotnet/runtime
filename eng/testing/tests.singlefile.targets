@@ -118,7 +118,10 @@
 
     <ItemGroup>
       <_BundleAssembliesToCopy Include="$(ArtifactsNetCoreAppBundlePath)*.dll" />
-      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)" MatchOnMetadata="Filename" />
+      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)"
+                             MatchOnMetadata="Filename"
+                             Condition="! ($([System.String]::new('%(Directory)').Contains('/ref/'))
+                                        or $([System.String]::new('%(Directory)').Contains('\ref\')))" />
     </ItemGroup>
   </Target>
 
