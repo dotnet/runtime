@@ -10243,8 +10243,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef TARGET_64BIT
                     op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
 #endif
-                    op1 = gtNewHelperCallNode(opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY,
-                                              TYP_VOID, op1, op2, op3);
+                    GenTree* clonedOp3 = nullptr;
+                    // First, spill the operands in evaluation order to temps
+                    impCloneExpr(op1, &op1, CHECK_SPILL_ALL, nullptr DEBUGARG("spill dest"));
+                    impCloneExpr(op2, &op2, CHECK_SPILL_ALL, nullptr DEBUGARG("spill src"));
+                    op3 = impCloneExpr(op3, &clonedOp3, CHECK_SPILL_ALL, nullptr DEBUGARG("spill size"));
+
+                    // Add explicit nullchecks to op1 (and op2 if it's a CPBLK)
+                    op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtNewNullCheck(op1, compCurBB), gtCloneExpr(op1));
+                    if (opcode == CEE_CPBLK)
+                    {
+                        op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), gtNewNullCheck(op2, compCurBB), gtCloneExpr(op2));
+                    }
+
+                    GenTree* helperCall =
+                        gtNewHelperCallNode(opcode == CEE_INITBLK ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY, TYP_VOID,
+                                            op1, op2, clonedOp3);
+
+                    // Add a zero size check
+                    GenTreeOp*    sizeIsZero = gtNewOperNode(GT_EQ, TYP_INT, op3, gtNewIconNode(0, TYP_I_IMPL));
+                    GenTreeColon* colonNode =
+                        new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), helperCall);
+                    op1 = gtNewQmarkNode(TYP_VOID, sizeIsZero, colonNode);
                     // TODO: volatile flag
                 }
                 goto SPILL_APPEND;
