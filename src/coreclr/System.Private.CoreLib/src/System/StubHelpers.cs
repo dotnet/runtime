@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace System.StubHelpers
 {
@@ -461,16 +462,37 @@ namespace System.StubHelpers
     }  // class WSTRBufferMarshaler
 #if FEATURE_COMINTEROP
 
-    internal static class ObjectMarshaler
+    internal static partial class ObjectMarshaler
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertToNative(object objSrc, IntPtr pDstVariant);
+        internal static void ConvertToNative(object objSrc, IntPtr pDstVariant)
+        {
+            ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManaged(IntPtr pSrcVariant);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
+        private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ClearNative(IntPtr pVariant);
+        internal static object ConvertToManaged(IntPtr pSrcVariant)
+        {
+            object? retObject = null;
+            ConvertToManaged(pSrcVariant, ObjectHandleOnStack.Create(ref retObject));
+            return retObject!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToManaged")]
+        private static partial void ConvertToManaged(IntPtr pSrcVariant, ObjectHandleOnStack retObject);
+
+        internal static unsafe void ClearNative(IntPtr pVariant)
+        {
+            if (pVariant != IntPtr.Zero)
+            {
+                Interop.OleAut32.VariantClear(pVariant);
+
+                // VariantClear resets the instance to VT_EMPTY (0)
+                // COMPAT: Clear the remaining memory for compat. The instance remains set to VT_EMPTY (0).
+                *(ComVariant*)pVariant = default;
+            }
+        }
     }  // class ObjectMarshaler
 
 #endif // FEATURE_COMINTEROP
@@ -516,14 +538,37 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
     internal static partial class InterfaceMarshaler
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
+        internal static IntPtr ConvertToNative(object? objSrc, IntPtr itfMT, IntPtr classMT, int flags)
+        {
+            if (objSrc == null)
+                return IntPtr.Zero;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
+            return ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), itfMT, classMT, flags);
+        }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
-        internal static partial void ClearNative(IntPtr pUnk);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToNative")]
+        private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag);
+
+        internal static object? ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags)
+        {
+            if (ppUnk == IntPtr.Zero)
+                return null;
+
+            object? retObject = null;
+            ConvertToManaged(ref ppUnk, itfMT, classMT, flags, ObjectHandleOnStack.Create(ref retObject));
+            return retObject;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToManaged")]
+        private static partial void ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags, ObjectHandleOnStack retObject);
+
+        internal static void ClearNative(IntPtr pUnk)
+        {
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 
@@ -870,7 +915,7 @@ namespace System.StubHelpers
             // of pManagedHome is not marshalable. That's intentional because we
             // want to maintain the original behavior where this was indicated
             // by TypeLoadException during the actual field marshaling.
-            int allocSize = Marshal.SizeOfHelper(pManagedHome.GetType(), false);
+            int allocSize = Marshal.SizeOfHelper((RuntimeType)pManagedHome.GetType(), false);
             IntPtr pNativeHome = Marshal.AllocCoTaskMem(allocSize);
 
             // marshal the object as class with layout (UnmanagedType.LPStruct)
@@ -1001,37 +1046,12 @@ namespace System.StubHelpers
         }
     }  // struct AsAnyMarshaler
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeVariant
+    // Constants for direction argument of struct marshalling stub.
+    internal static class MarshalOperation
     {
-        private ushort vt;
-        private ushort wReserved1;
-        private ushort wReserved2;
-        private ushort wReserved3;
-
-        // The union portion of the structure contains at least one 64-bit type that on some 32-bit platforms
-        // (notably  ARM) requires 64-bit alignment. So on 32-bit platforms we'll actually size the variant
-        // portion of the struct with an Int64 so the type loader notices this requirement (a no-op on x86,
-        // but on ARM it will allow us to correctly determine the layout of native argument lists containing
-        // VARIANTs). Note that the field names here don't matter: none of the code refers to these fields,
-        // the structure just exists to provide size information to the IL marshaler.
-#if TARGET_64BIT
-        private IntPtr data1;
-        private IntPtr data2;
-#else
-        private long data1;
-#endif
-    }  // struct NativeVariant
-
-    // This NativeDecimal type is very similar to the System.Decimal type, except it requires an 8-byte alignment
-    // like the native DECIMAL type instead of the 4-byte requirement of the System.Decimal type.
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeDecimal
-    {
-        private ushort reserved;
-        private ushort signScale;
-        private uint hi32;
-        private ulong lo64;
+        internal const int Marshal = 0;
+        internal const int Unmarshal = 1;
+        internal const int Cleanup = 2;
     }
 
     internal abstract class CleanupWorkListElement
@@ -1111,7 +1131,7 @@ namespace System.StubHelpers
         }
     }  // class CleanupWorkListElement
 
-    internal static class StubHelpers
+    internal static partial class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetDelegateTarget(Delegate pThis);
@@ -1190,8 +1210,8 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshalerHelper")]
+        internal static partial IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
 
         //-------------------------------------------------------
         // SafeHandle Helpers

@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            _writableDataNode = factory.Target.SupportsRelativePointers ? new WritableDataNode(this) : null;
+            _writableDataNode = SupportsWritableData(factory.Target) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             if (EmitVirtualSlotsAndInterfaces)
@@ -102,6 +102,12 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.TypeSystemContext.EnsureLoadableType(type);
         }
+
+        public static bool SupportsWritableData(TargetDetails target)
+            => target.SupportsRelativePointers;
+
+        public static bool SupportsFrozenRuntimeTypeInstances(TargetDetails target)
+            => SupportsWritableData(target);
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
         {
@@ -633,12 +639,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Ask the metadata manager
-            // if we have any dependencies due to presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
+            if (!ConstructedEETypeNode.CreationAllowed(_type))
+            {
+                // If necessary MethodTable is the highest load level for this type, ask the metadata manager
+                // if we have any dependencies due to presence of the EEType.
+                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
 
-            if (_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+                // If necessary MethodTable is the highest load level, consider this a module use
+                if (_type is MetadataType mdType)
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+            }
 
             if (_type.IsFunctionPointer)
                 FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
@@ -878,6 +888,11 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
+        protected virtual FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
+        {
+            return factory.SerializedNecessaryRuntimeTypeObject(_type);
+        }
+
         protected virtual ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
         {
             return factory.NecessaryTypeSymbol(((ArrayType)_type).ElementType);
@@ -1115,6 +1130,10 @@ namespace ILCompiler.DependencyAnalysis
             if (_writableDataNode != null)
             {
                 objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+            }
+            else if (SupportsWritableData(factory.Target))
+            {
+                objData.EmitInt(0);
             }
         }
 
@@ -1407,7 +1426,11 @@ namespace ILCompiler.DependencyAnalysis
             private readonly EETypeNode _type;
 
             public WritableDataNode(EETypeNode type) => _type = type;
-            public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.BssSection;
+            public override ObjectNodeSection GetSection(NodeFactory factory)
+                => SupportsFrozenRuntimeTypeInstances(factory.Target) && _type.GetFrozenRuntimeTypeNode(factory).Marked
+                ? (factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection)
+                : ObjectNodeSection.BssSection;
+
             public override bool StaticDependenciesAreComputed => true;
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
                 => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
@@ -1416,10 +1439,29 @@ namespace ILCompiler.DependencyAnalysis
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);
 
             public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
-                => new ObjectData(new byte[WritableData.GetSize(factory.Target.PointerSize)],
-                    Array.Empty<Relocation>(),
-                    WritableData.GetAlignment(factory.Target.PointerSize),
-                    new ISymbolDefinitionNode[] { this });
+            {
+                ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+
+                builder.RequireInitialAlignment(WritableData.GetAlignment(factory.Target.PointerSize));
+                builder.AddSymbol(this);
+
+                // If the whole program view contains a reference to a preallocated RuntimeType
+                // instance for this type, generate a reference to it.
+                // Otherwise, generate as zero to save size.
+                if (SupportsFrozenRuntimeTypeInstances(factory.Target)
+                    && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
+                {
+                    builder.EmitPointerReloc(runtimeTypeObject);
+                }
+                else
+                {
+                    builder.EmitZeroPointer();
+                }
+
+                Debug.Assert(builder.CountBytes == WritableData.GetSize(factory.Target.PointerSize));
+
+                return builder.ToObjectData();
+            }
 
             protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 

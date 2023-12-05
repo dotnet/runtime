@@ -1263,6 +1263,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		return (guint)(hash | ji->data.uindex);
@@ -1745,6 +1746,10 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 	}
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT: {
 		target = (gpointer) &mono_profiler_state.exception_clause_count;
+		break;
+	}
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG: {
+		target = (gpointer) &mono_llvmonly_do_unwind_flag;
 		break;
 	}
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
@@ -2782,6 +2787,7 @@ lookup_start:
 	if (!jit_only && !code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_OTHER) {
 		if (mono_llvm_only) {
 			/* Signal to the caller that AOTed code is not found */
+			g_assert (method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
 			return NULL;
 		}
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
@@ -2877,7 +2883,7 @@ jit_compile_method_with_opt (JitCompileMethodWithOptCallbackData *params)
 
 	gboolean thrown = FALSE;
 #if defined(ENABLE_LLVM_RUNTIME) || defined(ENABLE_LLVM)
-	mono_llvm_cpp_catch_exception (jit_compile_method_with_opt_cb, params, &thrown);
+	mono_llvm_catch_exception (jit_compile_method_with_opt_cb, params, &thrown);
 #else
 	jit_compile_method_with_opt_cb (params);
 #endif
@@ -3511,7 +3517,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);
 			if (!compiled_method) {
-				g_assert (!is_ok (error));
+				if (!mono_opt_llvm_emulate_unwind)
+					g_assert (!is_ok (error));
 
 				if (mono_use_interpreter)
 					use_interp = TRUE;
@@ -5561,4 +5568,29 @@ mono_invoke_runtime_init_callback (void)
 
 		mono_atomic_xchg_i64 ((volatile gint64 *)&runtime_init_thread_id, (gint64)G_MAXUINT64);
 	}
+}
+
+gboolean
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
+{
+	if (sig->param_count > 10)
+		return FALSE;
+	if (sig->pinvoke)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		return FALSE;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return FALSE;
+	if (!is_llvm_only && method->is_inflated)
+		return FALSE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
+	return TRUE;
 }

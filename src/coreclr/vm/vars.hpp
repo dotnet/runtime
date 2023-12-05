@@ -394,6 +394,9 @@ GPTR_DECL(MethodTable,      g_pEHClass);
 GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
+// Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
+GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
+
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
 

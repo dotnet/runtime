@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Collections;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Security;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Security;
+using System.Text;
+using System.Threading;
 
 namespace System.Xml.Serialization
 {
@@ -478,10 +478,10 @@ namespace System.Xml.Serialization
 
                 ModuleBuilder moduleBuilder = CodeGenerator.CreateModuleBuilder(assemblyBuilder, assemblyName);
 
-            string writerClass = $"XmlSerializationWriter{suffix}";
-            writerClass = classes.AddUnique(writerClass, writerClass);
-            XmlSerializationWriterILGen writerCodeGen = new XmlSerializationWriterILGen(scopes, "public", writerClass);
-            writerCodeGen.ModuleBuilder = moduleBuilder;
+                string writerClass = $"XmlSerializationWriter{suffix}";
+                writerClass = classes.AddUnique(writerClass, writerClass);
+                XmlSerializationWriterILGen writerCodeGen = new XmlSerializationWriterILGen(scopes, "public", writerClass);
+                writerCodeGen.ModuleBuilder = moduleBuilder;
 
                 writerCodeGen.GenerateBegin();
                 string[] writeMethodNames = new string[xmlMappings.Length];
@@ -492,9 +492,9 @@ namespace System.Xml.Serialization
                 }
                 Type writerType = writerCodeGen.GenerateEnd();
 
-            string readerClass = $"XmlSerializationReader{suffix}";
-            readerClass = classes.AddUnique(readerClass, readerClass);
-            XmlSerializationReaderILGen readerCodeGen = new XmlSerializationReaderILGen(scopes, "public", readerClass);
+                string readerClass = $"XmlSerializationReader{suffix}";
+                readerClass = classes.AddUnique(readerClass, readerClass);
+                XmlSerializationReaderILGen readerCodeGen = new XmlSerializationReaderILGen(scopes, "public", readerClass);
 
                 readerCodeGen.ModuleBuilder = moduleBuilder;
                 readerCodeGen.CreatedTypes.Add(writerType.Name, writerType);

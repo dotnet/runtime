@@ -61,7 +61,7 @@ namespace System
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
                 ((assemblyResolver != null) && (typeResolver != null)) ? null : Assembly.GetExecutingAssembly(ref stackMark),
-                throwOnError : throwOnError);
+                throwOnError: throwOnError);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]

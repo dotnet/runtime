@@ -1180,15 +1180,7 @@ namespace System.Data.OleDb
 
         private void ProcessResults(OleDbHResult hr)
         {
-            Exception? e;
-            if (null != _command)
-            {
-                e = OleDbConnection.ProcessResults(hr, _connection);
-            }
-            else
-            {
-                e = OleDbConnection.ProcessResults(hr, _connection);
-            }
+            Exception? e = OleDbConnection.ProcessResults(hr, _connection);
             if (null != e)
             { throw e; }
         }

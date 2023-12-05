@@ -212,6 +212,7 @@ jobs:
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
+      - src/mono/mono.proj
       - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
@@ -267,6 +268,7 @@ jobs:
       - src/mono/wasi/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
@@ -287,6 +289,7 @@ jobs:
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/wasm/debugger/*
       - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*

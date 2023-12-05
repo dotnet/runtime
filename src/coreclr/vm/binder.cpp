@@ -1122,8 +1122,6 @@ void CoreLibBinder::CheckExtended()
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond) _ASSERTE(cond)
 #include "asmconstants.h"
 
-    _ASSERTE(sizeof(VARIANT) == CoreLibBinder::GetClass(CLASS__NATIVEVARIANT)->GetNativeSize());
-
     printf("CheckExtended: completed without exception.\n");
 
 ErrExit:

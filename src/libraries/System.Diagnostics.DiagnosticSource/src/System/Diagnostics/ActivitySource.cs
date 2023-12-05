@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -346,9 +346,9 @@ namespace System.Diagnostics
 
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            if (listeners != null &&  listeners.Count > 0)
+            if (listeners != null && listeners.Count > 0)
             {
-                listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity)obj), activity);
             }
         }
 
@@ -358,9 +358,9 @@ namespace System.Diagnostics
 
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            if (listeners != null &&  listeners.Count > 0)
+            if (listeners != null && listeners.Count > 0)
             {
-                listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity) obj), activity);
+                listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity)obj), activity);
             }
         }
     }

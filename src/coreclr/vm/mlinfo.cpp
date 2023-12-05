@@ -391,9 +391,7 @@ CustomMarshalerHelper *SetupCustomMarshalerHelper(LPCUTF8 strMarshalerTypeName, 
 {
     CONTRACT (CustomMarshalerHelper*)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -4057,20 +4055,17 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 
 #include "stubhelpers.h"
-FCIMPL3(void*, StubHelpers::CreateCustomMarshalerHelper,
-            MethodDesc* pMD,
-            mdToken paramToken,
-            TypeHandle hndManagedType)
+
+extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     CustomMarshalerHelper* pCMHelper = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
 
     Module* pModule = pMD->GetModule();
     Assembly* pAssembly = pModule->GetAssembly();
-
 
 #ifdef FEATURE_COMINTEROP
     if (!hndManagedType.IsTypeDesc() &&
@@ -4108,9 +4103,8 @@ FCIMPL3(void*, StubHelpers::CreateCustomMarshalerHelper,
                                                 hndManagedType);
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return (void*)pCMHelper;
 }
-FCIMPLEND
 

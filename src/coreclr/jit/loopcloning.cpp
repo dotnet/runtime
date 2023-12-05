@@ -824,14 +824,15 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
 {
     noway_assert(conds.Size() > 0);
     assert(slowHead != nullptr);
-    assert(insertAfter->KindIs(BBJ_NONE, BBJ_COND));
+    assert(insertAfter->KindIs(BBJ_ALWAYS, BBJ_COND));
 
     // Choose how to generate the conditions
     const bool generateOneConditionPerBlock = true;
 
     if (generateOneConditionPerBlock)
     {
-        BasicBlock* newBlk = nullptr;
+        BasicBlock* newBlk           = nullptr;
+        BasicBlock* firstInsertAfter = insertAfter;
 
         for (unsigned i = 0; i < conds.Size(); ++i)
         {
@@ -862,6 +863,14 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
             insertAfter = newBlk;
         }
 
+        // The block preceding the newly-generated conditions could have been a BBJ_ALWAYS.
+        // Make sure it jumps to the new block chain inserted after it.
+        if (firstInsertAfter->KindIs(BBJ_ALWAYS))
+        {
+            assert(!firstInsertAfter->IsLast());
+            firstInsertAfter->SetJumpDest(firstInsertAfter->Next());
+        }
+
         return newBlk;
     }
     else
@@ -874,6 +883,10 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         comp->fgAddRefPred(newBlk->GetJumpDest(), newBlk);
 
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
+        if (insertAfter->KindIs(BBJ_ALWAYS))
+        {
+            insertAfter->SetJumpDest(newBlk);
+        }
         comp->fgAddRefPred(newBlk, insertAfter);
 
         JITDUMP("Adding conditions to " FMT_BB "\n", newBlk->bbNum);
@@ -1944,7 +1957,8 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
     JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loopNum);
     assert(context->HasBlockConditions(loopNum));
     assert(slowHead != nullptr);
-    assert(insertAfter->KindIs(BBJ_NONE));
+    assert(insertAfter->KindIs(BBJ_ALWAYS));
+    assert(insertAfter->JumpsToNext());
 
     if (context->HasBlockConditions(loopNum))
     {
@@ -2036,18 +2050,19 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // Make a new pre-header block 'h2' for the loop. 'h' will fall through to 'h2'.
     JITDUMP("Create new header block for loop\n");
 
-    BasicBlock* h2 = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
+    BasicBlock* h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true, /*jumpDest*/ loop.lpEntry);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
     h2->bbWeight     = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     h2->bbNatLoopNum = ambientLoop;
     h2->bbFlags |= BBF_LOOP_PREHEADER;
 
-    if (!h->KindIs(BBJ_NONE))
+    if (h2->JumpsToNext())
     {
-        assert(h->KindIs(BBJ_ALWAYS));
-        assert(h->HasJumpTo(loop.lpEntry));
-        h2->SetJumpKindAndTarget(BBJ_ALWAYS, loop.lpEntry DEBUG_ARG(this));
+        h2->bbFlags |= BBF_NONE_QUIRK;
     }
+
+    assert(h->KindIs(BBJ_ALWAYS));
+    assert(h->HasJumpTo(loop.lpEntry));
 
     fgReplacePred(loop.lpEntry, h, h2);
     JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", h->bbNum, loop.lpEntry->bbNum,
@@ -2060,7 +2075,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // Make 'h' fall through to 'h2' (if it didn't already).
     // Don't add the h->h2 edge because we're going to insert the cloning conditions between 'h' and 'h2', and
     // optInsertLoopChoiceConditions() will add the edge.
-    h->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+    h->SetJumpDest(h2);
+    assert(h->JumpsToNext());
+    h->bbFlags |= BBF_NONE_QUIRK;
 
     // Make X2 after B, if necessary.  (Not necessary if B is a BBJ_ALWAYS.)
     // "newPred" will be the predecessor of the blocks of the cloned loop.
@@ -2100,7 +2117,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // would end up in the loop table as a pre-header without creating any new pre-header block). This puts the
     // slow loop in the canonical loop form.
     JITDUMP("Create unique head block for slow path loop\n");
-    BasicBlock* slowHead = fgNewBBafter(BBJ_NONE, newPred, /*extendRegion*/ true);
+    // Set the jump target later
+    BasicBlock* slowHead = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, newPred->bbNum);
     slowHead->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowHead->scaleBBWeight(slowPathWeightScaleFactor);
@@ -2112,8 +2130,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     for (BasicBlock* const blk : loop.LoopBlocks())
     {
-        // Initialize newBlk as BBJ_NONE, and fix up jump kind/target later with optCopyBlkDest()
-        BasicBlock* newBlk = fgNewBBafter(BBJ_NONE, newPred, /*extendRegion*/ true);
+        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later with optCopyBlkDest()
+        BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
 
         // Call CloneBlockState to make a copy of the block's statements (and attributes), and assert that it
@@ -2172,8 +2190,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         bool        b      = blockMap->Lookup(blk, &newblk);
         assert(b && newblk != nullptr);
 
-        // Jump kind/target should not be set yet
-        assert(newblk->KindIs(BBJ_NONE));
+        // Jump target should not be set yet
+        assert(!newblk->HasInitializedJumpDest());
 
         // First copy the jump destination(s) from "blk".
         optCopyBlkDest(blk, newblk);
@@ -2184,10 +2202,6 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // Add predecessor edges for the new successors, as well as the fall-through paths.
         switch (newblk->GetJumpKind())
         {
-            case BBJ_NONE:
-                fgAddRefPred(newblk->Next(), newblk);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
                 fgAddRefPred(newblk->GetJumpDest(), newblk);
@@ -2241,20 +2255,18 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // We should always have block conditions.
 
     assert(context->HasBlockConditions(loopInd));
-    assert(h->KindIs(BBJ_NONE));
-    assert(h->NextIs(h2));
+    assert(h->KindIs(BBJ_ALWAYS));
+    assert(h->HasJumpTo(h2));
 
     // If any condition is false, go to slowHead (which branches or falls through to e2).
     BasicBlock* e2      = nullptr;
     bool        foundIt = blockMap->Lookup(loop.lpEntry, &e2);
     assert(foundIt && e2 != nullptr);
 
-    if (!slowHead->NextIs(e2))
-    {
-        // We can't just fall through to the slow path entry, so make it an unconditional branch.
-        assert(slowHead->KindIs(BBJ_NONE)); // This is how we created it above.
-        slowHead->SetJumpKindAndTarget(BBJ_ALWAYS, e2 DEBUG_ARG(this));
-    }
+    // We haven't set the jump target yet
+    assert(slowHead->KindIs(BBJ_ALWAYS));
+    assert(!slowHead->HasInitializedJumpDest());
+    slowHead->SetJumpDest(e2);
 
     fgAddRefPred(e2, slowHead);
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowHead->bbNum, e2->bbNum);

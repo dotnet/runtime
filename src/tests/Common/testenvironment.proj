@@ -79,7 +79,8 @@
       DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip;
       DOTNET_JitSynthesizeCounts;
-      DOTNET_JitCheckSynthesizedCounts
+      DOTNET_JitCheckSynthesizedCounts;
+      DOTNET_JitEnableCrossBlockLocalAssertionProp
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -220,6 +221,7 @@
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_only" JitStressModeNames="STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_full" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
+    <TestEnvironment Include="jitcrossblocklocalassertionprop" JitEnableCrossBlockLocalAssertionProp="1" TieredCompilation="0" />
     <TestEnvironment Include="jitcfg" JitForceControlFlowGuard="1" />
     <TestEnvironment Include="jitcfg_dispatcher_always" JitForceControlFlowGuard="1" JitCFGUseDispatcher="1" />
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
