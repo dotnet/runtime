@@ -468,7 +468,8 @@ static LPVOID VIRTUALReserveMemory(
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize,           /* Size of Region */
                 IN DWORD flAllocationType,  /* Type of allocation */
-                IN DWORD flProtect)         /* Type of access protection */
+                IN DWORD flProtect,         /* Type of access protection */
+                OUT BOOL *newMemory = NULL) /* Set if new virtual memory is allocated */
 {
     LPVOID pRetVal      = NULL;
     UINT_PTR StartBoundary;
@@ -509,6 +510,11 @@ static LPVOID VIRTUALReserveMemory(
              flAllocationType |= MEM_RESERVE_EXECUTABLE;
         }
         pRetVal = ReserveVirtualMemory(pthrCurrent, (LPVOID)StartBoundary, MemSize, flAllocationType);
+
+        if (newMemory != nullptr)
+        {
+            *newMemory = true;
+        }
     }
 
     if (pRetVal != NULL)
@@ -667,15 +673,12 @@ VIRTUALCommitMemory(
 
     if ( !pInformation )
     {
-        /* Set if VIRTUALReserveMemory will allocate new memory from the kernel. */
-        IsNewMemory = (((flAllocationType & MEM_RESERVE_EXECUTABLE) != 0) && (lpAddress == NULL));
-
         /* According to the new MSDN docs, if MEM_COMMIT is specified,
         and the memory is not reserved, you reserve and then commit.
         */
         LPVOID pReservedMemory =
                 VIRTUALReserveMemory( pthrCurrent, lpAddress, dwSize,
-                                      flAllocationType, flProtect );
+                                      flAllocationType | MEM_COMMIT, flProtect, &IsNewMemory );
 
         TRACE( "Reserve and commit the memory!\n " );
 
