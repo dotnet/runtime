@@ -5993,12 +5993,8 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, zeroReg, dstReg, 0);
     if (size > TARGET_POINTER_SIZE)
     {
-        const bool dstDies = (dstNode->gtFlags & GTF_VAR_DEATH) != 0;
-        if (dstDies)
-        {
-            regSet.AddMaskVars(genRegMask(dstReg));
-            gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
-        }
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
 
         const regNumber offsetReg = initBlkNode->ExtractTempReg();
         const regNumber tempReg   = initBlkNode->ExtractTempReg();
@@ -6016,11 +6012,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // if (offsetReg != 0) goto loop;
         GetEmitter()->emitIns_J(INS_bnez, loop, offsetReg);
 
-        if (dstDies)
-        {
-            regSet.RemoveMaskVars(genRegMask(dstReg));
-            gcInfo.gcMarkRegSetNpt(dstReg);
-        }
+        gcInfo.gcMarkRegSetNpt(dstNode->gtGetRegMask());
     }
 }
 
