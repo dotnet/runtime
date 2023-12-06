@@ -4953,17 +4953,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
             }
 
-            // Assertion prop can do arbitrary statement remorphing, which
-            // can clone code and disrupt our simpleminded SSA accounting.
-            //
-            // So, disable the ssa checks.
-            //
-            if (fgSsaValid)
-            {
-                JITDUMP("Marking SSA as invalid before assertion prop\n");
-                fgSsaValid = false;
-            }
-
             if (doAssertionProp)
             {
                 // Assertion propagation

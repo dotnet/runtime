@@ -4061,14 +4061,16 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 
 //------------------------------------------------------------------------
 // fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations
-// (like loops).
+// (like loops, dominators and SSA).
 //
 void Compiler::fgInvalidateDfsTree()
 {
     m_dfs          = nullptr;
     m_loops        = nullptr;
+    fgSsaDomTree   = nullptr;
     m_newToOldLoop = nullptr;
     m_oldToNewLoop = nullptr;
+    fgSsaValid     = false;
 }
 
 //------------------------------------------------------------------------

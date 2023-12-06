@@ -4698,6 +4698,8 @@ void Compiler::fgDebugCheckSsa()
     //
     for (BasicBlock* const block : Blocks())
     {
+        // TODO-Cleanup: fgDomBBcount is the dominator count computed back in
+        // loop finding, not by SSA.
         if (block->bbNum > fgDomBBcount)
         {
             visitor.PreOrderVisit(block);
@@ -5137,8 +5139,7 @@ void Compiler::fgDebugCheckLoopTable()
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckDfsTree: Checks that the DFS tree matches the current flow
-// graph.
+// fgDebugCheckDfsTree: Checks that the DFS tree matches the current flow graph.
 //
 void Compiler::fgDebugCheckDfsTree()
 {
