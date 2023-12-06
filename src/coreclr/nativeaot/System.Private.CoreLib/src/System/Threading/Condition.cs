@@ -3,8 +3,9 @@
 
 #pragma warning disable 0420 //passing volatile fields by ref
 
-
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -97,7 +98,7 @@ namespace System.Threading
 
         public bool Wait(TimeSpan timeout) => Wait(WaitHandle.ToTimeoutMilliseconds(timeout));
 
-        public unsafe bool Wait(int millisecondsTimeout)
+        public unsafe bool Wait(int millisecondsTimeout, object? associatedObject = null)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
@@ -106,6 +107,17 @@ namespace System.Threading
 
             Waiter waiter = GetWaiterForCurrentThread();
             AddWaiter(waiter);
+
+            bool isWaitHandleKeywordEnabled = NativeRuntimeEventSource.Log.IsEnabled(
+                EventLevel.Verbose,
+                NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
+            if (isWaitHandleKeywordEnabled)
+            {
+                associatedObject ??= this;
+                NativeRuntimeEventSource.Log.WaitHandleWaitStart(
+                    NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait,
+                    *(nint*)Unsafe.AsPointer(ref associatedObject));
+            }
 
             uint recursionCount = _lock.ExitAll();
             bool success = false;
@@ -130,6 +142,11 @@ namespace System.Threading
                     // So, we need to manually reset the event.
                     //
                     waiter.ev.Reset();
+                }
+
+                if (isWaitHandleKeywordEnabled)
+                {
+                    NativeRuntimeEventSource.Log.WaitHandleWaitStop();
                 }
 
                 AssertIsNotInList(waiter);

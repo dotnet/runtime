@@ -3530,9 +3530,13 @@ namespace System.Diagnostics.Tracing
                 manifest.ManifestError(SR.Format(SR.EventSource_MismatchIdToWriteEvent, evtName, evtId, eventArg), true);
             }
 
-            if (evtId < eventData.Length && eventData[evtId].Descriptor.EventId != 0)
+            if (evtId < eventData.Length)
             {
-                manifest.ManifestError(SR.Format(SR.EventSource_EventIdReused, evtName, evtId), true);
+                var existingEventMetadata = eventData[evtId];
+                if (existingEventMetadata.Descriptor.EventId != 0)
+                {
+                    manifest.ManifestError(SR.Format(SR.EventSource_EventIdReused, evtName, evtId, existingEventMetadata.Name), true);
+                }
             }
 
             // We give a task to things if they don't have one.
