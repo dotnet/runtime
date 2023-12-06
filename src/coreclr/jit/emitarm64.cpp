@@ -9175,45 +9175,15 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(imm >= 0 && imm < 4);
+            // TODO: Handle other formats: IF_SVE_GG_3B
             fmt = IF_SVE_GG_3A;
             break;
 
-        //case INS_sve_luti4:
-        //    assert(insOptsScalable(opt));
-        //    assert(isVectorRegister(reg1)); // mmmmm
-        //    assert(isVectorRegister(reg2)); // nnnnn
-        //   // assert(isVectorRegister(reg3)); // ddddd
-        //   // assert(isValidimm2());           // ii
-        //    fmt = IF_SVE_GH_3B;
-        //    break;
-
-        //case INS_sve_luti4:
-        //    assert(insOptsScalable(opt));
-        //    assert(isVectorRegister(reg1)); // mmmmm
-        //    assert(isVectorRegister(reg2)); // nnnnn
-        //   // assert(isVectorRegister(reg3)); // ddddd
-        //   // assert(isValidimm2());           // ii
-        //    fmt = IF_SVE_GH_3B_B;
-        //    break;
-
-        //case INS_sve_luti2:
-        //    assert(insOptsScalable(opt));
-        //    assert(isVectorRegister(reg1)); // mmmmm
-        //    assert(isVectorRegister(reg2)); // nnnnn
-        //    assert(isVectorRegister(reg3)); // ddddd
-        //   // assert(isValidimm3l());          // i
-        //   // assert(isValidimm3h());          // ii
-        //    fmt = IF_SVE_GG_3B;
-        //    break;
-
-        //case INS_sve_luti4:
-        //    assert(insOptsScalable(opt));
-        //    assert(isVectorRegister(reg10)); // mmmmm
-        //    assert(isVectorRegister(reg20)); // nnnnn
-        //    assert(isVectorRegister(reg30)); // ddddd
-        //    assert(isValidimm1l());          // i
-        //    fmt = IF_SVE_GH_3A;
-        //    break;
+        case INS_sve_luti4:
+            assert(!"not implemented");
+            // TODO: Handle other formats: IF_SVE_GH_3B_B, IF_SVE_GH_3A
+            fmt = IF_SVE_GH_3B;
+            break;
 
         default:
             unreached();

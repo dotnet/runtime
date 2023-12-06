@@ -2096,7 +2096,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 #endif // LATE_DISASM
 
 #ifdef DEBUG
-    if (compiler->opts.altJit && JitConfig.JitRawHexCode().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
+    if (JitConfig.JitRawHexCode().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
                                            &compiler->info.compMethodInfo->args))
     {
         BYTE* addr = (BYTE*)*codePtr + compiler->GetEmitter()->writeableOffset;
