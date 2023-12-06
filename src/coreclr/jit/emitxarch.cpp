@@ -16090,6 +16090,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     insFormat     insFmt        = id->idInsFmt();
     unsigned char callInstrSize = 0;
 
+#ifdef TARGET_AMD64
+    // Indicates a jump between after a call and before an OS epilog was replaced by a nop
+    bool convertedJmpToNop = false;
+#endif // TARGET_AMD64
+
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
 #endif // DEBUG
@@ -16210,14 +16215,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 
         case IF_LABEL:
-        case IF_RWR_LABEL:
-        case IF_SWR_LABEL:
         {
             assert(id->idGCref() == GCT_NONE);
             assert(id->idIsBound() || emitJmpInstHasNoCode(id));
             instrDescJmp* jmp = (instrDescJmp*)id;
 
-            // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
             if (!jmp->idjIsRemovableJmpCandidate)
             {
                 dst = emitOutputLJ(ig, dst, id);
@@ -16228,14 +16230,29 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Need to insert a nop if the removed jump was after a call and before an OS epilog
                 // (The code size should already be set to 1 for the nop)
                 assert(id->idCodeSize() == 1);
-                dst = emitOutputNOP(dst, id->idCodeSize());
+                dst = emitOutputNOP(dst, 1);
 
-                // Temporarily convert id into a nop description so it is displayed correctly in disasms
-                id->idIns(INS_nop);
-                id->idInsFmt(IF_NONE);
+                // Set convertedJmpToNop in case we need to print this instrDesc as a nop in a disasm
+                convertedJmpToNop = true;
             }
 #endif // TARGET_AMD64
-            sz = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
+
+            sz = sizeof(instrDescJmp);
+            break;
+        }
+        case IF_RWR_LABEL:
+        case IF_SWR_LABEL:
+        {
+            assert(id->idGCref() == GCT_NONE);
+            assert(id->idIsBound() || emitJmpInstHasNoCode(id));
+            instrDescJmp* jmp = (instrDescJmp*)id;
+
+            // Jump removal optimization is only for IF_LABEL
+            assert(!jmp->idjIsRemovableJmpCandidate);
+
+            // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
+            dst = emitOutputLJ(ig, dst, id);
+            sz  = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
         }
 
@@ -17559,22 +17576,47 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef DEBUG
     if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
     {
-        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+#ifdef TARGET_AMD64
+        // convertedJmpToNop indicates this instruction is a removable jump that was replaced by a nop.
+        // The instrDesc still describes a jump, so in order to print the nop in the disasm correctly,
+        // set the instruction and format accordingly (and reset them after to avoid triggering asserts).
+        if (convertedJmpToNop)
+        {
+            id->idIns(INS_nop);
+            id->idInsFmt(IF_NONE);
+
+            emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+
+            id->idIns(ins);
+            id->idInsFmt(insFmt);
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+        }
     }
 #else
     if (emitComp->opts.disAsm && !emitJmpInstHasNoCode(id))
     {
-        emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+#ifdef TARGET_AMD64
+        if (convertedJmpToNop)
+        {
+            id->idIns(INS_nop);
+            id->idInsFmt(IF_NONE);
+
+            emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+
+            id->idIns(ins);
+            id->idInsFmt(insFmt);
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+        }
     }
 #endif
-
-#ifdef TARGET_AMD64
-    // If this instruction is a removed jump replaced by a nop, its instrDesc
-    // was modified in order to print the nop in disasms correctly.
-    // Now that we've printed it, reset the instrDesc to avoid triggering asserts.
-    id->idIns(ins);
-    id->idInsFmt(insFmt);
-#endif // !TARGET_AMD64
 
 #if FEATURE_LOOP_ALIGN
     // Only compensate over-estimated instructions if emitCurIG is before
