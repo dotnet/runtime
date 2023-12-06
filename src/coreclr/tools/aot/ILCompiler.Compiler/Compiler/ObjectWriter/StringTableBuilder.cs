@@ -23,7 +23,14 @@ namespace ILCompiler.ObjectWriter
             _stream.CopyTo(stream);
         }
 
-        public uint Size => (uint)_stream.Length;
+        public uint Size
+        {
+            get
+            {
+                FlushReservedStrings();
+                return (uint)_stream.Length;
+            }
+        }
 
         public void ReserveString(string text)
         {

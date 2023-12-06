@@ -1,9 +1,0 @@
-# configuration file for dotnet-releaser
-[msbuild]
-project = "LibObjectFile.sln"
-build_debug = true
-[test]
-run_tests_for_debug = true
-[github]
-user = "xoofx"
-repo = "LibObjectFile"
