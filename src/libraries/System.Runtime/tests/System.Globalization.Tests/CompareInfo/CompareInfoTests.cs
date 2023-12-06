@@ -402,7 +402,7 @@ namespace System.Globalization.Tests
         private static bool WindowsVersionHasTheCompareStringRegression =>
                     PlatformDetection.IsNlsGlobalization && CompareStringEx("", NORM_LINGUISTIC_CASING, "", 0, "\u200C", 1, IntPtr.Zero, IntPtr.Zero, 0) != 2;
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
         [MemberData(nameof(SortKey_TestData))]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
