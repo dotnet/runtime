@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal partial class RuntimeAssemblyInfo
     {
-       static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly? runtimeAssembly)
+        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly? runtimeAssembly)
         {
             if (bindResult.Reader != null)
                 runtimeAssembly = NativeFormatRuntimeAssembly.GetRuntimeAssembly(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes);

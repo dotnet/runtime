@@ -110,7 +110,7 @@ namespace System.Reflection.Emit
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
-        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
+        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             this.is_hidden_global_type = false;
             int sep_index;

@@ -1356,7 +1356,7 @@ namespace System
                 dest[2] = TChar.CastFrom(':');
                 Number.WriteTwoDigits((uint)minute, dest + 3);
                 dest[5] = TChar.CastFrom(':');
-                Number.WriteTwoDigits((uint)second, dest +6);
+                Number.WriteTwoDigits((uint)second, dest + 6);
             }
 
             return true;

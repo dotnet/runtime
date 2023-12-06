@@ -77,7 +77,6 @@ CompPhaseNameMacro(PHASE_SWITCH_RECOGNITION,         "Recognize Switch",        
 CompPhaseNameMacro(PHASE_FIND_OPER_ORDER,            "Find oper order",                false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_ORDER,            "Set block order",                false, -1, true)
 CompPhaseNameMacro(PHASE_BUILD_SSA,                  "Build SSA representation",       true,  -1, false)
-CompPhaseNameMacro(PHASE_BUILD_SSA_TOPOSORT,         "SSA: topological sort",          false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_DOMS,             "SSA: Doms1",                     false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_LIVENESS,         "SSA: liveness",                  false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_DF,               "SSA: DF",                        false, PHASE_BUILD_SSA, false)

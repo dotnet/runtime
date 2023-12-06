@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
 
             return
                 padding == RSAEncryptionPadding.Pkcs1 ? Encrypt(data, fOAEP: false) :
-                padding == RSAEncryptionPadding.OaepSHA1 ?  Encrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
+                padding == RSAEncryptionPadding.OaepSHA1 ? Encrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
                 throw PaddingModeNotSupported();
         }
 

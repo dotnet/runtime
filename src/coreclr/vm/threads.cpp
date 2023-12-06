@@ -1505,6 +1505,7 @@ Thread::Thread()
 #endif  // TRACK_SYNC
 
     m_PreventAsync = 0;
+    m_PreventAbort = 0;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
@@ -6524,7 +6525,6 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
         LOG_FLAG(uState, MEM_FREE);
         LOG_FLAG(uState, MEM_PRIVATE);
         LOG_FLAG(uState, MEM_MAPPED);
-        LOG_FLAG(uState, MEM_RESET);
         LOG_FLAG(uState, MEM_TOP_DOWN);
         LOG_FLAG(uState, MEM_WRITE_WATCH);
         LOG_FLAG(uState, MEM_PHYSICAL);

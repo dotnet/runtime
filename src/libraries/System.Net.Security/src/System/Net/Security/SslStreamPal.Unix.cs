@@ -170,8 +170,8 @@ namespace System.Net.Security
             return true;
         }
 
-         private static SecurityStatusPal HandshakeInternal(ref SafeDeleteSslContext? context,
-            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        private static SecurityStatusPal HandshakeInternal(ref SafeDeleteSslContext? context,
+           ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             byte[]? output = null;
             int outputSize = 0;

@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
             else
             {
-                methodBase = declaringType.GetMethod(name, 0, bf, null, parameterTypes, null);
+                methodBase = declaringType.GetMethod(name, 0, bf, parameterTypes);
             }
 
             if (methodBase == null)

@@ -290,10 +290,6 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-#if defined(TARGET_ARM)
-        genInsertNopForUnwinder(block);
-#endif
-
         /* Start a new code output block */
 
         genUpdateCurrentFunclet(block);
@@ -351,7 +347,7 @@ void CodeGen::genCodeForBBlist()
             // Mark a label and update the current set of live GC refs
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block));
+                                                             gcInfo.gcRegByrefSetCur DEBUG_ARG(block));
         }
 
         if (block->IsFirstColdBlock(compiler))
@@ -603,6 +599,7 @@ void CodeGen::genCodeForBBlist()
         noway_assert(genStackLevel == 0);
 
 #ifdef TARGET_AMD64
+        bool emitNop = false;
         // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
         // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
         // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
@@ -625,6 +622,11 @@ void CodeGen::genCodeForBBlist()
                 switch (block->GetJumpKind())
                 {
                     case BBJ_ALWAYS:
+                        // We might skip generating the jump via a peephole optimization.
+                        // If that happens, make sure a NOP is emitted as the last instruction in the block.
+                        emitNop = true;
+                        break;
+
                     case BBJ_THROW:
                     case BBJ_CALLFINALLY:
                     case BBJ_EHCATCHRET:
@@ -635,20 +637,6 @@ void CodeGen::genCodeForBBlist()
                     case BBJ_EHFAULTRET:
                     case BBJ_EHFILTERRET:
                         // These are the "epilog follows" case, handled in the emitter.
-
-                        break;
-
-                    case BBJ_NONE:
-                        if (block->IsLast())
-                        {
-                            // Call immediately before the end of the code; we should never get here    .
-                            instGen(INS_BREAKPOINT); // This should never get executed
-                        }
-                        else
-                        {
-                            // We need the NOP
-                            instGen(INS_nop);
-                        }
                         break;
 
                     case BBJ_COND:
@@ -738,13 +726,24 @@ void CodeGen::genCodeForBBlist()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-            case BBJ_NONE:
             case BBJ_SWITCH:
                 break;
 
             case BBJ_ALWAYS:
-#ifdef TARGET_XARCH
             {
+                // If this block jumps to the next one, we might be able to skip emitting the jump
+                if (block->CanRemoveJumpToNext(compiler))
+                {
+#ifdef TARGET_AMD64
+                    if (emitNop)
+                    {
+                        instGen(INS_nop);
+                    }
+#endif // TARGET_AMD64
+
+                    break;
+                }
+#ifdef TARGET_XARCH
                 // If a block was selected to place an alignment instruction because it ended
                 // with a jump, do not remove jumps from such blocks.
                 // Do not remove a jump between hot and cold regions.
@@ -759,10 +758,10 @@ void CodeGen::genCodeForBBlist()
 #endif // TARGET_AMD64
 
                 inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
-            }
 #else
                 inst_JMP(EJ_jmp, block->GetJumpDest());
 #endif // TARGET_XARCH
+            }
 
                 FALLTHROUGH;
 
