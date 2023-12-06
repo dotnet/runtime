@@ -33,13 +33,13 @@ namespace System
         // and its ExceptionInfo reference set to null.
         //
         public ApplicationException(string? message)
-            : base(message ?? SR.Arg_ApplicationException)
+            : base(message)
         {
             HResult = HResults.COR_E_APPLICATION;
         }
 
         public ApplicationException(string? message, Exception? innerException)
-            : base(message ?? SR.Arg_ApplicationException, innerException)
+            : base(message, innerException)
         {
             HResult = HResults.COR_E_APPLICATION;
         }

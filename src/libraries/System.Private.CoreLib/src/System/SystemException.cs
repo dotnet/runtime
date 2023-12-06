@@ -18,13 +18,13 @@ namespace System
         }
 
         public SystemException(string? message)
-            : base(message ?? SR.Arg_SystemException)
+            : base(message)
         {
             HResult = HResults.COR_E_SYSTEM;
         }
 
         public SystemException(string? message, Exception? innerException)
-            : base(message ?? SR.Arg_SystemException, innerException)
+            : base(message, innerException)
         {
             HResult = HResults.COR_E_SYSTEM;
         }
