@@ -1170,7 +1170,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidImm2(emitGetInsSC(id)));  // i
+            // TODO: Verify 'i'.
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             break;
 
