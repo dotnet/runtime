@@ -3359,10 +3359,12 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 
         BasicBlock* loop = genCreateTempLabel();
         genDefineTempLabel(loop);
+        GetEmitter()->emitDisableGC();
 
         GetEmitter()->emitIns_ARX_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, offsetReg, 1, 0);
         GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, TARGET_POINTER_SIZE);
         inst_JMP(EJ_jne, loop);
+        GetEmitter()->emitEnableGC();
     }
 }
 

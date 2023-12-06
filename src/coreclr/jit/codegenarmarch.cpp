@@ -3164,6 +3164,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 
         BasicBlock* loop = genCreateTempLabel();
         genDefineTempLabel(loop);
+        GetEmitter()->emitDisableGC();
 
         GetEmitter()->emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
 #ifdef TARGET_ARM64
@@ -3172,6 +3173,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE, INS_FLAGS_SET);
 #endif
         inst_JMP(EJ_ne, loop);
+        GetEmitter()->emitEnableGC();
     }
 }
 

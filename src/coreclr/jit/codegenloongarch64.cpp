@@ -6403,25 +6403,30 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     const unsigned size = initBlkNode->GetLayout()->GetSize();
     assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
 
-    //// TODO: implement on LoongArch64:
-
     // The loop is reversed - it makes it smaller.
     // Although, we zero the first pointer before the loop (the loop doesn't zero it)
     // it works as a nullcheck, otherwise the first iteration would try to access
     // "null + potentially large offset" and hit AV.
-    //// GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, zeroReg, dstReg, 0);
     if (size > TARGET_POINTER_SIZE)
     {
-        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        const regNumber offsetReg = initBlkNode->ExtractTempReg();
+        const regNumber tempReg   = initBlkNode->ExtractTempReg();
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
 
         BasicBlock* loop = genCreateTempLabel();
         genDefineTempLabel(loop);
+        GetEmitter()->emitDisableGC();
 
-        //// GetEmitter()->emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
-        //// GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
-        //// GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, offsetReg, zeroReg);
-        //// inst_JMP(EJ_ne, loop);
+        // tempReg = dstReg + offset (a new interior pointer, but in a nongc region)
+        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, tempReg, dstReg, offsetReg);
+        // *tempReg = 0
+        GetEmitter()->emitIns_R_R_R(INS_st_d, EA_PTRSIZE, zeroReg, tempReg, 0);
+        // offsetReg = offsetReg - 8
+        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
+        // if (offsetReg != 0) goto loop;
+        GetEmitter()->emitIns_J_cond_la(INS_beq, loop, offsetReg, zeroReg);
+        GetEmitter()->emitEnableGC();
     }
 }
 
