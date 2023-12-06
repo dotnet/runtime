@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Reflection.Emit.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public class AssemblyBuilderInterfaceImplementation
+    public class AssemblySaveInterfaceImplementation
     {
         [Fact]
         public void DefineMethodOverride_InterfaceMethod()

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,20 +14,29 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineConstructorsTest()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
-            ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public);
-            ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(int) });
-            ILGenerator il = constructor2.GetILGenerator();
-            il.Emit(OpCodes.Ret);
-            type.CreateType();
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName);
+                ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName, CallingConventions.Standard, new[] { typeof(int) });
+                constructor2.DefineParameter(1, ParameterAttributes.None, "parameter1");
+                ILGenerator il = constructor2.GetILGenerator();
+                il.Emit(OpCodes.Ret);
+                type.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
 
-            ConstructorInfo[] ctors = type.GetConstructors();
-            Assert.Equal(2, ctors.Length);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    ConstructorInfo[] ctors = typeFromDisk.GetConstructors();
+                    Assert.Equal(2, ctors.Length);
 
-            Assert.Equal(constructor, type.GetConstructor(Type.EmptyTypes));
-            Assert.Equal(ctors[0], type.GetConstructor(Type.EmptyTypes));
-            Assert.Equal(ctors[1], type.GetConstructor(new[] { typeof(int) }));
-            Assert.Null(type.GetConstructor(new[] { typeof(string) }));
+                    Assert.Equal(constructor, type.GetConstructor(Type.EmptyTypes));
+                    Assert.Equal(ctors[0], typeFromDisk.GetConstructor(Type.EmptyTypes));
+                    Assert.Equal(ctors[1], typeFromDisk.GetConstructor([mlc.CoreAssembly.GetType("System.Int32")]));
+                }
+            }
         }
 
         [Fact]
