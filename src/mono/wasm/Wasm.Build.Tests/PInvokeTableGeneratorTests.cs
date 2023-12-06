@@ -736,11 +736,25 @@ namespace Wasm.Build.Tests
                     }
                     public Nested1 Value;
                 }
+                public struct SingleI64Struct {
+                    public Int64 Value;
+                }
 
                 public class Test
                 {
                     public static unsafe int Main(string[] argv)
                     {
+                        var i64_a = 0xFF00FF00FF00FF0L;
+                        var i64_b = ~i64_a;
+                        var resI = direct64(i64_a);
+                        Console.WriteLine(""l (l)="" + resI);
+
+                        var sis = new SingleI64Struct { Value = i64_a };
+                        // FIXME: In the interpreter this performs an _ii invoke incorrectly,
+                        //  and in AOT it also doesn't work. See mini-wasm.c mini_wasm_is_scalar_vtype
+                        // var resSI = indirect64(sis);
+                        // Console.WriteLine(""s (s)="" + resSI.Value);
+
                         var resF = direct(3.14);
                         Console.WriteLine(""f (d)="" + resF);
 
@@ -750,7 +764,6 @@ namespace Wasm.Build.Tests
                         resF = indirect_arg(sds);
                         Console.WriteLine(""f (s)="" + resF);
 
-                        // FIXME: This crashes
                         var res = indirect(sds);
                         Console.WriteLine(""s (s)="" + res.Value);
 
@@ -765,6 +778,12 @@ namespace Wasm.Build.Tests
 
                     [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
                     public static extern float direct(double arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
+                    public static extern SingleI64Struct indirect64(SingleI64Struct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
+                    public static extern Int64 direct64(Int64 arg);
                 }";
 
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
@@ -799,6 +818,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
             Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
+            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
 
             var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 3, host: host, id: id);
             Assert.Contains("f (d)=3.14", runOutput);
