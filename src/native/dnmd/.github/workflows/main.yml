@@ -21,15 +21,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.os }}, ${{ matrix.flavor }}, Single Build = ${{ matrix.use-vendored-libs }})
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - uses: actions/setup-dotnet@v1
+    - uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '7.0.x'
-        include-prerelease: true
-    
+        dotnet-version: '8.0.x'
+        dotnet-quality: 'preview'
+
     - name: Build Vendored Dependencies
       if: ${{ !matrix.use-vendored-libs }}
       run: |

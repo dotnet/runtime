@@ -17,6 +17,6 @@
         <NativeOutputPath Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(BaseArtifactsPath)/bin</NativeOutputPath>
         <NativeOutputPath Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(BaseArtifactsPath)/lib</NativeOutputPath>
 
-        <TargetFrameworkLatest>net7.0</TargetFrameworkLatest>
+        <TargetFrameworkLatest>net8.0</TargetFrameworkLatest>
     </PropertyGroup>
 </Project>

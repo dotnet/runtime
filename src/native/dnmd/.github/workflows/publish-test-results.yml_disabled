@@ -1,10 +1,10 @@
 name: Publish Test Results
 
-# on:
-#   workflow_run:
-#     workflows: ["DNMD"]
-#     types:
-#       - completed
+on:
+  workflow_run:
+    workflows: ["DNMD"]
+    types:
+      - completed
 
 jobs:
   unit-test-results:
