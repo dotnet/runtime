@@ -3159,8 +3159,12 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
     if (size > TARGET_POINTER_SIZE)
     {
-        regSet.AddMaskVars(genRegMask(dstReg));
-        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+        const bool dstDies = (dstNode->gtFlags & GTF_VAR_DEATH) != 0;
+        if (dstDies)
+        {
+            regSet.AddMaskVars(genRegMask(dstReg));
+            gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+        }
 
         const regNumber offsetReg = initBlkNode->GetSingleTempReg();
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
@@ -3175,6 +3179,12 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE, INS_FLAGS_SET);
 #endif
         inst_JMP(EJ_ne, loop);
+
+        if (dstDies)
+        {
+            regSet.RemoveMaskVars(genRegMask(dstReg));
+            gcInfo.gcMarkRegSetNpt(dstReg);
+        }
     }
 }
 
