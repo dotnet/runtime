@@ -942,14 +942,6 @@ namespace System.Net.Security
 #endif
         }
 
-        /*++
-            Encrypt - Encrypts our bytes before we send them over the wire
-
-            Input:
-                buffer - bytes for sending
-                output - Encrypted bytes
-                resultSize - number of bytes in the output buffer
-        --*/
         internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
@@ -1333,7 +1325,7 @@ namespace System.Net.Security
 
             var oldPayload = Payload;
 
-            Payload = RentBuffer? ArrayPool<byte>.Shared.Rent(Size + size) : new byte[Size + size];
+            Payload = RentBuffer ? ArrayPool<byte>.Shared.Rent(Size + size) : new byte[Size + size];
             if (oldPayload != null)
             {
                 oldPayload.AsSpan<byte>().CopyTo(Payload);

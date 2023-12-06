@@ -486,7 +486,7 @@ namespace System.Net.Security
                 }
 
                 Debug.Assert(headerSecBuffer.cbBuffer >= 0 && dataSecBuffer.cbBuffer >= 0 && trailerSecBuffer.cbBuffer >= 0);
-                Debug.Assert(checked(headerSecBuffer.cbBuffer + dataSecBuffer.cbBuffer + trailerSecBuffer.cbBuffer) <= output.Length);
+                Debug.Assert(checked(headerSecBuffer.cbBuffer + dataSecBuffer.cbBuffer + trailerSecBuffer.cbBuffer) <= token.Payload!.Length);
 
                 token.Size = checked(headerSecBuffer.cbBuffer + dataSecBuffer.cbBuffer + trailerSecBuffer.cbBuffer);
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
