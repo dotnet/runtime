@@ -57,7 +57,7 @@ namespace System.Globalization.Tests
             new object[] { "abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false },
             new object[] { "abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true },
             new object[] { "abc", CompareOptions.None, "abc", CompareOptions.None, true },
-            //new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
+            new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
         };
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
