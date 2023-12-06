@@ -16777,7 +16777,7 @@ void emitter::emitDispInsHelp(
 
         // <Zdn>.B, <Zdn>.B
         case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg1(), id->idInsOpt(), false); // ddddd
             break;
 
