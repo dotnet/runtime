@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <Compile Include="../Common/Dispensers.cs" Link="Dispensers.cs" />
+    <Compile Include="../Common/Native.cs" Link="Native.cs" />
+    <Compile Include="../Common/Attributes.cs" Link="Attributes.cs" />
   </ItemGroup>
 
   <ItemGroup>

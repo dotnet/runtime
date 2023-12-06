@@ -36,6 +36,18 @@ typedef struct _IMAGE_DATA_DIRECTORY {
     uint32_t Size;
 } IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
 
+#define IMAGE_DEBUG_DIRECTORY_DEFINED
+typedef struct _IMAGE_DEBUG_DIRECTORY {
+    uint32_t Characteristics;
+    uint32_t TimeDateStamp;
+    uint16_t MajorVersion;
+    uint16_t MinorVersion;
+    uint32_t Type;
+    uint32_t SizeOfData;
+    uint32_t AddressOfRawData;
+    uint32_t PointerToRawData;
+} IMAGE_DEBUG_DIRECTORY, *PIMAGE_DEBUG_DIRECTORY;
+
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16
 
 #define IMAGE_SIZEOF_SHORT_NAME              8

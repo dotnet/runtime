@@ -1,33 +1,21 @@
+using System.Buffers;
 using System.Diagnostics;
+using System.Text;
+using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-using Xunit;
-using Xunit.Abstractions;
-
 using Common;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
-using System.Buffers;
-using System.Text;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace Regression.UnitTests
 {
-    public sealed class WindowsOnlyTheoryAttribute : TheoryAttribute
-    {
-        public WindowsOnlyTheoryAttribute()
-        {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Skip = "Only run on Windows";
-            }
-        }
-    }
-
     public unsafe class ImportTests
     {
         private delegate* unmanaged<void*, int, TestResult> _importAPIs;
@@ -39,12 +27,7 @@ namespace Regression.UnitTests
         {
             Log = outputHelper;
 
-            string regnativePath =
-                OperatingSystem.IsWindows() ? "regnative.dll"
-                : OperatingSystem.IsMacOS() ? "libregnative.dylib"
-                : "libregnative.so";
-
-            nint mod = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, regnativePath));
+            nint mod = NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, Native.Path));
             var initialize = (delegate* unmanaged<void*, void*, int>)NativeLibrary.GetExport(mod, "UnitInitialize");
             int hr = initialize((void*)Dispensers.Baseline, (void*)Dispensers.DeltaImageBuilder);
             if (hr < 0)
@@ -206,7 +189,7 @@ namespace Regression.UnitTests
 
                 MemoryStream mddiffStream = new();
 
-               diffCompilation.EmitDifference(
+                diffCompilation.EmitDifference(
                     baseline,
                     new[]
                     {
@@ -264,11 +247,11 @@ namespace Regression.UnitTests
             Debug.WriteLine($"{nameof(ImportAPIs_AssembliesWithAppliedDeltas)} - {filename}");
             using var _ = deltaBaseline;
             PEMemoryBlock block = deltaBaseline.GetMetadata();
-            
+
             void*[] deltaImagePointers = new void*[diffs.Count];
             int[] deltaImageLengths = new int[diffs.Count];
             MemoryHandle[] handles = new MemoryHandle[diffs.Count];
-            
+
             for (int i = 0; i < diffs.Count; i++)
             {
                 handles[i] = diffs[i].Pin();
@@ -294,32 +277,6 @@ namespace Regression.UnitTests
                 for (int i = 0; i < diffs.Count; i++)
                 {
                     handles[i].Dispose();
-                }
-            }
-        }
-
-        private enum TestState
-        {
-            Fail,
-            Pass
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct TestResult
-        {
-            public TestState State;
-            public byte* FailureMessage;
-            public delegate* unmanaged<void*, void> Free;
-
-            public void Check()
-            {
-                if (State != TestState.Pass)
-                {
-                    Assert.True(FailureMessage != null);
-                    Assert.True(Free != null);
-                    string msg = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(FailureMessage));
-                    Free(FailureMessage);
-                    Assert.Fail(msg);
                 }
             }
         }

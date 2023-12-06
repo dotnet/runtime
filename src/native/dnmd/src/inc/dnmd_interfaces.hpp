@@ -13,4 +13,12 @@ HRESULT GetDispenser(
     REFGUID riid,
     void** ppObj);
 
+// Create a symbol binder instance.
+//
+//  ISymUnmanagedBinder  - {AA544D42-28CB-11d3-BD22-0000F80849BD}
+extern "C" DNMD_EXPORT
+HRESULT GetSymBinder(
+    REFGUID riid,
+    void** ppObj);
+
 #endif // _INC_DNMD_INTERFACES_HPP_

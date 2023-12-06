@@ -43,7 +43,7 @@ public: // IUnknown
         // The outer IUnknown must always be returned
         // when IID_IUnknown is requested.
         // To ensure we handle nested composition,
-        // we'll call into the outer QI to ensure we propogate
+        // we'll call into the outer QI to ensure we propagate
         // up to the true outer IUnknown.
         if (riid == IID_IUnknown)
         {
