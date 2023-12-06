@@ -42,6 +42,7 @@ void Compiler::optInit()
     optCSEstart          = BAD_VAR_NUM;
     optCSEcount          = 0;
     optCSEattempt        = 0;
+    optCSEheuristic      = nullptr;
 }
 
 DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
