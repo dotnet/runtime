@@ -1124,6 +1124,22 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             break;
 
+        case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
+            elemsize = id->idOpSize();
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // mmmmm
+            assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
+            elemsize = id->idOpSize();
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -5468,7 +5484,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
  *  Add an instruction referencing a single register.
  */
 
-void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
+void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
 {
     insFormat  fmt = IF_NONE;
     instrDesc* id  = nullptr;
@@ -5478,6 +5494,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     {
         case INS_br:
         case INS_ret:
+            assert(opt == INS_OPTS_NONE);
             assert(isGeneralRegister(reg));
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
@@ -5485,6 +5502,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             break;
 
         case INS_dczva:
+            assert(opt == INS_OPTS_NONE);
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
             id = emitNewInstrSmall(attr);
@@ -5493,9 +5511,22 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             break;
 
         case INS_mrs_tpid0:
+            assert(opt == INS_OPTS_NONE);
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
+            break;
+
+        case INS_sve_aesmc:
+        case INS_sve_aesimc:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            id = emitNewInstrSmall(attr);
+            id->idInsOpt(opt);
+            id->idReg1(reg);
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(reg)); // ddddd
+            assert(isScalableVectorSize(attr));
+            fmt = IF_SVE_GL_1A;
             break;
 
         default:
@@ -6686,6 +6717,16 @@ void emitter::emitIns_R_R(
                 assert(isValidVectorElemsize(size));
                 fmt = IF_DV_2L;
             }
+            break;
+
+        case INS_sve_aese:
+        case INS_sve_aesd:
+        case INS_sve_sm4e:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(opt == INS_OPTS_SCALABLE_B);
+            fmt = IF_SVE_GK_2A;
             break;
 
         default:
@@ -14355,6 +14396,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -16693,6 +16747,19 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
             emitDispSveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
             emitDispImm(emitGetInsSC(id), false);                           // iiii
+            break;
+
+        // <Zdn>.B, <Zdn>.B, <Zm>.B
+        case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), false); // mmmmm
+            break;
+
+        // <Zdn>.B, <Zdn>.B
+        case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), false); // ddddd
             break;
 
         default:
@@ -19119,6 +19186,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
+
+        case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         default:
