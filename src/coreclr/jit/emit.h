@@ -1694,6 +1694,7 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
+#define PERFSCORE_THROUGHPUT_1_5C 1.5f   // slower - 1.5 cycles
 #define PERFSCORE_THROUGHPUT_2C 2.0f     // slower - 2 cycles
 #define PERFSCORE_THROUGHPUT_3C 3.0f     // slower - 3 cycles
 #define PERFSCORE_THROUGHPUT_4C 4.0f     // slower - 4 cycles
@@ -1703,10 +1704,13 @@ protected:
 #define PERFSCORE_THROUGHPUT_8C 8.0f     // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C 9.0f     // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_11C 10.0f   // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C 11.0f   // slower - 11 cycles
+#define PERFSCORE_THROUGHPUT_12C 12.0f   // slower - 12 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_14C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C 14.0f   // slower - 14 cycles
+#define PERFSCORE_THROUGHPUT_16C 16.0f   // slower - 16 cycles
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
+#define PERFSCORE_THROUGHPUT_20C 20.0f   // slower - 20 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
 #define PERFSCORE_THROUGHPUT_50C 50.0f   // slower - 50 cycles
@@ -1736,6 +1740,7 @@ protected:
 #define PERFSCORE_LATENCY_20C 20.0f
 #define PERFSCORE_LATENCY_22C 22.0f
 #define PERFSCORE_LATENCY_23C 23.0f
+#define PERFSCORE_LATENCY_25C 25.0f
 #define PERFSCORE_LATENCY_26C 26.0f
 #define PERFSCORE_LATENCY_62C 62.0f
 #define PERFSCORE_LATENCY_69C 69.0f

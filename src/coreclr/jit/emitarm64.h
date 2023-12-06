@@ -948,6 +948,8 @@ inline static ssize_t computeRelPageAddr(size_t dstAddr, size_t srcAddr)
     return (dstAddr >> 12) - (srcAddr >> 12);
 }
 
+static unsigned emitter::insSveElemsize(insOpts opt);
+
 /************************************************************************/
 /*                   Output target-independent instructions             */
 /************************************************************************/

@@ -23,6 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "instr.h"
 #include "emit.h"
 #include "codegen.h"
+#include "perfscorearm64sven2.h"
 
 /* static */ bool emitter::strictArmAsm = true;
 
@@ -12336,6 +12337,48 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return 0;
 }
 
+/*****************************************************************************
+ *
+ *  Returns the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+ */
+
+/*static*/ unsigned emitter::insSveElemsize(insOpts opt)
+{
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B:
+        case INS_OPTS_SCALABLE_WIDE_B:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_B_WITH_SCALAR:
+            return 1;
+
+        case INS_OPTS_SCALABLE_H:
+        case INS_OPTS_SCALABLE_WIDE_H:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_H_WITH_SCALAR:
+            return 2;
+
+        case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_WIDE_S:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_S_WITH_SCALAR:
+            return 4;
+
+        case INS_OPTS_SCALABLE_D:
+        case INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_D_WITH_SCALAR:
+            return 8;
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
 {
     instruction ins    = id->idIns();
@@ -18874,85 +18917,92 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        // SVE latencies from Arm Neoverse N2 Software Optimization Guide, Issue 5.0, Revision: r0p3
+        // Warning: the SVE perfscores (below) are based off the N2, whereas the generic and neon perfscores (above)
+        // are based off a much older chipset. Therefore comparing SVE code against NEON code is likely to give an
+        // inaccurate result.
 
-        // Predicate logical
-        case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+#define SVE_N2_SET_PERFSCORE(score_group) \
+        result.insLatency    = PERFSCORE_LATENCY_N2_##score_group; \
+        result.insThroughput = PERFSCORE_THROUGHPUT_N2_##score_group;
+
+#define SVE_N2_PERFSCORE_CASE(ins_group, score_group) \
+        case ins_group: \
+            SVE_N2_SET_PERFSCORE(score_group) \
             break;
 
-        // Arithmetic, basic
-        case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
-        case IF_SVE_EP_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer halving add/subtract (predicated)
-        // Max/min, basic and pairwise
-        case IF_SVE_AD_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer min/max/difference (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AA_3A, PREDICATE_LOGICAL);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AB_3A, ARITHMETIC_BASIC);
 
-        // Divides, 32 bit (Note: worse for 64 bit)
         case IF_SVE_AC_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer divide vectors (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_12C;    // 7 to 12
-            result.insThroughput = PERFSCORE_THROUGHPUT_11C; // 1/11 to 1/7
+            if (insSveElemsize(id->idInsOpt()) == 8)
+            {
+                SVE_N2_SET_PERFSCORE(MIN_DIVIDES_64_BIT);
+            }
+            else
+            {
+                assert(insSveElemsize(id->idInsOpt()) == 4);
+                SVE_N2_SET_PERFSCORE(MIN_DIVIDES_32_BIT);
+            }
             break;
 
-        // Multiply, B, H, S element size (Note: D element size is slightly slower)
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AD_3A, MAX_MIN_BASIC_AND_PAIRWISE);
+
         case IF_SVE_AE_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer multiply vectors (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (insSveElemsize(id->idInsOpt()) == 8)
+            {
+                SVE_N2_SET_PERFSCORE(MULTIPLY_D_ELEMENT_SIZE);
+            }
+            else
+            {
+                SVE_N2_SET_PERFSCORE(MULTIPLY_B_H_S_ELEMENT_SIZE);
+            }
             break;
 
-        // Reduction, logical
-        case IF_SVE_AF_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_6C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AF_3A, REDUCTION_LOGICAL);
 
-        // Reduction, arithmetic, D form (worse for B, S and H)
         case IF_SVE_AI_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer add reduction (predicated)
-        // Reduction, arithmetic, D form (worse for B, S and H)
         case IF_SVE_AK_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (insSveElemsize(id->idInsOpt()) == 8)
+            {
+                SVE_N2_SET_PERFSCORE(REDUCTION_ARITHMETIC_D_FORM);
+            }
+            else if (insSveElemsize(id->idInsOpt()) == 4)
+            {
+                SVE_N2_SET_PERFSCORE(REDUCTION_ARITHMETIC_S_FORM);
+            }
+            else if (insSveElemsize(id->idInsOpt()) == 2)
+            {
+                SVE_N2_SET_PERFSCORE(REDUCTION_ARITHMETIC_H_FORM);
+            }
+            else
+            {
+                assert(insSveElemsize(id->idInsOpt()) == 1);
+                SVE_N2_SET_PERFSCORE(REDUCTION_ARITHMETIC_B_FORM);
+            }
             break;
 
-        // Arithmetic, shift
-        case IF_SVE_AN_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by vector (predicated)
-        case IF_SVE_AO_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise shift by wide elements (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AG_3A, UNSUPPORTED);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AJ_3A, UNSUPPORTED);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AL_3A, UNSUPPORTED);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AN_3A, ARITHMETIC_SHIFT);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AO_3A, ARITHMETIC_SHIFT);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_AP_3A, COUNT_REVERSE_BITS);
 
-        // Count/reverse bits
-        // Arithmetic, basic
-        // Floating point absolute value/difference
-        // Floating point arithmetic
-        // Logical
-        case IF_SVE_AP_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise unary operations (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        case IF_SVE_AQ_3A:
+        case IF_SVE_AQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer unary operations (predicated)
             switch (ins)
             {
-                // Arithmetic, basic
                 case INS_sve_abs:
                 case INS_sve_neg:
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    SVE_N2_SET_PERFSCORE(ARITHMETIC_BASIC);
                     break;
 
-                // Extend, sign or zero
                 case INS_sve_sxtb:
                 case INS_sve_sxth:
                 case INS_sve_sxtw:
                 case INS_sve_uxtb:
                 case INS_sve_uxth:
                 case INS_sve_uxtw:
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    SVE_N2_SET_PERFSCORE(EXTEND_SIGN_OR_ZERO);
                     break;
 
                 default:
@@ -18962,156 +19012,84 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        // Conditional extract operations, SIMD&FP scalar and vector forms
-        case IF_SVE_CL_3A: // ........xx...... ...gggnnnnnddddd -- SVE compress active elements
-        case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
-        case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
-            result.insLatency    = PERFSCORE_LATENCY_3C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CL_3A, CONDITIONAL_EXTRACT_OPERATIONS_SIMDFP_SCALAR_AND_VECTOR_FORMS);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CM_3A, CONDITIONAL_EXTRACT_OPERATIONS_SIMDFP_SCALAR_AND_VECTOR_FORMS);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CN_3A, CONDITIONAL_EXTRACT_OPERATIONS_SIMDFP_SCALAR_AND_VECTOR_FORMS);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CO_3A, CONDITIONAL_EXTRACT_OPERATIONS_SCALAR_FORM);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CP_3A, COPY_SCALAR_SIMDFP_OR_IMM);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CQ_3A, COPY_SCALAR);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CR_3A, EXTRACT_INSERT_OPERATION_SIMD_AND_FP_SCALAR_FORM);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CS_3A, EXTRACT_INSERT_OPERATION_SCALAR);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_CU_3A, COUNT_REVERSE_BITS);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_EP_3A, ARITHMETIC_BASIC);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_ER_3A, ARITHMETIC_PAIRWISE_ADD);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_ET_3A, ARITHMETIC_COMPLEX);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_EU_3A, ARITHMETIC_SHIFT_COMPLEX);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_GA_2A, UNSUPPORTED);
+        SVE_N2_PERFSCORE_CASE(IF_SVE_GR_3A, FLOATING_POINT_ARITHMETIC);
 
-        // Conditional extract operations, scalar form
-        case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
-            result.insLatency    = PERFSCORE_LATENCY_8C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-
-        // Copy, scalar SIMD&FP or imm
-        case IF_SVE_CP_3A: // ........xx...... ...gggnnnnnddddd -- SVE copy SIMD&FP scalar register to vector
-                           // (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        // Copy, scalar
-        case IF_SVE_CQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE copy general register to vector (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_5C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-
-        // Extract/insert operation, SIMD and FP scalar form
-        case IF_SVE_CR_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to SIMD&FP scalar register
-            result.insLatency    = PERFSCORE_LATENCY_3C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-
-        // Extract/insert operation, scalar
-        case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
-            result.insLatency    = PERFSCORE_LATENCY_5C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-
-        // Count/reverse bits
-        // Reverse, vector
-        case IF_SVE_CU_3A: // ........xx...... ...gggnnnnnddddd -- SVE reverse within elements
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        // Arithmetic, pairwise add
-        // Max/min, basic and pairwise
-        case IF_SVE_ER_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 integer pairwise arithmetic
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        // Arithmetic, complex
-        case IF_SVE_ET_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating add/subtract
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        // Arithmetic, shift complex
-        case IF_SVE_EU_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 saturating/rounding bitwise shift left
-                           // (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-
-        // Floating point arithmetic
-        // Floating point min/max pairwise
-        case IF_SVE_GR_3A: // ........xx...... ...gggmmmmmddddd -- SVE2 floating-point pairwise operations
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-
-        // Floating point associative add, F64. (Note: Worse for F32 and F16)
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            if (insSveElemsize(id->idInsOpt()) == 8)
+            {
+                SVE_N2_SET_PERFSCORE(FLOATING_POINT_ASSOCIATIVE_ADD_F64);
+            }
+            else if (insSveElemsize(id->idInsOpt()) == 4)
+            {
+                SVE_N2_SET_PERFSCORE(FLOATING_POINT_ASSOCIATIVE_ADD_F32);
+            }
+            else
+            {
+                assert(insSveElemsize(id->idInsOpt()) == 2);
+                SVE_N2_SET_PERFSCORE(FLOATING_POINT_ASSOCIATIVE_ADD_F16);
+            }
             break;
 
         case IF_SVE_HL_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             switch (ins)
             {
-                // Floating point absolute value/difference
                 case INS_sve_fabd:
-                // Floating point min/max
+                    SVE_N2_SET_PERFSCORE(FLOATING_POINT_ABSOLUTE_VALUE_DIFFERENCE);
+                    break;
+
                 case INS_sve_fmax:
                 case INS_sve_fmaxnm:
                 case INS_sve_fmin:
                 case INS_sve_fminnm:
-                // Floating point arithmetic
+                    SVE_N2_SET_PERFSCORE(FLOATING_POINT_MIN_MAX);
+                    break;
+
                 case INS_sve_fadd:
                 case INS_sve_fsub:
                 case INS_sve_fsubr:
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    SVE_N2_SET_PERFSCORE(FLOATING_POINT_ARITHMETIC);
                     break;
 
-                // Floating point divide, F64 (Note: Worse for F32, F16)
                 case INS_sve_fdiv:
                 case INS_sve_fdivr:
-                    result.insLatency    = PERFSCORE_LATENCY_15C;    // 7 to 15
-                    result.insThroughput = PERFSCORE_THROUGHPUT_14C; // 1/14 to 1/7
+                    if (insSveElemsize(id->idInsOpt()) == 8)
+                    {
+                        SVE_N2_SET_PERFSCORE(MIN_FLOATING_POINT_DIVIDE_F64);
+                    }
+                    else if (insSveElemsize(id->idInsOpt()) == 4)
+                    {
+                        SVE_N2_SET_PERFSCORE(MIN_FLOATING_POINT_DIVIDE_F32);
+                    }
+                    else
+                    {
+                        assert(insSveElemsize(id->idInsOpt()) == 2);
+                        SVE_N2_SET_PERFSCORE(MIN_FLOATING_POINT_DIVIDE_F16);
+                    }
                     break;
 
-                // Floating point multiply
                 case INS_sve_fmul:
                 case INS_sve_fmulx:
                 case INS_sve_fscale:
-                    result.insLatency    = PERFSCORE_LATENCY_3C;
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    SVE_N2_SET_PERFSCORE(FLOATING_POINT_MULTIPLY);
                     break;
 
                 case INS_sve_famax:
                 case INS_sve_famin:
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    break;
-
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
-        // Not available in Arm Neoverse N2 Software Optimization Guide.
-        case IF_SVE_AG_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (quadwords)
-        case IF_SVE_AJ_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer add reduction (quadwords)
-        case IF_SVE_AL_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (quadwords)
-            result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-            result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-            break;
-
-        // Not available in Arm Neoverse N2 Software Optimization Guide.
-        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-            switch (ins)
-            {
-                case INS_sve_sqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
-
-                case INS_sve_sqrshrun:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
-
-                case INS_sve_uqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
+                    SVE_N2_SET_PERFSCORE(UNSUPPORTED);
                     break;
 
                 default:
