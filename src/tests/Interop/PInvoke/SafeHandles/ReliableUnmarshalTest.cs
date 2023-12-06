@@ -11,6 +11,7 @@ namespace SafeHandleTests
     public class ReliableUnmarshalTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48084", TestRuntimes.Mono)]
         public static void RunTest()
         {

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 
 [SkipOnMono("needs triage")]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class DecimalTest
 {
     private const int StartingIntValue = 42;

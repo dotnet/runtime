@@ -213,8 +213,7 @@ public class IUnknownMarshalingTest
         return true;
     }
 
-    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
     [SkipOnMono("Requires COM support")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/85234", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsGCStress))]
     public static void Run()
@@ -224,8 +223,7 @@ public class IUnknownMarshalingTest
         testObj.RunTests();
     }
 
-    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
     [SkipOnMono("Requires COM support")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/85234", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsGCStress))]
     public static void RunInALC()

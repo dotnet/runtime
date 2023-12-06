@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 
 [SkipOnMono("needs triage")]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public partial class FunctionPtr
 {
     static class FunctionPointerNative
@@ -25,7 +26,7 @@ public partial class FunctionPtr
     delegate void VoidDelegate();
 
     [Fact]
-    
+
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/164", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void RunGetDelForFcnPtrTest()
     {

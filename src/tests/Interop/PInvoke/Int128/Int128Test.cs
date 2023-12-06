@@ -99,6 +99,7 @@ unsafe partial class Int128Native
     public static extern Int128 AddInt128s(in Int128 pValues, int count);
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe partial class Int128Native
 {
     [Fact]

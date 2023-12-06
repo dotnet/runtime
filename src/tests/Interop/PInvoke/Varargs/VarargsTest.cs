@@ -38,6 +38,7 @@ namespace PInvokeTests
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnMono("PInvoke Varargs/ArgIterator marshalling not supported on Mono")]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         public static int TestEntryPoint()
         {
             var passed = true;

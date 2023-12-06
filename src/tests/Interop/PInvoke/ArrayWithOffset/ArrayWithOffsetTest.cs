@@ -11,6 +11,7 @@ public unsafe class ArrayWithOffsetTest
     [Fact]
     [SkipOnMono("needs triage")]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/170", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try

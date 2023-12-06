@@ -14,6 +14,7 @@ public class Program
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Mono doesn't support interop BestFitMapping and ThrowOnUnmappableChar attributes")]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void TestEntryPoint()
     {
         if (System.Globalization.CultureInfo.CurrentCulture.Name != "en-US")
