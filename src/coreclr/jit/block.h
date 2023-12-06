@@ -700,22 +700,22 @@ private:
 
 public:
     // MSVC doesn't inline this method in large callers by default
-    FORCEINLINE BasicBlockFlags HasFlag(const BasicBlockFlags flag) const
+    FORCEINLINE bool HasFlag(const BasicBlockFlags flag) const
     {
         // Assert flag is not multiple BasicBlockFlags OR'd together
         // by checking if it is a power of 2
         // (HasFlag expects to check only one flag at a time)
         assert(isPow2(flag));
-        return (bbFlags & flag);
+        return (bbFlags & flag) != 0;
     }
 
-    BasicBlockFlags HasAnyFlag(const BasicBlockFlags flags) const
+    bool HasAnyFlag(const BasicBlockFlags flags) const
     {
         // Assert flag is multiple BasicBlockFlags OR'd together
         // by checking if it is not a power of 2
-        // (HasAnyFlag expects to check only one flag at a time)
+        // (HasAnyFlag expects to check only two or more flags at a time)
         assert(!isPow2(flags));
-        return (bbFlags & flags);
+        return (bbFlags & flags) != 0;
     }
 
     void CopyFlags(const BasicBlock* block, const BasicBlockFlags mask)
