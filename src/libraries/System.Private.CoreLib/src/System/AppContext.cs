@@ -118,7 +118,7 @@ namespace System
                 EventListener.DisposeOnShutdown();
             }
 
-            s_invokeProcessExitCallback();
+            s_invokeProcessExitCallback?.Invoke();
         }
 
         /// <summary>
