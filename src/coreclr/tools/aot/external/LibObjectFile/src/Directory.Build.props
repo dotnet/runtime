@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-    <Deterministic>True</Deterministic>
-    <NoWarn>$(NoWarn);CS1591;CS1573;CS1574;CS1734;CS0419</NoWarn>
-  </PropertyGroup>
-</Project>

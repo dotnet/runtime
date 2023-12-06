@@ -1,4 +1,0 @@
-Dockerfile
-.dockerignore
-**/bin/
-**/obj/

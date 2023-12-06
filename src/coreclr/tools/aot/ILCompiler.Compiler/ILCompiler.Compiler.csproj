@@ -23,7 +23,6 @@
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
         
-    <ProjectReference Include="..\external\LibObjectFile\src\LibObjectFile\LibObjectFile.csproj" />
     <ProjectReference Include="..\external\Melanzana\Melanzana.MachO\Melanzana.MachO.csproj" />
 
     <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
@@ -610,6 +609,7 @@
     <Compile Include="Compiler\ObjectWriter\ObjectWriterStream.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
     <Compile Include="Compiler\ObjectWriter\MachObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\ElfNative.cs" />
     <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\CoffObjectWriter.cs" />
