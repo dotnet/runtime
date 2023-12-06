@@ -16090,10 +16090,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     insFormat     insFmt        = id->idInsFmt();
     unsigned char callInstrSize = 0;
 
-#ifdef TARGET_AMD64
-    // Indicates a jump between after a call and before an OS epilog was replaced by a nop
+    // Indicates a jump between after a call and before an OS epilog was replaced by a nop on AMD64
     bool convertedJmpToNop = false;
-#endif // TARGET_AMD64
 
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
@@ -17574,7 +17572,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(id));
 
 #ifdef DEBUG
-    if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
+    if ((emitComp->opts.disAsm || emitComp->verbose) && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
     {
 #ifdef TARGET_AMD64
         // convertedJmpToNop indicates this instruction is a removable jump that was replaced by a nop.
@@ -17597,7 +17595,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
     }
 #else
-    if (emitComp->opts.disAsm && !emitJmpInstHasNoCode(id))
+    if (emitComp->opts.disAsm && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
     {
 #ifdef TARGET_AMD64
         if (convertedJmpToNop)
