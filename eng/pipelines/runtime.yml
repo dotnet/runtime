@@ -140,36 +140,36 @@ extends:
       #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
       #           eq(variables['isRollingBuild'], true))
 
-      #
-      # Build CoreCLR release
-      # Always as they are needed by Installer and we always build and test the Installer.
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          buildConfig: release
-          platforms:
-          - osx_arm64
-          - osx_x64
-          # - linux_x64
-          # - linux_arm
-          # - linux_arm64
-          # - linux_musl_x64
-          # - linux_musl_arm
-          # - linux_musl_arm64
-          # - windows_x64
-          # - windows_x86
-          # - windows_arm64
-          # - freebsd_x64
-          jobParameters:
-            testGroup: innerloop
-            # Mono/runtimetests also need this, but skip for wasm
-            condition:
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # #
+      # # Build CoreCLR release
+      # # Always as they are needed by Installer and we always build and test the Installer.
+      # #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      #     buildConfig: release
+      #     platforms:
+      #     - osx_arm64
+      #     - osx_x64
+      #     # - linux_x64
+      #     # - linux_arm
+      #     # - linux_arm64
+      #     # - linux_musl_x64
+      #     # - linux_musl_arm
+      #     # - linux_musl_arm64
+      #     # - windows_x64
+      #     # - windows_x86
+      #     # - windows_arm64
+      #     # - freebsd_x64
+      #     jobParameters:
+      #       testGroup: innerloop
+      #       # Mono/runtimetests also need this, but skip for wasm
+      #       condition:
+      #         or(
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # #
       # # Build CoreCLR Formatting Job
@@ -454,27 +454,27 @@ extends:
       #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
       #           eq(variables['isRollingBuild'], true))
 
-      # Build the whole product using Mono runtime
-      # Only when libraries, mono or installer are changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          runtimeFlavor: mono
-          platforms:
-          - tvossimulator_x64
-          #- linux_arm
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # # Build the whole product using Mono runtime
+      # # Only when libraries, mono or installer are changed
+      # #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      #     runtimeFlavor: mono
+      #     platforms:
+      #     - tvossimulator_x64
+      #     - linux_arm
+      #     jobParameters:
+      #       testGroup: innerloop
+      #       nameSuffix: AllSubsets_Mono
+      #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+      #       condition: >-
+      #         or(
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # - template: /eng/pipelines/common/platform-matrix.yml
       #   parameters:
@@ -988,25 +988,25 @@ extends:
       #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
       #           eq(variables['isRollingBuild'], true))
 
-      #
-      # Build Mono release
-      # Only when libraries, mono, or the runtime tests changed
-      # Currently only these architectures are needed for the runtime tests.
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - osx_x64
-          #- linux_arm64
-          jobParameters:
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # #
+      # # Build Mono release
+      # # Only when libraries, mono, or the runtime tests changed
+      # # Currently only these architectures are needed for the runtime tests.
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      #     runtimeFlavor: mono
+      #     buildConfig: release
+      #     platforms:
+      #     - osx_x64
+      #     - linux_arm64
+      #     jobParameters:
+      #       condition: >-
+      #         or(
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # #
       # # Build Mono release with LLVM AOT
@@ -1054,28 +1054,28 @@ extends:
       #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
       #           eq(variables['isRollingBuild'], true))
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          platforms:
-          #- linux_arm64
-          #- linux_musl_x64
-          #- linux_x64
-          - osx_arm64
-          - osx_x64
-          #- windows_x64
-          #- freebsd_x64
-          jobParameters:
-            testScope: innerloop
-            condition:
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/libraries/build-job.yml
+      #     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      #     platforms:
+      #     #- linux_arm64
+      #     #- linux_musl_x64
+      #     #- linux_x64
+      #     - osx_arm64
+      #     - osx_x64
+      #     #- windows_x64
+      #     #- freebsd_x64
+      #     jobParameters:
+      #       testScope: innerloop
+      #       condition:
+      #         or(
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # #
       # # Libraries debug build that only runs when coreclr is changed
@@ -1178,26 +1178,26 @@ extends:
       #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
       #           eq(variables['isRollingBuild'], true))
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
-          buildConfig: Release
-          platforms:
-            - osx_arm64
-            - osx_x64
-            # - linux_x64
-            # - linux_arm64
-            # - linux_musl_x64
-            # - windows_x64
-            # - freebsd_x64
-          jobParameters:
-            liveRuntimeBuildConfig: release
-            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            runOnlyIfDependenciesSucceeded: true
-            condition:
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+      #     buildConfig: Release
+      #     platforms:
+      #       - osx_arm64
+      #       - osx_x64
+      #       # - linux_x64
+      #       # - linux_arm64
+      #       # - linux_musl_x64
+      #       # - windows_x64
+      #       # - freebsd_x64
+      #     jobParameters:
+      #       liveRuntimeBuildConfig: release
+      #       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      #       runOnlyIfDependenciesSucceeded: true
+      #       condition:
+      #         or(
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # #
       # # CoreCLR Test builds using live libraries release build
@@ -1276,24 +1276,23 @@ extends:
       #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
       #           eq(variables['isRollingBuild'], true))
 
-      #
-      # Mono Test builds with CoreCLR runtime tests using live libraries debug build
-      # Only when Mono is changed
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: release
-          runtimeFlavor: mono
-          platforms:
-          - osx_x64
-#          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: innerloop
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # #
+      # # Mono Test builds with CoreCLR runtime tests using live libraries debug build
+      # # Only when Mono is changed
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+      #     buildConfig: release
+      #     runtimeFlavor: mono
+      #     platforms:
+      #     - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+      #     jobParameters:
+      #       testGroup: innerloop
+      #       condition: >-
+      #         or(
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # - template: /eng/pipelines/common/platform-matrix.yml
       #   parameters:
