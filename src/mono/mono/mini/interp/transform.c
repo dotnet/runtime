@@ -8463,7 +8463,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		g_array_append_val (td->line_numbers, lne);
 	}
 
-	if (opcode == MINT_NOP || opcode == MINT_DEF || opcode == MINT_DEF_ARG || opcode == MINT_DUMMY_USE)
+	if (opcode == MINT_NOP || opcode == MINT_DEF || opcode == MINT_DEF_TIER_VAR || opcode == MINT_DEF_ARG || opcode == MINT_DUMMY_USE)
 		return ip;
 
 	*ip++ = opcode;

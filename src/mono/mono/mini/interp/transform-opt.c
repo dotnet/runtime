@@ -1100,17 +1100,56 @@ insert_phi_nodes (TransformData *td)
 
 // Additional fixed vars, in addition to vars that are args to phi nodes
 static void
-compute_fixed_vars (TransformData *td)
+insert_tiering_defs (TransformData *td)
 {
 	for (int i = 0; i < td->bblocks_count; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
 		if (!bb->patchpoint_bb)
 			continue;
+
 		// All IL locals live at entry to this bb have to be fixed
 		for (unsigned int k = 0; k < td->renamable_vars_size; k++) {
 			int var_index = td->renamable_vars [k].var_index;
-			if (td->vars [var_index].il_global && mono_bitset_test_fast (bb->live_in_set, k))
+			if (td->vars [var_index].il_global && mono_bitset_test_fast (bb->live_in_set, k)) {
 				td->renamable_vars [k].ssa_fixed = TRUE;
+
+				// Patchpoints introduce some complications since some variables have to be
+				// accessed from same offset between unoptimized and optimized methods.
+				//
+				// Consider the following scenario
+				// BB0 -> BB2       BB0: TMP <- def; IL_VAR <- TMP
+				// | ^              BB1: Use IL_VAR
+				// v |              BB2: Use IL_VAR
+				// BB1
+				//
+				//     BB1 is a basic block containing a patchpoint, BB0 dominates both BB1 and BB2.
+				// IL_VAR is used both in BB1 and BB2. In BB1, in optimized code, we could normally
+				// replace use of IL_VAR with use of TMP. However, this is incorrect, because TMP
+				// can be allocated at a different offset from IL_VAR and, if we enter the method
+				// from the patchpoint in BB1, the data at var TMP would not be initialized since
+				// we only copy the IL var space.
+				//     Even if we prevent the copy propagation in BB1, then tiering is still broken.
+				// In BB2 we could replace use of IL_VAR with TMP, and we end up hitting the same problem.
+				// Optimized code will attempt to access value of IL_VAR from the offset of TMP_VAR,
+				// which is not initialized if we enter from the patchpoint in BB1.
+				//     We solve these issues by inserting a MINT_DEF_TIER_VAR in BB1. This instruction
+				// prevents cprop of the IL_VAR in the patchpoint bblock since MINT_DEF_TIER_VAR is seen
+				// as a redefinition. In addition to that, in BB2 we now have 2 reaching definitions for
+				// IL_VAR, the original one from BB0 and the one from patchpoint bblock from BB1. This
+				// will force a phi definition in BB2 and we will once again be force to access IL_VAR
+				// from the original offset that is equal to the one in unoptimized method.
+				InterpInst *def = interp_insert_ins_bb (td, bb, NULL, MINT_DEF_TIER_VAR);
+				def->sregs [0] = var_index;
+				def->dreg = var_index;
+				InterpVar *var_data = &td->vars [var_index];
+				// Record the new declaration for this var. Phi nodes insertion phase will account for this
+				if (!g_slist_find (var_data->declare_bbs, bb))
+					var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
+				if (td->verbose_level) {
+					g_print ("insert patchpoint var define in BB%d:\n\t", bb->index);
+					interp_dump_ins (def, td->data_items);
+				}
+			}
 		}
 	}
 }
@@ -1300,9 +1339,9 @@ interp_compute_ssa (TransformData *td)
 
 	MONO_TIME_TRACK (mono_interp_stats.ssa_compute_pruned_liveness_time, interp_compute_pruned_ssa_liveness (td));
 
-	insert_phi_nodes (td);
+	insert_tiering_defs (td);
 
-	compute_fixed_vars (td);
+	insert_phi_nodes (td);
 
 	MONO_TIME_TRACK (mono_interp_stats.ssa_rename_vars_time, rename_vars (td));
 
@@ -2559,7 +2598,11 @@ interp_cprop (TransformData *td)
 			if (td->verbose_level)
 				interp_dump_ins (ins, td->data_items);
 
-			if (num_sregs) {
+			if (opcode == MINT_DEF_TIER_VAR) {
+				// We can't do any var propagation into this instruction since it will be deleted
+				// dreg and sreg should always be identical, a ssa fixed var.
+				td->var_values [sregs [0]].ref_count++;
+			} else if (num_sregs) {
 				for (int i = 0; i < num_sregs; i++) {
 					if (sregs [i] == MINT_CALL_ARGS_SREG) {
 						if (ins->info.call_info && ins->info.call_info->call_args) {
@@ -3509,7 +3552,7 @@ interp_super_instructions (TransformData *td)
 				InterpInst *def = get_var_value_def (td, sreg);
 				if (def && td->var_values [sreg].ref_count == 1) {
 					// The svar is used only for this mov. Try to get the definition to store directly instead
-					if (def->opcode != MINT_DEF_ARG && def->opcode != MINT_PHI) {
+					if (def->opcode != MINT_DEF_ARG && def->opcode != MINT_PHI && def->opcode != MINT_DEF_TIER_VAR) {
 						int dreg = ins->dreg;
 						// if var is not ssa or it is a renamed fixed, then we can't replace the dreg
 						// since there can be conflicting liveness, unless the instructions are adjacent

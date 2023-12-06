@@ -835,6 +835,7 @@ OPDEF(MINT_TIER_MONITOR_JITERPRETER, "tier_monitor_jiterpreter", 4, 0, 0, MintOp
 IROPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)
 IROPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
 IROPDEF(MINT_DEF_ARG, "def_arg", 2, 1, 0, MintOpNoArgs)
+IROPDEF(MINT_DEF_TIER_VAR, "def_tier_var", 3, 1, 1, MintOpNoArgs)
 IROPDEF(MINT_IL_SEQ_POINT, "il_seq_point", 1, 0, 0, MintOpNoArgs)
 IROPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)
 IROPDEF(MINT_TIER_PATCHPOINT_DATA, "tier_patchpoint_data", 2, 0, 0, MintOpShortInt)
