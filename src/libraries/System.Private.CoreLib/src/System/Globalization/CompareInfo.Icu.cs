@@ -700,14 +700,36 @@ namespace System.Globalization
             byte[] keyData;
             fixed (char* pSource = source)
             {
-                int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                int sortKeyLength;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, null, 0, options);
+                }
+                else
+#endif
+                {
+                    sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                }
                 keyData = new byte[sortKeyLength];
 
                 fixed (byte* pSortKey = keyData)
                 {
-                    if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
                     {
-                        throw new ArgumentException(SR.Arg_ExternalException);
+                        if (Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                        {
+                            throw new ArgumentException(SR.Arg_ExternalException);
+                        }
+                    }
+                    else
+#endif
+                    {
+                        if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                        {
+                            throw new ArgumentException(SR.Arg_ExternalException);
+                        }
                     }
                 }
             }
@@ -728,7 +750,16 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
             {
-                actualSortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pDest, destination.Length, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    actualSortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pDest, destination.Length, options);
+                }
+                else
+#endif
+                {
+                    actualSortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pDest, destination.Length, options);
+                }
             }
 
             // The check below also handles errors due to negative values / overflow being returned.
@@ -758,7 +789,16 @@ namespace System.Globalization
 
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                return Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    return Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, null, 0, options);
+                }
+                else
+#endif
+                {
+                    return Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                }
             }
         }
 
@@ -809,7 +849,16 @@ namespace System.Globalization
             {
                 fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
                 {
-                    sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKey.Length, options);
+                    }
+                    else
+#endif
+                    {
+                        sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+                    }
                 }
 
                 if (sortKeyLength > sortKey.Length) // slow path for big strings
@@ -823,7 +872,16 @@ namespace System.Globalization
 
                     fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
                     {
-                        sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                        if (GlobalizationMode.Hybrid)
+                        {
+                            sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKey.Length, options);
+                        }
+                        else
+#endif
+                        {
+                            sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+                        }
                     }
                 }
             }
