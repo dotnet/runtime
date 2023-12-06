@@ -118,10 +118,7 @@
 
     <ItemGroup>
       <_BundleAssembliesToCopy Include="$(ArtifactsNetCoreAppBundlePath)*.dll" />
-      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)"
-                             MatchOnMetadata="Filename"
-                             Condition="! ($([System.String]::new('%(Directory)').Contains('/ref/'))
-                                        or $([System.String]::new('%(Directory)').Contains('\ref\')))" />
+      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)" MatchOnMetadata="Filename" />
     </ItemGroup>
   </Target>
 
@@ -157,6 +154,20 @@
 
     <Copy SourceFiles="@(_BundleAssembliesToCopy)"
           DestinationFolder="$(PublishDir)"
+          OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(CreateHardLinksForPublishFilesIfPossible)"
+          UseSymboliclinksIfPossible="$(CreateSymbolicLinksForPublishFilesIfPossible)" />
+
+  </Target>
+
+  <Target Name="CopyLiveRefPackIfPresent"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="CopyExistingR2RBinaries">
+
+    <Copy SourceFiles=""
+          DestinationFolder="$(PublishDir)live-ref-pack"
           OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
           Retries="$(CopyRetryCount)"
           RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
