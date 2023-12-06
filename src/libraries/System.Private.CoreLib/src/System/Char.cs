@@ -55,6 +55,7 @@ namespace System
         // - 0x40 bit if set means 'is uppercase letter'
         // - 0x20 bit if set means 'is lowercase letter'
         // - bottom 5 bits are the UnicodeCategory of the character
+#pragma warning disable format
         private static ReadOnlySpan<byte> Latin1CharInfo =>
         [
         //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
@@ -75,6 +76,7 @@ namespace System
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000E..U+00EF
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x19, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000F..U+00FF
         ];
+#pragma warning restore format
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
         private static bool IsLatin1(char c) => (uint)c < (uint)Latin1CharInfo.Length;

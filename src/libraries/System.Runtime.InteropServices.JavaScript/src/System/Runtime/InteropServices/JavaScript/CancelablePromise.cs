@@ -4,6 +4,8 @@
 
 using System.Threading.Tasks;
 
+#pragma warning disable format // the ifdef confuses formatting
+
 namespace System.Runtime.InteropServices.JavaScript
 {
     public static partial class CancelablePromise

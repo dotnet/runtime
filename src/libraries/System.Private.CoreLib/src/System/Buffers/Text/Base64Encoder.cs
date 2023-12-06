@@ -492,6 +492,7 @@ namespace System.Buffers.Text
             // srcBytes, bytes MSB to LSB:
             // 0 0 0 0 l k j i h g f e d c b a
 
+#pragma warning disable format
             // The JIT won't hoist these "constants", so help it
             Vector128<byte>   shuffleVec = Vector128.Create(0x01020001, 0x04050304, 0x07080607, 0x0A0B090A).AsByte();
             Vector128<byte>   lut = Vector128.Create(0xFCFC4741, 0xFCFCFCFC, 0xFCFCFCFC, 0x0000F0ED).AsByte();
@@ -502,6 +503,7 @@ namespace System.Buffers.Text
             Vector128<byte>   const51 = Vector128.Create((byte)51);
             Vector128<sbyte>  const25 = Vector128.Create((sbyte)25);
             Vector128<byte>   mask8F = Vector128.Create((byte)0x8F);
+#pragma warning restore format
 
             byte* src = srcBytes;
             byte* dest = destBytes;

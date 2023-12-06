@@ -49,6 +49,8 @@ namespace GenerateRegexCasingTable
                 writer.Write("        // PLEASE DON'T MODIFY BY HAND\n");
                 writer.Write("        // IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md\n\n");
 
+                writer.Write("#pragma warning disable format\n");
+
                 EmitValuesArray(writer);
 
                 writer.Write("\n");
@@ -58,6 +60,8 @@ namespace GenerateRegexCasingTable
                 writer.Write("\n");
 
                 EmitMapArray(writer);
+
+                writer.Write("#pragma warning restore format\n");
 
                 writer.Write("    }\n}\n");
             }

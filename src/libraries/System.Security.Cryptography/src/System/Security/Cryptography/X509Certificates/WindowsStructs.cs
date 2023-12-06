@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
         X509_NAME = 7,
     }
 
+#pragma warning disable format
     internal static class AlgId
     {
         public const int CALG_RSA_KEYX = 0xa400;
@@ -37,6 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
         public const int CALG_DSS_SIGN = 0x2200;
         public const int CALG_SHA1     = 0x8004;
     }
+#pragma warning restore format
 
     internal enum CryptDecodeObjectStructType : int
     {
@@ -124,6 +126,7 @@ namespace System.Security.Cryptography.X509Certificates
         public int dwMinorVersion;
     }
 
+#pragma warning disable format
     [Flags]
     internal enum CertTrustErrorStatus : int
     {
@@ -176,6 +179,7 @@ namespace System.Security.Cryptography.X509Certificates
         // These can be applied to chains only
         CERT_TRUST_IS_COMPLEX_CHAIN            = 0x00010000,
     }
+#pragma warning restore format
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct CERT_TRUST_STATUS

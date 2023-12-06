@@ -25,6 +25,7 @@ internal static partial class Interop
         /// </summary>
         internal const ulong kFSEventStreamEventIdSinceNow = 0xFFFFFFFFFFFFFFFF;
 
+#pragma warning disable format
         /// <summary>
         /// Flags that describe what happened in the event that was received. These come from the FSEvents.h header file in the CoreServices framework.
         /// </summary>
@@ -72,6 +73,7 @@ internal static partial class Interop
             kFSEventStreamCreateFlagIgnoreSelf  = 0x00000008,
             kFSEventStreamCreateFlagFileEvents  = 0x00000010
         }
+#pragma warning restore format
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct FSEventStreamContext

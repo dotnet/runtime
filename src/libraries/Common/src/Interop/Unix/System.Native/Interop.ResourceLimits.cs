@@ -9,6 +9,7 @@ internal static partial class Interop
     {
         internal const ulong RLIM_INFINITY = ulong.MaxValue;
 
+#pragma warning disable format
         internal enum RlimitResources : int
         {
             RLIMIT_CPU      = 0,        // CPU limit in seconds
@@ -22,6 +23,7 @@ internal static partial class Interop
             RLIMIT_NPROC    = 8,        // Number of processes
             RLIMIT_NOFILE   = 9,        // Number of open files
         }
+#pragma warning restore format
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct RLimit

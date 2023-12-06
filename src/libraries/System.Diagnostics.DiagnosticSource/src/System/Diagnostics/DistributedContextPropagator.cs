@@ -125,6 +125,7 @@ namespace System.Diagnostics
             }
         }
 
+#pragma warning disable format
         internal const string TraceParent        = "traceparent";
         internal const string RequestId          = "Request-Id";
         internal const string TraceState         = "tracestate";
@@ -135,6 +136,7 @@ namespace System.Diagnostics
         internal const char   Comma              = ',';
         internal const char   Semicolon          = ';';
         internal const string CommaWithSpace     = ", ";
+#pragma warning disable format
 
         internal static readonly char [] s_trimmingSpaceCharacters = new char[] { Space, Tab };
     }

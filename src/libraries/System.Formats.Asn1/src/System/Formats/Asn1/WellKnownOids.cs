@@ -8,6 +8,7 @@ namespace System.Formats.Asn1
     {
         internal static string? GetValue(ReadOnlySpan<byte> contents)
         {
+#pragma warning disable format
             return contents switch
             {
                 [ 0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x01, ] => "1.2.840.10040.4.1",
@@ -111,10 +112,12 @@ namespace System.Formats.Asn1
                 [ 0x67, 0x81, 0x0C, 0x01, 0x02, 0x02, ] => "2.23.140.1.2.2",
                _ => null,
             };
+#pragma warning restore format
         }
 
         internal static ReadOnlySpan<byte> GetContents(ReadOnlySpan<char> value)
         {
+#pragma warning disable format
             ReadOnlySpan<byte> data =
             [
                 0x2A, 0x86, 0x48, 0xCE, 0x38, 0x04, 0x01, // DSA
@@ -321,6 +324,7 @@ namespace System.Formats.Asn1
                 "2.23.140.1.2.2" => data.Slice(773, 6), // CabForumOV
                 _ => ReadOnlySpan<byte>.Empty
             };
+#pragma warning restore format
         }
     }
 }

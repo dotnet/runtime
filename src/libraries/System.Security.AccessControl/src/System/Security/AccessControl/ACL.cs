@@ -607,6 +607,7 @@ namespace System.Security.AccessControl
             // Important: Not all combinations of inheritance bits are valid
             //
 
+#pragma warning disable format
             afToPm[(int)(   0   |   0   |   0   |   0   )] = PM.F |   0   |   0   |   0   |     0;
             afToPm[(int)(   0   | AF.OI |   0   |   0   )] = PM.F |   0   | PM.CO |   0   | PM.GO;
             afToPm[(int)(   0   | AF.OI |   0   | AF.NP )] = PM.F |   0   | PM.CO |   0   |     0;
@@ -620,6 +621,7 @@ namespace System.Security.AccessControl
             afToPm[(int)( AF.CI | AF.OI |   0   | AF.NP )] = PM.F | PM.CF | PM.CO |   0   |     0;
             afToPm[(int)( AF.CI | AF.OI | AF.IO |   0   )] =   0  | PM.CF | PM.CO | PM.GF | PM.GO;
             afToPm[(int)( AF.CI | AF.OI | AF.IO | AF.NP )] =   0  | PM.CF | PM.CO |   0   |     0;
+#pragma warning restore format
 
             return afToPm;
         }
@@ -640,6 +642,7 @@ namespace System.Security.AccessControl
             // the four ACE inheritance bits
             //
 
+#pragma warning disable format
             pmToAf[(int)( PM.F |   0   |   0   |   0   |   0   )] =    0   |   0   |   0   |     0;
             pmToAf[(int)( PM.F |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI |   0   |     0;
             pmToAf[(int)( PM.F |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI |   0   | AF.NP;
@@ -653,6 +656,7 @@ namespace System.Security.AccessControl
             pmToAf[(int)( PM.F | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI |   0   | AF.NP;
             pmToAf[(int)(   0  | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI | AF.IO |     0;
             pmToAf[(int)(   0  | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI | AF.IO | AF.NP;
+#pragma warning restore format
 
             return pmToAf;
         }

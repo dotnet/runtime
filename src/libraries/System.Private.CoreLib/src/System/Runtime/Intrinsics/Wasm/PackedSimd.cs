@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
+#pragma warning disable format // too many changes, not worth right now
+
 namespace System.Runtime.Intrinsics.Wasm
 {
     /// <summary>

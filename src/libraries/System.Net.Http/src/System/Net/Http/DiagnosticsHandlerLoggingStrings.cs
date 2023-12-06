@@ -8,6 +8,7 @@ namespace System.Net.Http
     /// </summary>
     internal static class DiagnosticsHandlerLoggingStrings
     {
+#pragma warning disable format
         public const string DiagnosticListenerName         = "HttpHandlerDiagnosticListener";
         public const string Namespace                      = "System.Net.Http";
         public const string RequestWriteNameDeprecated     = Namespace + ".Request";
@@ -16,5 +17,6 @@ namespace System.Net.Http
         public const string ActivityName                   = Namespace + ".HttpRequestOut";
         public const string ActivityStartName              = ActivityName + ".Start";
         public const string ActivityStopName               = ActivityName + ".Stop";
+#pragma warning restore format
     }
 }

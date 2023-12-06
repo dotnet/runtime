@@ -5,6 +5,7 @@ internal static partial class Interop
 {
     internal static class StatusOptions
     {
+#pragma warning disable format
         // See the NT_SUCCESS macro in the Windows SDK, and
         // https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/using-ntstatus-values
         internal static bool NT_SUCCESS(uint ntStatus) => (int)ntStatus >= 0;
@@ -24,5 +25,6 @@ internal static partial class Interop
         internal const uint STATUS_INSUFFICIENT_RESOURCES = 0xC000009A;
         internal const uint STATUS_DISK_FULL = 0xC000007F;
         internal const uint STATUS_FILE_TOO_LARGE = 0xC0000904;
+#pragma warning restore format
     }
 }

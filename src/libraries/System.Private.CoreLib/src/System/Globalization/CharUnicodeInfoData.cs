@@ -19,6 +19,7 @@ namespace System.Globalization
             Debug.Assert(level3BitCount == 4, "Unexpected level 3 bit count.");
         }
 
+#pragma warning disable format
         // 11:5:4 index table of the Unicode category & casing data.
         private static ReadOnlySpan<byte> CategoryCasingLevel1Index => // 2176
         [
@@ -2421,6 +2422,7 @@ namespace System.Globalization
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x06
         ];
+#pragma warning restore format
 
     }
 }

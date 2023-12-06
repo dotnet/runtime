@@ -162,6 +162,7 @@ namespace System.Runtime.Serialization
 
         private static int GetPrime(int min)
         {
+#pragma warning disable format
             ReadOnlySpan<int> primes =
             [
                 3, 7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353,
@@ -172,6 +173,7 @@ namespace System.Runtime.Serialization
                 // There's nowhere to go from here. Using a const rather than the MaxLength property
                 // so that the array contains only const values.
             ];
+#pragma warning restore format
 
             foreach (int prime in primes)
             {

@@ -7,6 +7,8 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable format // the ifdefs are confusing the formatting
+
 namespace System.Net.WebSockets
 {
     /// <summary>

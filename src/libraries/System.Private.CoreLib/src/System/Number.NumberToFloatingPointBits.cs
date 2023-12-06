@@ -41,6 +41,7 @@ namespace System
         /// Normalized 128 bits values for powers of 5^q for q in range [-342, 308]
         /// stored as 2 64-bits integers for convenience
         /// </summary>
+#pragma warning disable format
         private static ReadOnlySpan<ulong> Pow5128Table =>
         [
             0xeef453d6923bd65a, 0x113faa2906a13b3f,
@@ -695,6 +696,7 @@ namespace System
             0xe3d8f9e563a198e5, 0x58180fddd97723a6,
             0x8e679c2f5e44ff8f, 0x570f09eaa7ea7648
         ];
+#pragma warning restore format
 
         private static void AccumulateDecimalDigitsIntoBigInteger(scoped ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
         {

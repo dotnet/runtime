@@ -27,11 +27,13 @@ namespace System
 
         private const int maxRoundingDigits = 6;
 
+#pragma warning disable format
         // This table is required for the Round function which can specify the number of digits to round to
         private static ReadOnlySpan<float> RoundPower10Single =>
         [
             1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
         ];
+#pragma warning restore format
 
         private const float singleRoundLimit = 1e8f;
 

@@ -1135,12 +1135,14 @@ namespace System.Text.RegularExpressions
             ch == '_' || // underscore
             ch == '\u0130'; // latin capital letter I with dot above
 
+#pragma warning disable format
         /// <summary>16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char.</summary>
         private static ReadOnlySpan<byte> WordCharAsciiLookup =>
         [
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
             0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
         ];
+#pragma warning restore format
 
          /// <summary>Mask of Unicode categories that combine to form [\\w]</summary>
          private const int WordCategoriesMask =

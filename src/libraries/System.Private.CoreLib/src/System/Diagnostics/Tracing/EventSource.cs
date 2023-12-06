@@ -1670,11 +1670,13 @@ namespace System.Diagnostics.Tracing
 
         private static Guid GenerateGuidFromName(string name)
         {
+#pragma warning disable format
             ReadOnlySpan<byte> namespaceBytes =
             [
                 0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
                 0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
             ];
+#pragma warning restore format
 
             byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
             Sha1ForNonSecretPurposes hash = default;

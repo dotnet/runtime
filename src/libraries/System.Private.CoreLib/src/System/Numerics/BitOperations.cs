@@ -25,6 +25,7 @@ namespace System.Numerics
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
         // https://github.com/dotnet/roslyn/pull/24621
 
+#pragma warning disable format
         private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn => // 32
         [
             00, 01, 28, 02, 29, 14, 24, 03,
@@ -40,6 +41,7 @@ namespace System.Numerics
             08, 12, 20, 28, 15, 17, 24, 07,
             19, 27, 23, 06, 26, 05, 04, 31
         ];
+#pragma warning restore format
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.

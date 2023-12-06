@@ -22,9 +22,11 @@ namespace System.Dynamic
         /// </summary>
         public static readonly BindingRestrictions Empty = new CustomRestriction(AstUtils.Constant(true));
 
+#pragma warning disable format
         private const int TypeRestrictionHash =                    0b_0100_1001_0010_0100_1001_0010_0100_1001;
         private const int InstanceRestrictionHash = unchecked((int)0b_1001_0010_0100_1001_0010_0100_1001_0010);
         private const int CustomRestrictionHash =                  0b_0010_0100_1001_0010_0100_1001_0010_0100;
+#pragma warning restore format
 
         private BindingRestrictions()
         {

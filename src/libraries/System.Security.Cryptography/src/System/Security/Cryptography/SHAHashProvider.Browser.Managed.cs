@@ -243,6 +243,7 @@ namespace System.Security.Cryptography
                 return hash;
             }
 
+#pragma warning disable format
             private static ReadOnlySpan<uint> _K =>
             [
                 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
@@ -262,6 +263,7 @@ namespace System.Security.Cryptography
                 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
                 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
             ];
+#pragma warning restore format
 
             private static unsafe void SHATransform(uint* expandedBuffer, uint* state, byte* block)
             {
@@ -522,6 +524,7 @@ namespace System.Security.Cryptography
                 return hash;
             }
 
+#pragma warning disable format
             private static ReadOnlySpan<ulong> _K =>
             [
                 0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
@@ -545,6 +548,7 @@ namespace System.Security.Cryptography
                 0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
                 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
             ];
+#pragma warning disable format
 
             private static unsafe void SHATransform(ulong* expandedBuffer, ulong* state, byte* block)
             {
@@ -811,6 +815,7 @@ namespace System.Security.Cryptography
                 return hash;
             }
 
+#pragma warning disable format
             private static ReadOnlySpan<ulong> _K =>
             [
                 0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
@@ -834,6 +839,7 @@ namespace System.Security.Cryptography
                 0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
                 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
             ];
+#pragma warning restore format
 
             private static unsafe void SHATransform(ulong* expandedBuffer, ulong* state, byte* block)
             {

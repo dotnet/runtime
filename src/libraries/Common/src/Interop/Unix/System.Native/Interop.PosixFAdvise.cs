@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+#pragma warning disable format
         internal enum FileAdvice : int
         {
             POSIX_FADV_NORMAL       = 0,    /* no special advice, the default value */
@@ -17,6 +18,7 @@ internal static partial class Interop
             POSIX_FADV_DONTNEED     = 4,    /* don't need the specified pages */
             POSIX_FADV_NOREUSE      = 5,    /* data will only be accessed once */
         }
+#pragma warning restore format
 
         /// <summary>
         /// Notifies the OS kernel that the specified file will be accessed in a particular way soon; this allows the kernel to

@@ -1931,6 +1931,7 @@ namespace System.Text.RegularExpressions
         private const byte W = 1;    // whitespace          \t \n \f \r ' '
 
         /// <summary>For categorizing ASCII characters.</summary>
+#pragma warning disable format
         private static ReadOnlySpan<byte> Category =>
         [
             // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -1942,6 +1943,7 @@ namespace System.Text.RegularExpressions
             // '  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z  {  |  }  ~
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q, S, 0, 0, 0
         ];
+#pragma warning restore format
 
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_metachars =

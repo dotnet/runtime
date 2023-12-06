@@ -9,6 +9,7 @@ namespace System.IO.Compression
     {
         // const tables used in decoding:
 
+#pragma warning disable format
         // Extra bits for length code 257 - 285.
         private static ReadOnlySpan<byte> ExtraLengthBits =>
         [
@@ -41,6 +42,7 @@ namespace System.IO.Compression
             0x06, 0x16, 0x0e, 0x1e, 0x01, 0x11, 0x09, 0x19, 0x05, 0x15, 0x0d, 0x1d,
             0x03, 0x13, 0x0b, 0x1b, 0x07, 0x17, 0x0f, 0x1f
         ];
+#pragma warning restore format
 
         private readonly OutputWindow _output;
         private readonly InputBuffer _input;

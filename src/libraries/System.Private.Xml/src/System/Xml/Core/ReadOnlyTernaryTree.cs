@@ -48,6 +48,8 @@ namespace System.Xml
             RightTree = 2,
             Data = 3
         }
+
+#pragma warning disable format
         private static ReadOnlySpan<byte> HtmlElements =>
         [
             73, 4, 147, 0, 77, 140, 162, 0, 71, 0, 0, 0, 0, 0, 0, 11, 68, 4, 85, 0, 73, 71, 92, 0, 86, 81, 0, 0,
@@ -122,6 +124,7 @@ namespace System.Xml
             67, 0, 0, 0, 84, 0, 0, 0, 69, 0, 0, 0, 68, 0, 0, 0, 0, 0, 0, 2, 85, 0, 0, 0, 83, 0, 0, 0,
             69, 0, 0, 0, 77, 0, 0, 0, 65, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 1,
         ];
+#pragma warning restore format
         public static ElementProperties FindElementProperty(ReadOnlySpan<char> stringToFind)
         {
             return (ElementProperties)FindCaseInsensitiveString(stringToFind, HtmlElements);

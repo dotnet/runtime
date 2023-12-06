@@ -4,6 +4,7 @@ using System;
 
 namespace Microsoft.Extensions.Logging
 {
+#pragma warning disable format
     /// <summary>
     /// Flags to indicate which trace context parts should be included with the logging scopes.
     /// </summary>
@@ -50,4 +51,5 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         Baggage     = 0x0040
     }
+#pragma warning restore format
 }

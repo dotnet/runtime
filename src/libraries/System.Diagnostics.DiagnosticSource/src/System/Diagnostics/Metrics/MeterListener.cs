@@ -24,6 +24,7 @@ namespace System.Diagnostics.Metrics
         private readonly DiagLinkedList<Instrument> _enabledMeasurementInstruments = new DiagLinkedList<Instrument>();
         private bool _disposed;
 
+#pragma warning disable format
         // We initialize all measurement callback with no-op operations so we'll avoid the null checks during the execution;
         private MeasurementCallback<byte>    _byteMeasurementCallback    = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<short>   _shortMeasurementCallback   = (instrument, measurement, tags, state) => { /* no-op */ };
@@ -32,6 +33,7 @@ namespace System.Diagnostics.Metrics
         private MeasurementCallback<float>   _floatMeasurementCallback   = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<double>  _doubleMeasurementCallback  = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<decimal> _decimalMeasurementCallback = (instrument, measurement, tags, state) => { /* no-op */ };
+#pragma warning restore format
 
         /// <summary>
         /// Creates a MeterListener object.

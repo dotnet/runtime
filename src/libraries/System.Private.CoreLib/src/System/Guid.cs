@@ -437,6 +437,7 @@ namespace System
                 return false;
             }
 
+#pragma warning disable format
             Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
@@ -455,6 +456,7 @@ namespace System
             bytes[13] = DecodeByte(guidString[30], guidString[31], ref invalidIfNegative);
             bytes[14] = DecodeByte(guidString[32], guidString[33], ref invalidIfNegative);
             bytes[15] = DecodeByte(guidString[34], guidString[35], ref invalidIfNegative);
+#pragma warning restore format
 
             if (invalidIfNegative >= 0)
             {

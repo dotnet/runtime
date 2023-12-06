@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+#pragma warning disable format
         [Flags]
         internal enum OpenFlags
         {
@@ -24,4 +25,5 @@ internal static partial class Interop
             O_NOFOLLOW = 0x0200,
         }
     }
+#pragma warning restore format
 }

@@ -118,6 +118,7 @@ namespace System.Data
         /// <summary>Mapping from Operator to priorities.</summary>
         internal static int Priority(int op)
         {
+#pragma warning disable format
             ReadOnlySpan<byte> priorities =
             [
                 PriStart,  // Noop
@@ -138,6 +139,7 @@ namespace System.Data
 
                 // anything beyond is PriMax
             ];
+#pragma warning restore format
 
             return (uint)op < (uint)priorities.Length ? priorities[op] : PriMax;
         }

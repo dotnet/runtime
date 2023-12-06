@@ -17,6 +17,7 @@ namespace System.Net.Mime
     internal sealed class QEncodedStream : DelegatedStream, IEncodableStream
     {
 
+#pragma warning disable format
         private static ReadOnlySpan<byte> HexDecodeMap =>
         [
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -37,6 +38,7 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // E
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         ];
+#pragma warning restore format
 
         private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;

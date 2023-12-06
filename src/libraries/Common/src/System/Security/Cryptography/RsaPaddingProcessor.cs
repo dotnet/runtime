@@ -9,6 +9,7 @@ namespace System.Security.Cryptography
 {
     internal static class RsaPaddingProcessor
     {
+#pragma warning disable format
         // DigestInfo header values taken from https://tools.ietf.org/html/rfc3447#section-9.2, Note 1.
         private static ReadOnlySpan<byte> DigestInfoMD5 =>
             [
@@ -66,6 +67,8 @@ namespace System.Security.Cryptography
             ];
 
         private static ReadOnlySpan<byte> EightZeros => [0, 0, 0, 0, 0, 0, 0, 0];
+
+#pragma warning restore format
 
         private static ReadOnlySpan<byte> GetDigestInfoForAlgorithm(
             HashAlgorithmName hashAlgorithmName,

@@ -14,6 +14,7 @@ internal static partial class Interop
         internal static void AndroidLogPrint(LogLevel level, string? tag, string message) =>
             __android_log_print(level, tag, "%s", message, IntPtr.Zero);
 
+#pragma warning disable format
         internal enum LogLevel
         {
             Unknown = 0x00,
@@ -26,5 +27,6 @@ internal static partial class Interop
             Fatal   = 0x07,
             Silent  = 0x08
         }
+#pragma warning restore format
     }
 }

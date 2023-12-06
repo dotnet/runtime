@@ -56,6 +56,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountDigits(ulong value)
         {
+#pragma warning disable format
             // Map the log2(value) to a power of 10.
             ReadOnlySpan<byte> log2ToPow10 =
             [
@@ -64,6 +65,7 @@ namespace System.Buffers.Text
                 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15,
                 15, 16, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 19, 20
             ];
+#pragma warning restore format
             Debug.Assert(log2ToPow10.Length == 64);
 
             // TODO: Replace with log2ToPow10[BitOperations.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed

@@ -15,6 +15,7 @@ namespace System.Numerics
 {
     internal static class BitOperations
     {
+#pragma warning disable format
         private static ReadOnlySpan<byte> Log2DeBruijn => // 32
         [
             00, 09, 01, 10, 13, 21, 02, 29,
@@ -22,6 +23,7 @@ namespace System.Numerics
             08, 12, 20, 28, 15, 17, 24, 07,
             19, 27, 23, 06, 26, 05, 04, 31
         ];
+#pragma warning restore format
 
         /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.

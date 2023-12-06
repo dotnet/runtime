@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         [Flags]
         internal enum CertChainFlags : int
         {
@@ -18,5 +19,6 @@ internal static partial class Interop
             CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT = 0x40000000,
             CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY         = unchecked((int)0x80000000),
         }
+#pragma warning restore format
     }
 }

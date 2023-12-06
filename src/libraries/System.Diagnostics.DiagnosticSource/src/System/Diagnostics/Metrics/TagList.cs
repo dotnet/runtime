@@ -432,6 +432,7 @@ namespace System.Diagnostics
 
             Debug.Assert(_tagsCount <= 8);
 
+#pragma warning disable format
             switch (_tagsCount)
             {
                 case 1: if (TagsEqual(Tag1, item)) { return 0; };
@@ -479,6 +480,7 @@ namespace System.Diagnostics
                         if (TagsEqual(Tag8, item)) { return 7; };
                         break;
             }
+#pragma warning restore format
 
             return -1;
         }

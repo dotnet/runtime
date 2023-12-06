@@ -13,6 +13,7 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+#pragma warning disable format
         /// <summary>
         /// Tells the OS what encoding the passed in String is in. These come from the CFString.h header file in the CoreFoundation framework.
         /// </summary>
@@ -34,6 +35,7 @@ internal static partial class Interop
             kCFStringEncodingUTF32BE        = 0x18000100,
             kCFStringEncodingUTF32LE        = 0x1c000100
         }
+#pragma warning restore format
 
         /// <summary>
         /// Creates a CFStringRef from a specified range of memory with a specified encoding.

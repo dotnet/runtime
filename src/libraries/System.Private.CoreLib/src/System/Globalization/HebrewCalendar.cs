@@ -118,6 +118,7 @@ namespace System.Globalization
         private const int MinHebrewYear = HebrewYearOf1AD + FirstGregorianTableYear;   // == 5343
         private const int MaxHebrewYear = HebrewYearOf1AD + LastGregorianTableYear;    // == 5999
 
+#pragma warning disable format
         private static ReadOnlySpan<byte> HebrewTable =>
         [
             7, 3, 17, 3,         // 1583-1584  (Hebrew year: 5343 - 5344)
@@ -269,6 +270,7 @@ namespace System.Globalization
             0, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29,
             0, 30, 30, 30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29
         ];
+#pragma warning restore format
 
         private static readonly DateTime s_calendarMinValue = new DateTime(1583, 1, 1);
 

@@ -1015,6 +1015,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
+#pragma warning disable format
         private static ReadOnlySpan<float> Frequency =>
         [
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
@@ -1034,6 +1035,7 @@ namespace System.Text.RegularExpressions
             1.444f /* '   p' */, 0.231f /* '   q' */, 4.220f /* '   r' */, 3.924f /* '   s' */, 5.312f /* '   t' */, 2.112f /* '   u' */, 0.737f /* '   v' */, 0.573f /* '   w' */,
             0.992f /* '   x' */, 1.067f /* '   y' */, 0.181f /* '   z' */, 0.391f /* '   {' */, 0.056f /* '   |' */, 0.391f /* '   }' */, 0.002f /* '   ~' */, 0.000f /* '\x7F' */,
         ];
+#pragma warning restore format
 
         // The above table was generated programmatically with the following.  This can be augmented to incorporate additional data sources,
         // though it is only intended to be a rough approximation use when tie-breaking and we'd otherwise be picking randomly, so, it's something.

@@ -723,6 +723,7 @@ namespace System.Globalization
         // Used in ToTitleCase():
         // When we find a starting letter, the following array decides if a category should be
         // considered as word separator or not.
+#pragma warning disable format
         private const int c_wordSeparatorMask =
             /* false */ (0 <<  0) | // UppercaseLetter = 0,
             /* false */ (0 <<  1) | // LowercaseLetter = 1,
@@ -754,6 +755,7 @@ namespace System.Globalization
             /* true  */ (1 << 27) | // ModifierSymbol = 27,
             /* true  */ (1 << 28) | // OtherSymbol = 28,
             /* false */ (0 << 29);  // OtherNotAssigned = 29;
+#pragma warning restore format
 
         private static bool IsWordSeparator(UnicodeCategory category)
         {

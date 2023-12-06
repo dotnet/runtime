@@ -5,6 +5,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
+#pragma warning disable format
         public const int COLOR_WINDOW = 5;
 
         public const int CTRL_LOGOFF_EVENT   = 5;
@@ -226,6 +227,7 @@ internal static partial class Interop
         public const int UOI_FLAGS = 1;
 
         public const int HWND_BROADCAST = 0xffff;
+#pragma warning restore format
 
     }
 }

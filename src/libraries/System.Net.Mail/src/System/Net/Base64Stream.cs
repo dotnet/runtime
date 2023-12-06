@@ -12,6 +12,7 @@ namespace System.Net
 {
     internal sealed class Base64Stream : DelegatedStream, IEncodableStream
     {
+#pragma warning disable format
         private static ReadOnlySpan<byte> Base64DecodeMap =>
         [
             //0   1   2    3    4    5    6    7    8    9    A    B     C    D    E    F
@@ -32,6 +33,7 @@ namespace System.Net
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // E
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // F
         ];
+#pragma warning restore format
 
         private readonly Base64WriteStateInfo _writeState;
         private ReadStateInfo? _readState;

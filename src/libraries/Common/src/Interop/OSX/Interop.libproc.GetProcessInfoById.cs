@@ -16,6 +16,7 @@ internal static partial class Interop
         // Constants from proc_info.h
         private const int PROC_PIDTASKALLINFO = 2;
 
+#pragma warning disable format
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct proc_bsdinfo
@@ -75,6 +76,7 @@ internal static partial class Interop
             internal proc_bsdinfo    pbsd;
             internal proc_taskinfo   ptinfo;
         }
+#pragma warning restore format
 
         /// <summary>
         /// Gets information about a process given it's PID

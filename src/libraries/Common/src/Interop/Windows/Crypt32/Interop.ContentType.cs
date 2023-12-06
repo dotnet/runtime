@@ -5,6 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         internal enum ContentType : int
         {
             //encoded single certificate
@@ -36,5 +37,6 @@ internal static partial class Interop
             //an encoded PFX BLOB, which was loaded to phCertStore
             CERT_QUERY_CONTENT_PFX_AND_LOAD        = 14,
         }
+#pragma warning restore format
     }
 }

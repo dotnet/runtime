@@ -424,6 +424,7 @@ namespace System
             return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
         }
 
+#pragma warning disable format
         /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
         public static ReadOnlySpan<byte> CharToHexLookup =>
         [
@@ -444,5 +445,6 @@ namespace System
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 239
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF  // 255
         ];
+#pragma warning restore format
     }
 }
