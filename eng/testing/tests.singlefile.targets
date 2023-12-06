@@ -166,7 +166,11 @@
           Condition="'$(TestReadyToRun)' == 'true'"
           AfterTargets="CopyExistingR2RBinaries">
 
-    <Copy SourceFiles=""
+    <ItemGroup>
+      <OutDirLiveRefPackFiles Include="$(OutDir)live-ref-pack/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(OutDirLiveRefPackFiles)"
           DestinationFolder="$(PublishDir)live-ref-pack"
           OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
           Retries="$(CopyRetryCount)"
