@@ -4702,10 +4702,21 @@ void emitter::emitRemoveJumpToNextInst()
                 jmp->idCodeSize(0);
 
 #ifdef TARGET_AMD64
-                if (jmp->idjIsAfterCall)
+                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
+                if (jmp->idjIsAfterCallBeforeEpilog)
                 {
-                    jmp->idCodeSize(1);
-                    codeSize--;
+                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
+                    {
+                        // This jump will become a nop, so set its size now to ensure below calculations are correct
+                        jmp->idCodeSize(1);
+                        codeSize--;
+                    }
+                    else
+                    {
+                        // We don't need a nop if the removed jump isn't before an OS epilog,
+                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
+                        jmp->idjIsAfterCallBeforeEpilog = 0;
+                    }
                 }
 #endif // TARGET_AMD64
 

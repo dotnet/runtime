@@ -3500,13 +3500,13 @@ const emitJumpKind emitReverseJumpKinds[] = {
 // Else if the jump was removed, idjIsRemovableJmpCandidate should still be true.
 
 #ifdef TARGET_AMD64
-    // On AMD64, if the removed jump instruction was after a call instruction,
+    // On AMD64, if the removed jump was after a call instruction and before an OS epilog,
     // a nop should have been inserted, hence a code size of 1.
     // (See clr-abi.md for details on why the nop is needed)
     if (result && (id->idCodeSize() != 0))
     {
         assert(id->idCodeSize() == 1);
-        assert(((instrDescJmp*)id)->idjIsAfterCall);
+        assert(((instrDescJmp*)id)->idjIsAfterCallBeforeEpilog);
     }
     else
 #endif // TARGET_AMD64
@@ -9136,7 +9136,10 @@ void emitter::emitIns_J(instruction ins,
         emitContainsRemovableJmpCandidates = true;
         id->idjIsRemovableJmpCandidate     = 1;
 #ifdef TARGET_AMD64
-        id->idjIsAfterCall = lastInsIsCall ? 1 : 0;
+        // If this jump is after a call instruction, we might need to insert a nop after it's removed,
+        // but only if the jump is before an OS epilog.
+        // We'll check for the OS epilog in emitter::emitRemoveJumpToNextInst().
+        id->idjIsAfterCallBeforeEpilog = lastInsIsCall ? 1 : 0;
 #endif // TARGET_AMD64
     }
     else
@@ -16220,9 +16223,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst = emitOutputLJ(ig, dst, id);
             }
 #ifdef TARGET_AMD64
-            else if (jmp->idjIsAfterCall)
+            else if (jmp->idjIsAfterCallBeforeEpilog)
             {
-                // Need to insert a nop if the removed jump was after a call
+                // Need to insert a nop if the removed jump was after a call and before an OS epilog
                 // (The code size should already be set to 1 for the nop)
                 assert(id->idCodeSize() == 1);
                 dst = emitOutputNOP(dst, id->idCodeSize());

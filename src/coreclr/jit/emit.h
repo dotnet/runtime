@@ -1874,9 +1874,9 @@ protected:
         // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
         unsigned idjIsRemovableJmpCandidate : 1;
-        // Indicates the jump succeeds a call instruction; if this jump is removed,
-        // a nop will need to be emitted instead (see clr-abi.md for details)
-        unsigned idjIsAfterCall : 1;
+        // Indicates the jump succeeds a call instruction and precedes an OS epilog.
+        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
+        unsigned idjIsAfterCallBeforeEpilog : 1;
 #elif defined(TARGET_XARCH)
             29;
         unsigned idjIsRemovableJmpCandidate : 1;
