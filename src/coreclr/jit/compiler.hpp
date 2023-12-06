@@ -5015,6 +5015,47 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
     return VisitLoopBlocksReversePostOrder(func);
 }
 
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocksLexical: Visit the loop's blocks in
+// lexical order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
+{
+    BasicBlock* top    = m_header;
+    BasicBlock* bottom = m_header;
+    VisitLoopBlocks([&](BasicBlock* block) {
+        if (block->bbNum < top->bbNum)
+            top = block;
+        if (block->bbNum > bottom->bbNum)
+            bottom = block;
+        return BasicBlockVisit::Continue;
+    });
+
+    BasicBlock* block = top;
+    while (true)
+    {
+        if (ContainsBlock(block) && (func(block) == BasicBlockVisit::Abort))
+            return BasicBlockVisit::Abort;
+
+        if (block == bottom)
+            return BasicBlockVisit::Continue;
+
+        block = block->Next();
+    }
+}
+
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
 /*****************************************************************************/

@@ -3241,13 +3241,15 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 
     assert(allocatedReg != REG_NA);
 
+    // restore the related interval
+    currentInterval->relatedInterval = savedRelatedInterval;
+
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
 
     // Now restore the old info
-    currentInterval->relatedInterval = savedRelatedInterval;
-    currentInterval->physReg         = oldPhysReg;
-    currentInterval->assignedReg     = oldRegRecord;
-    currentInterval->isActive        = true;
+    currentInterval->physReg     = oldPhysReg;
+    currentInterval->assignedReg = oldRegRecord;
+    currentInterval->isActive    = true;
 
     return allocatedReg;
 }
@@ -11949,18 +11951,32 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
                 continue;
             }
 
-            if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
-                                                   !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+
+            if (reloadRefPosition != nullptr)
             {
-                // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
-                // is not an actual ref. In those cases, we will reload in future (next) refPosition.
-                // For such cases, consider the spill cost of next refposition.
-                // See notes in "spillInterval()".
-                RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
-                if (reloadRefPosition != nullptr)
+                if ((recentRefPosition != nullptr) &&
+                    (recentRefPosition->RegOptional() &&
+                     !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
                 {
+                    // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+                    // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+                    // For such cases, consider the spill cost of next refposition.
+                    // See notes in "spillInterval()".
                     currentSpillWeight = linearScan->getWeight(reloadRefPosition);
                 }
+#ifdef TARGET_ARM64
+                else if (assignedInterval->getNextRefPosition()->needsConsecutive)
+                {
+                    // If next refposition is part of consecutive registers and there is already a register
+                    // assigned to it then try not to reassign for currentRefPosition, because with that,
+                    // other registers for the next consecutive register assignment would have to be copied
+                    // to different consecutive registers since this register is busy from this point onwards.
+                    //
+                    // Have it as a candidate, but make its spill cost higher than others.
+                    currentSpillWeight = linearScan->getWeight(reloadRefPosition) * 10;
+                }
+#endif
             }
         }
 #ifdef TARGET_ARM64

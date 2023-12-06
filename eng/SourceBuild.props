@@ -10,10 +10,6 @@
   <PropertyGroup>
     <BaseInnerSourceBuildCommand>./build.sh</BaseInnerSourceBuildCommand>
 
-    <!-- AfterSourceBuild.proj will fail the build if project path has `test` in it (example: src/libraries/pretest.proj) -->
-    <!-- Will be removed by https://github.com/dotnet/arcade/issues/13542 -->
-    <AllowTestProjectUsage>true</AllowTestProjectUsage>
-
     <_hostRid>$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
     <!-- TargetRid names what gets built. -->
     <TargetRid Condition="'$(TargetRid)' == ''">$(_hostRid)</TargetRid>

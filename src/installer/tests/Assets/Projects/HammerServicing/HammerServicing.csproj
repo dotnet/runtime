@@ -3,11 +3,10 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Spatial" Version="5.8.2" />
+    <ProjectReference Include="..\SharedLibrary\SharedLibrary.csproj"/>
   </ItemGroup>
 
 </Project>
