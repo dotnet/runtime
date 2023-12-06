@@ -25,7 +25,7 @@ namespace System
 
 #if TARGET_WINDOWS // Native Varargs are not supported on Unix
         // ArgIterator is a ref struct. It does not require pinning.
-        // This method null-check the this pointer as a side-effect.
+        // This method null checks the this pointer as a side-effect.
         private ArgIterator* ThisPtr => (ArgIterator*)Unsafe.AsPointer(ref _argCookie);
 
         // create an arg iterator that points at the first argument that
