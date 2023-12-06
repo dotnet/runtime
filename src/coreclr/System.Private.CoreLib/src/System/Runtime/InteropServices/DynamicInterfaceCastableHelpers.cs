@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
         [StackTraceHidden]
         internal static bool IsInterfaceImplemented(IDynamicInterfaceCastable castable, RuntimeType interfaceType, bool throwIfNotImplemented)
         {
-            bool isImplemented= castable.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
+            bool isImplemented = castable.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
             if (!isImplemented && throwIfNotImplemented)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castable.GetType(), interfaceType));
 

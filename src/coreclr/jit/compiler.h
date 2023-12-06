@@ -1961,6 +1961,10 @@ inline LoopFlags& operator&=(LoopFlags& a, LoopFlags b)
 class FlowGraphDfsTree
 {
     Compiler* m_comp;
+
+    // Post-order that we saw reachable basic blocks in. This order can be
+    // particularly useful to iterate in reverse, as reverse post-order ensures
+    // that all predecessors are visited before successors whenever possible.
     BasicBlock** m_postOrder;
     unsigned m_postOrderCount;
 
@@ -1996,20 +2000,120 @@ public:
     bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
 };
 
+// Represents the result of induction variable analysis. See
+// FlowGraphNaturalLoop::AnalyzeIteration.
+struct NaturalLoopIterInfo
+{
+    // The local that is the induction variable.
+    unsigned IterVar = BAD_VAR_NUM;
+
+    // Constant value that the induction variable is initialized with, outside
+    // the loop. Only valid if HasConstInit is true.
+    int ConstInitValue = 0;
+
+    // Block outside the loop that initializes the induction variable. Only
+    // value if HasConstInit is true.
+    BasicBlock* InitBlock = nullptr;
+
+    // Tree that has the loop test for the induction variable.
+    GenTree* TestTree = nullptr;
+
+    // Tree that mutates the induction variable.
+    GenTree* IterTree = nullptr;
+
+    // Whether or not we found an initialization of the induction variable.
+    bool HasConstInit : 1;
+
+    // Whether or not the loop test compares the induction variable with a
+    // constant value.
+    bool HasConstLimit : 1;
+
+    // Whether or not the loop test constant value is a SIMD vector element count.
+    bool HasSimdLimit : 1;
+
+    // Whether or not the loop test compares the induction variable with an
+    // invariant local.
+    bool HasInvariantLocalLimit : 1;
+
+    // Whether or not the loop test compares the induction variable with the
+    // length of an invariant array.
+    bool HasArrayLengthLimit : 1;
+
+    NaturalLoopIterInfo()
+        : HasConstInit(false)
+        , HasConstLimit(false)
+        , HasSimdLimit(false)
+        , HasInvariantLocalLimit(false)
+        , HasArrayLengthLimit(false)
+    {
+    }
+
+    int IterConst();
+    genTreeOps IterOper();
+    var_types IterOperType();
+    bool IsReversed();
+    genTreeOps TestOper();
+    bool IsIncreasingLoop();
+    bool IsDecreasingLoop();
+    GenTree* Iterator();
+    GenTree* Limit();
+    int ConstLimit();
+    unsigned VarLimit();
+    bool ArrLenLimit(Compiler* comp, ArrIndex* index);
+};
+
+// Represents a natural loop in the flow graph. Natural loops are characterized
+// by the following properties:
+//
+// * All loop blocks are strongly connected, meaning that every block of the
+//   loop can reach every other block of the loop.
+//
+// * All loop blocks are dominated by the header block, i.e. the header block
+//   is guaranteed to be entered on every iteration.
+//
+// * From the above it follows that the loop can only be entered at the header
+//   block. FlowGraphNaturalLoop::EntryEdges() gives a vector of these edges.
+//   After loop canonicalization it is expected that this vector has exactly one
+//   edge, from the "preheader".
+//
+// * The loop can have multiple exits. The regular exit edges are recorded in
+//   FlowGraphNaturalLoop::ExitEdges(). The loop can also be exited by
+//   exceptional flow.
+//
 class FlowGraphNaturalLoop
 {
     friend class FlowGraphNaturalLoops;
 
+    // The DFS tree that contains the loop blocks.
     const FlowGraphDfsTree* m_tree;
+
+    // The header block; dominates all other blocks in the loop, and is the
+    // only block branched to from outside the loop.
     BasicBlock* m_header;
+
+    // Parent loop. By loop properties, well-scopedness is always guaranteed.
+    // That is, the parent loop contains all blocks of this loop.
     FlowGraphNaturalLoop* m_parent = nullptr;
+
     // Bit vector of blocks in the loop; each index is the RPO index a block,
     // with the head block's RPO index subtracted.
     BitVec m_blocks;
+
+    // Side of m_blocks.
     unsigned m_blocksSize = 0;
+
+    // Edges from blocks inside the loop back to the header.
     jitstd::vector<FlowEdge*> m_backEdges;
+
+    // Edges from blocks outside the loop to the header.
     jitstd::vector<FlowEdge*> m_entryEdges;
+
+    // Edges from inside the loop to outside the loop. Note that exceptional
+    // flow can also exit the loop and is not modelled.
     jitstd::vector<FlowEdge*> m_exitEdges;
+
+    // Index of the loop in the range [0..FlowGraphNaturalLoops::NumLoops()).
+    // Can be used to store additional annotations for this loop on the side.
     unsigned m_index = 0;
 
     FlowGraphNaturalLoop(const FlowGraphDfsTree* tree, BasicBlock* head);
@@ -2018,6 +2122,14 @@ class FlowGraphNaturalLoop
     bool TryGetLoopBlockBitVecIndex(BasicBlock* block, unsigned* pIndex);
 
     BitVecTraits LoopBlockTraits();
+
+    template<typename TFunc>
+    bool VisitDefs(TFunc func);
+
+    GenTreeLclVarCommon* FindDef(unsigned lclNum);
+
+    void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
+    bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
 public:
     BasicBlock* GetHeader() const
     {
@@ -2056,6 +2168,8 @@ public:
 
     bool ContainsBlock(BasicBlock* block);
 
+    unsigned NumLoopBlocks();
+
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocksReversePostOrder(TFunc func);
 
@@ -2064,12 +2178,34 @@ public:
 
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocks(TFunc func);
+
+    template<typename TFunc>
+    BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
+
+    BasicBlock* GetLexicallyTopMostBlock();
+    BasicBlock* GetLexicallyBottomMostBlock();
+
+    bool AnalyzeIteration(NaturalLoopIterInfo* info);
+
+    bool HasDef(unsigned lclNum);
 };
 
+// Represents a collection of the natural loops in the flow graph. See
+// FlowGraphNaturalLoop for the characteristics of these loops.
+//
+// Loops are stored in a vector, with easily accessible indices (see
+// FlowGraphNaturalLoop::GetIndex()). These indices can be used to store
+// additional annotations for each loop on the side.
+//
 class FlowGraphNaturalLoops
 {
     const FlowGraphDfsTree* m_dfs;
+
+    // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
+
+    // Whether or not we saw any non-natural loop cycles, also known as
+    // irreducible loops.
     unsigned m_improperLoopHeaders = 0;
 
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
@@ -2148,6 +2284,7 @@ public:
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
 };
 
+// Represents the dominator tree of the flow graph.
 class FlowGraphDominatorTree
 {
     template<typename TVisitor>
@@ -4713,6 +4850,10 @@ public:
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
     FlowGraphDfsTree* m_dfs;
+    FlowGraphNaturalLoops* m_loops;
+    struct LoopDsc;
+    LoopDsc** m_newToOldLoop;
+    FlowGraphNaturalLoop** m_oldToNewLoop;
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -6318,18 +6459,44 @@ public:
         BasicBlock*     acdDstBlk; // block  to  which we jump
         unsigned        acdData;
         SpecialCodeKind acdKind; // what kind of a special block is this?
+        bool            acdUsed; // do we need to keep this helper block?
 #if !FEATURE_FIXED_OUT_ARGS
         bool     acdStkLvlInit; // has acdStkLvl value been already set?
         unsigned acdStkLvl;     // stack level in stack slots.
 #endif                          // !FEATURE_FIXED_OUT_ARGS
     };
 
+    struct AddCodeDscKey
+    {
+    public:
+        AddCodeDscKey(): acdKind(SCK_NONE), acdData(0) {}
+        AddCodeDscKey(SpecialCodeKind kind, unsigned data): acdKind(kind), acdData(data) {}
+
+        static bool Equals(const AddCodeDscKey& x, const AddCodeDscKey& y)
+        {
+            return (x.acdData == y.acdData) && (x.acdKind == y.acdKind);
+        }
+
+        static unsigned GetHashCode(const AddCodeDscKey& x)
+        {
+            return (x.acdData << 3) | (unsigned) x.acdKind;
+        }
+
+    private:
+        SpecialCodeKind acdKind;
+        unsigned acdData;
+    };
+
+    typedef JitHashTable<AddCodeDscKey, AddCodeDscKey, AddCodeDsc*> AddCodeDscMap;
+
+    AddCodeDscMap* fgGetAddCodeDscMap();
+
 private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
     AddCodeDsc* fgAddCodeList;
     bool        fgRngChkThrowAdded;
-    AddCodeDsc* fgExcptnTargetCache[SCK_COUNT];
+    AddCodeDscMap* fgAddCodeDscMap;
 
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
     PhaseStatus fgCreateThrowHelperBlocks();
@@ -6558,7 +6725,7 @@ public:
     void optFindLoops();
 
     PhaseStatus optCloneLoops();
-    void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
+    void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
@@ -6870,7 +7037,7 @@ protected:
     bool optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar);
     bool optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar);
     bool optExtractInitTestIncr(
-        BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* exit, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
+        BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
     void optFindNaturalLoops();
 
@@ -7989,34 +8156,34 @@ public:
 public:
     struct LoopCloneVisitorInfo
     {
-        LoopCloneContext* context;
-        Statement*        stmt;
-        const unsigned    loopNum;
-        const bool        cloneForArrayBounds;
-        const bool        cloneForGDVTests;
-        LoopCloneVisitorInfo(LoopCloneContext* context,
-                             unsigned          loopNum,
-                             Statement*        stmt,
-                             bool              cloneForArrayBounds,
-                             bool              cloneForGDVTests)
+        LoopCloneContext*     context;
+        Statement*            stmt;
+        FlowGraphNaturalLoop* loop;
+        const bool            cloneForArrayBounds;
+        const bool            cloneForGDVTests;
+        LoopCloneVisitorInfo(LoopCloneContext*     context,
+                             FlowGraphNaturalLoop* loop,
+                             Statement*            stmt,
+                             bool                  cloneForArrayBounds,
+                             bool                  cloneForGDVTests)
             : context(context)
             , stmt(nullptr)
-            , loopNum(loopNum)
+            , loop(loop)
             , cloneForArrayBounds(cloneForArrayBounds)
             , cloneForGDVTests(cloneForGDVTests)
         {
         }
     };
 
-    bool optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum);
+    bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
-    bool optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* context);
+    bool optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     static fgWalkPreFn optCanOptimizeByLoopCloningVisitor;
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
     bool optObtainLoopCloningOpts(LoopCloneContext* context);
-    bool optIsLoopClonable(unsigned loopInd);
+    bool optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     bool optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
     bool optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
@@ -8025,13 +8192,13 @@ public:
 #ifdef DEBUG
     void optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore);
 #endif
-    void optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext* context DEBUGARG(bool fastPath));
-    bool optComputeDerefConditions(unsigned loopNum, LoopCloneContext* context);
-    bool optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context);
-    BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext* context,
-                                              unsigned          loopNum,
-                                              BasicBlock*       slowHead,
-                                              BasicBlock*       insertAfter);
+    void optPerformStaticOptimizations(FlowGraphNaturalLoop* loop, LoopCloneContext* context DEBUGARG(bool fastPath));
+    bool optComputeDerefConditions(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    bool optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext*     context,
+                                              FlowGraphNaturalLoop* loop,
+                                              BasicBlock*           slowHead,
+                                              BasicBlock*           insertAfter);
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));

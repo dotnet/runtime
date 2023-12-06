@@ -2829,6 +2829,29 @@ public:
 
     typedef StateHolder<Thread::IncPreventAsync, Thread::DecPreventAsync> ThreadPreventAsyncHolder;
 
+    // While executing the new exception handling managed code,
+    // this thread must not be aborted.
+    static void        IncPreventAbort()
+    {
+        WRAPPER_NO_CONTRACT;
+        Thread *pThread = GetThread();
+        InterlockedIncrement((LONG*)&pThread->m_PreventAbort);
+    }
+    static void        DecPreventAbort()
+    {
+        WRAPPER_NO_CONTRACT;
+        Thread *pThread = GetThread();
+#ifdef _DEBUG
+        LONG c =
+#endif // _DEBUG
+        InterlockedDecrement((LONG*)&pThread->m_PreventAbort);
+        _ASSERTE(c >= 0);
+    }
+
+    BOOL IsAbortPrevented()
+    {
+        return m_PreventAbort != 0;
+    }
     // The ThreadStore manages a list of all the threads in the system.  I
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
@@ -3643,6 +3666,8 @@ private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
     int         m_PreventAsync;
+    // Don't allow a thread to be aborted while running the new exception handling managed code
+    int         m_PreventAbort;
 
     static LONG m_DebugWillSyncCount;
 
