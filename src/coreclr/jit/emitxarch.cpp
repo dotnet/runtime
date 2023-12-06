@@ -3493,11 +3493,16 @@ const emitJumpKind emitReverseJumpKinds[] = {
 //
 /* static */ bool emitter::emitJmpInstHasNoCode(instrDesc* id)
 {
-    bool result = (id->idIns() == INS_jmp) && (id->idCodeSize() == 0);
+    bool result = (id->idIns() == INS_jmp) && ((instrDescJmp*)id)->idjIsRemovableJmpCandidate;
 
-    // A zero size jump instruction can only be the one that is marked
-    // as removable candidate.
-    assert(!result || ((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+// A jump marked for removal must have a code size of 0,
+// except for jumps that must be replaced by nops on AMD64 (these must have a size of 1)
+#ifdef TARGET_AMD64
+    const bool isNopReplacement = ((instrDescJmp*)id)->idjIsAfterCallBeforeEpilog && (id->idCodeSize() == 1);
+    assert(!result || (id->idCodeSize() == 0) || isNopReplacement);
+#else  // !TARGET_AMD64
+    assert(!result || (id->idCodeSize() == 0));
+#endif // !TARGET_AMD64
 
     return result;
 }
