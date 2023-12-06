@@ -154,20 +154,12 @@ namespace System.Reflection.Emit
                     _metadataBuilder.AddTypeLayout(typeHandle, (ushort)typeBuilder.PackingSize, (uint)typeBuilder.Size);
                 }
 
-                if (typeBuilder._interfaces != null)
-                {
-                    foreach (Type iface in typeBuilder._interfaces)
-                    {
-                        _metadataBuilder.AddInterfaceImplementation(typeHandle, GetTypeHandle(iface));
-                        // TODO: need to add interface mapping between interface method and implemented method
-                    }
-                }
-
                 if (typeBuilder.DeclaringType != null)
                 {
                     _metadataBuilder.AddNestedType(typeHandle, (TypeDefinitionHandle)GetTypeHandle(typeBuilder.DeclaringType));
                 }
 
+                AddInterfaceImplementations(typeBuilder, typeHandle);
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
                 WriteFields(typeBuilder);
                 WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
@@ -185,6 +177,29 @@ namespace System.Reflection.Emit
             foreach (GenericTypeParameterBuilderImpl param in genericParams)
             {
                 AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
+            }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "Members are retrieved from internal cache")]
+        private void AddInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
+        {
+            if (typeBuilder._interfaces != null)
+            {
+                foreach (Type iface in typeBuilder._interfaces)
+                {
+                    _metadataBuilder.AddInterfaceImplementation(typeHandle, GetTypeHandle(iface));
+                }
+            }
+
+            if (typeBuilder._interfaceMappings != null)
+            {
+                foreach (InterfaceMap map in typeBuilder._interfaceMappings.Values)
+                {
+                    for (int i=0; i < map._interfaceMethods.Count; i++)
+                    {
+                        _metadataBuilder.AddMethodImplementation(typeHandle, GetMemberHandle(map._targetMethods[i]), GetMemberHandle(map._interfaceMethods[i]));
+                    }
+                }
             }
         }
 
@@ -612,7 +627,7 @@ namespace System.Reflection.Emit
                 return MetadataTokens.GetToken(mb._handle);
             }
 
-            return 0;
+            return method.MetadataToken;
         }
 
         public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));

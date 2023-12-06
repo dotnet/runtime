@@ -91,15 +91,6 @@ namespace System.Reflection.Emit
             return convention;
         }
 
-        internal BindingFlags GetBindingFlags()
-        {
-            BindingFlags bindingFlags = (_attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public ?
-                BindingFlags.Public : BindingFlags.NonPublic;
-            bindingFlags |= (_attributes & MethodAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
-
-            return bindingFlags;
-        }
-
         protected override bool InitLocalsCore
         {
             get { ThrowIfGeneric(); return _initLocals; }

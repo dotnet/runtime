@@ -1,0 +1,306 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.IO;
+using System.Linq;
+using System.Xml.Linq;
+using Xunit;
+
+namespace System.Reflection.Emit.Tests
+{
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public class AssemblyBuilderInterfaceImplementation
+    {
+        [Fact]
+        public void DefineMethodOverride_InterfaceMethod()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                MethodBuilder method = type.DefineMethod("MImpl", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldc_I4, 2);
+                ilGenerator.Emit(OpCodes.Ret);
+                type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+                MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
+                type.DefineMethodOverride(method, declaration);
+                type.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                InterfaceMapping im = type.GetInterfaceMap(typeof(DefineMethodOverrideInterface));
+                Assert.Equal(type, im.TargetType);
+                Assert.Equal(typeof(DefineMethodOverrideInterface), im.InterfaceType);
+                Assert.Equal(1, im.InterfaceMethods.Length);
+                Assert.Equal(declaration, im.InterfaceMethods[0]);
+                Assert.Equal(method, im.TargetMethods[0]);
+
+                Type typeFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path).GetType("MyType");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("MImpl");
+                Assert.True(methodFromDisk.IsVirtual);
+            }
+        }
+
+        [Fact]
+        public void DefineMethodOverride_BaseTypeImplementation()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                type.SetParent(typeof(DefineMethodOverrideClass));
+                MethodBuilder method = type.DefineMethod("M2", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldc_I4, 2);
+                ilGenerator.Emit(OpCodes.Ret);
+                MethodInfo declaration = typeof(DefineMethodOverrideClass).GetMethod("M");
+                type.DefineMethodOverride(method, declaration);
+                Type createdType = type.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Type typeFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path).GetType("MyType");
+                Assert.True(typeFromDisk.GetMethod("M2").IsVirtual);
+            }
+        }
+
+        [Fact]
+        public void DefineMethodOverride_GenericInterface_Succeeds()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                type.AddInterfaceImplementation(typeof(GenericInterface<string>));
+                MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Virtual, typeof(string), Type.EmptyTypes);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldstr, "Hello World");
+                ilGenerator.Emit(OpCodes.Ret);
+                type.DefineMethodOverride(method, typeof(GenericInterface<string>).GetMethod("Method"));
+                Type createdType = type.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Type typeFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path).GetType("MyType");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("Method");
+                Assert.True(methodFromDisk.IsVirtual);
+
+                InterfaceMapping im = type.GetInterfaceMap(typeof(GenericInterface<string>));
+                Assert.Equal(type, im.TargetType);
+                Assert.Equal(typeof(GenericInterface<string>), im.InterfaceType);
+                Assert.Equal(1, im.InterfaceMethods.Length);
+                Assert.Equal(typeof(GenericInterface<string>).GetMethod("Method"), im.InterfaceMethods[0]);
+                Assert.Equal(method, im.TargetMethods[0]);
+            }
+        }
+
+        [Fact]
+        public void DefineMethodOverride_NullMethodInfoBody_ThrowsArgumentNullException()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            MethodInfo method = typeof(DefineMethodOverrideClass).GetMethod("M");
+            MethodInfo imethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
+
+            AssertExtensions.Throws<ArgumentNullException>("methodInfoDeclaration", () => type.DefineMethodOverride(method, null));
+            AssertExtensions.Throws<ArgumentNullException>("methodInfoBody", () => type.DefineMethodOverride(null, imethod));
+        }
+
+        [Fact]
+        public void DefineMethodOverride_MethodNotInClass_ThrowsArgumentException()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            MethodInfo body = typeof(DefineMethodOverrideInterface).GetMethod("M");
+            MethodInfo declaration = typeof(DefineMethodOverrideClass).GetMethod("M");
+
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineMethodOverride(body, declaration));
+        }
+
+        [Fact]
+        public void DefineMethodOverride_TypeCreated_ThrowsInvalidOperationException()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
+            method.GetILGenerator().Emit(OpCodes.Ret);
+            type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+
+            Type createdType = type.CreateType();
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod(method.Name);
+
+            Assert.Throws<InvalidOperationException>(() => type.DefineMethodOverride(method, declaration));
+        }
+
+        [Fact]
+        public void DefineMethodOverride_MethodNotVirtual_ThrowsArgumentException()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public, typeof(int), null);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4, 2);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod(method.Name);
+
+            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, declaration));
+        }
+
+        [Fact]
+        public void DefineMethodOverride_TypeDoesNotImplementOrInheritMethod_ThrowsArgumentException()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
+            method.GetILGenerator().Emit(OpCodes.Ret);
+            MethodInfo interfaceMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
+            MethodInfo baseTypeMethod = typeof(DefineMethodOverrideClass).GetMethod("M");
+
+            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, interfaceMethod));
+            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, baseTypeMethod));
+
+            type.AddInterfaceImplementation(typeof(GenericInterface<string>));
+            MethodInfo implementingMethod = typeof(GenericInterface<string>).GetMethod(nameof(GenericInterface<string>.Method));
+            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, implementingMethod));
+        }
+
+        [Fact]
+        public void DefineMethodOverride_CalledTwiceWithDifferentBodies_ThrowsArgumentException()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            MethodBuilder method1 = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
+            ILGenerator ilGenerator1 = method1.GetILGenerator();
+            ilGenerator1.Emit(OpCodes.Ldc_I4, 2);
+            ilGenerator1.Emit(OpCodes.Ret);
+
+            MethodBuilder method2 = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
+            ILGenerator ilGenerator2 = method2.GetILGenerator();
+            ilGenerator2.Emit(OpCodes.Ldc_I4, 2);
+            ilGenerator2.Emit(OpCodes.Ret);
+
+            type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
+            type.DefineMethodOverride(method1, declaration);
+
+            Assert.Throws<ArgumentException>(() => type.DefineMethodOverride(method2, declaration));
+        }
+
+        [Theory]
+        [InlineData(typeof(int), new Type[0])]
+        [InlineData(typeof(int), new Type[] { typeof(int), typeof(int) })]
+        [InlineData(typeof(int), new Type[] { typeof(string), typeof(string) })]
+        [InlineData(typeof(int), new Type[] { typeof(int), typeof(string), typeof(bool) })]
+        [InlineData(typeof(string), new Type[] { typeof(string), typeof(int) })]
+        public void DefineMethodOverride_BodyAndDeclarationHaveDifferentSignatures_ThrowsArgumentException(Type returnType, Type[] parameterTypes)
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, returnType, parameterTypes);
+            method.GetILGenerator().Emit(OpCodes.Ret);
+            type.AddInterfaceImplementation(typeof(InterfaceWithMethod));
+
+            MethodInfo declaration = typeof(InterfaceWithMethod).GetMethod(nameof(InterfaceWithMethod.Method));
+
+            Assert.Throws<ArgumentException>(() => type.DefineMethodOverride(method, declaration));
+        }
+
+        public interface GenericInterface<T>
+        {
+            T Method();
+        }
+
+        public interface InterfaceWithMethod
+        {
+            int Method(string s, int i);
+        }
+
+        [Fact]
+        public void DefineMethodOverride_StaticVirtualInterfaceMethodWorks()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            MethodBuilder svmInterface = interfaceType.DefineMethod("StaticVirtualMethod", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Static | MethodAttributes.Abstract, CallingConventions.Standard, typeof(void), Type.EmptyTypes);
+            MethodBuilder vmInterface = interfaceType.DefineMethod("NormalInterfaceMethod", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.HasThis, typeof(void), Type.EmptyTypes);
+            Type interfaceTypeActual = interfaceType.CreateType();
+
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(object), [interfaceTypeActual]);
+            MethodBuilder svmImpl = implType.DefineMethod("StaticVirtualMethodImpl", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), Type.EmptyTypes);
+            ILGenerator ilGenerator = svmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(svmImpl, svmInterface);
+
+            MethodBuilder vmImpl = implType.DefineMethod("NormalVirtualMethodImpl", MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.HasThis, typeof(void), Type.EmptyTypes);
+            ilGenerator = vmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(vmImpl, vmInterface);
+
+            implType.CreateType();
+        }
+
+        public abstract class Impl : InterfaceWithMethod
+        {
+            public int Method(string s, int i) => 2;
+        }
+
+        [Fact]
+        public void GetInterfaceMap_WithImplicitOverride_DefineMethodOverride()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            MethodBuilder svmInterface = interfaceType.DefineMethod("InterfaceMethod1", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+            MethodBuilder mInterface = interfaceType.DefineMethod("InterfaceMethod2", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, typeof(string), Array.Empty<Type>());
+            MethodBuilder vmInterface = interfaceType.DefineMethod("InterfaceMethod3", MethodAttributes.Assembly | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.HasThis, typeof(void), [typeof(bool)]);
+            Type interfaceTypeActual = interfaceType.CreateType();
+
+            // Implicit implementations (same name, signatures)
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(Impl), new Type[] { interfaceTypeActual });
+            MethodBuilder mImpl = implType.DefineMethod("InterfaceMethod2", MethodAttributes.Public | MethodAttributes.Virtual, typeof(string), Array.Empty<Type>());
+            ILGenerator ilGenerator = mImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldstr, "Hello");
+            ilGenerator.Emit(OpCodes.Ret);
+            MethodBuilder m2Impl = implType.DefineMethod("InterfaceMethod3", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [typeof(bool)]);
+            ilGenerator = m2Impl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            // Explicit implementations with DefineMethodOverride, will override the implicit implementations if there is any
+            MethodBuilder svmImpl = implType.DefineMethod("InterfaceMethod1Impl", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+            ilGenerator = svmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(svmImpl, svmInterface);
+            MethodBuilder vmImpl = implType.DefineMethod("InterfaceMethod3Impl", MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.HasThis, typeof(void), [typeof(bool)]);
+            ilGenerator = vmImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            implType.DefineMethodOverride(vmImpl, vmInterface);
+
+            Type implTypeActual = implType.CreateType();
+
+            InterfaceMapping actualMapping = implTypeActual.GetInterfaceMap(interfaceTypeActual);
+            Assert.Equal(3, actualMapping.InterfaceMethods.Length);
+            Assert.Equal(3, actualMapping.TargetMethods.Length);
+            Assert.Contains(svmInterface, actualMapping.InterfaceMethods);
+            Assert.Contains(mInterface, actualMapping.InterfaceMethods);
+            Assert.Contains(vmInterface, actualMapping.InterfaceMethods);
+            Assert.Contains(svmImpl, actualMapping.TargetMethods);
+            Assert.Contains(mImpl, actualMapping.TargetMethods);
+            Assert.Contains(vmImpl, actualMapping.TargetMethods);
+            Assert.DoesNotContain(m2Impl, actualMapping.TargetMethods); // overwritten by vmImpl
+            Assert.Equal(svmImpl, actualMapping.TargetMethods[0]);
+            Assert.Equal(mImpl, actualMapping.TargetMethods[1]);
+            Assert.Equal(vmImpl, actualMapping.TargetMethods[2]);
+            actualMapping = implTypeActual.GetInterfaceMap(typeof(InterfaceWithMethod));
+            Assert.Equal(1, actualMapping.InterfaceMethods.Length);
+            Assert.Equal(1, actualMapping.TargetMethods.Length);
+            Assert.Equal(typeof(Impl).GetMethod("Method"), actualMapping.TargetMethods[0]);
+        }
+
+        [Fact]
+        public void GetInterfaceMap_Validations()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+
+            Assert.Throws<NotSupportedException>(() => type.GetInterfaceMap(typeof(Impl)));
+            type.CreateType();
+
+            Assert.Throws<ArgumentNullException>(() => type.GetInterfaceMap(null));
+            Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(Impl)));
+            Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(InterfaceWithMethod)));
+        }
+    }
+}

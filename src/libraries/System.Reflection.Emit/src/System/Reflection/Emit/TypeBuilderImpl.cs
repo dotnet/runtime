@@ -34,6 +34,7 @@ namespace System.Reflection.Emit
         internal readonly List<ConstructorBuilderImpl> _constructorDefinitions = new();
         internal List<Type>? _interfaces;
         internal List<CustomAttributeWrapper>? _customAttributes;
+        internal Dictionary<Type, InterfaceMap>? _interfaceMappings;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
@@ -80,8 +81,8 @@ namespace System.Reflection.Emit
             _interfaces.Add(interfaceType);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:DynamicallyAccessedMembers", Justification = "Not sure how to handle")]
-        [return: DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:DynamicallyAccessedMembers", Justification = "Not sure how to handle warning on 'this'")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         protected override TypeInfo CreateTypeInfoCore()
         {
             if (_isCreated)
@@ -228,7 +229,110 @@ namespace System.Reflection.Emit
             return methodBuilder;
         }
 
-        protected override void DefineMethodOverrideCore(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration) => throw new NotImplementedException();
+        protected override void DefineMethodOverrideCore(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        {
+            ThrowIfCreated();
+            if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
+            {
+                // Loader restriction: body method has to be from this class
+                throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
+            }
+            Type baseType = methodInfoDeclaration.DeclaringType!;
+            ValidateBaseType(baseType, methodInfoDeclaration.Name);
+            ValidateImplementedMethod(methodInfoBody, methodInfoDeclaration);
+
+            _interfaceMappings ??= new();
+            if (_interfaceMappings.TryGetValue(baseType, out InterfaceMap? im))
+            {
+                if (im._interfaceMethods.Contains(methodInfoDeclaration))
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverriden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
+                }
+
+                im._interfaceMethods.Add(methodInfoDeclaration);
+                im._targetMethods.Add(methodInfoBody);
+            }
+            else
+            {
+                im = new InterfaceMap(baseType);
+                im._interfaceMethods.Add(methodInfoDeclaration);
+                im._targetMethods.Add(methodInfoBody);
+                _interfaceMappings.Add(baseType, im);
+            }
+        }
+
+        private void ValidateBaseType(Type baseType, string methodName)
+        {
+            if (baseType.IsInterface)
+            {
+                if (!IsInterfaceImplemented(baseType))
+                {
+                    throw ArgumentExceptionInvalidMethodOverride(methodName);
+                }
+
+                return;
+            }
+
+            if (!baseType.IsAssignableFrom(_typeParent))
+            {
+                throw ArgumentExceptionInvalidMethodOverride(methodName);
+            }
+        }
+
+        private bool IsInterfaceImplemented(Type interfaceType)
+        {
+            if (_interfaces != null)
+            {
+                foreach (Type @interface in _interfaces)
+                {
+                    if (interfaceType.IsAssignableFrom(@interface))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (_typeParent != null)
+            {
+                foreach (Type @interface in _typeParent.GetInterfaces())
+                {
+                    if (interfaceType.IsAssignableFrom(@interface))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private ArgumentException ArgumentExceptionInvalidMethodOverride(string methodName) =>
+            new ArgumentException(SR.Format(SR.Argument_InvalidMethodOverride, FullName, methodName), "methodInfoBody");
+
+        private void ValidateImplementedMethod(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        {
+            if ((methodInfoBody.IsVirtual || methodInfoBody.IsStatic) &&
+                (methodInfoDeclaration.IsAbstract || methodInfoDeclaration.IsVirtual) &&
+                methodInfoBody.ReturnType.Equals(methodInfoDeclaration.ReturnType))
+            {
+                ParameterInfo[] bodyParameters = methodInfoBody.GetParameters();
+                ParameterInfo[] declarationParameters = methodInfoDeclaration.GetParameters();
+                if (bodyParameters.Length == declarationParameters.Length)
+                {
+                    for (int i = 0; i < bodyParameters.Length; i++)
+                    {
+                        if (!bodyParameters[i].ParameterType.Equals(declarationParameters[i].ParameterType))
+                        {
+                            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
+                        }
+                    }
+
+                    return;
+                }
+            }
+
+            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
+        }
 
         protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
@@ -406,6 +510,7 @@ namespace System.Reflection.Emit
                 }
             }
         }
+        public override bool IsSZArray => false;
         public override Guid GUID => throw new NotSupportedException();
         public override Type? BaseType => _typeParent;
         public override int MetadataToken => MetadataTokens.GetToken(_handle);
@@ -445,7 +550,7 @@ namespace System.Reflection.Emit
 
             foreach (ConstructorBuilderImpl con in _constructorDefinitions)
             {
-                if (MatchesTheFilter(con._methodBuilder, con._methodBuilder.GetBindingFlags(), bindingAttr, callConvention, types))
+                if (MatchesTheFilter(con._methodBuilder, GetBindingFlags(con._methodBuilder), bindingAttr, callConvention, types))
                 {
                     return con;
                 }
@@ -454,8 +559,19 @@ namespace System.Reflection.Emit
             return null;
         }
 
+        internal static BindingFlags GetBindingFlags(MethodInfo method)
+        {
+            BindingFlags bindingFlags = (method.Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public ?
+                BindingFlags.Public : BindingFlags.NonPublic;
+            bindingFlags |= (method.Attributes & MethodAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
+
+            return bindingFlags;
+        }
+
         private static bool MatchesTheFilter(MethodBuilderImpl method, BindingFlags ctorFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
+            bindingFlags ^= BindingFlags.DeclaredOnly;
+
             if ((bindingFlags & ctorFlags) != ctorFlags)
             {
                 return false;
@@ -505,7 +621,7 @@ namespace System.Reflection.Emit
             List<ConstructorInfo> ctors = new();
             foreach (ConstructorBuilderImpl con in _constructorDefinitions)
             {
-                if (MatchesTheFilter(con._methodBuilder, con._methodBuilder.GetBindingFlags(), bindingAttr, CallingConventions.Any, con._methodBuilder.ParameterTypes))
+                if (MatchesTheFilter(con._methodBuilder, GetBindingFlags(con._methodBuilder), bindingAttr, CallingConventions.Any, con._methodBuilder.ParameterTypes))
                 {
                     ctors.Add(con);
                 }
@@ -520,11 +636,47 @@ namespace System.Reflection.Emit
         public override EventInfo[] GetEvents(BindingFlags bindingAttr) => throw new NotSupportedException();
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr) => throw new NotSupportedException();
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public override MethodInfo[] GetMethods(BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
+        {
+            ThrowIfNotCreated();
+
+            List<MethodInfo> methods = new();
+            foreach (MethodBuilderImpl method in _methodDefinitions)
+            {
+                if (!method.IsConstructor && MatchesTheFilter(method, GetBindingFlags(method), bindingAttr, CallingConventions.Any, method.ParameterTypes))
+                {
+                    methods.Add(method);
+                }
+            }
+
+            return methods.ToArray();
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
-                CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException();
+                CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+        {
+            ThrowIfNotCreated();
+            ArgumentNullException.ThrowIfNull(types);
+            ArgumentNullException.ThrowIfNull(name);
+
+            for (int i = 0; i < types.Length; i++)
+            {
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
+            }
+
+            foreach (MethodBuilderImpl method in _methodDefinitions)
+            {
+                if (name.Equals(method.Name) && MatchesTheFilter(method, GetBindingFlags(method), bindingAttr, callConvention, types))
+                {
+                    return method;
+                }
+            }
+
+            return null;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr) => throw new NotSupportedException();
@@ -554,11 +706,184 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException();
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
-            => throw new NotSupportedException();
+        {
+            ThrowIfNotCreated();
+            ArgumentNullException.ThrowIfNull(interfaceType);
+            ValidateInterfaceType(interfaceType);
+
+            InterfaceMapping im = default;
+            im.InterfaceType = interfaceType;
+            im.TargetType = this;
+
+            MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            im.InterfaceMethods = new MethodInfo[interfaceMethods.Length];
+            im.TargetMethods = new MethodInfo[interfaceMethods.Length];
+
+            for (int i = 0; i < interfaceMethods.Length; i++)
+            {
+                MethodInfo interfaceMethod = interfaceMethods[i];
+                MethodInfo? targetMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
+
+                if (targetMethod == null)
+                {
+                    Type? parent = _typeParent;
+                    while (parent != null && targetMethod == null)
+                    {
+                        targetMethod = parent.GetMethod(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
+                        parent = parent.BaseType;
+                    }
+                }
+
+                im.InterfaceMethods[i] = interfaceMethod;
+                im.TargetMethods[i] = targetMethod!;
+            }
+
+            if (_interfaceMappings == null)
+            {
+                return im;
+            }
+
+            // Add the interface implementations defined with 'DefineMethodOverride',
+            // this overrides default implementations if there is any
+            if (_interfaceMappings.TryGetValue(interfaceType, out var mapping))
+            {
+                for (int i = 0; i < interfaceMethods.Length; i++)
+                {
+                    for (int j = 0; j < mapping._interfaceMethods.Count; j++)
+                    {
+                        if (im.InterfaceMethods[i].Equals(mapping._interfaceMethods[j]))
+                        {
+                            im.TargetMethods[i] = mapping._targetMethods[j];
+                        }
+                    }
+                }
+            }
+
+            return im;
+        }
+
+        private static Type[] GetParameterTypes(ParameterInfo[] parameterInfos)
+        {
+            Type[] parameterTypes = new Type[parameterInfos.Length];
+            for (int i = 0; i < parameterInfos.Length; i++)
+            {
+                parameterTypes[i] = parameterInfos[i].ParameterType;
+            }
+            return parameterTypes;
+        }
+
+        private void ValidateInterfaceType(Type interfaceType)
+        {
+            if (!interfaceType.IsInterface)
+            {
+                throw new ArgumentException(SR.Argument_MustBeInterface, nameof(interfaceType));
+            }
+
+            if (!IsInterfaceImplemented(interfaceType))
+            {
+                throw new ArgumentException(SR.Argument_InterfaceNotFound, nameof(interfaceType));
+            }
+
+            if (IsGenericParameter)
+            {
+                throw new InvalidOperationException(SR.Argument_GenericParameter);
+            }
+
+            // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
+            // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
+            if (IsSZArray && interfaceType.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
+            }
+        }
+
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
-        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException();
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
+                "But in this case it acts only on TypeBuilder which is never trimmed (as it's runtime created).")]
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
+        {
+            if (IsTypeEqual(this, c))
+            {
+                return true;
+            }
+
+            if (c is TypeBuilderImpl tb)
+            {
+                if (tb.IsSubclassOf(this))
+                {
+                    return true;
+                }
+
+                // in order to be a parent of interface this should be an interface
+                if (!IsInterface)
+                {
+                    return false;
+                }
+
+                Type[] interfaces = tb.GetInterfaces();
+                for (int i = 0; i < interfaces.Length; i++)
+                {
+                    // IsSubclassOf does not cover the case when they are the same type.
+                    if (IsTypeEqual(interfaces[i], this))
+                    {
+                        return true;
+                    }
+
+                    if (interfaces[i].IsSubclassOf(this))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool IsTypeEqual(Type t1, Type? t2)
+        {
+            if (t1 is TypeBuilderImpl rtb1)
+            {
+                if (t2 is TypeBuilderImpl tb && ReferenceEquals(rtb1, tb))
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return t1 == t2;
+            }
+
+            return false;
+        }
+
+        public override bool IsSubclassOf(Type c)
+        {
+            Type? p = this;
+
+            if (IsTypeEqual(p, c))
+            {
+                return false;
+            }
+
+            p = p.BaseType;
+
+            while (p != null)
+            {
+                if (IsTypeEqual(p, c))
+                {
+                    return true;
+                }
+
+                p = p.BaseType;
+            }
+
+            return false;
+        }
 
         internal const DynamicallyAccessedMemberTypes GetAllMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
@@ -566,5 +891,13 @@ namespace System.Reflection.Emit
             DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
             DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes;
+    }
+
+    internal sealed class InterfaceMap
+    {
+        internal Type _interfaceType;
+        internal List<MethodInfo> _interfaceMethods = new();
+        internal List<MethodInfo> _targetMethods = new();
+        public InterfaceMap(Type interfaceType) => _interfaceType = interfaceType;
     }
 }

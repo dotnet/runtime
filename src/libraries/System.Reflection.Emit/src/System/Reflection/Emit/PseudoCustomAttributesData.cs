@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
@@ -467,6 +468,7 @@ namespace System.Reflection.Emit
             info.SetMarshalAsComInterface(unmanagedType, parameterIndex);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:RequiresUnreferencedCode", Justification = "The user should keep the type safe")]
         private static void DecodeMarshalAsCustom(string[] paramNames, object?[] values, MarshallingData info)
         {
             string? cookie = null;
@@ -480,7 +482,7 @@ namespace System.Reflection.Emit
                         name = (string?)values[i];
                         break;
                     case "MarshalTypeRef":
-                        type = (Type?)values[i];
+                        type = Type.GetType((string)values[i]!);
                         break;
                     case "MarshalCookie":
                         cookie = (string?)values[i];

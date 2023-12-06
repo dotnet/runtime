@@ -83,7 +83,7 @@ namespace System.Reflection.Emit
                 if (namedType == Field)
                 {
                     // For known pseudo custom attributes underlying Enum type is int
-                    Type fieldType = dataType == EnumType ? typeof(int) : ElementTypeToType((PrimitiveSerializationTypeCode)dataType);
+                    Type fieldType = dataType == EnumType ? typeof(int) : ElementTypeToType((SerializationTypeCode)dataType);
                     info._namedParamValues[i] = DecodeCustomAttributeValue(fieldType, binaryAttribute, pos, out pos); ;
                 }
                 else
@@ -149,7 +149,7 @@ namespace System.Reflection.Emit
 
                     if (subtype >= 0x02 && subtype <= 0x0e)
                     {
-                        return DecodeCustomAttributeValue(ElementTypeToType((PrimitiveSerializationTypeCode)subtype), data, pos, out rpos);
+                        return DecodeCustomAttributeValue(ElementTypeToType((SerializationTypeCode)subtype), data, pos, out rpos);
                     }
                     break;
             }
@@ -157,22 +157,23 @@ namespace System.Reflection.Emit
             throw new NotImplementedException(SR.Format(SR.NotImplemented_TypeForValue, t));
         }
 
-        private static Type ElementTypeToType(PrimitiveSerializationTypeCode elementType) =>
+        private static Type ElementTypeToType(SerializationTypeCode elementType) =>
             elementType switch
             {
-                PrimitiveSerializationTypeCode.Boolean => typeof(bool),
-                PrimitiveSerializationTypeCode.Char => typeof(char),
-                PrimitiveSerializationTypeCode.SByte => typeof(sbyte),
-                PrimitiveSerializationTypeCode.Byte => typeof(byte),
-                PrimitiveSerializationTypeCode.Int16 => typeof(short),
-                PrimitiveSerializationTypeCode.UInt16 => typeof(ushort),
-                PrimitiveSerializationTypeCode.Int32 => typeof(int),
-                PrimitiveSerializationTypeCode.UInt32 => typeof(uint),
-                PrimitiveSerializationTypeCode.Int64 => typeof(long),
-                PrimitiveSerializationTypeCode.UInt64 => typeof(ulong),
-                PrimitiveSerializationTypeCode.Single => typeof(float),
-                PrimitiveSerializationTypeCode.Double => typeof(double),
-                PrimitiveSerializationTypeCode.String => typeof(string),
+                SerializationTypeCode.Boolean => typeof(bool),
+                SerializationTypeCode.Char => typeof(char),
+                SerializationTypeCode.SByte => typeof(sbyte),
+                SerializationTypeCode.Byte => typeof(byte),
+                SerializationTypeCode.Int16 => typeof(short),
+                SerializationTypeCode.UInt16 => typeof(ushort),
+                SerializationTypeCode.Int32 => typeof(int),
+                SerializationTypeCode.UInt32 => typeof(uint),
+                SerializationTypeCode.Int64 => typeof(long),
+                SerializationTypeCode.UInt64 => typeof(ulong),
+                SerializationTypeCode.Single => typeof(float),
+                SerializationTypeCode.Double => typeof(double),
+                SerializationTypeCode.String => typeof(string),
+                SerializationTypeCode.Type => typeof(string), // the type name written in string format
                 _ => throw new ArgumentException(SR.Argument_InvalidTypeCodeForTypeArgument, "binaryAttribute"),
             };
     }
