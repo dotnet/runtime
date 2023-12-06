@@ -91,7 +91,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else
                 {
-                     error = LdapPal.BindToDirectory(_ldapHandle, cred.user, cred.password);
+                    error = LdapPal.BindToDirectory(_ldapHandle, cred.user, cred.password);
                 }
             }
             else

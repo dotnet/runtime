@@ -12,6 +12,6 @@ namespace System.Runtime.CompilerServices
         public static int EnumCompareTo<T>(T x, T y) where T : struct, Enum => x.CompareTo(y);
 
         [Intrinsic]
-        internal static void DisableInline () => throw new NotImplementedException();
+        internal static void DisableInline() => throw new NotImplementedException();
     }
 }

@@ -5539,6 +5539,55 @@ void Compiler::optFindLoops()
 PhaseStatus Compiler::optFindLoopsPhase()
 {
     optFindLoops();
+
+    m_dfs   = fgComputeDfs();
+    m_loops = FlowGraphNaturalLoops::Find(m_dfs);
+
+    m_newToOldLoop = m_loops->NumLoops() == 0 ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
+    m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
+
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        BasicBlock* head = loop->GetHeader();
+        if (head->bbNatLoopNum == BasicBlock::NOT_IN_LOOP)
+            continue;
+
+        LoopDsc* dsc = &optLoopTable[head->bbNatLoopNum];
+        if (dsc->lpEntry != head)
+            continue;
+
+        assert(m_oldToNewLoop[head->bbNatLoopNum] == nullptr);
+        assert(m_newToOldLoop[loop->GetIndex()] == nullptr);
+        m_oldToNewLoop[head->bbNatLoopNum] = loop;
+        m_newToOldLoop[loop->GetIndex()]   = dsc;
+    }
+
+#ifdef DEBUG
+    for (unsigned i = 0; i < optLoopCount; i++)
+    {
+        assert(m_oldToNewLoop[i] != nullptr);
+        LoopDsc* dsc = &optLoopTable[i];
+        if ((dsc->lpFlags & LPFLG_ITER) == 0)
+            continue;
+
+        NaturalLoopIterInfo iter;
+        bool                analyzed = m_oldToNewLoop[i]->AnalyzeIteration(&iter);
+        assert(analyzed);
+
+        assert(iter.HasConstInit == ((dsc->lpFlags & LPFLG_CONST_INIT) != 0));
+        assert(iter.HasConstLimit == ((dsc->lpFlags & LPFLG_CONST_LIMIT) != 0));
+        assert(iter.HasSimdLimit == ((dsc->lpFlags & LPFLG_SIMD_LIMIT) != 0));
+        assert(iter.HasInvariantLocalLimit == ((dsc->lpFlags & LPFLG_VAR_LIMIT) != 0));
+        assert(iter.HasArrayLengthLimit == ((dsc->lpFlags & LPFLG_ARRLEN_LIMIT) != 0));
+        if (iter.HasConstInit)
+        {
+            assert(iter.ConstInitValue == dsc->lpConstInit);
+            assert(iter.InitBlock == dsc->lpInitBlock);
+        }
+        assert(iter.TestTree == dsc->lpTestTree);
+    }
+#endif
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
