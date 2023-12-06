@@ -17493,12 +17493,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
     }
 
-    // Make sure we set the instruction descriptor size correctly
+// Make sure we set the instruction descriptor size correctly
 #ifdef TARGET_AMD64
     // If a jump is replaced by a nop, its instrDesc is temporarily modified so the nop
     // is displayed correctly in disasms. Check for this discrepancy to avoid triggering this assert.
     assert(((ins == INS_jmp) && (id->idIns() == INS_nop)) || (sz == emitSizeOfInsDsc(id)));
-#else // !TARGET_AMD64
+#else  // !TARGET_AMD64
     assert(sz == emitSizeOfInsDsc(id));
 #endif // !TARGET_AMD64
 
