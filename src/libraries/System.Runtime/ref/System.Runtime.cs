@@ -5614,6 +5614,13 @@ namespace System
         public static System.TimeSpan FromMinutes(double value) { throw null; }
         public static System.TimeSpan FromSeconds(double value) { throw null; }
         public static System.TimeSpan FromTicks(long value) { throw null; }
+        public static TimeSpan FromDays(int days, int hours = 0, int minutes = 0, int seconds = 0, int milliseconds = 0, int microseconds = 0) { throw null; }
+        public static TimeSpan FromHours(int hours, int minutes = 0, int seconds = 0, int milliseconds = 0, int microseconds = 0) { throw null; }
+        public static TimeSpan FromMinutes(int minutes, int seconds = 0, int milliseconds = 0, int microseconds = 0) { throw null; }
+        public static TimeSpan FromSeconds(int seconds, int milliseconds = 0, int microseconds = 0) { throw null; }
+        public static TimeSpan FromMilliseconds(int milliseconds, int microseconds = 0) { throw null; }
+        public static TimeSpan FromMicroseconds(int microseconds) { throw null; }
+
         public override int GetHashCode() { throw null; }
         public System.TimeSpan Multiply(double factor) { throw null; }
         public System.TimeSpan Negate() { throw null; }

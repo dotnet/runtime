@@ -371,6 +371,18 @@ namespace System
 
         public static TimeSpan FromTicks(long value) => new TimeSpan(value);
 
+        public static TimeSpan FromDays(int days, int hours = 0, int minutes = 0, int seconds = 0, int milliseconds = 0, int microseconds = 0) => new TimeSpan(days, hours, minutes, seconds, milliseconds, microseconds);
+
+        public static TimeSpan FromHours(int hours, int minutes = 0, int seconds = 0, int milliseconds = 0, int microseconds = 0) => new TimeSpan(0, hours, minutes, seconds, milliseconds, microseconds);
+
+        public static TimeSpan FromMinutes(int minutes, int seconds = 0, int milliseconds = 0, int microseconds = 0) => new TimeSpan(0, 0, minutes, seconds, milliseconds, microseconds);
+
+        public static TimeSpan FromSeconds(int seconds, int milliseconds = 0, int microseconds = 0) => new TimeSpan(0, 0, 0, seconds, milliseconds, microseconds);
+
+        public static TimeSpan FromMilliseconds(int milliseconds, int microseconds = 0) => new TimeSpan(0, 0, 0, 0, milliseconds, microseconds);
+
+        public static TimeSpan FromMicroseconds(int microseconds) => new TimeSpan(0, 0, 0, 0, 0, microseconds);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static long TimeToTicks(int hour, int minute, int second)
         {
