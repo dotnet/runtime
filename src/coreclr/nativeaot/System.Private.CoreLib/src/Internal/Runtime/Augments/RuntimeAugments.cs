@@ -31,8 +31,10 @@ using Internal.Runtime.CompilerServices;
 
 namespace Internal.Runtime.Augments
 {
+#pragma warning disable IDE0065 // Using directives must be placed outside of a namespace declaration
     using BinderBundle = System.Reflection.BinderBundle;
     using Pointer = System.Reflection.Pointer;
+#pragma warning restore IDE0065
 
     public static class RuntimeAugments
     {

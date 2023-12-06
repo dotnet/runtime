@@ -13,10 +13,12 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
+#pragma warning disable IDE0065 // Using directives must be placed outside of a namespace declaration
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
     using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
+#pragma warning restore IDE0065
 
     internal static class LowLevelListExtensions
     {
@@ -385,7 +387,7 @@ namespace Internal.Runtime.TypeLoader
             NativeParser typeInfoParser = state.GetParserForNativeLayoutInfo();
             NativeLayoutInfoLoadContext context = state.NativeLayoutInfo.LoadContext;
 
-            NativeParser baseTypeParser = new NativeParser();
+            NativeParser baseTypeParser = default;
 
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
@@ -479,7 +481,7 @@ namespace Internal.Runtime.TypeLoader
             private int _size;
             private bool _isReferenceTypeGCLayout;
 
-            public static GCLayout None { get { return new GCLayout(); } }
+            public static GCLayout None { get { return default(GCLayout); } }
             public static GCLayout SingleReference { get; } = new GCLayout(new LowLevelList<bool>(new bool[1] { true }), false);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }

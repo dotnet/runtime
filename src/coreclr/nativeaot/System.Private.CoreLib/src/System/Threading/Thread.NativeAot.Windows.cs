@@ -10,7 +10,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
+#pragma warning disable IDE0065 // Using directives must be placed outside of a namespace declaration
     using OSThreadPriority = Interop.Kernel32.ThreadPriority;
+#pragma warning restore IDE0065
 
     public sealed partial class Thread
     {
@@ -317,7 +319,7 @@ namespace System.Threading
         private static void InitializeComForThreadPoolThread()
         {
             // Initialized COM - take advantage of implicit MTA initialized by the finalizer thread
-            SpinWait sw = new SpinWait();
+            SpinWait sw = default(SpinWait);
             while (!s_comInitializedOnFinalizerThread)
             {
                 RuntimeImports.RhInitializeFinalizerThread();

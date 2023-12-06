@@ -184,7 +184,9 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 
 namespace System.Reflection.Runtime.CustomAttributes
 {
+#pragma warning disable IDE0065 // Using directives must be placed outside of a namespace declaration
     using NativeFormat;
+#pragma warning restore IDE0065
 
     //-----------------------------------------------------------------------------------------------------------
     // CustomAttributeData objects returned by various CustomAttributes properties.

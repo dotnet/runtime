@@ -49,60 +49,64 @@ namespace Internal.Runtime
 {
 #if TARGET_AMD64
 #pragma warning disable 0169
+#pragma warning disable CA1823
 #if UNIX_AMD64_ABI
-    struct ReturnBlock
+    internal struct ReturnBlock
     {
-        IntPtr returnValue;
-        IntPtr returnValue2;
+        private IntPtr returnValue;
+        private IntPtr returnValue2;
     }
 
-    struct ArgumentRegisters
+    internal struct ArgumentRegisters
     {
-        IntPtr rdi;
-        IntPtr rsi;
-        IntPtr rdx;
-        IntPtr rcx;
-        IntPtr r8;
-        IntPtr r9;
+        private IntPtr rdi;
+        private IntPtr rsi;
+        private IntPtr rdx;
+        private IntPtr rcx;
+        private IntPtr r8;
+        private IntPtr r9;
     }
 #else // UNIX_AMD64_ABI
-    struct ReturnBlock
+    internal struct ReturnBlock
     {
-        IntPtr returnValue;
+        private IntPtr returnValue;
     }
 
-    struct ArgumentRegisters
+    internal struct ArgumentRegisters
     {
-        IntPtr rdx;
-        IntPtr rcx;
-        IntPtr r8;
-        IntPtr r9;
+        private IntPtr rdx;
+        private IntPtr rcx;
+        private IntPtr r8;
+        private IntPtr r9;
     }
 #endif // UNIX_AMD64_ABI
 #pragma warning restore 0169
+#pragma warning restore CA1823
 
 #pragma warning disable 0169
-    struct M128A
+#pragma warning disable CA1823
+    internal struct M128A
     {
-        IntPtr a;
-        IntPtr b;
+        private IntPtr a;
+        private IntPtr b;
     }
-    struct FloatArgumentRegisters
+    internal struct FloatArgumentRegisters
     {
-        M128A d0;
-        M128A d1;
-        M128A d2;
-        M128A d3;
+        private M128A d0;
+        private M128A d1;
+        private M128A d2;
+        private M128A d3;
 #if UNIX_AMD64_ABI
-        M128A d4;
-        M128A d5;
-        M128A d6;
-        M128A d7;
+        private M128A d4;
+        private M128A d5;
+        private M128A d6;
+        private M128A d7;
 #endif
     }
 #pragma warning restore 0169
+#pragma warning restore CA1823
 
-    struct ArchitectureConstants
+    internal struct ArchitectureConstants
     {
         // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
         public const int MAX_ARG_SIZE = 0xFFFFFF;
@@ -122,47 +126,51 @@ namespace Internal.Runtime
     }
 #elif TARGET_ARM64
 #pragma warning disable 0169
-    struct ReturnBlock
+#pragma warning disable CA1823
+    internal struct ReturnBlock
     {
-        IntPtr returnValue;
-        IntPtr returnValue2;
-        IntPtr returnValue3;
-        IntPtr returnValue4;
+        private IntPtr returnValue;
+        private IntPtr returnValue2;
+        private IntPtr returnValue3;
+        private IntPtr returnValue4;
     }
 
-    struct ArgumentRegisters
+    internal struct ArgumentRegisters
     {
-        IntPtr x0;
-        IntPtr x1;
-        IntPtr x2;
-        IntPtr x3;
-        IntPtr x4;
-        IntPtr x5;
-        IntPtr x6;
-        IntPtr x7;
-        IntPtr x8;
+        private IntPtr x0;
+        private IntPtr x1;
+        private IntPtr x2;
+        private IntPtr x3;
+        private IntPtr x4;
+        private IntPtr x5;
+        private IntPtr x6;
+        private IntPtr x7;
+        private IntPtr x8;
         public static unsafe int GetOffsetOfx8()
         {
             return sizeof(IntPtr) * 8;
         }
     }
 #pragma warning restore 0169
+#pragma warning restore CA1823
 
 #pragma warning disable 0169
-    struct FloatArgumentRegisters
+#pragma warning disable CA1823
+    internal struct FloatArgumentRegisters
     {
-        double d0;
-        double d1;
-        double d2;
-        double d3;
-        double d4;
-        double d5;
-        double d6;
-        double d7;
+        private double d0;
+        private double d1;
+        private double d2;
+        private double d3;
+        private double d4;
+        private double d5;
+        private double d6;
+        private double d7;
     }
 #pragma warning restore 0169
+#pragma warning restore CA1823
 
-    struct ArchitectureConstants
+    internal struct ArchitectureConstants
     {
         // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
         public const int MAX_ARG_SIZE = 0xFFFFFF;
@@ -178,13 +186,14 @@ namespace Internal.Runtime
     }
 #elif TARGET_X86
 #pragma warning disable 0169, 0649
-    struct ReturnBlock
+#pragma warning disable CA1823
+    internal struct ReturnBlock
     {
         public IntPtr returnValue;
         public IntPtr returnValue2;
     }
 
-    struct ArgumentRegisters
+    internal struct ArgumentRegisters
     {
         public IntPtr edx;
         public static unsafe int GetOffsetOfEdx()
@@ -198,12 +207,13 @@ namespace Internal.Runtime
         }
     }
     // This struct isn't used by x86, but exists for compatibility with the definition of the CallDescrData struct
-    struct FloatArgumentRegisters
+    internal struct FloatArgumentRegisters
     {
     }
 #pragma warning restore 0169, 0649
+#pragma warning restore CA1823
 
-    struct ArchitectureConstants
+    internal struct ArchitectureConstants
     {
         // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
         public const int MAX_ARG_SIZE = 0xFFFFFF;
@@ -218,40 +228,42 @@ namespace Internal.Runtime
     }
 #elif TARGET_ARM
 #pragma warning disable 0169
-    struct ReturnBlock
+#pragma warning disable CA1823
+    internal struct ReturnBlock
     {
-        IntPtr returnValue;
-        IntPtr returnValue2;
-        IntPtr returnValue3;
-        IntPtr returnValue4;
-        IntPtr returnValue5;
-        IntPtr returnValue6;
-        IntPtr returnValue7;
-        IntPtr returnValue8;
+        private IntPtr returnValue;
+        private IntPtr returnValue2;
+        private IntPtr returnValue3;
+        private IntPtr returnValue4;
+        private IntPtr returnValue5;
+        private IntPtr returnValue6;
+        private IntPtr returnValue7;
+        private IntPtr returnValue8;
     }
 
-    struct ArgumentRegisters
+    internal struct ArgumentRegisters
     {
-        IntPtr r0;
-        IntPtr r1;
-        IntPtr r2;
-        IntPtr r3;
+        private IntPtr r0;
+        private IntPtr r1;
+        private IntPtr r2;
+        private IntPtr r3;
     }
 
-    struct FloatArgumentRegisters
+    internal struct FloatArgumentRegisters
     {
-        double d0;
-        double d1;
-        double d2;
-        double d3;
-        double d4;
-        double d5;
-        double d6;
-        double d7;
+        private double d0;
+        private double d1;
+        private double d2;
+        private double d3;
+        private double d4;
+        private double d5;
+        private double d6;
+        private double d7;
     }
 #pragma warning restore 0169
+#pragma warning restore CA1823
 
-    struct ArchitectureConstants
+    internal struct ArchitectureConstants
     {
         // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
         public const int MAX_ARG_SIZE = 0xFFFFFF;
@@ -267,23 +279,25 @@ namespace Internal.Runtime
 
 #elif TARGET_WASM
 #pragma warning disable 0169
-    struct ReturnBlock
+#pragma warning disable CA1823
+    internal struct ReturnBlock
     {
-        IntPtr returnValue;
+        private IntPtr returnValue;
     }
 
-    struct ArgumentRegisters
+    internal struct ArgumentRegisters
     {
         // No registers on WASM
     }
 
-    struct FloatArgumentRegisters
+    internal struct FloatArgumentRegisters
     {
         // No registers on WASM
     }
 #pragma warning restore 0169
+#pragma warning restore CA1823
 
-    struct ArchitectureConstants
+    internal struct ArchitectureConstants
     {
         // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
         public const int MAX_ARG_SIZE = 0xFFFFFF;
@@ -305,6 +319,7 @@ namespace Internal.Runtime
     internal struct TransitionBlock
     {
 #pragma warning disable 0169,0649
+#pragma warning disable CA1823
 
 #if TARGET_X86
         public ArgumentRegisters m_argumentRegisters;
@@ -317,8 +332,8 @@ namespace Internal.Runtime
         {
             return sizeof(ArgumentRegisters);
         }
-        IntPtr m_ebp;
-        IntPtr m_ReturnAddress;
+        private IntPtr m_ebp;
+        private IntPtr m_ReturnAddress;
 #elif TARGET_AMD64
 
 #if UNIX_AMD64_ABI
@@ -334,17 +349,17 @@ namespace Internal.Runtime
             return sizeof(ReturnBlock);
         }
 
-        IntPtr m_alignmentPadding;
-        IntPtr m_ReturnAddress;
+        private IntPtr m_alignmentPadding;
+        private IntPtr m_ReturnAddress;
 #else // UNIX_AMD64_ABI
-        IntPtr m_returnBlockPadding;
-        ReturnBlock m_returnBlock;
+        private IntPtr m_returnBlockPadding;
+        public ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
         {
             return sizeof(IntPtr);
         }
-        IntPtr m_alignmentPadding;
-        IntPtr m_ReturnAddress;
+        private IntPtr m_alignmentPadding;
+        private IntPtr m_ReturnAddress;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {
             return sizeof(TransitionBlock);
@@ -393,6 +408,7 @@ namespace Internal.Runtime
 #error Portability problem
 #endif
 #pragma warning restore 0169, 0649
+#pragma warning restore CA1823
 
         // The transition block should define everything pushed by callee. The code assumes in number of places that
         // end of the transition block is caller's stack pointer.
