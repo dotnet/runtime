@@ -316,7 +316,7 @@ if [[ "$internal" == true ]]; then
     fi
 
     if [[ "$alpine" == "true" ]]; then
-        queue=alpine.amd64.tiger.perf-int
+        queue=alpine.amd64.tiger.perf
     fi
 else
     if [[ "$architecture" == "arm64" ]]; then
