@@ -48,6 +48,7 @@ void emitDispExtendOpts(insOpts opt);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
+void emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
@@ -383,6 +384,9 @@ static code_t insEncodeReg_V_9_to_6(regNumber reg);
 // This encoding requires that the register number be divisible by two.
 static code_t insEncodeReg_V_9_to_6_Times_Two(regNumber reg);
 
+// Return an encoding for the specified 'V' register used in '20' thru '16' position.
+static code_t insEncodeReg_V_20_to_16(regNumber reg);
+
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
 
@@ -426,6 +430,8 @@ static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 // Returns the encoding for ASIMD Shift instruction.
 static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
 
+static code_t insEncodeSveIndex_23_to_22(ssize_t index);
+
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
 
@@ -467,6 +473,10 @@ static code_t insEncodeReg3Scale(bool isScaled);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(insOpts opt);
+
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+// This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(insOpts opt);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
@@ -666,6 +676,12 @@ inline static unsigned isValidVectorShiftAmount(ssize_t shiftAmount, emitAttr si
 {
     return (rightShift && (shiftAmount >= 1) && (shiftAmount <= getBitWidth(size))) ||
            ((shiftAmount >= 0) && (shiftAmount < getBitWidth(size)));
+}
+
+// Returns true if the 'imm' represents a valid 2-bit integer.
+inline static bool isValidImm2(ssize_t imm)
+{
+    return (imm >= 0) && (imm < 4);
 }
 
 inline static bool isValidGeneralDatasize(emitAttr size)

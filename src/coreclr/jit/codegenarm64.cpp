@@ -5436,7 +5436,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #define ALL_ARM64_EMITTER_UNIT_TESTS
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+#define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
 #if defined(DEBUG)
@@ -10532,6 +10532,26 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_H); // SQRSHRUN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
     theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V15, REG_V12, 1,
                               INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
+
+    // IF_SVE_GG_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+                                INS_OPTS_SCALABLE_B); // LUTI2   <Zd>.B, {<Zn>.B }, <Zm>[<index>]
+
+    // IF_SVE_GH_3B
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+                                INS_OPTS_SCALABLE_H); // LUTI4   <Zd>.H, {<Zn1>.H, <Zn2>.H }, <Zm>[<index>]
+
+    // IF_SVE_GH_3B_B
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+                                INS_OPTS_SCALABLE_H); // LUTI4   <Zd>.H, {<Zn>.H }, <Zm>[<index>]
+
+    // IF_SVE_GG_3B
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+                                INS_OPTS_SCALABLE_H); // LUTI2   <Zd>.H, {<Zn>.H }, <Zm>[<index>]
+
+    // IF_SVE_GH_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+                                INS_OPTS_SCALABLE_B); // LUTI4   <Zd>.B, {<Zn>.B }, <Zm>[<index>]
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
