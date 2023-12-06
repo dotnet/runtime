@@ -16220,11 +16220,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst = emitOutputLJ(ig, dst, id);
             }
 #ifdef TARGET_AMD64
-            else if (id->idCodeSize() == 1)
+            else if (jmp->idjIsAfterCall)
             {
                 // Need to insert a nop if the removed jump was after a call
-                assert(jmp->idjIsAfterCall);
-                dst = emitOutputNOP(dst, 1);
+                // (The code size should already be set to 1 for the nop)
+                assert(id->idCodeSize() == 1);
+                dst = emitOutputNOP(dst, id->idCodeSize());
+
+                // Temporarily convert id into a nop description so it is displayed correctly in disasms
+                id->idIns(INS_nop);
+                id->idInsFmt(IF_NONE);
             }
 #endif // TARGET_AMD64
             sz = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
@@ -17486,7 +17491,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
     // Make sure we set the instruction descriptor size correctly
+#ifdef TARGET_AMD64
+    // If a jump is replaced by a nop, its instrDesc is temporarily modified so the nop
+    // is displayed correctly in disasms. Check for this discrepancy to avoid triggering this assert.
+    assert(((ins == INS_jmp) && (id->idIns() == INS_nop)) || (sz == emitSizeOfInsDsc(id)));
+#else // !TARGET_AMD64
     assert(sz == emitSizeOfInsDsc(id));
+#endif // !TARGET_AMD64
 
 #if !FEATURE_FIXED_OUT_ARGS
     bool updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
@@ -17553,6 +17564,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
 #endif
+
+#ifdef TARGET_AMD64
+    // If this instruction is a removed jump replaced by a nop, its instrDesc
+    // was modified in order to print the nop in disasms correctly.
+    // Now that we've printed it, reset the instrDesc to avoid triggering asserts.
+    id->idIns(ins);
+    id->idInsFmt(insFmt);
+#endif // !TARGET_AMD64
 
 #if FEATURE_LOOP_ALIGN
     // Only compensate over-estimated instructions if emitCurIG is before
