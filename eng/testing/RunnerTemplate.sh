@@ -163,6 +163,11 @@ if [ ! -z $spmi_enable_collection ]; then
 fi
 # ========================= END support for SuperPMI collection ==============================
 
+echo ========================= Begin custom configuration settings ==============================
+[[SetCommandsEcho]]
+[[SetCommands]]
+echo ========================== End custom configuration settings ===============================
+
 # ========================= BEGIN Test Execution =============================
 echo ----- start $(date) ===============  To repro directly: =====================================================
 echo pushd $EXECUTION_DIR

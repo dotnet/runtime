@@ -47,7 +47,7 @@ namespace System
                     ConsolePal.Read(_handle, buffer);
 
             public override void Write(ReadOnlySpan<byte> buffer) =>
-                ConsolePal.Write(_handle, buffer);
+                ConsolePal.WriteFromConsoleStream(_handle, buffer);
 
             public override void Flush()
             {

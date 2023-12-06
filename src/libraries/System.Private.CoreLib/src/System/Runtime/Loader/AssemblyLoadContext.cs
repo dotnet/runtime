@@ -785,7 +785,7 @@ namespace System.Runtime.Loader
 
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
             if (parentDirectory == null)
-                 return null;
+                return null;
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 

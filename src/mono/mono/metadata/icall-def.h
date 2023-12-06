@@ -454,7 +454,7 @@ HANDLES(MARSHAL_10, "GetFunctionPointerForDelegateInternal", ves_icall_System_Ru
 NOHANDLES(ICALL(MARSHAL_11, "GetLastPInvokeError", ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError))
 HANDLES(MARSHAL_12, "OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf, int, 2, (MonoReflectionType, MonoString))
 HANDLES(MARSHAL_13, "PrelinkInternal", ves_icall_System_Runtime_InteropServices_Marshal_Prelink, void, 1, (MonoReflectionMethod))
-HANDLES(MARSHAL_20, "PtrToStructureInternal", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureInternal, void, 3, (gconstpointer, MonoObject, MonoBoolean))
+HANDLES(MARSHAL_20, "PtrToStructureHelper", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureHelper, void, 3, (gconstpointer, MonoObject, MonoBoolean))
 NOHANDLES(ICALL(MARSHAL_29a, "SetLastPInvokeError", ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError))
 HANDLES(MARSHAL_31, "SizeOfHelper", ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper, guint32, 2, (MonoQCallTypeHandle, MonoBoolean))
 HANDLES(MARSHAL_34, "StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr, void, 3, (MonoObject, gpointer, MonoBoolean))

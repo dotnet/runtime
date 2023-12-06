@@ -454,7 +454,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
 
-    class CopyPropDomTreeVisitor : public DomTreeVisitor<CopyPropDomTreeVisitor>
+    class CopyPropDomTreeVisitor : public NewDomTreeVisitor<CopyPropDomTreeVisitor>
     {
         // The map from lclNum to its recently live definitions as a stack.
         LclNumToLiveDefsMap m_curSsaName;
@@ -462,9 +462,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree)
-            , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
-            , m_madeChanges(false)
+            : NewDomTreeVisitor(compiler), m_curSsaName(compiler->getAllocator(CMK_CopyProp)), m_madeChanges(false)
         {
         }
 
@@ -487,7 +485,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
         void PropagateCopies()
         {
-            WalkTree();
+            WalkTree(m_compiler->fgSsaDomTree);
 
 #ifdef DEBUG
             // Verify the definitions remaining are only those we pushed for parameters.

@@ -108,12 +108,6 @@
 #pragma warning(disable:4477)
 #endif //_MSC_VER
 
-//#define TRACE_GC
-//#define SIMPLE_DPRINTF
-
-#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
-void flush_gc_log (bool);
-#endif //TRACE_GC && SIMPLE_DPRINTF
 inline void FATAL_GC_ERROR()
 {
 #if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
@@ -239,10 +233,6 @@ inline void FATAL_GC_ERROR()
 
 #define FFIND_DECAY  7      //Number of GC for which fast find will be active
 
-#ifndef MAX_LONGPATH
-#define MAX_LONGPATH 1024
-#endif // MAX_LONGPATH
-
 //#define JOIN_STATS         //amount of time spent in the join
 
 //#define SYNCHRONIZATION_STATS
@@ -337,45 +327,6 @@ void GCLogConfig (const char *fmt, ... );
 const int policy_sweep = 0;
 const int policy_compact = 1;
 const int policy_expand  = 2;
-
-#ifdef TRACE_GC
-#define MIN_CUSTOM_LOG_LEVEL 7
-#define SEG_REUSE_LOG_0 (MIN_CUSTOM_LOG_LEVEL)
-#define SEG_REUSE_LOG_1 (MIN_CUSTOM_LOG_LEVEL + 1)
-#define DT_LOG_0 (MIN_CUSTOM_LOG_LEVEL + 2)
-#define BGC_TUNING_LOG (MIN_CUSTOM_LOG_LEVEL + 3)
-#define GTC_LOG (MIN_CUSTOM_LOG_LEVEL + 4)
-#define GC_TABLE_LOG (MIN_CUSTOM_LOG_LEVEL + 5)
-#define JOIN_LOG (MIN_CUSTOM_LOG_LEVEL + 6)
-#define SPINLOCK_LOG (MIN_CUSTOM_LOG_LEVEL + 7)
-#define SNOOP_LOG (MIN_CUSTOM_LOG_LEVEL + 8)
-#define REGIONS_LOG (MIN_CUSTOM_LOG_LEVEL + 9)
-
-// NOTE! This is for HEAP_BALANCE_INSTRUMENTATION
-// This particular one is special and needs to be well formatted because we
-// do post processing on it with tools\GCLogParser. If you need to add some
-// detail to help with investigation that's not 't processed by tooling
-// prefix it with TEMP so that line will be written to the results as is in
-// the result. I have some already logged with HEAP_BALANCE_TEMP_LOG.
-#define HEAP_BALANCE_LOG (MIN_CUSTOM_LOG_LEVEL + 10)
-#define HEAP_BALANCE_TEMP_LOG (MIN_CUSTOM_LOG_LEVEL + 11)
-
-#ifdef SIMPLE_DPRINTF
-
-void GCLog (const char *fmt, ... );
-#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
-#else //SIMPLE_DPRINTF
-#ifdef HOST_64BIT
-#define dprintf(l,x) STRESS_LOG_VA(l,x);
-//#define dprintf(l,x) {if ((l <= 2) || (l == 6666)) {STRESS_LOG_VA(l,x);}}
-#else
-#error Logging dprintf to stress log on 32 bits platforms is not supported.
-#endif
-#endif //SIMPLE_DPRINTF
-
-#else //TRACE_GC
-#define dprintf(l,x)
-#endif //TRACE_GC
 
 #if !defined(FEATURE_NATIVEAOT) && !defined(BUILD_AS_STANDALONE)
 #undef  assert

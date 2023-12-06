@@ -2351,7 +2351,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         if (isStructArg)
         {
-            GenTree* actualArg = argx->gtEffectiveVal(true /* Commas only */);
+            GenTree* actualArg = argx->gtEffectiveVal();
 
             // Here we look at "actualArg" to avoid calling "getClassSize".
             structSize = actualArg->TypeIs(TYP_STRUCT) ? actualArg->GetLayout(comp)->GetSize() : genTypeSize(actualArg);
@@ -3188,7 +3188,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 
         bool     isStructArg    = varTypeIsStruct(arg.GetSignatureType());
-        GenTree* argObj         = argx->gtEffectiveVal(true /*commaOnly*/);
+        GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 
         if (isStructArg && !reMorphing && !argObj->OperIs(GT_MKREFANY))
@@ -6308,7 +6308,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We call CORINFO_HELP_TAILCALL which does not return, so we will
             // not need epilogue.
-            compCurBB->SetJumpKindAndTarget(BBJ_THROW DEBUG_ARG(this));
+            compCurBB->SetJumpKindAndTarget(BBJ_THROW);
         }
 
         if (isRootReplaced)
@@ -6384,10 +6384,10 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
                 return WALK_ABORT;
             }
 
-            // GT_NOP might appear due to stores that end up as
-            // self-stores, which get morphed to GT_NOP.
             if (tree->OperIs(GT_NOP))
             {
+                // GT_NOP might appear due to stores that end up as
+                // self-stores, which get morphed to GT_NOP.
             }
             // We might see arbitrary chains of stores that trivially
             // propagate the result. Example:
@@ -7446,7 +7446,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of a scratch BB.
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgEntryBB DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgEntryBB);
     }
     else
     {
@@ -7461,7 +7461,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         //
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next() DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
     }
 
     // Finish hooking things up.
@@ -8225,7 +8225,7 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
 
     // op1 can be GT_COMMA, in this case we're going to fold
     // "(op (COMMA(... (op X C1))) C2)" to "(COMMA(... (op X C3)))"
-    GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal(true);
+    GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal();
     genTreeOps oper = tree->OperGet();
 
     if (!op1->OperIs(oper) || !tree->gtGetOp2()->IsCnsIntOrI() || !op1->gtGetOp2()->IsCnsIntOrI() ||
@@ -9041,6 +9041,10 @@ DONE_MORPHING_CHILDREN:
     {
         return tree;
     }
+    else if (tree->IsNothingNode())
+    {
+        return tree;
+    }
 
     /* gtFoldExpr could have used setOper to change the oper */
     oper = tree->OperGet();
@@ -9775,7 +9779,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
     if (varTypeIsFloating(indir))
     {
         // Check for a misaligned floating point indirection.
-        GenTree*       effAddr = addr->gtEffectiveVal(true);
+        GenTree*       effAddr = addr->gtEffectiveVal();
         target_ssize_t offset;
         gtPeelOffsets(&effAddr, &offset);
 
@@ -9900,7 +9904,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         {
             optNarrowTree(src, src->TypeGet(), castToType, cast->gtVNPair, true);
 
-            // "optNarrowTree" may leave a dead cast behind.
+            // "optNarrowTree" may leave a redundant cast behind.
             if (src->OperIs(GT_CAST) && (src->AsCast()->CastToType() == genActualType(src->AsCast()->CastOp())))
             {
                 src = src->AsCast()->CastOp();
@@ -10253,10 +10257,18 @@ SKIP:
             return cmp;
         }
 
+        GenTree* andOpOp1 = andOp->gtGetOp1();
         // Now we narrow the first operand of AND to int.
-        if (optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
+        if (optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
         {
-            optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
+            optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
+
+            // "optNarrowTree" may leave a redundant cast behind.
+            if (andOpOp1->OperIs(GT_CAST) &&
+                (andOpOp1->AsCast()->CastToType() == genActualType(andOpOp1->AsCast()->CastOp())))
+            {
+                andOp->gtOp1 = andOpOp1->AsCast()->CastOp();
+            }
         }
         else
         {
@@ -12903,22 +12915,21 @@ void Compiler::fgAssertionGen(GenTree* tree)
     INDEBUG(unsigned oldAssertionCount = optAssertionCount;);
     optAssertionGen(tree);
 
-    if (tree->GeneratesAssertion())
-    {
-        AssertionIndex const apIndex = tree->GetAssertionInfo().GetAssertionIndex();
-        unsigned const       bvIndex = apIndex - 1;
-
+    // Helper to note when an existing assertion has been
+    // brought back to life.
+    //
+    auto announce = [&](AssertionIndex apIndex, const char* condition) {
 #ifdef DEBUG
         if (verbose)
         {
             if (oldAssertionCount == optAssertionCount)
             {
-                if (!BitVecOps::IsMember(apTraits, apLocal, bvIndex))
+                if (!BitVecOps::IsMember(apTraits, apLocal, apIndex - 1))
                 {
                     // This tree resurrected an existing assertion.
                     // We call that out here since assertion prop won't.
                     //
-                    printf("GenTreeNode creates assertion:\n");
+                    printf("GenTreeNode creates %sassertion:\n", condition);
                     gtDispTree(tree, nullptr, nullptr, true);
                     printf("In " FMT_BB " New Local ", compCurBB->bbNum);
                     optPrintAssertion(optGetAssertion(apIndex), apIndex);
@@ -12935,7 +12946,70 @@ void Compiler::fgAssertionGen(GenTree* tree)
             }
         }
 #endif
+    };
 
+    // For BBJ_COND nodes, we have two assertion out BVs.
+    // apLocal will be stored on bbAssertionOutIfFalse and be used for false successors.
+    // apLocalIfTrue will be stored on bbAssertionOutIfTrue and be used for true successors.
+    //
+    const bool makeCondAssertions =
+        tree->OperIs(GT_JTRUE) && compCurBB->KindIs(BBJ_COND) && (compCurBB->NumSucc() == 2);
+
+    // Intialize apLocalIfTrue if we might look for it later,
+    // even if it ends up identical to apLocal.
+    //
+    if (makeCondAssertions)
+    {
+        apLocalIfTrue = BitVecOps::MakeCopy(apTraits, apLocal);
+    }
+
+    if (!tree->GeneratesAssertion())
+    {
+        return;
+    }
+
+    AssertionInfo info = tree->GetAssertionInfo();
+
+    if (makeCondAssertions)
+    {
+        // Update apLocal and apIfTrue with suitable assertions
+        // from the JTRUE
+        //
+        assert(optCrossBlockLocalAssertionProp);
+
+        AssertionIndex ifFalseAssertionIndex;
+        AssertionIndex ifTrueAssertionIndex;
+
+        if (info.IsNextEdgeAssertion())
+        {
+            ifFalseAssertionIndex = info.GetAssertionIndex();
+            ifTrueAssertionIndex  = optFindComplementary(ifFalseAssertionIndex);
+        }
+        else
+        {
+            ifTrueAssertionIndex  = info.GetAssertionIndex();
+            ifFalseAssertionIndex = optFindComplementary(ifTrueAssertionIndex);
+        }
+
+        if (ifTrueAssertionIndex != NO_ASSERTION_INDEX)
+        {
+            announce(ifTrueAssertionIndex, " [if true]");
+            unsigned const bvIndex = ifTrueAssertionIndex - 1;
+            BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
+        }
+
+        if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
+        {
+            announce(ifFalseAssertionIndex, " [if false]");
+            unsigned const bvIndex = ifFalseAssertionIndex - 1;
+            BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
+        }
+    }
+    else
+    {
+        AssertionIndex const apIndex = tree->GetAssertionInfo().GetAssertionIndex();
+        announce(apIndex, "");
+        unsigned const bvIndex = apIndex - 1;
         BitVecOps::AddElemD(apTraits, apLocal, bvIndex);
     }
 }
@@ -13076,7 +13150,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
         GenTree* condTree;
         condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = condTree->gtEffectiveVal(true);
+        cond = condTree->gtEffectiveVal();
 
         if (cond->OperIsConst())
         {
@@ -13124,10 +13198,11 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     optUnmarkLoopBlocks(block->GetJumpDest(), block);
                 }
 
-                /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
+                /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
                 bTaken    = block->Next();
                 bNotTaken = block->GetJumpDest();
-                block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, bTaken);
+                block->bbFlags |= BBF_NONE_QUIRK;
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13182,13 +13257,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     // Now fix the weights of the edges out of 'bUpdated'
                     switch (bUpdated->GetJumpKind())
                     {
-                        case BBJ_NONE:
-                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
-                            break;
-
                         case BBJ_COND:
                             edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
@@ -13219,11 +13287,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
-                }
+                printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13309,7 +13374,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
         GenTree* condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
-        GenTree* cond     = condTree->gtEffectiveVal(true);
+        GenTree* cond     = condTree->gtEffectiveVal();
 
         if (cond->OperIsConst())
         {
@@ -13351,16 +13416,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    if (!block->NextIs(curJump))
-                    {
-                        // transform the basic block into a BBJ_ALWAYS
-                        block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump DEBUG_ARG(this));
-                    }
-                    else
-                    {
-                        // transform the basic block into a BBJ_NONE
-                        block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
-                    }
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
                     foundVal = true;
                 }
                 else
@@ -13371,16 +13427,17 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             }
 
             assert(foundVal);
+            if (block->JumpsToNext())
+            {
+                block->bbFlags |= BBF_NONE_QUIRK;
+            }
 
 #ifdef DEBUG
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
-                }
+                printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13504,7 +13561,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
 
         // The rest of block has been removed and we will always throw an exception.
         //
-        // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_NONE.
+        // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_ALWAYS.
         // We should not convert it to a ThrowBB.
         if ((block != fgFirstBB) || ((fgFirstBB->bbFlags & BBF_INTERNAL) == 0))
         {
@@ -13833,17 +13890,45 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
                         continue;
                     }
 
-                    // Yes, pred assertions are available. If this is the first pred, copy.
+                    // Yes, pred assertions are available.
+                    // If the pred is (a non-degenerate) BBJ_COND, fetch the appropriate out set.
+                    //
+                    ASSERT_TP  assertionsOut     = pred->bbAssertionOut;
+                    const bool useCondAssertions = pred->KindIs(BBJ_COND) && (pred->NumSucc() == 2);
+
+                    if (useCondAssertions)
+                    {
+                        if (block == pred->GetJumpDest())
+                        {
+                            JITDUMP("Using `if true` assertions from pred " FMT_BB "\n", pred->bbNum);
+                            assertionsOut = pred->bbAssertionOutIfTrue;
+                        }
+                        else
+                        {
+                            assert(block == pred->Next());
+                            JITDUMP("Using `if false` assertions from pred " FMT_BB "\n", pred->bbNum);
+                            assertionsOut = pred->bbAssertionOutIfFalse;
+                        }
+                    }
+
+                    // If this is the first pred, copy (or share, when block is the only successor).
                     // If this is a subsequent pred, intersect.
                     //
                     if (!hasPredAssertions)
                     {
-                        apLocal           = BitVecOps::MakeCopy(apTraits, pred->bbAssertionOut);
+                        if (pred->NumSucc() == 1)
+                        {
+                            apLocal = assertionsOut;
+                        }
+                        else
+                        {
+                            apLocal = BitVecOps::MakeCopy(apTraits, assertionsOut);
+                        }
                         hasPredAssertions = true;
                     }
                     else
                     {
-                        BitVecOps::IntersectionD(apTraits, apLocal, pred->bbAssertionOut);
+                        BitVecOps::IntersectionD(apTraits, apLocal, assertionsOut);
                     }
                 }
 
@@ -13884,7 +13969,19 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
     if (optCrossBlockLocalAssertionProp && (block->NumSucc() > 0))
     {
         assert(optLocalAssertionProp);
-        block->bbAssertionOut = BitVecOps::MakeCopy(apTraits, apLocal);
+
+        if (block->KindIs(BBJ_COND))
+        {
+            // We don't need to make a copy of the if true set; this BV
+            // was freshly copied in fgAssertionGen
+            //
+            block->bbAssertionOutIfTrue  = apLocalIfTrue;
+            block->bbAssertionOutIfFalse = BitVecOps::MakeCopy(apTraits, apLocal);
+        }
+        else
+        {
+            block->bbAssertionOut = BitVecOps::MakeCopy(apTraits, apLocal);
+        }
     }
 
     compCurBB = nullptr;
@@ -14022,8 +14119,9 @@ PhaseStatus Compiler::fgMorphBlocks()
 
     // We are done with the global morphing phase
     //
-    fgGlobalMorph = false;
-    compCurBB     = nullptr;
+    fgGlobalMorph     = false;
+    fgGlobalMorphDone = true;
+    compCurBB         = nullptr;
 
 #ifdef DEBUG
     if (optLocalAssertionProp)
@@ -14080,7 +14178,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
+            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;
         }
@@ -14551,13 +14649,15 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
-    BasicBlock* helperBlock = fgNewBBafter(BBJ_NONE, block, true);
+    BasicBlock* helperBlock = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
     BasicBlock* cond2Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
-    BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
+    BasicBlock* asgBlock    = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
 
     block->bbFlags &= ~BBF_NEEDS_GCPOLL;
     remainderBlock->bbFlags |= propagateFlags;
+    helperBlock->bbFlags |= BBF_NONE_QUIRK;
+    asgBlock->bbFlags |= BBF_NONE_QUIRK;
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
@@ -14574,6 +14674,8 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     }
 
     // Chain the flow correctly.
+    assert(block->KindIs(BBJ_ALWAYS));
+    block->SetJumpDest(asgBlock);
     fgAddRefPred(asgBlock, block);
     fgAddRefPred(cond1Block, asgBlock);
     fgAddRefPred(cond2Block, cond1Block);
@@ -14753,8 +14855,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
-    BasicBlock* condBlock = fgNewBBafter(BBJ_NONE, block, true);
-    BasicBlock* elseBlock = fgNewBBafter(BBJ_NONE, condBlock, true);
+    BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
+    BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
@@ -14771,12 +14873,19 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     condBlock->inheritWeight(block);
 
+    assert(block->KindIs(BBJ_ALWAYS));
+    block->SetJumpDest(condBlock);
+    condBlock->SetJumpDest(elseBlock);
+    elseBlock->SetJumpDest(remainderBlock);
+    assert(condBlock->JumpsToNext());
+    assert(elseBlock->JumpsToNext());
+
     fgAddRefPred(condBlock, block);
     fgAddRefPred(elseBlock, condBlock);
     fgAddRefPred(remainderBlock, elseBlock);
 
-    condBlock->bbFlags |= propagateFlagsToAll;
-    elseBlock->bbFlags |= propagateFlagsToAll;
+    condBlock->bbFlags |= (propagateFlagsToAll | BBF_NONE_QUIRK);
+    elseBlock->bbFlags |= (propagateFlagsToAll | BBF_NONE_QUIRK);
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)
@@ -14790,7 +14899,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock DEBUG_ARG(this));
+        condBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->bbFlags |= propagateFlagsToAll;
@@ -14815,7 +14924,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock DEBUG_ARG(this));
+        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
@@ -14831,7 +14940,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock DEBUG_ARG(this));
+        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
 
         elseBlock->inheritWeightPercentage(condBlock, 50);
