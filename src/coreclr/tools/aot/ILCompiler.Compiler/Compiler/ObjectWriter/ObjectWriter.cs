@@ -397,7 +397,7 @@ namespace ILCompiler.ObjectWriter
                         continue;
                     }
 
-                    // Emit debug type information
+                    // Ensure any allocated MethodTables have debug info
                     if (node is ConstructedEETypeNode methodTable)
                     {
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
@@ -414,6 +414,12 @@ namespace ILCompiler.ObjectWriter
                             EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
                         }
                     }
+                }
+
+                // Ensure all fields associated with generated static bases have debug info
+                foreach (MetadataType typeWithStaticBase in _nodeFactory.MetadataManager.GetTypesWithStaticBases())
+                {
+                    _userDefinedTypeDescriptor.GetTypeIndex(typeWithStaticBase, needsCompleteType: true);
                 }
 
                 EmitDebugSections(_definedSymbols);
