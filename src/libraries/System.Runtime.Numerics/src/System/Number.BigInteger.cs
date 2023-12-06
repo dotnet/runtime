@@ -952,7 +952,7 @@ namespace System
                         sNegative?.CopyTo(destination);
                         fixed (char* ptr = &MemoryMarshal.GetReference(destination))
                         {
-                            BigIntegerToDecChars(ptr + strLength, base1E9Value, digits);
+                            BigIntegerToDecChars((Utf16Char*)ptr + strLength, base1E9Value, digits);
                         }
                         charsWritten = strLength;
                         spanSuccess = true;
@@ -970,7 +970,7 @@ namespace System
                             state.sNegative?.CopyTo(span);
                             fixed (char* ptr = &MemoryMarshal.GetReference(span))
                             {
-                                BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((void*)state.ptr, state.Length), state.digits);
+                                BigIntegerToDecChars((Utf16Char*)ptr + span.Length, new ReadOnlySpan<uint>((void*)state.ptr, state.Length), state.digits);
                             }
                         });
                     }
@@ -985,7 +985,7 @@ namespace System
                 fixed (byte* ptr = numberBuffer) // NumberBuffer expects pinned Digits
                 {
                     scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, ptr, valueDigits + 1);
-                    BigIntegerToDecChars(ptr + valueDigits, base1E9Value, valueDigits);
+                    BigIntegerToDecChars((Utf8Char*)ptr + valueDigits, base1E9Value, valueDigits);
                     number.Digits[^1] = 0;
                     number.DigitsCount = valueDigits;
                     number.Scale = valueDigits;
@@ -1031,7 +1031,7 @@ namespace System
         }
 
         private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
-            where TChar : unmanaged, IBinaryInteger<TChar> // CoreLib uses IUtfChar<TChar>
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(base1E9Value[^1] != 0, "Leading zeros should be trimmed by caller.");
@@ -1039,25 +1039,11 @@ namespace System
             // The base 10^9 value is in reverse order
             for (int i = 0; i < base1E9Value.Length - 1; i++)
             {
-                // TODO: is it worthy to introduce optimized UInt32ToDecChars from CoreLib?
+                bufferEnd = UInt32ToDecChars(bufferEnd, base1E9Value[i], kcchBase);
                 digits -= kcchBase;
-                uint value = base1E9Value[i];
-                for (int j = 0; j < kcchBase; j++)
-                {
-                    (value, uint digit) = Math.DivRem(value, 10);
-                    *(--bufferEnd) = TChar.CreateTruncating('0' + digit);
-                }
             }
 
-            Debug.Assert(digits >= FormattingHelpers.CountDigits(base1E9Value[^1]));
-            for (uint value = base1E9Value[^1]; value > 0 || digits > 0;)
-            {
-                digits--;
-                (value, uint digit) = Math.DivRem(value, 10);
-                *(--bufferEnd) = TChar.CreateTruncating('0' + digit);
-            }
-
-            return bufferEnd;
+            return UInt32ToDecChars(bufferEnd, base1E9Value[^1], digits);
         }
     }
 
