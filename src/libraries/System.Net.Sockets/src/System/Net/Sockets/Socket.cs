@@ -1712,7 +1712,7 @@ namespace System.Net.Sockets
             SocketAddress socketAddress = new SocketAddress(AddressFamily);
             if (endPointSnapshot.AddressFamily == AddressFamily.InterNetwork && IsDualMode)
             {
-               endPointSnapshot = s_IPEndPointIPv6;
+                endPointSnapshot = s_IPEndPointIPv6;
             }
 
             int bytesTransferred;
@@ -1861,7 +1861,7 @@ namespace System.Net.Sockets
                 {
                     if (endPointSnapshot.AddressFamily == socketAddress.Family)
                     {
-                          remoteEP = endPointSnapshot.Create(socketAddress);
+                        remoteEP = endPointSnapshot.Create(socketAddress);
                     }
                     else if (endPointSnapshot.AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
                     {

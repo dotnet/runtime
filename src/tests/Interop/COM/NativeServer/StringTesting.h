@@ -47,12 +47,12 @@ private:
 
     HRESULT ReverseBstr(BSTR str, BSTR *res)
     {
-        UINT strDataLen = ::SysStringByteLen(str);
+        uint32_t strDataLen = ::SysStringByteLen(str);
         BSTR resLocal = ::SysAllocStringByteLen(reinterpret_cast<LPCSTR>(str), strDataLen);
         if (resLocal == nullptr)
             return E_OUTOFMEMORY;
 
-        UINT len = ::SysStringLen(str);
+        uint32_t len = ::SysStringLen(str);
         *res = ReverseInplace(len, resLocal);
 
         return S_OK;
@@ -103,8 +103,8 @@ public: // IStringTesting
         if (a == nullptr || b == nullptr)
             return E_POINTER;
 
-        UINT aLen = ::SysStringLen(a);
-        UINT bLen = ::SysStringLen(b);
+        uint32_t aLen = ::SysStringLen(a);
+        uint32_t bLen = ::SysStringLen(b);
         BSTR buf = ::SysAllocStringByteLen(nullptr, (aLen + bLen) * sizeof(a[0]));
 
         ::TP_scpy_s(buf, aLen + 1, a);

@@ -411,7 +411,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (_isSecureConnection &&  _extendedProtectionPolicy.ProtectionScenario == ProtectionScenario.TransportSelected)
+            if (_isSecureConnection && _extendedProtectionPolicy.ProtectionScenario == ProtectionScenario.TransportSelected)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_cbt);
                 return true;

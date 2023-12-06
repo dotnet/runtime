@@ -411,7 +411,7 @@ namespace Internal.Reflection.Execution
 
                 if (!dstTypeDef.IsNull() && RuntimeAugments.IsGenericType(srcType))
                 {
-                    RuntimeTypeHandle srcTypeDef = GetTypeDefinition(srcType);;
+                    RuntimeTypeHandle srcTypeDef = GetTypeDefinition(srcType);
 
                     // Compare TypeDefs. We don't look at the generic components. We already know that the right type
                     // to return must be somewhere in the inheritance chain.

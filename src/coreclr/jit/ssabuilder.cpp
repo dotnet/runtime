@@ -6,49 +6,6 @@
 #include "ssarenamestate.h"
 #include "ssabuilder.h"
 
-namespace
-{
-/**
- * Method that finds a common IDom parent, much like least common ancestor.
- *
- * @param finger1 A basic block that might share IDom ancestor with finger2.
- * @param finger2 A basic block that might share IDom ancestor with finger1.
- *
- * @see "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J. Harvey, Ken Kennedy.
- *
- * @return A basic block whose IDom is the dominator for finger1 and finger2,
- * or else NULL.  This may be called while immediate dominators are being
- * computed, and if the input values are members of the same loop (each reachable from the other),
- * then one may not yet have its immediate dominator computed when we are attempting
- * to find the immediate dominator of the other.  So a NULL return value means that the
- * the two inputs are in a cycle, not that they don't have a common dominator ancestor.
- */
-static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
-{
-    while (finger1 != finger2)
-    {
-        if (finger1 == nullptr || finger2 == nullptr)
-        {
-            return nullptr;
-        }
-        while (finger1 != nullptr && finger1->bbPostorderNum < finger2->bbPostorderNum)
-        {
-            finger1 = finger1->bbIDom;
-        }
-        if (finger1 == nullptr)
-        {
-            return nullptr;
-        }
-        while (finger2 != nullptr && finger2->bbPostorderNum < finger1->bbPostorderNum)
-        {
-            finger2 = finger2->bbIDom;
-        }
-    }
-    return finger1;
-}
-
-} // end of anonymous namespace.
-
 // =================================================================================
 //                                      SSA
 // =================================================================================
@@ -61,6 +18,9 @@ PhaseStatus Compiler::fgSsaBuild()
         fgResetForSsa();
     }
 
+    // Reset BlockPredsWithEH cache.
+    m_blockToEHPreds = nullptr;
+
     SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
@@ -68,8 +28,6 @@ PhaseStatus Compiler::fgSsaBuild()
 #ifdef DEBUG
     JitTestCheckSSA();
 #endif // DEBUG
-
-    fgSSAPostOrder = builder.GetPostOrder(&fgSSAPostOrderCount);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -134,158 +92,6 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
     , m_visitedTraits(0, pCompiler) // at this point we do not know the size, SetupBBRoot can add a block
     , m_renameStack(m_allocator, pCompiler->lvaCount)
 {
-}
-
-//------------------------------------------------------------------------
-//  TopologicalSort: Topologically sort the graph and return the number of nodes visited.
-//
-//  Arguments:
-//     postOrder - The array in which the arranged basic blocks have to be returned.
-//     count - The size of the postOrder array.
-//
-//  Return Value:
-//     The number of nodes visited while performing DFS on the graph.
-//
-unsigned SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
-{
-    Compiler* comp = m_pCompiler;
-
-    // TopologicalSort is called first so m_visited should already be empty
-    assert(BitVecOps::IsEmpty(&m_visitedTraits, m_visited));
-
-    // Display basic blocks.
-    DBEXEC(VERBOSE, comp->fgDispBasicBlocks());
-    DBEXEC(VERBOSE, comp->fgDispHandlerTab());
-
-    auto DumpBlockAndSuccessors = [](Compiler* comp, BasicBlock* block) {
-#ifdef DEBUG
-        if (comp->verboseSsa)
-        {
-            printf("[SsaBuilder::TopologicalSort] Pushing " FMT_BB ": [", block->bbNum);
-            AllSuccessorEnumerator successors(comp, block);
-            unsigned               index = 0;
-            while (true)
-            {
-                BasicBlock* succ = successors.NextSuccessor(comp);
-
-                if (succ == nullptr)
-                {
-                    break;
-                }
-
-                printf("%s" FMT_BB, (index++ ? ", " : ""), succ->bbNum);
-            }
-            printf("]\n");
-        }
-#endif
-    };
-
-    // Compute order.
-    unsigned    postIndex = 0;
-    BasicBlock* block     = comp->fgFirstBB;
-    BitVecOps::AddElemD(&m_visitedTraits, m_visited, block->bbNum);
-
-    ArrayStack<AllSuccessorEnumerator> blocks(m_allocator);
-    blocks.Emplace(comp, block);
-    DumpBlockAndSuccessors(comp, block);
-
-    while (!blocks.Empty())
-    {
-        BasicBlock* block = blocks.TopRef().Block();
-        BasicBlock* succ  = blocks.TopRef().NextSuccessor(comp);
-
-        if (succ != nullptr)
-        {
-            // if the block on TOS still has unreached successors, visit them
-            if (BitVecOps::TryAddElemD(&m_visitedTraits, m_visited, succ->bbNum))
-            {
-                blocks.Emplace(comp, succ);
-                DumpBlockAndSuccessors(comp, succ);
-            }
-        }
-        else
-        {
-            // all successors have been visited
-            blocks.Pop();
-
-            DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%u] = " FMT_BB "\n", postIndex, block->bbNum);
-            postOrder[postIndex]  = block;
-            block->bbPostorderNum = postIndex;
-            postIndex++;
-        }
-    }
-
-    return postIndex;
-}
-
-/**
- * Computes the immediate dominator IDom for each block iteratively.
- *
- * @param postOrder The array of basic blocks arranged in postOrder.
- * @param count The size of valid elements in the postOrder array.
- *
- * @see "A simple, fast dominance algorithm." paper.
- */
-void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
-{
-    JITDUMP("[SsaBuilder::ComputeImmediateDom]\n");
-
-    // Add entry point to visited as its IDom is NULL.
-    assert(postOrder[count - 1] == m_pCompiler->fgFirstBB);
-
-    unsigned numIters = 0;
-    bool     changed  = true;
-    while (changed)
-    {
-        changed = false;
-
-        // In reverse post order, except for the entry block (count - 1 is entry BB).
-        for (int i = count - 2; i >= 0; --i)
-        {
-            BasicBlock* block = postOrder[i];
-
-            DBG_SSA_JITDUMP("Visiting in reverse post order: " FMT_BB ".\n", block->bbNum);
-
-            // Intersect DOM, if computed, for all predecessors.
-            BasicBlock* bbIDom = nullptr;
-            for (FlowEdge* pred = m_pCompiler->BlockDominancePreds(block); pred; pred = pred->getNextPredEdge())
-            {
-                BasicBlock* domPred = pred->getSourceBlock();
-                if ((domPred->bbPostorderNum >= (unsigned)count) || (postOrder[domPred->bbPostorderNum] != domPred))
-                {
-                    continue; // Unreachable pred
-                }
-
-                if ((numIters <= 0) && (domPred->bbPostorderNum <= (unsigned)i))
-                {
-                    continue; // Pred not yet visited
-                }
-
-                if (bbIDom == nullptr)
-                {
-                    bbIDom = domPred;
-                }
-                else
-                {
-                    bbIDom = IntersectDom(bbIDom, domPred);
-                }
-            }
-
-            // Did we change the bbIDom value?  If so, we go around the outer loop again.
-            if (block->bbIDom != bbIDom)
-            {
-                changed = true;
-
-                // IDom has changed, update it.
-                DBG_SSA_JITDUMP("bbIDom of " FMT_BB " becomes " FMT_BB ".\n", block->bbNum, bbIDom ? bbIDom->bbNum : 0);
-                block->bbIDom = bbIDom;
-            }
-
-            DBG_SSA_JITDUMP("Marking block " FMT_BB " as processed.\n", block->bbNum);
-        }
-
-        numIters++;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -604,13 +410,14 @@ void SsaBuilder::AddPhiArg(
  *
  * To do so, the function computes liveness, dominance frontier and inserts a phi node,
  * if we have var v in def(b) and live-in(l) and l is in DF(b).
- *
- * @param postOrder The array of basic blocks arranged in postOrder.
- * @param count The size of valid elements in the postOrder array.
  */
-void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
+void SsaBuilder::InsertPhiFunctions()
 {
     JITDUMP("*************** In SsaBuilder::InsertPhiFunctions()\n");
+
+    FlowGraphDfsTree* dfs       = m_pCompiler->m_dfs;
+    BasicBlock**      postOrder = dfs->GetPostOrder();
+    unsigned          count     = dfs->GetPostOrderCount();
 
     // Compute dominance frontier.
     BlkToBlkVectorMap mapDF(m_allocator);
@@ -622,7 +429,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 
     JITDUMP("Inserting phi functions:\n");
 
-    for (int i = 0; i < count; ++i)
+    for (unsigned i = 0; i < count; ++i)
     {
         BasicBlock* block = postOrder[i];
         DBG_SSA_JITDUMP("Considering dominance frontier of block " FMT_BB ":\n", block->bbNum);
@@ -1260,76 +1067,12 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                     break;
                 }
 
-                // succ is the first block of this try.  Look at phi defs in the handler.
-                // For a filter, we consider the filter to be the "real" handler.
-                BasicBlock* handlerStart = succTry->ExFlowBlock();
-
-                for (Statement* const stmt : handlerStart->Statements())
+                if (succTry->HasFilter())
                 {
-                    GenTree* tree = stmt->GetRootNode();
-
-                    // Check if the first n of the statements are phi nodes. If not, exit.
-                    if (!tree->IsPhiDefn())
-                    {
-                        break;
-                    }
-
-                    // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start
-                    // "succ", then we make sure the current SSA name for the var is one of the args of the phi node.
-                    // If not, go on.
-                    const unsigned   lclNum    = tree->AsLclVar()->GetLclNum();
-                    const LclVarDsc* lclVarDsc = m_pCompiler->lvaGetDesc(lclNum);
-                    if (!lclVarDsc->lvTracked ||
-                        !VarSetOps::IsMember(m_pCompiler, block->bbLiveOut, lclVarDsc->lvVarIndex))
-                    {
-                        continue;
-                    }
-
-                    GenTreePhi* phi    = tree->AsLclVar()->Data()->AsPhi();
-                    unsigned    ssaNum = m_renameStack.Top(lclNum);
-
-                    AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, succ);
+                    AddPhiArgsToNewlyEnteredHandler(block, succ, succTry->ebdFilter);
                 }
 
-                // Now handle memory.
-                for (MemoryKind memoryKind : allMemoryKinds())
-                {
-                    BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[memoryKind];
-                    if (handlerMemoryPhi != nullptr)
-                    {
-                        if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
-                        {
-                            // We've already added the arg to the phi shared with ByrefExposed if needed,
-                            // but still need to update bbMemorySsaPhiFunc to stay in sync.
-                            assert(memoryKind > ByrefExposed);
-                            assert(block->bbMemorySsaNumOut[memoryKind] == block->bbMemorySsaNumOut[ByrefExposed]);
-                            assert(handlerStart->bbMemorySsaPhiFunc[ByrefExposed]->m_ssaNum ==
-                                   block->bbMemorySsaNumOut[memoryKind]);
-                            handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[ByrefExposed];
-
-                            continue;
-                        }
-
-                        if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
-                        {
-                            handlerMemoryPhi =
-                                new (m_pCompiler) BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind]);
-                        }
-                        else
-                        {
-                            // This path has a potential to introduce redundant phi args, due to multiple
-                            // preds of the same try-begin block having the same live-out memory def, and/or
-                            // due to nested try-begins each having preds with the same live-out memory def.
-                            // Avoid doing quadratic processing on handler phis, and instead live with the
-                            // occasional redundancy.
-                            handlerMemoryPhi = new (m_pCompiler)
-                                BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind], handlerMemoryPhi);
-                        }
-                        DBG_SSA_JITDUMP("  Added phi arg for %s u:%d from " FMT_BB " in " FMT_BB ".\n",
-                                        memoryKindNames[memoryKind], block->bbMemorySsaNumOut[memoryKind], block->bbNum,
-                                        handlerStart->bbNum);
-                    }
-                }
+                AddPhiArgsToNewlyEnteredHandler(block, succ, succTry->ebdHndBeg);
 
                 tryInd = succTry->ebdEnclosingTryIndex;
             }
@@ -1337,6 +1080,87 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
 
         return BasicBlockVisit::Continue;
     });
+}
+
+//------------------------------------------------------------------------
+// AddPhiArgsToNewlyEnteredHandler: As part of entering a new try-region, add
+// initial values of locals that are live into the handler.
+//
+// Arguments:
+//    predEnterBlock - Predecessor of block in the new try region
+//    enterBlock     - Block in the new try region
+//    handlerStart   - Handler block of the new try region
+//
+void SsaBuilder::AddPhiArgsToNewlyEnteredHandler(BasicBlock* predEnterBlock,
+                                                 BasicBlock* enterBlock,
+                                                 BasicBlock* handlerStart)
+{
+    for (Statement* const stmt : handlerStart->Statements())
+    {
+        GenTree* tree = stmt->GetRootNode();
+
+        // Check if the first n of the statements are phi nodes. If not, exit.
+        if (!tree->IsPhiDefn())
+        {
+            break;
+        }
+
+        // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start
+        // "succ", then we make sure the current SSA name for the var is one of the args of the phi node.
+        // If not, go on.
+        const unsigned   lclNum    = tree->AsLclVar()->GetLclNum();
+        const LclVarDsc* lclVarDsc = m_pCompiler->lvaGetDesc(lclNum);
+        if (!lclVarDsc->lvTracked ||
+            !VarSetOps::IsMember(m_pCompiler, predEnterBlock->bbLiveOut, lclVarDsc->lvVarIndex))
+        {
+            continue;
+        }
+
+        GenTreePhi* phi    = tree->AsLclVar()->Data()->AsPhi();
+        unsigned    ssaNum = m_renameStack.Top(lclNum);
+
+        AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, enterBlock);
+    }
+
+    // Now handle memory.
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[memoryKind];
+        if (handlerMemoryPhi != nullptr)
+        {
+            if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
+            {
+                // We've already added the arg to the phi shared with ByrefExposed if needed,
+                // but still need to update bbMemorySsaPhiFunc to stay in sync.
+                assert(memoryKind > ByrefExposed);
+                assert(predEnterBlock->bbMemorySsaNumOut[memoryKind] ==
+                       predEnterBlock->bbMemorySsaNumOut[ByrefExposed]);
+                assert(handlerStart->bbMemorySsaPhiFunc[ByrefExposed]->m_ssaNum ==
+                       predEnterBlock->bbMemorySsaNumOut[memoryKind]);
+                handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[ByrefExposed];
+
+                continue;
+            }
+
+            if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
+            {
+                handlerMemoryPhi =
+                    new (m_pCompiler) BasicBlock::MemoryPhiArg(predEnterBlock->bbMemorySsaNumOut[memoryKind]);
+            }
+            else
+            {
+                // This path has a potential to introduce redundant phi args, due to multiple
+                // preds of the same try-begin block having the same live-out memory def, and/or
+                // due to nested try-begins each having preds with the same live-out memory def.
+                // Avoid doing quadratic processing on handler phis, and instead live with the
+                // occasional redundancy.
+                handlerMemoryPhi = new (m_pCompiler)
+                    BasicBlock::MemoryPhiArg(predEnterBlock->bbMemorySsaNumOut[memoryKind], handlerMemoryPhi);
+            }
+            DBG_SSA_JITDUMP("  Added phi arg for %s u:%d from " FMT_BB " in " FMT_BB ".\n", memoryKindNames[memoryKind],
+                            predEnterBlock->bbMemorySsaNumOut[memoryKind], predEnterBlock->bbNum, handlerStart->bbNum);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1402,14 +1226,14 @@ void SsaBuilder::RenameVariables()
         }
     }
 
-    class SsaRenameDomTreeVisitor : public DomTreeVisitor<SsaRenameDomTreeVisitor>
+    class SsaRenameDomTreeVisitor : public NewDomTreeVisitor<SsaRenameDomTreeVisitor>
     {
         SsaBuilder*     m_builder;
         SsaRenameState* m_renameStack;
 
     public:
         SsaRenameDomTreeVisitor(Compiler* compiler, SsaBuilder* builder, SsaRenameState* renameStack)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_builder(builder), m_renameStack(renameStack)
+            : NewDomTreeVisitor(compiler), m_builder(builder), m_renameStack(renameStack)
         {
         }
 
@@ -1427,7 +1251,7 @@ void SsaBuilder::RenameVariables()
     };
 
     SsaRenameDomTreeVisitor visitor(m_pCompiler, this, &m_renameStack);
-    visitor.WalkTree();
+    visitor.WalkTree(m_pCompiler->fgSsaDomTree);
 }
 
 //------------------------------------------------------------------------
@@ -1477,32 +1301,11 @@ void SsaBuilder::Build()
 
     // Allocate the postOrder array for the graph.
 
-    m_postOrder = new (m_allocator) BasicBlock*[blockCount];
-
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
 
-    // TODO-Cleanup: We currently have two dominance computations happening.  We should unify them; for
-    // now, at least forget the results of the first. Note that this does not clear fgDomTreePreOrder
-    // and fgDomTreePostOrder nor does the subsequent code call fgNumberDomTree once the new dominator
-    // tree is built. The pre/post order numbers that were generated previously and used for loop
-    // recognition are still being used by optPerformHoistExpr via fgCreateLoopPreHeader. That's rather
-    // odd, considering that SetupBBRoot may have added a new block.
-    for (BasicBlock* const block : m_pCompiler->Blocks())
-    {
-        block->bbIDom         = nullptr;
-        block->bbPostorderNum = 0;
-    }
-
-    // Topologically sort the graph.
-    m_postOrderCount = TopologicalSort(m_postOrder, blockCount);
-    JITDUMP("[SsaBuilder] Topologically sorted the graph.\n");
-    EndPhase(PHASE_BUILD_SSA_TOPOSORT);
-
-    // Compute IDom(b).
-    ComputeImmediateDom(m_postOrder, m_postOrderCount);
-
-    m_pCompiler->fgSsaDomTree = m_pCompiler->fgBuildDomTree();
+    m_pCompiler->m_dfs        = m_pCompiler->fgComputeDfs();
+    m_pCompiler->fgSsaDomTree = FlowGraphDominatorTree::Build(m_pCompiler->m_dfs);
     EndPhase(PHASE_BUILD_SSA_DOMS);
 
     // Compute liveness on the graph.
@@ -1519,7 +1322,7 @@ void SsaBuilder::Build()
     }
 
     // Insert phi functions.
-    InsertPhiFunctions(m_postOrder, m_postOrderCount);
+    InsertPhiFunctions();
 
     // Rename local variables and collect UD information for each ssa var.
     RenameVariables();
@@ -1543,8 +1346,8 @@ void SsaBuilder::SetupBBRoot()
         return;
     }
 
-    BasicBlock* bbRoot = BasicBlock::bbNewBasicBlock(m_pCompiler, BBJ_NONE);
-    bbRoot->bbFlags |= BBF_INTERNAL;
+    BasicBlock* bbRoot = BasicBlock::New(m_pCompiler, BBJ_ALWAYS, m_pCompiler->fgFirstBB);
+    bbRoot->bbFlags |= (BBF_INTERNAL | BBF_NONE_QUIRK);
 
     // May need to fix up preds list, so remember the old first block.
     BasicBlock* oldFirst = m_pCompiler->fgFirstBB;
