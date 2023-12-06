@@ -693,7 +693,6 @@ namespace Wasm.Build.Tests
                 }
             }";
 
-        
         public static IEnumerable<object?[]> TestDataForConsolePublishAndRun() =>
             new IEnumerable<object?>[]
             {
@@ -704,7 +703,6 @@ namespace Wasm.Build.Tests
             .MultiplyWithSingleArgs(true, false) /*propertyValue*/
             .MultiplyWithSingleArgs(true, false) /*aot*/
             .UnwrapItemsAsArrays();
-    
         protected CommandResult RunWithoutBuild(string config, string id)
         {
             string runArgs = $"run --no-build -c {config}";
