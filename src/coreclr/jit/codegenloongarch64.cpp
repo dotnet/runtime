@@ -6419,6 +6419,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 
         BasicBlock* loop = genCreateTempLabel();
         genDefineTempLabel(loop);
+        GetEmitter()->emitDisableGC(); // TODO: add gcinfo to tempReg and remove nogc
 
         // tempReg = dstReg + offset (a new interior pointer, but in a nongc region)
         GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, tempReg, dstReg, offsetReg);
@@ -6428,8 +6429,9 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
         // if (offsetReg != 0) goto loop;
         GetEmitter()->emitIns_J_cond_la(INS_beq, loop, offsetReg, zeroReg);
+        GetEmitter()->emitEnableGC();
 
-        gcInfo.gcMarkRegSetNpt(dstNode->gtGetRegMask());
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
     }
 }
 

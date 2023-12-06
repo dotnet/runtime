@@ -3367,7 +3367,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, TARGET_POINTER_SIZE);
         inst_JMP(EJ_jne, loop);
 
-        gcInfo.gcMarkRegSetNpt(dstNode->gtGetRegMask());
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
     }
 }
 

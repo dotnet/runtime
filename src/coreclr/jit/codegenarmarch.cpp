@@ -3176,7 +3176,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 #endif
         inst_JMP(EJ_ne, loop);
 
-        gcInfo.gcMarkRegSetNpt(dstNode->gtGetRegMask());
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
     }
 }
 
