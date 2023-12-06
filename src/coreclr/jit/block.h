@@ -469,27 +469,32 @@ enum BasicBlockFlags : unsigned __int64
     BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
 };
 
-inline constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
+FORCEINLINE
+constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
 {
     return (BasicBlockFlags)(~(unsigned __int64)a);
 }
 
-inline constexpr BasicBlockFlags operator |(BasicBlockFlags a, BasicBlockFlags b)
+FORCEINLINE
+constexpr BasicBlockFlags operator |(BasicBlockFlags a, BasicBlockFlags b)
 {
     return (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
 }
 
-inline constexpr BasicBlockFlags operator &(BasicBlockFlags a, BasicBlockFlags b)
+FORCEINLINE
+constexpr BasicBlockFlags operator &(BasicBlockFlags a, BasicBlockFlags b)
 {
     return (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
 }
 
-inline BasicBlockFlags& operator |=(BasicBlockFlags& a, BasicBlockFlags b)
+FORCEINLINE 
+BasicBlockFlags& operator |=(BasicBlockFlags& a, BasicBlockFlags b)
 {
     return a = (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
 }
 
-inline BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
+FORCEINLINE 
+BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
 {
     return a = (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
 }
@@ -709,15 +714,38 @@ public:
         return (bbFlags & flag) != 0;
     }
 
+    // HasAnyFlag takes a set of flags OR'd together. It requires at least
+    // two flags to be set (or else you should use `HasFlag`).
+    // It is true if *any* of those flags are set on the block.
     bool HasAnyFlag(const BasicBlockFlags flags) const
     {
-        // Assert flag is multiple BasicBlockFlags OR'd together
-        // by checking if it is not a power of 2
-        // (HasAnyFlag expects to check only two or more flags at a time)
-        assert(!isPow2(flags));
+        assert((flags != BBF_EMPTY) && !isPow2(flags));
         return (bbFlags & flags) != 0;
     }
 
+    // HasAllFlags takes a set of flags OR'd together. It requires at least
+    // two flags to be set (or else you should use `HasFlag`).
+    // It is true if *all* of those flags are set on the block.
+    bool HasAllFlags(const BasicBlockFlags flags) const
+    {
+        assert((flags != BBF_EMPTY) && !isPow2(flags));
+        return (bbFlags & flags) == flags;
+    }
+
+    // Copy all the flags from another block. This is a complete copy; any flags
+    // that were previously set on this block are overwritten.
+    void CopyFlags(const BasicBlock* block)
+    {
+        bbFlags = block->bbFlags;
+    }
+
+    // Copy the values of a specific set of flags from another block. All flags
+    // not in the mask are preserved. Note however, that only set flags are copied;
+    // if a flag in the mask is already set in this block, it will not be reset!
+    // (Perhaps we should have a `ReplaceFlags` function that first clears the
+    // bits in `mask` before doing the copy. Possibly we should assert that
+    // `(bbFlags & mask) == 0` under the assumption that we copy flags when
+    // creating a new block from scratch.)
     void CopyFlags(const BasicBlock* block, const BasicBlockFlags mask)
     {
         bbFlags |= (block->bbFlags & mask);
