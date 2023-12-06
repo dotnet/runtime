@@ -8161,7 +8161,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
-                ModuleID modId = pCaller->GetModule()->GetModuleID();
+                ModuleID modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
                 mdMethodDef methodDef = pCaller->GetMemberDef();
                 ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
             }

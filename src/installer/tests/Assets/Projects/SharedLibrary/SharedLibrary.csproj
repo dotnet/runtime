@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
 </Project>

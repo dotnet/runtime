@@ -1660,7 +1660,7 @@ namespace System.Xml
 
         internal static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten)
         {
-            return value.TryFormat(destination, out  charsWritten, default, CultureInfo.InvariantCulture);
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
         internal static bool TryFormat(short value, Span<char> destination, out int charsWritten)
