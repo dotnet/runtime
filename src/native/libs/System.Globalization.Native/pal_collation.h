@@ -107,4 +107,5 @@ PALEXPORT int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeNam
                                                        uint8_t* sortKey,
                                                        int32_t cbSortKeyLength,
                                                        int32_t options);
+
 #endif

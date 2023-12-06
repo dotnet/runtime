@@ -1450,10 +1450,6 @@ namespace System.Globalization
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            GlobalizationMode.Hybrid ?
-                CreateSortKeyNative(source, options) :
-#endif
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
@@ -1497,10 +1493,6 @@ namespace System.Globalization
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetSortKey(source, destination, options) :
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            GlobalizationMode.Hybrid ?
-                GetSortKeyNative(source, destination, options) :
-#endif
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
@@ -1538,10 +1530,6 @@ namespace System.Globalization
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            GlobalizationMode.Hybrid ?
-              GetSortKeyLengthNative(source, options) :
-#endif
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
               throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
@@ -1619,10 +1607,6 @@ namespace System.Globalization
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            GlobalizationMode.Hybrid ?
-                GetHashCodeOfStringNative(source, options) :
-#endif
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :

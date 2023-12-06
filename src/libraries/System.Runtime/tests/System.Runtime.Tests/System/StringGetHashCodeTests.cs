@@ -90,9 +90,7 @@ namespace System.Tests
                 yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u00E9" /* LATIN SMALL LETTER E WITH ACUTE */) };
                 yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u044D" /* CYRILLIC SMALL LETTER E */) };
                 if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
-                {
                     yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u0131" /* LATIN SMALL LETTER DOTLESS I */) };
-                }
             }
 
             // Various texts copied from Microsoft's non-U.S. home pages, for further localization tests
