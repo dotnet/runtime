@@ -855,7 +855,7 @@ bool BasicBlock::CloneBlockState(
     Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
 {
     assert(to->bbStmtList == nullptr);
-    to->SetFlagsRaw(from->GetFlagsRaw());
+    to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
     BlockSetOps::AssignAllowUninitRhs(compiler, to->bbReach, from->bbReach);
     to->copyEHRegion(from);

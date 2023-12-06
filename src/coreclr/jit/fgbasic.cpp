@@ -4760,7 +4760,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->inheritWeight(curr);
 
     // Set the new block's flags. Note that the new block isn't BBF_INTERNAL unless the old block is.
-    newBlock->SetFlagsRaw(curr->GetFlagsRaw());
+    newBlock->CopyFlags(curr);
 
     // Remove flags that the new block can't have.
     newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT |
