@@ -6006,7 +6006,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // tempReg = dstReg + offset (a new interior pointer, but in a nongc region)
         GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tempReg, dstReg, offsetReg);
         // *tempReg = 0
-        GetEmitter()->emitIns_R_R_R(INS_sd, EA_PTRSIZE, zeroReg, tempReg, 0);
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, zeroReg, tempReg, 0);
         // offsetReg = offsetReg - 8
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, offsetReg, offsetReg, -8);
         // if (offsetReg != 0) goto loop;
