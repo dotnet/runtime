@@ -465,6 +465,8 @@ Affected public APIs:
 
 Implemeneted using [stringByFoldingWithOptions:locale:](https://developer.apple.com/documentation/foundation/nsstring/1413779-stringbyfoldingwithoptions)
 
+Note: This implementation does not construct SortKeys like ICU ucol_getSortKey does, and might not adhere to the specifications specifications of SortKey such as SortKeys from different collators not being comparable and merging sortkeys.
+
 
 ## Case change
 
