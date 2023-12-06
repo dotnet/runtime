@@ -1,2 +1,2 @@
-Wasi.Build.Tests.Blazor.InvariantTests
-Wasi.Build.Tests.Blazor.WasiTemplateTests
+Wasi.Build.Tests.InvariantTests
+Wasi.Build.Tests.WasiTemplateTests
