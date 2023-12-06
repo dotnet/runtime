@@ -3,9 +3,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
-    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,8 +19,7 @@
       <LastGenOutput>Hello.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Update="Hello.kn-IN.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Generator>ResXFileCodeGenerator</Generator>
     </EmbeddedResource>
     <EmbeddedResource Update="Hello.ta-IN.resx">
       <Generator>ResXFileCodeGenerator</Generator>
