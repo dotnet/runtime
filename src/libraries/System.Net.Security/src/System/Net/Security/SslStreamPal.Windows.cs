@@ -63,7 +63,7 @@ namespace System.Net.Security
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
         }
 
-        private static unsafe void SetAlpn(ref InputSecurityBuffers inputBuffers, List<SslApplicationProtocol> alpn, Span<byte> localBuffer)
+        private static void SetAlpn(ref InputSecurityBuffers inputBuffers, List<SslApplicationProtocol> alpn, Span<byte> localBuffer)
         {
             if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
             {
@@ -84,7 +84,7 @@ namespace System.Net.Security
             else
             {
                 int protocolLength = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
-                int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLength;
+                int bufferLength = Unsafe.SizeOf<Interop.Sec_Application_Protocols>() + protocolLength;
 
                 Span<byte> alpnBuffer = bufferLength <= localBuffer.Length ? localBuffer : new byte[bufferLength];
                 Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLength);
@@ -101,7 +101,7 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException(nameof(SelectApplicationProtocol));
         }
 
-        public static unsafe ProtocolToken AcceptSecurityContext(
+        public static ProtocolToken AcceptSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -143,7 +143,7 @@ namespace System.Net.Security
             return false;
         }
 
-        public static unsafe ProtocolToken InitializeSecurityContext(
+        public static ProtocolToken InitializeSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             string? targetName,
