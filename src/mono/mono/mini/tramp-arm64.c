@@ -722,9 +722,12 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_ldrfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
-	/* set all context registers from CallContext */
-	for (i = 0; i < CTX_REGS; i++)
+	/* backup all context registers and set from CallContext */
+	for (i = 0; i < CTX_REGS; i++) {
+		arm_movx (code, ARMREG_IP1, i + CTX_REGS_OFFSET);
 		arm_ldrx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + PARAM_REGS + 1) * sizeof (host_mgreg_t));
+		arm_strx (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + PARAM_REGS + 1) * sizeof (host_mgreg_t));
+	}
 
 	/* load target addr */
 	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_targetaddr);
@@ -743,9 +746,12 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_strfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
-	/* set all context registers to CallContext */
-	for (i = 0; i < CTX_REGS; i++)
+	/* restore all context registers and set to CallContext */
+	for (i = 0; i < CTX_REGS; i++) {
+		arm_ldrx (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + PARAM_REGS + 1) * sizeof (host_mgreg_t));
 		arm_strx (code, i + CTX_REGS_OFFSET, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + PARAM_REGS + 1) * sizeof (host_mgreg_t));
+		arm_movx (code, i + CTX_REGS_OFFSET, ARMREG_IP1);
+	}
 
 	arm_movspx (code, ARMREG_SP, ARMREG_FP);
 	arm_ldpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
