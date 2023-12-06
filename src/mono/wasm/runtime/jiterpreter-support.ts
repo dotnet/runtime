@@ -192,7 +192,7 @@ export class WasmBuilder {
     }
 
     getWasmImports(): WebAssembly.Imports {
-        const memory = (<any>Module).getMemory();
+        const memory = runtimeHelpers.getMemory();
         mono_assert(memory instanceof WebAssembly.Memory, () => `expected heap import to be WebAssembly.Memory but was ${memory}`);
 
         const exceptionTag = this.getExceptionTag();
@@ -1547,12 +1547,9 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
     return scratchBuffer;
 }
 
-export function getWasmFunctionTable(module?: any) {
-    const theModule = (<any>Module || module);
-    mono_assert (theModule, "Module not available yet");
-    mono_assert (theModule["asm"], "Module['asm'] not available yet");
+export function getWasmFunctionTable() {
     if (!wasmTable)
-        wasmTable = theModule["asm"]["__indirect_function_table"];
+        wasmTable = runtimeHelpers.getWasmIndirectFunctionTable();
     if (!wasmTable)
         throw new Error("Module did not export the indirect function table");
     return wasmTable;
@@ -2009,7 +2006,7 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
 // we need to ensure we only ever initialize tables once on each js worker.
 let jiterpreter_tables_allocated = false;
 
-export function jiterpreter_allocate_tables(module: any) {
+export function jiterpreter_allocate_tables() {
     if (jiterpreter_tables_allocated)
         return;
     jiterpreter_tables_allocated = true;
@@ -2024,7 +2021,7 @@ export function jiterpreter_allocate_tables(module: any) {
         interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
-        wasmTable = getWasmFunctionTable(module);
+        wasmTable = getWasmFunctionTable();
     let base = wasmTable.length;
     const beforeGrow = performance.now();
     wasmTable.grow(totalSize);

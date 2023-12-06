@@ -10,4 +10,7 @@
 /* Support for legacy JS interop is disabled */
 #cmakedefine DISABLE_LEGACY_JS_INTEROP
 
+/* Support for JS interop without pointers to managed objects */
+#cmakedefine ENABLE_JS_INTEROP_BY_VALUE
+
 #endif/*__MONO_WASM_CONFIG_H__*/

@@ -164,9 +164,9 @@ namespace System.Security.Cryptography.X509Certificates
 
                 try
                 {
-                   dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
-                   toDispose = null;
-                   return dsa;
+                    dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                    toDispose = null;
+                    return dsa;
                 }
                 finally
                 {

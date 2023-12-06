@@ -67,6 +67,11 @@ echo DOTNET_EnableExtraSuperPmiQueries=%DOTNET_EnableExtraSuperPmiQueries%
 echo DOTNET_JitPath=%DOTNET_JitPath%
 :skip_spmi_enable_collection
 
+echo ========================= Begin custom configuration settings ==============================
+[[SetCommandsEcho]]
+[[SetCommands]]
+echo ========================== End custom configuration settings ===============================
+
 :: ========================= BEGIN Test Execution =============================
 echo ----- start %DATE% %TIME% ===============  To repro directly: =====================================================
 echo pushd %EXECUTION_DIR%

@@ -407,7 +407,7 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeDesc type = GetObject(handle, NotFoundBehavior.Throw) as TypeDesc;
             if (type == null)
-                ThrowHelper.ThrowBadImageFormatException($"type expected for handle {MetadataTokens.GetToken(handle):X}");
+                ThrowHelper.ThrowBadImageFormatException();
             return type;
         }
     }

@@ -161,6 +161,10 @@ while (($# > 0)); do
       nor2r=true
       shift 1
       ;;
+    --experimentname)
+      experimentname=$2
+      shift 2
+      ;;
     --compare)
       compare=true
       shift 1
@@ -254,6 +258,7 @@ while (($# > 0)); do
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
       echo "  --physicalpromotion            Set for runs with physical promotion"
       echo "  --nor2r                        Set for No R2R runs"
+      echo "  --experimentname <value>       Set Experiment Name"
       echo ""
       exit 1
       ;;
@@ -380,6 +385,13 @@ if [[ "$nor2r" == "true" ]]; then
     configurations="$configurations R2RType=nor2r"
 fi
 
+if [[ ! -z "$experimentname" ]]; then
+    configurations="$configurations ExperimentName=$experimentname"
+    if [[ "$experimentname" == "memoryRandomization" ]]; then
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memoryRandomization true"
+    fi
+fi
+
 if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test
     configurations="$configurations HybridGlobalization=True" # Force True for consistency
 fi
@@ -477,6 +489,10 @@ fi
 
 if [[ "$nor2r" == "true" ]]; then
     setup_arguments="$setup_arguments --no-r2r"
+fi
+
+if [[ ! -z "$experimentname" ]]; then
+    setup_arguments="$setup_arguments --experiment-name '$experimentname'"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

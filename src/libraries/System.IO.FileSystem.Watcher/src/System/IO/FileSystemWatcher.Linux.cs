@@ -475,7 +475,7 @@ namespace System.IO
             /// <param name="removeInotify">true to remove the inotify watch; otherwise, false.  The default is true.</param>
             private void RemoveWatchedDirectory(WatchedDirectory directoryEntry, bool removeInotify = true)
             {
-                Debug.Assert (_includeSubdirectories);
+                Debug.Assert(_includeSubdirectories);
                 lock (SyncObj)
                 {
                     // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
@@ -484,7 +484,7 @@ namespace System.IO
                         directoryEntry.Parent.Children!.Remove(directoryEntry);
                     }
 
-                    RemoveWatchedDirectoryUnlocked (directoryEntry, removeInotify);
+                    RemoveWatchedDirectoryUnlocked(directoryEntry, removeInotify);
                 }
             }
 
@@ -498,7 +498,7 @@ namespace System.IO
                 {
                     foreach (WatchedDirectory child in directoryEntry.Children)
                     {
-                        RemoveWatchedDirectoryUnlocked (child, removeInotify);
+                        RemoveWatchedDirectoryUnlocked(child, removeInotify);
                     }
                     directoryEntry.Children = null;
                 }
