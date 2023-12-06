@@ -13,12 +13,12 @@ namespace System
     {
         private IntPtr _argCookie;              // Cookie from the EE.
 
-        // The SigPointer structure consists of the following members.  (Note: this is an inline native SigPointer data type)
+        // Note: this is an inline native SigPointer data type.
         private IntPtr _sigPtr;                 // Pointer to remaining signature.
-        private IntPtr _sigPtrLen;              // Remaining length of the pointer
 
-        // Note, _sigPtrLen is actually a UInt32, but on 64bit systems this structure becomes
+        // Note, this is actually a UInt32, but on 64bit systems SigPointer structure becomes
         // 8-byte aligned, which requires us to pad it.
+        private IntPtr _sigPtrLenAndPadding_DoNotUse; // Remaining length of the pointer
 
         private IntPtr _argPtr;                 // Pointer to remaining args.
         private int _remainingArgs;             // # of remaining args.
@@ -70,7 +70,7 @@ namespace System
                 // can't do this operation
                 ThrowHelper.ThrowNotSupportedException();
             }
- 
+
             // Make sure there are remaining args.
             if (_remainingArgs == 0)
             {
@@ -104,7 +104,7 @@ namespace System
             // location in memory and read the contents.
             if (_argPtr == IntPtr.Zero)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(null);
             }
 
             if (rth.IsNullHandle())
