@@ -7638,7 +7638,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // If the dstType is TYP_UINT, we have 32-bits to encode the
     // float number. Any of 33rd or above bits can be the sign bit.
     // To achieve it we pretend as if we are converting it to a long.
-    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))))
+    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))) && !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {
         dstType = TYP_LONG;
     }
