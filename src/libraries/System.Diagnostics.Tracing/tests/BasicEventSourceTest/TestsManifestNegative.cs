@@ -137,14 +137,14 @@ namespace BasicEventSourceTests
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventIdReusedEventSource), string.Empty, strictOptions));
             AssertExceptionStringsEqual(() => string.Join(Environment.NewLine,
-                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1, "WriteInteger1"),
+                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1),
                                      GetResourceString("EventSource_TaskOpcodePairReused", "WriteInteger2", 1, "WriteInteger1", 1)),
                           e);
 
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventIdReusedEventSource), string.Empty, strictOptions));
             AssertExceptionStringsEqual(() => string.Join(Environment.NewLine,
-                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1, "WriteInteger1"),
+                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1),
                                      GetResourceString("EventSource_TaskOpcodePairReused", "WriteInteger2", 1, "WriteInteger1", 1)),
                           e);
 
