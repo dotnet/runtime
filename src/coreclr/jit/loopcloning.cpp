@@ -2109,15 +2109,15 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     JITDUMP("Create unique preheader for slow path loop\n");
     BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
-    slowPreheader->bbWeight = slowPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowPreheader->scaleBBWeight(slowPathWeightScaleFactor);
     slowPreheader->bbNatLoopNum = ambientLoop;
+    newPred                     = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    newPred = slowPreheader;
     loop->VisitLoopBlocksLexical([=, &newPred](BasicBlock* blk) {
         // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later with optCopyBlkDest()
         BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
