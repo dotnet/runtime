@@ -329,17 +329,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     do {
         if ( varTypeIsFloating(srcType) && (dstType == TYP_ULONG || dstType == TYP_UINT))
         {
-            // if ( oper->OperIs(GT_HWINTRINSIC) && (oper->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_ToScalar) )
-            // {
-            //     GenTree*  innerOper    = oper->AsHWIntrinsic()->Op(1);
-            //     if ( innerOper->OperIs(GT_HWINTRINSIC) && (innerOper->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_FixupScalar) )
-            //     {
-            //         break;
-            //     }
-            //     if ( dstType == TYP_UINT ) {
-            //         break;
-            //     }
-            // }
             if (tree->IsSaturatedConversion())
             {
                 break;
