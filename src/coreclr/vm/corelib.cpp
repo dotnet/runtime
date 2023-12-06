@@ -44,7 +44,6 @@
 #include "typestring.h"
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"
-#include "varargsnative.h"
 #include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP

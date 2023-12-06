@@ -494,15 +494,6 @@ FCFuncStart(gJitInfoFuncs)
     FCFuncElement("GetCompilationTimeInTicks", GetCompilationTimeInTicks)
 FCFuncEnd()
 
-FCFuncStart(gVarArgFuncs)
-    FCFuncElementSig(COR_CTOR_METHOD_NAME, &gsig_IM_IntPtr_PtrVoid_RetVoid, VarArgsNative::Init2)
-    FCFuncElementSig(COR_CTOR_METHOD_NAME, &gsig_IM_IntPtr_RetVoid, VarArgsNative::Init)
-    FCFuncElement("GetRemainingCount", VarArgsNative::GetRemainingCount)
-    FCFuncElement("_GetNextArgType", VarArgsNative::GetNextArgType)
-    FCFuncElement("FCallGetNextArg", VarArgsNative::DoGetNextArg)
-    FCFuncElement("InternalGetNextArg", VarArgsNative::GetNextArg2)
-FCFuncEnd()
-
 FCFuncStart(gMonitorFuncs)
     FCFuncElement("Enter", JIT_MonEnter)
     FCFuncElement("ReliableEnter", JIT_MonReliableEnter)
@@ -648,7 +639,6 @@ FCFuncEnd()
 // Note these have to remain sorted by name:namespace pair (Assert will wack you if you don't)
 // The sorting is case-sensitive
 
-FCClassElement("ArgIterator", "System", gVarArgFuncs)
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)

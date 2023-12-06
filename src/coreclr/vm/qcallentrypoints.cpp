@@ -77,6 +77,11 @@
 
 static const Entry s_QCall[] =
 {
+    DllImportEntry(ArgIterator_Init)
+    DllImportEntry(ArgIterator_Init2)
+    DllImportEntry(ArgIterator_GetNextArgType)
+    DllImportEntry(ArgIterator_GetNextArg)
+    DllImportEntry(ArgIterator_GetNextArg2)
     DllImportEntry(Enum_GetValuesAndNames)
     DllImportEntry(DebugDebugger_Launch)
     DllImportEntry(DebugDebugger_Log)
