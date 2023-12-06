@@ -952,9 +952,9 @@ namespace System
             }
         }
 
-        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, SafeFileHandle? overrideHandle = null, bool mayChangeCursorPosition = true)
+        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
-            SafeFileHandle? handle = overrideHandle ?? s_terminalHandle;
+            handle ??= s_terminalHandle;
             Debug.Assert(handle is not null);
 
             lock (Console.Out) // synchronize with other writers
@@ -1119,9 +1119,9 @@ namespace System
 
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
-        /// <param name="overrideHandle">Handle to use instead of s_terminalHandle.</param>
+        /// <param name="handle">Handle to use instead of s_terminalHandle.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static void WriteTerminalAnsiString(string? value, SafeFileHandle? overrideHandle = null, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(string? value, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1139,7 +1139,7 @@ namespace System
             }
 
             EnsureConsoleInitialized();
-            WriteToTerminal(data, overrideHandle, mayChangeCursorPosition);
+            WriteToTerminal(data, handle, mayChangeCursorPosition);
         }
     }
 }
