@@ -702,30 +702,33 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-    int st;
-    bool madviseFlags = MADV_FREE;
+    int st = EINVAL;
+    int madviseFlags = 0;
 
 #ifdef MADV_DONTDUMP
     // Do not include reset memory in coredump.
     madviseFlags |= MADV_DONTDUMP;
 #endif
 
-#if HAVE_MADV_FREE
+#ifdef HAVE_MADV_FREE
     // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
     // need the pages in the range. Freeing the pages can be delayed until a memory pressure
     // occurs.
-    st = madvise(address, size, madviseFlags);
-    if (st != 0)
+    madviseFlags |= MADV_FREE;
 #endif
+
+    if (madviseFlags != 0)
     {
+        st = madvise(address, size, madviseFlags);
+    }
+
 #if HAVE_POSIX_MADVISE
+    if (st != 0)
+    {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
         st = posix_madvise(address, size, MADV_DONTNEED);
-#else
-        // If we don't have posix_madvise, report failure
-        st = EINVAL;
-#endif
     }
+#endif
 
     return (st == 0);
 }
