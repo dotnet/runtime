@@ -10538,7 +10538,7 @@ void CodeGen::genArm64EmitterUnitTests()
                                                                                              // <Zdn>.B, <Zm>.B
     theEmitter->emitIns_R_R(INS_sve_aese, EA_SCALABLE, REG_V1, REG_V2, INS_OPTS_SCALABLE_B); // AESE    <Zdn>.B,
                                                                                              // <Zdn>.B, <Zm>.B
-    theEmitter->emitIns_R_R(INS_sve_sm4e, EA_SCALABLE, REG_V3, REG_V5, INS_OPTS_SCALABLE_B); // SM4E    <Zdn>.S,
+    theEmitter->emitIns_R_R(INS_sve_sm4e, EA_SCALABLE, REG_V3, REG_V5, INS_OPTS_SCALABLE_S); // SM4E    <Zdn>.S,
                                                                                              // <Zdn>.S, <Zm>.S
 
     // IF_SVE_GL_1A

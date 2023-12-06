@@ -1127,9 +1127,18 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
             elemsize = id->idOpSize();
             assert(insOptsScalable(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1())); // mmmmm
-            assert(isVectorRegister(id->idReg2())); // ddddd
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // mmmmm
+#ifdef DEBUG
+            if (id->idInsOpt() == INS_OPTS_SCALABLE_S)
+            {
+                assert(id->idIns() == INS_sve_sm4e);
+            }
+            else
+            {
+                assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            }
+#endif // DEBUG
             assert(isScalableVectorSize(elemsize));
             break;
 
@@ -6725,7 +6734,16 @@ void emitter::emitIns_R_R(
             assert(insOptsScalable(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            assert(opt == INS_OPTS_SCALABLE_B);
+#ifdef DEBUG
+            if (opt == INS_OPTS_SCALABLE_S)
+            {
+                assert(ins == INS_sve_sm4e);
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+            }
+#endif // DEBUG
             fmt = IF_SVE_GK_2A;
             break;
 
@@ -16750,6 +16768,7 @@ void emitter::emitDispInsHelp(
             break;
 
         // <Zdn>.B, <Zdn>.B, <Zm>.B
+        // <Zdn>.S, <Zdn>.S, <Zm>.S
         case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
