@@ -3493,28 +3493,11 @@ const emitJumpKind emitReverseJumpKinds[] = {
 //
 /* static */ bool emitter::emitJmpInstHasNoCode(instrDesc* id)
 {
-    bool result = (id->idIns() == INS_jmp) && ((instrDescJmp*)id)->idjIsRemovableJmpCandidate;
+    bool result = (id->idIns() == INS_jmp) && (id->idCodeSize() == 0);
 
-// For a jump that is considered for removal but not removed,
-// idjIsRemovableJmpCandidate should be set to false.
-// Else if the jump was removed, idjIsRemovableJmpCandidate should still be true.
-
-#ifdef TARGET_AMD64
-    // On AMD64, if the removed jump was after a call instruction and before an OS epilog,
-    // a nop should have been inserted, hence a code size of 1.
-    // (See clr-abi.md for details on why the nop is needed)
-    if (result && (id->idCodeSize() != 0))
-    {
-        assert(id->idCodeSize() == 1);
-        assert(((instrDescJmp*)id)->idjIsAfterCallBeforeEpilog);
-    }
-    else
-#endif // TARGET_AMD64
-    {
-        // A zero size jump instruction can only be the one that is marked
-        // as removable candidate.
-        assert(!result || (id->idCodeSize() == 0));
-    }
+    // A zero size jump instruction can only be the one that is marked
+    // as removable candidate.
+    assert(!result || ((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
 
     return result;
 }
@@ -16214,12 +16197,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_LABEL:
         {
-            assert(id->idGCref() == GCT_NONE);
-            assert(id->idIsBound() || emitJmpInstHasNoCode(id));
             instrDescJmp* jmp = (instrDescJmp*)id;
+            assert(id->idGCref() == GCT_NONE);
 
             if (!jmp->idjIsRemovableJmpCandidate)
             {
+                assert(id->idIsBound());
                 dst = emitOutputLJ(ig, dst, id);
             }
 #ifdef TARGET_AMD64
@@ -16234,6 +16217,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 convertedJmpToNop = true;
             }
 #endif // TARGET_AMD64
+            else
+            {
+                // Jump was removed, and no nop was needed, so id should not have any code
+                assert(jmp->idjIsRemovableJmpCandidate);
+                assert(emitJmpInstHasNoCode(id));
+            }
 
             sz = sizeof(instrDescJmp);
             break;
