@@ -2335,6 +2335,8 @@ public:
 class BlockToNaturalLoopMap
 {
     FlowGraphNaturalLoops* m_loops;
+    // Array from postorder num -> index of most-nested loop containing the
+    // block, or UINT_MAX if no loop contains it.
     unsigned* m_indices;
 
     BlockToNaturalLoopMap(FlowGraphNaturalLoops* loops, unsigned* indices)
@@ -12257,7 +12259,6 @@ struct LoopSideEffects
     // in the loop.
     ClassHandleSet* ArrayElemTypesModified = nullptr;
     bool            ContainsCall           = false;
-    bool            HasNestedLoops         = false;
 
     LoopSideEffects();
 

@@ -5499,12 +5499,12 @@ FlowGraphNaturalLoop* BlockToNaturalLoopMap::GetLoop(BasicBlock* block)
     }
 
     unsigned index = m_indices[block->bbNewPostorderNum];
-    if (index == 0)
+    if (index == UINT_MAX)
     {
         return nullptr;
     }
 
-    return m_loops->GetLoopByIndex(index - 1);
+    return m_loops->GetLoopByIndex(index);
 }
 
 //------------------------------------------------------------------------
@@ -5520,16 +5520,20 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 {
     const FlowGraphDfsTree* dfs  = loops->GetDfsTree();
     Compiler*               comp = dfs->GetCompiler();
-    // Indices are 1-based, with 0 meaning "no loop".
-    unsigned* indices =
-        dfs->GetPostOrderCount() == 0 ? nullptr : (new (comp, CMK_Loops) unsigned[dfs->GetPostOrderCount()]{});
+    unsigned*               indices =
+        dfs->GetPostOrderCount() == 0 ? nullptr : (new (comp, CMK_Loops) unsigned[dfs->GetPostOrderCount()]);
+
+    for (unsigned i = 0; i < dfs->GetPostOrderCount(); i++)
+    {
+        indices[i] = UINT_MAX;
+    }
 
     // Now visit all loops in reverse post order, meaning that we see inner
     // loops last and thus write their indices into the map last.
     for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
     {
         loop->VisitLoopBlocks([=](BasicBlock* block) {
-            indices[block->bbNewPostorderNum] = loop->GetIndex() + 1;
+            indices[block->bbNewPostorderNum] = loop->GetIndex();
             return BasicBlockVisit::Continue;
         });
     }

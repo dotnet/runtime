@@ -8424,23 +8424,32 @@ void Compiler::optComputeLoopSideEffects()
     BasicBlock** postOrder      = m_dfsTree->GetPostOrder();
     unsigned     postOrderCount = m_dfsTree->GetPostOrderCount();
 
-    // The side effect code benefits from seeing things in RPO as it has some
-    // limited treatment assignments it has seen the value of.
-    for (unsigned i = postOrderCount; i != 0; i--)
+    // Iterate all blocks in loops.
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        BasicBlock*           block = postOrder[i - 1];
-        FlowGraphNaturalLoop* loop  = m_blockToLoop->GetLoop(block);
-
-        // TODO-Quirk: Remove
-        while ((loop != nullptr) && (m_newToOldLoop[loop->GetIndex()] == nullptr))
+        if (loop->GetParent() != nullptr)
         {
-            loop = loop->GetParent();
+            continue;
         }
 
-        if (loop != nullptr)
-        {
-            optComputeLoopSideEffectsOfBlock(block, loop);
-        }
+        // The side effect code benefits from seeing things in RPO as it has some
+        // limited treatment assignments it has seen the value of.
+        loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* loopBlock) {
+            FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(loopBlock);
+
+            // TODO-Quirk: Remove
+            while ((loop != nullptr) && (m_newToOldLoop[loop->GetIndex()] == nullptr))
+            {
+                loop = loop->GetParent();
+            }
+
+            if (loop != nullptr)
+            {
+                optComputeLoopSideEffectsOfBlock(loopBlock, loop);
+            }
+
+            return BasicBlockVisit::Continue;
+        });
     }
 }
 
@@ -8734,7 +8743,7 @@ void Compiler::AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop)
     // If this is the inner most loop, reset the LOOP_ALIGN flag
     // because a loop having call will not likely to benefit from
     // alignment
-    if (!m_loopSideEffects[loop->GetIndex()].HasNestedLoops)
+    if (loop->GetChild() == nullptr)
     {
         BasicBlock* top = loop->GetLexicallyTopMostBlock();
 
