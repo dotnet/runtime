@@ -5136,5 +5136,21 @@ void Compiler::fgDebugCheckLoopTable()
     assert(preHeaderCount == 0);
 }
 
+//------------------------------------------------------------------------------
+// fgDebugCheckDfsTree: Checks that the DFS tree matches the current flow
+// graph.
+//
+void Compiler::fgDebugCheckDfsTree()
+{
+    unsigned count =
+        fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
+                 [=](BasicBlock* block, unsigned postorderNum) {
+                     assert(block->bbPostorderNum == postorderNum);
+                     assert(m_dfs->GetPostOrder()[postorderNum] == block);
+                 });
+
+    assert(m_dfs->GetPostOrderCount() == count);
+}
+
 /*****************************************************************************/
 #endif // DEBUG

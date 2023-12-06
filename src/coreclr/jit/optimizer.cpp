@@ -4637,6 +4637,9 @@ PhaseStatus Compiler::optUnrollLoops()
             fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
         }
 
+        m_dfs   = fgComputeDfs();
+        m_loops = FlowGraphNaturalLoops::Find(m_dfs);
+
         DBEXEC(verbose, fgDispBasicBlocks());
     }
     else

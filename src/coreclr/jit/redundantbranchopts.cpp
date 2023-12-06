@@ -104,6 +104,9 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
+    // DFS tree is always considered invalid after RBO.
+    fgInvalidateDfsTree();
+
     return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 

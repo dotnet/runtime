@@ -4935,6 +4935,82 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     return whyNot == nullptr;
 }
 
+//------------------------------------------------------------------------
+// fgRunDfs: Run DFS over the flow graph.
+//
+// Type parameters:
+//   TFuncAssignPreorder  - Functor type that takes a BasicBlock* and its preorder number
+//   TFuncAssignPostorder - Functor type that takes a BasicBlock* and its postorder number
+//
+// Parameters:
+//   assignPreorder  - Functor to assign preorder numbers to blocks
+//   assignPostorder - Functor to assign postorder numbers to blocks
+//
+// Returns:
+//   Number of blocks visited.
+//
+template <typename TFuncAssignPreorder, typename TFuncAssignPostorder>
+unsigned Compiler::fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPostorder assignPostorder)
+{
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    unsigned preOrderIndex  = 0;
+    unsigned postOrderIndex = 0;
+
+    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
+
+    auto dfsFrom = [&](BasicBlock* firstBB) {
+
+        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
+        blocks.Emplace(this, firstBB);
+        firstBB->bbPreorderNum = preOrderIndex++;
+
+        while (!blocks.Empty())
+        {
+            BasicBlock* block = blocks.TopRef().Block();
+            BasicBlock* succ  = blocks.TopRef().NextSuccessor();
+
+            if (succ != nullptr)
+            {
+                if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+                {
+                    blocks.Emplace(this, succ);
+                    assignPreorder(succ, preOrderIndex++);
+                }
+            }
+            else
+            {
+                blocks.Pop();
+                assignPostorder(block, postOrderIndex++);
+            }
+        }
+
+    };
+
+    dfsFrom(fgFirstBB);
+
+    if ((fgEntryBB != nullptr) && !BitVecOps::IsMember(&traits, visited, fgEntryBB->bbNum))
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
+        dfsFrom(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        dfsFrom(genReturnBB);
+    }
+
+    assert(preOrderIndex == postOrderIndex);
+    return preOrderIndex;
+}
+
 //------------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder: Visit all of the
 // loop's blocks in reverse post order.

@@ -4939,6 +4939,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
+            else
+            {
+                // DFS tree is always invalid after this point.
+                //
+                fgInvalidateDfsTree();
+            }
 
             if (doCse)
             {
