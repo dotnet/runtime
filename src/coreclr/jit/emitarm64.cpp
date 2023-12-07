@@ -5493,7 +5493,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
  *  Add an instruction referencing a single register.
  */
 
-void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
+void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 {
     insFormat  fmt = IF_NONE;
     instrDesc* id  = nullptr;
@@ -5503,7 +5503,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
     {
         case INS_br:
         case INS_ret:
-            assert(opt == INS_OPTS_NONE);
             assert(isGeneralRegister(reg));
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
@@ -5511,7 +5510,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             break;
 
         case INS_dczva:
-            assert(opt == INS_OPTS_NONE);
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
             id = emitNewInstrSmall(attr);
@@ -5520,7 +5518,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             break;
 
         case INS_mrs_tpid0:
-            assert(opt == INS_OPTS_NONE);
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
@@ -5528,11 +5525,9 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 
         case INS_sve_aesmc:
         case INS_sve_aesimc:
-            assert(opt == INS_OPTS_SCALABLE_B);
             id = emitNewInstrSmall(attr);
-            id->idInsOpt(opt);
+            id->idInsOpt(INS_OPTS_SCALABLE_B);
             id->idReg1(reg);
-            assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(reg)); // ddddd
             assert(isScalableVectorSize(attr));
             fmt = IF_SVE_GL_1A;
