@@ -511,7 +511,7 @@ static LPVOID VIRTUALReserveMemory(
         }
         pRetVal = ReserveVirtualMemory(pthrCurrent, (LPVOID)StartBoundary, MemSize, flAllocationType);
 
-        if (newMemory != nullptr)
+        if (newMemory != NULL)
         {
             *newMemory = true;
         }
@@ -678,7 +678,7 @@ VIRTUALCommitMemory(
         */
         LPVOID pReservedMemory =
                 VIRTUALReserveMemory( pthrCurrent, lpAddress, dwSize,
-                                      flAllocationType | MEM_COMMIT, flProtect, &IsNewMemory );
+                                      flAllocationType, flProtect, &IsNewMemory );
 
         TRACE( "Reserve and commit the memory!\n " );
 

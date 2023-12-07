@@ -639,7 +639,7 @@ static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool n
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
-    return VirtualCommitInner(address, size, node, false);
+    return VirtualCommitInner(address, size, node, /* newMemory */ false);
 }
 
 // Commit virtual memory range.
@@ -658,7 +658,7 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t n
 #endif
 
     void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag, true);
-    if (VirtualCommitInner(pRetVal, size, node, true))
+    if (VirtualCommitInner(pRetVal, size, node, /* newMemory */ true))
     {
         return pRetVal;
     }
@@ -727,6 +727,11 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
         st = posix_madvise(address, size, MADV_DONTNEED);
+
+#ifdef MADV_DONTDUMP
+        // Ensure DONTDUMP is still applied.
+        madvise(address, size, MADV_DONTDUMP);
+#endif
     }
 #endif
 
