@@ -2572,9 +2572,9 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     noway_assert(flow->getDupCount() == 2);
 
     // Change the BBJ_COND to BBJ_ALWAYS, and adjust the refCount and dupCount.
+    --block->GetNormalJumpDest()->bbRefs;
     block->SetJumpKind(BBJ_ALWAYS);
     block->SetFlags(BBF_NONE_QUIRK);
-    --block->GetNormalJumpDest()->bbRefs;
     flow->decrementDupCount();
 
 #ifdef DEBUG

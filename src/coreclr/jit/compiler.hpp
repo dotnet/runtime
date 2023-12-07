@@ -628,9 +628,9 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return BasicBlockVisit::Continue;
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbNext));
+            RETURN_ON_ABORT(func(bbNormalJumpDest));
 
-            if (bbJumpDest != bbNext)
+            if (bbJumpDest != bbNormalJumpDest)
             {
                 RETURN_ON_ABORT(func(bbJumpDest));
             }
@@ -694,9 +694,9 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             return func(bbJumpDest);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbNext));
+            RETURN_ON_ABORT(func(bbNormalJumpDest));
 
-            if (bbJumpDest != bbNext)
+            if (bbJumpDest != bbNormalJumpDest)
             {
                 RETURN_ON_ABORT(func(bbJumpDest));
             }

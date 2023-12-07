@@ -2058,7 +2058,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_COND:
                 {
                     // Flow to non canonical block could be via fall through or jump or both.
-                    if (predBlock->NextIs(nonCanonicalBlock))
+                    if (predBlock->HasNormalJumpTo(nonCanonicalBlock))
                     {
                         fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
@@ -2134,7 +2134,8 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                                   BasicBlock* canonicalBlock,
                                                   FlowEdge*   predEdge)
 {
-    assert(predBlock->NextIs(nonCanonicalBlock));
+    assert(predBlock->KindIs(BBJ_COND));
+    assert(predBlock->HasNormalJumpTo(nonCanonicalBlock));
 
     BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true, canonicalBlock);
 

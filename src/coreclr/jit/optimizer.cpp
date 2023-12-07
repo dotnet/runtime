@@ -1379,7 +1379,7 @@ void Compiler::optCheckPreds()
                     {
                         break;
                     }
-                    noway_assert(bb->NextIs(block));
+                    noway_assert(bb->HasNormalJumpTo(block));
                     break;
                 case BBJ_EHFILTERRET:
                 case BBJ_ALWAYS:
@@ -3015,7 +3015,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
             //
             BasicBlock* const t = optLoopTable[loopInd].lpTop;
             assert(siblingB->KindIs(BBJ_COND));
-            assert(siblingB->NextIs(t));
+            assert(siblingB->HasNormalJumpTo(t));
 
             JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
 
@@ -3190,7 +3190,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // Because of this, introducing a block before t automatically gives us
     // the right flow out of h.
     //
-    assert(h->NextIs(t) || !h->KindIs(BBJ_COND));
+    assert(!h->KindIs(BBJ_COND) || h->HasNormalJumpTo(t));
     assert(h->HasJumpTo(t) || !h->KindIs(BBJ_ALWAYS));
     assert(h->KindIs(BBJ_ALWAYS, BBJ_COND));
 
@@ -8178,7 +8178,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         {
             // Allow for either the fall-through or branch to target 'entry'.
             BasicBlock* skipLoopBlock;
-            if (head->NextIs(entry))
+            if (head->HasNormalJumpTo(entry))
             {
                 skipLoopBlock = head->GetJumpDest();
             }
@@ -8281,11 +8281,11 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 if (predBlock->HasJumpTo(entry))
                 {
                     predBlock->SetJumpDest(preHead);
-                    noway_assert(!predBlock->NextIs(preHead));
+                    noway_assert(!predBlock->HasNormalJumpTo(preHead));
                 }
                 else
                 {
-                    noway_assert((entry == top) && (predBlock == head) && predBlock->NextIs(preHead));
+                    noway_assert((entry == top) && (predBlock == head) && predBlock->HasNormalJumpTo(preHead));
                 }
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);

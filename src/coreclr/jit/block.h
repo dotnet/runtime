@@ -647,7 +647,7 @@ public:
     BasicBlock* GetNormalJumpDest() const
     {
         assert(KindIs(BBJ_COND));
-        assert(bbNormalJumpDest != nullptr);
+        assert((bbNormalJumpDest != nullptr) || IsLast());
         return bbNormalJumpDest;
     }
 

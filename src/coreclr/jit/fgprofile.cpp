@@ -4730,7 +4730,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     weight_t    diff;
                     FlowEdge*   otherEdge;
                     BasicBlock* otherDst;
-                    if (bSrc->NextIs(bDst))
+                    if (bSrc->HasNormalJumpTo(bDst))
                     {
                         otherDst = bSrc->GetJumpDest();
                     }

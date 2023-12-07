@@ -2751,7 +2751,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     switch (blockPred->GetJumpKind())
     {
         case BBJ_COND:
-            assert(blockPred->NextIs(block) || blockPred->HasJumpTo(block));
+            assert(blockPred->HasNormalJumpTo(block) || blockPred->HasJumpTo(block));
             return true;
 
         case BBJ_ALWAYS:
