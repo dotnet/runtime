@@ -19,13 +19,12 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
-    class OptRedundantBranchesDomTreeVisitor : public DomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
+    class OptRedundantBranchesDomTreeVisitor : public NewDomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
     {
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), madeChanges(false)
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : NewDomTreeVisitor(compiler), madeChanges(false)
         {
         }
 
@@ -37,7 +36,7 @@ PhaseStatus Compiler::optRedundantBranches()
         {
             // Skip over any removed blocks.
             //
-            if ((block->bbFlags & BBF_REMOVED) != 0)
+            if (block->HasFlag(BBF_REMOVED))
             {
                 return;
             }
@@ -96,7 +95,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     optReachableBitVecTraits = nullptr;
     OptRedundantBranchesDomTreeVisitor visitor(this);
-    visitor.WalkTree();
+    visitor.WalkTree(fgSsaDomTree);
 
 #if DEBUG
     if (verbose && visitor.madeChanges)
@@ -819,7 +818,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     {
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (!fgDominate(domBlock, predBlock))
+            if (m_dfsTree->Contains(predBlock) && !fgSsaDomTree->Dominates(domBlock, predBlock))
             {
                 JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
                         predBlock->bbNum);
@@ -1534,7 +1533,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
         jti.m_block->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget);
-        jti.m_block->bbFlags |= BBF_NONE_QUIRK;
+        jti.m_block->SetFlags(BBF_NONE_QUIRK);
         assert(jti.m_block->JumpsToNext());
     }
 
@@ -1604,7 +1603,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
             {
                 JITDUMP(FMT_BB " has %s memory phi; marking as BBF_NO_CSE_IN\n", jti.m_block->bbNum,
                         memoryKindNames[memoryKind]);
-                jti.m_block->bbFlags |= BBF_NO_CSE_IN;
+                jti.m_block->SetFlags(BBF_NO_CSE_IN);
                 break;
             }
         }

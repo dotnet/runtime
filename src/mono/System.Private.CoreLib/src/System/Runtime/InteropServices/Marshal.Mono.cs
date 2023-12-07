@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
             if (obj == null || obj is string)
                 return true;
             var type = (obj.GetType() as RuntimeType)!;
-            return !RuntimeTypeHandle.HasReferences (type);
+            return !RuntimeTypeHandle.HasReferences(type);
         }
 
         private static void PrelinkCore(MethodInfo m)

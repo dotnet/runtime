@@ -433,10 +433,6 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    @REM Temporarily disabling PGO until updated files with new linker flag are available.
-    @REM https://github.com/dotnet/runtime/pull/89311
-    GOTO :SkipNativeBuild
-
     if %__EnforcePgo% EQU 1 (
         set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
         echo !PgoCheckCmd!

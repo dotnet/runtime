@@ -16,7 +16,6 @@ namespace Microsoft.Extensions.Logging
     internal sealed class LogValuesFormatter
     {
         private const string NullValue = "(null)";
-        private static readonly char[] FormatDelimiters = { ',', ':' };
         private readonly List<string> _valueNames = new List<string>();
 #if NET8_0_OR_GREATER
         private readonly CompositeFormat _format;
@@ -63,7 +62,8 @@ namespace Microsoft.Extensions.Logging
                 else
                 {
                     // Format item syntax : { index[,alignment][ :formatString] }.
-                    int formatDelimiterIndex = FindIndexOfAny(format, FormatDelimiters, openBraceIndex, closeBraceIndex);
+                    int formatDelimiterIndex = format.AsSpan(openBraceIndex, closeBraceIndex - openBraceIndex).IndexOfAny(',', ':');
+                    formatDelimiterIndex = formatDelimiterIndex < 0 ? closeBraceIndex : formatDelimiterIndex + openBraceIndex;
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
                     vsb.Append(_valueNames.Count.ToString());
@@ -131,12 +131,6 @@ namespace Microsoft.Extensions.Logging
             }
 
             return braceIndex;
-        }
-
-        private static int FindIndexOfAny(string format, char[] chars, int startIndex, int endIndex)
-        {
-            int findIndex = format.IndexOfAny(chars, startIndex, endIndex - startIndex);
-            return findIndex == -1 ? endIndex : findIndex;
         }
 
         public string Format(object?[]? values)

@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
-    <SelfContained>true</SelfContained>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharedLibrary\SharedLibrary.csproj"/>
+  </ItemGroup>
 
 </Project>

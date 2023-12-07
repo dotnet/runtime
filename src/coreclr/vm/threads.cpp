@@ -1505,6 +1505,7 @@ Thread::Thread()
 #endif  // TRACK_SYNC
 
     m_PreventAsync = 0;
+    m_PreventAbort = 0;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP

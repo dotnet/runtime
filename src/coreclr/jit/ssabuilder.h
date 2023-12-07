@@ -39,10 +39,6 @@ private:
     // if necessary).  Eventually should move to Compiler.
     void SetupBBRoot();
 
-    // Computes each block's immediate dominator and records it in the
-    // BasicBlock in bbIDom.
-    void ComputeImmediateDom();
-
     // Compute flow graph dominance frontiers.
     void ComputeDominanceFrontiers(BasicBlock** postOrder, int count, BlkToBlkVectorMap* mapDF);
 

@@ -10,6 +10,7 @@ namespace HostApiInvokerApp
 {
     public static unsafe class HostRuntimeContract
     {
+#pragma warning disable CS0649
         internal struct host_runtime_contract
         {
             public nint size;
@@ -18,6 +19,7 @@ namespace HostApiInvokerApp
             public delegate* unmanaged[Stdcall]<byte*, nint, nint, nint, byte> bundle_probe;
             public IntPtr pinvoke_override;
         }
+#pragma warning restore CS0649
 
         private static host_runtime_contract GetContract()
         {
@@ -77,7 +79,6 @@ namespace HostApiInvokerApp
                 return;
             }
 
-            bool success = true;
             foreach (string path in args)
             {
                 Probe(contract, path);

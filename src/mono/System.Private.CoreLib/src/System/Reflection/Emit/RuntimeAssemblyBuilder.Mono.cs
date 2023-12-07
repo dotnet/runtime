@@ -257,7 +257,7 @@ namespace System.Reflection.Emit
             manifest_module = new RuntimeModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new RuntimeModuleBuilder[] { manifest_module };
 
-            AssemblyLoadContext.InvokeAssemblyLoadEvent (this);
+            AssemblyLoadContext.InvokeAssemblyLoadEvent(this);
         }
 
         public override bool ReflectionOnly
