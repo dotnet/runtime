@@ -57,7 +57,7 @@ public class WindowAndCursorProps
         }
         else
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowWidth = value);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("width", () => Console.WindowWidth = value);
         }
     }
 
@@ -89,7 +89,7 @@ public class WindowAndCursorProps
         }
         else
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowHeight = value);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("height", () => Console.WindowHeight = value);
         }
     }
 

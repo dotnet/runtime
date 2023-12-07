@@ -406,7 +406,7 @@ namespace System
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
 
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, "width");
 
                 ConsolePal.WindowWidth = value;
             }
@@ -426,7 +426,7 @@ namespace System
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
 
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, "height");
 
                 ConsolePal.WindowHeight = value;
             }
@@ -449,8 +449,8 @@ namespace System
                 throw new IOException(SR.InvalidOperation_SetWindowSize);
             }
 
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width, nameof(width));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height, nameof(height));
 
             ConsolePal.SetWindowSize(width, height);
         }
