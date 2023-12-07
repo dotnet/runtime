@@ -175,13 +175,7 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void Add<T>(T? value)
         {
-            JsonNode? nodeToAdd = value switch
-            {
-                null => null,
-                JsonNode node => node,
-                _ => JsonValue.Create(value, Options)
-            };
-
+            JsonNode? nodeToAdd = ConvertFromValue(value, Options);
             Add(nodeToAdd);
         }
 

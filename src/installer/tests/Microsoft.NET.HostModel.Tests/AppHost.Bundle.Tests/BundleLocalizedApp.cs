@@ -11,7 +11,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleLocalizedApp : BundleTestBase, IClassFixture<BundleLocalizedApp.SharedTestState>
+    public class BundleLocalizedApp : IClassFixture<BundleLocalizedApp.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -23,9 +23,7 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void Bundled_Localized_App_Run_Succeeds()
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture);
-
+            var singleFile = sharedTestState.App.Bundle();
             Command.Create(singleFile)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -34,18 +32,18 @@ namespace AppHost.Bundle.Tests
                 .And.HaveStdOutContaining("[kn-IN]! [ta-IN]! [default]!");
         }
 
-        public class SharedTestState : SharedTestStateBase, IDisposable
+        public class SharedTestState : IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
+            public SingleFileTestApp App { get; set; }
 
             public SharedTestState()
             {
-                TestFixture = PreparePublishedSelfContainedTestProject("LocalizedApp");
+                App = SingleFileTestApp.CreateSelfContained("LocalizedApp");
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                App?.Dispose();
             }
         }
     }

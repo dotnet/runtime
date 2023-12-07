@@ -3,6 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
@@ -14,11 +15,11 @@ import {
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol
+    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
-import { stringToMonoStringRoot } from "./strings";
+import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
@@ -229,12 +230,20 @@ function _marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
 }
 
 function _marshal_string_to_cs_impl(arg: JSMarshalerArgument, value: string) {
-    const root = get_string_root(arg);
-    try {
-        stringToMonoStringRoot(value, root);
-    }
-    finally {
-        root.release();
+    if (WasmEnableJsInteropByValue) {
+        const bufferLen = value.length * 2;
+        const buffer = Module._malloc(bufferLen);
+        stringToUTF16(buffer as any, buffer as any + bufferLen, value);
+        set_arg_intptr(arg, buffer);
+        set_arg_length(arg, value.length);
+    } else {
+        const root = get_string_root(arg);
+        try {
+            stringToMonoStringRoot(value, root);
+        }
+        finally {
+            root.release();
+        }
     }
 }
 
@@ -306,13 +315,16 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }
     mono_check(isThenable(value), "Value is not a Promise");
 
-    const gc_handle = alloc_gcv_handle();
-    set_gc_handle(arg, gc_handle);
-    set_arg_type(arg, MarshalerType.Task);
+    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
+    const gc_handle = handleIsPreallocated ? get_arg_gc_handle(arg) : alloc_gcv_handle();
+    if (!handleIsPreallocated) {
+        set_gc_handle(arg, gc_handle);
+        set_arg_type(arg, MarshalerType.Task);
+    }
     const holder = new PromiseHolder(value);
     setup_managed_proxy(holder, gc_handle);
     if (BuildConfiguration === "Debug") {
-        (holder as any)[proxy_debug_symbol] = `PromiseHolder with GCVHandle ${gc_handle}`;
+        (holder as any)[proxy_debug_symbol] = `PromiseHolder with GCHandle ${gc_handle}`;
     }
 
     if (MonoWasmThreads)
@@ -505,7 +517,9 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
         if (element_type == MarshalerType.String) {
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
-            cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            if (!WasmEnableJsInteropByValue) {
+                cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);
                 _marshal_string_to_cs(element_arg, value[index]);
@@ -514,7 +528,9 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
         else if (element_type == MarshalerType.Object) {
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
-            cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            if (!WasmEnableJsInteropByValue) {
+                cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+            }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);
                 _marshal_cs_object_to_cs(element_arg, value[index]);

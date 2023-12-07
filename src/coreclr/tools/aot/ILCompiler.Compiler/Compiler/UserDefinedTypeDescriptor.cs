@@ -551,7 +551,7 @@ namespace ILCompiler
         private uint GetClassTypeIndex(TypeDesc type, bool needsCompleteType)
         {
             TypeDesc debugType = GetDebugType(type);
-            DefType defType = debugType as DefType;
+            MetadataType defType = debugType as MetadataType;
             Debug.Assert(defType != null, "GetClassTypeIndex was called with non def type");
             ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
             {
@@ -590,6 +590,11 @@ namespace ILCompiler
             string threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
             bool isNativeAOT = Abi == TargetAbi.NativeAot;
 
+            bool hasNonGcStatics = NodeFactory.MetadataManager.HasNonGcStaticBase(defType);
+            bool hasGcStatics = NodeFactory.MetadataManager.HasGcStaticBase(defType);
+            bool hasThreadStatics = NodeFactory.MetadataManager.HasThreadStaticBase(defType);
+            bool hasInstanceFields = defType.IsValueType || NodeFactory.MetadataManager.HasConstructedEEType(defType);
+
             bool isCanonical = defType.IsCanonicalSubtype(CanonicalFormKind.Any);
 
             foreach (var fieldDesc in defType.GetFields())
@@ -597,8 +602,28 @@ namespace ILCompiler
                 if (fieldDesc.HasRva || fieldDesc.IsLiteral)
                     continue;
 
-                if (isCanonical && fieldDesc.IsStatic)
-                    continue;
+                if (fieldDesc.IsStatic)
+                {
+                    if (isCanonical)
+                        continue;
+                    if (fieldDesc.IsThreadStatic && !hasThreadStatics)
+                        continue;
+                    if (fieldDesc.HasGCStaticBase)
+                    {
+                        if (!hasGcStatics)
+                            continue;
+                    }
+                    else
+                    {
+                        if (!hasNonGcStatics)
+                            continue;
+                    }
+                }
+                else
+                {
+                    if (!hasInstanceFields)
+                        continue;
+                }
 
                 LayoutInt fieldOffset = fieldDesc.Offset;
                 int fieldOffsetEmit = fieldOffset.IsIndeterminate ? 0xBAAD : fieldOffset.AsInt;

@@ -41,16 +41,31 @@ namespace System.Text.Json
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                if (s_defaultOptions is not JsonSerializerOptions options)
-                {
-                    options = GetOrCreateDefaultOptionsInstance();
-                }
-
-                return options;
+                return s_defaultOptions ?? GetOrCreateSingleton(ref s_defaultOptions, JsonSerializerDefaults.General);
             }
         }
 
         private static JsonSerializerOptions? s_defaultOptions;
+
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the web configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Web
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                return s_webOptions ?? GetOrCreateSingleton(ref s_webOptions, JsonSerializerDefaults.Web);
+            }
+        }
+
+        private static JsonSerializerOptions? s_webOptions;
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
@@ -752,7 +767,7 @@ namespace System.Text.Json
             {
                 // Even if a resolver has already been specified, we need to root
                 // the default resolver to gain access to the default converters.
-                DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.DefaultInstance;
 
                 switch (_typeInfoResolver)
                 {
@@ -938,22 +953,24 @@ namespace System.Text.Json
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static JsonSerializerOptions GetOrCreateDefaultOptionsInstance()
+        private static JsonSerializerOptions GetOrCreateSingleton(
+            ref JsonSerializerOptions? location,
+            JsonSerializerDefaults defaults)
         {
-            var options = new JsonSerializerOptions
+            var options = new JsonSerializerOptions(defaults)
             {
                 // Because we're marking the default instance as read-only,
                 // we need to specify a resolver instance for the case where
                 // reflection is disabled by default: use one that returns null for all types.
 
                 TypeInfoResolver = JsonSerializer.IsReflectionEnabledByDefault
-                    ? DefaultJsonTypeInfoResolver.RootDefaultInstance()
+                    ? DefaultJsonTypeInfoResolver.DefaultInstance
                     : JsonTypeInfoResolver.Empty,
 
                 _isReadOnly = true,
             };
 
-            return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
+            return Interlocked.CompareExchange(ref location, options, null) ?? options;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

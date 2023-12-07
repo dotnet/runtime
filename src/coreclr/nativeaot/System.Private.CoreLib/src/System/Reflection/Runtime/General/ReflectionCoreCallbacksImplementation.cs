@@ -324,7 +324,7 @@ namespace System.Reflection.Runtime.General
             Type? type = containingType.ToType();
             while (type != null)
             {
-                MethodInfo? methodInfo = type.GetMethod(method, 0, bindingFlags, null, parameterTypes, null);
+                MethodInfo? methodInfo = type.GetMethod(method, 0, bindingFlags, parameterTypes);
                 if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
                     return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 

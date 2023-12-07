@@ -136,29 +136,25 @@ export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPo
     return false;
 }
 
-export function mono_wasm_install_js_worker_interop(install_js_synchronization_context: number): void {
+export function mono_wasm_install_js_worker_interop(): void {
     if (!MonoWasmThreads) return;
     bindings_init();
-    if (install_js_synchronization_context && !runtimeHelpers.jsSynchronizationContextInstalled) {
+    if (!runtimeHelpers.jsSynchronizationContextInstalled) {
         runtimeHelpers.jsSynchronizationContextInstalled = true;
         mono_log_debug("Installed JSSynchronizationContext");
     }
-    if (install_js_synchronization_context) {
-        Module.runtimeKeepalivePush();
-    }
+    Module.runtimeKeepalivePush();
 
-    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, true, !!install_js_synchronization_context);
+    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, true, true);
 }
 
-export function mono_wasm_uninstall_js_worker_interop(uninstall_js_synchronization_context: number): void {
+export function mono_wasm_uninstall_js_worker_interop(): void {
     if (!MonoWasmThreads) return;
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
-    mono_assert(!uninstall_js_synchronization_context || runtimeHelpers.jsSynchronizationContextInstalled, "JSSynchronizationContext is not installed on this worker.");
+    mono_assert(runtimeHelpers.jsSynchronizationContextInstalled, "JSSynchronizationContext is not installed on this worker.");
 
-    if (uninstall_js_synchronization_context) {
-        forceDisposeProxies(true, runtimeHelpers.diagnosticTracing);
-        Module.runtimeKeepalivePop();
-    }
+    forceDisposeProxies(true, runtimeHelpers.diagnosticTracing);
+    Module.runtimeKeepalivePop();
 
     runtimeHelpers.jsSynchronizationContextInstalled = false;
     runtimeHelpers.mono_wasm_bindings_is_ready = false;

@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = CreateJSOwnedHolder(slot.GCHandle);
+            PromiseHolder holder = GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource tcs = new TaskCompletionSource(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
@@ -84,7 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = CreateJSOwnedHolder(slot.GCHandle);
+            PromiseHolder holder = GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
@@ -114,16 +114,22 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // TODO unregister and collect pending PromiseHolder also when no C# is awaiting ?
-        private static PromiseHolder CreateJSOwnedHolder(nint gcvHandle)
+        private static PromiseHolder GetPromiseHolder(nint gcHandle)
         {
-#if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
-#endif
-            var holder = new PromiseHolder(gcvHandle);
-            ThreadJsOwnedHolders.Add(gcvHandle, holder);
+            PromiseHolder holder;
+            if (IsGCVHandle(gcHandle))
+            {
+                // this path should only happen when the Promise is passed as argument of JSExport
+                holder = new PromiseHolder(gcHandle);
+                // TODO for MT this must hit the ThreadJsOwnedHolders in the correct thread
+                ThreadJsOwnedHolders.Add(gcHandle, holder);
+            }
+            else
+            {
+                holder = (PromiseHolder)((GCHandle)gcHandle).Target!;
+            }
             return holder;
         }
-
 
         internal void ToJSDynamic(Task? value)
         {
@@ -160,33 +166,43 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
             }
-            slot.Type = MarshalerType.Task;
 
-            slot.JSHandle = AllocJSVHandle();
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this path should only happen when the Task is passed as argument of JSImport
+                slot.JSHandle = AllocJSVHandle();
+                slot.Type = MarshalerType.Task;
+            }
+            else
+            {
+                // this path should hit for return values from JSExport/call_entry_point
+                // promise and handle is pre-allocated in slot.JSHandle
+            }
+
             var taskHolder = new JSObject(slot.JSHandle);
 
-
 #if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task task, object? th)
             {
+                var taskHolderArg = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(taskHolderArg, task.Exception);
                 }
                 else
                 {
                     if (GetTaskResultDynamic(task, out object? result))
                     {
-                        ResolvePromise(taskHolder, result, MarshalResult);
+                        ResolvePromise(taskHolderArg, result, MarshalResult);
                     }
                     else
                     {
-                        ResolveVoidPromise(taskHolder);
+                        ResolveVoidPromise(taskHolderArg);
                     }
                 }
             }
@@ -211,7 +227,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 slot.Type = MarshalerType.None;
                 return;
             }
-
             if (task.IsCompleted)
             {
                 if (task.Exception != null)
@@ -229,26 +244,37 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
             }
-            slot.Type = MarshalerType.Task;
 
-            slot.JSHandle = AllocJSVHandle();
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this path should only happen when the Task is passed as argument of JSImport
+                slot.JSHandle = AllocJSVHandle();
+                slot.Type = MarshalerType.Task;
+            }
+            else
+            {
+                // this path should hit for return values from JSExport/call_entry_point
+                // promise and handle is pre-allocated in slot.JSHandle
+            }
+
             var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task task, object? th)
             {
+                JSObject taskHolderArg = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(taskHolderArg, task.Exception);
                 }
                 else
                 {
-                    ResolveVoidPromise(taskHolder);
+                    ResolveVoidPromise(taskHolderArg);
                 }
             }
         }
@@ -289,29 +315,43 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
             }
-            slot.Type = MarshalerType.Task;
-            slot.JSHandle = AllocJSVHandle();
+
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this path should only happen when the Task is passed as argument of JSImport
+                slot.JSHandle = AllocJSVHandle();
+                slot.Type = MarshalerType.Task;
+            }
+            else
+            {
+                // this path should hit for return values from JSExport/call_entry_point
+                // promise and handle is pre-allocated in slot.JSHandle
+            }
+
             var taskHolder = new JSObject(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task<T> task, object? thm)
             {
+                var hm = (HolderAndMarshaler<T>)thm!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(hm.TaskHolder, task.Exception);
                 }
                 else
                 {
                     T result = task.Result;
-                    ResolvePromise(taskHolder, result, marshaler);
+                    ResolvePromise(hm.TaskHolder, result, hm.Marshaler);
                 }
             }
         }
+
+        private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
 
         private static void RejectPromise(JSObject holder, Exception ex)
         {
