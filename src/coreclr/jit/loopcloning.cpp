@@ -1814,7 +1814,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 
     // Loop canonicalization should have ensured that there is a unique preheader.
     assert(loop->EntryEdges().size() == 1);
-    BasicBlock* preheader = loop->EntryEdges()[0]->getSourceBlock();
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
 
     // If the head and entry are in different EH regions, reject.
     if (!BasicBlock::sameEHRegion(preheader, loop->GetHeader()))
@@ -2013,7 +2013,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 
     assert(loop->EntryEdges().size() == 1);
-    BasicBlock* preheader = loop->EntryEdges()[0]->getSourceBlock();
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
     // The ambient weight might be higher than we computed above. Be safe by
     // taking the max with the head block's weight.
     ambientWeight = max(ambientWeight, preheader->bbWeight);
@@ -3087,6 +3087,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
         {
             if (loop->AnalyzeIteration(&iterInfo))
             {
+                INDEBUG(optCrossCheckIterInfo(iterInfo, optLoopTable[i]));
                 context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
             }
         }
@@ -3240,8 +3241,8 @@ PhaseStatus Compiler::optCloneLoops()
         // TODO: recompute the loop table, to include the slow loop path in the table?
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
 
-        m_dfs   = fgComputeDfs();
-        m_loops = FlowGraphNaturalLoops::Find(m_dfs);
+        m_dfsTree = fgComputeDfs();
+        optFindNewLoops();
     }
 
 #ifdef DEBUG

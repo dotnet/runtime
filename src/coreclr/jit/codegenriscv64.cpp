@@ -3385,7 +3385,25 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+    assert(tmpReg != treeNode->GetRegNum());
+    assert(tmpReg != op1->GetRegNum());
+
     GetEmitter()->emitIns_R_R(ins, dstSize, treeNode->GetRegNum(), op1->GetRegNum());
+
+    // This part emulates the "flush to zero" option because the RISC-V specification does not provide it.
+    instruction feq_ins = INS_feq_s;
+    if (srcType == TYP_DOUBLE)
+    {
+        feq_ins = INS_feq_d;
+    }
+    // Compare op1 with itself to get 0 if op1 is NaN and 1 for any other value
+    GetEmitter()->emitIns_R_R_R(feq_ins, dstSize, tmpReg, op1->GetRegNum(), op1->GetRegNum());
+    // Get subtraction result of REG_ZERO (always 0) and feq result
+    // As a result we get 0 for NaN and -1 (all bits set) for any other value
+    GetEmitter()->emitIns_R_R_R(INS_sub, dstSize, tmpReg, REG_ZERO, tmpReg);
+    // and instruction with received mask produces 0 for NaN and preserves any other value
+    GetEmitter()->emitIns_R_R_R(INS_and, dstSize, treeNode->GetRegNum(), treeNode->GetRegNum(), tmpReg);
 
     genProduceReg(treeNode);
 }
@@ -5460,23 +5478,30 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree*  src1 = bndsChk->GetIndex();
-    GenTree*  src2 = bndsChk->GetArrayLength();
-    regNumber reg1 = src1->GetRegNum();
-    regNumber reg2 = src2->GetRegNum();
+    GenTree*  index     = bndsChk->GetIndex();
+    GenTree*  length    = bndsChk->GetArrayLength();
+    regNumber indexReg  = index->GetRegNum();
+    regNumber lengthReg = length->GetRegNum();
 
-    genConsumeRegs(src1);
-    genConsumeRegs(src2);
+    genConsumeRegs(index);
+    genConsumeRegs(length);
+
+    if (genActualType(index->TypeGet()) == TYP_INT)
+    {
+        regNumber tempReg = oper->GetSingleTempReg();
+        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
+        indexReg = tempReg;
+    }
 
 #ifdef DEBUG
-    var_types bndsChkType = genActualType(src2->TypeGet());
-    var_types src1ChkType = genActualType(src1->TypeGet());
+    var_types lengthType = genActualType(length->TypeGet());
+    var_types indexType  = genActualType(index->TypeGet());
     // Bounds checks can only be 32 or 64 bit sized comparisons.
-    assert(bndsChkType == TYP_INT || bndsChkType == TYP_LONG);
-    assert(src1ChkType == TYP_INT || src1ChkType == TYP_LONG);
+    assert(lengthType == TYP_INT || lengthType == TYP_LONG);
+    assert(indexType == TYP_INT || indexType == TYP_LONG);
 #endif // DEBUG
 
-    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, reg1, bndsChk->gtIndRngFailBB, reg2);
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, bndsChk->gtIndRngFailBB, lengthReg);
 }
 
 //---------------------------------------------------------------------

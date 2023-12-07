@@ -5765,6 +5765,9 @@ void Compiler::RecomputeLoopInfo()
     optSetBlockWeights();
     // Rebuild the loop tree annotations themselves
     optFindLoops();
+
+    m_dfsTree = fgComputeDfs();
+    optFindNewLoops();
 }
 
 /*****************************************************************************/
