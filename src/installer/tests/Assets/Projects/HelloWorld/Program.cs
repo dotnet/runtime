@@ -23,8 +23,8 @@ namespace HelloWorld
             {
                 case "load_shared_library":
                     var asm = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("SharedLibrary"));
-                    FieldInfo field = asm.GetType("SharedLibrary.SharedType").GetField("Value");
-                    Console.WriteLine($"SharedLibrary.SharedType.Value={field.GetValue(null)}");
+                    PropertyInfo property = asm.GetType("SharedLibrary.SharedType").GetProperty("Value");
+                    Console.WriteLine($"SharedLibrary.SharedType.Value = {property.GetValue(null)}");
                     break;
                 case "throw_exception":
                     throw new Exception("Goodbye World!");
