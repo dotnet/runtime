@@ -9160,9 +9160,15 @@ DONE_MORPHING_CHILDREN:
 
             if (opts.OptimizationEnabled() && fgGlobalMorph)
             {
-                if (op2->IsIntegralConst() || op1->IsIntegralConst())
+                if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
                 {
-                    if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
+                    if (tree->IsUnsigned() && op1->IsNeverNegative(this) && op2->IsNeverNegative(this))
+                    {
+                        // Our branch optimizations don't work well with unsigned comparisons
+                        tree->ClearUnsigned();
+                    }
+
+                    if (op2->IsIntegralConst() || op1->IsIntegralConst())
                     {
                         tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
                         if (tree->OperIs(GT_CNS_INT))
