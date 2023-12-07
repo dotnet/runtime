@@ -26,6 +26,10 @@
 
     <!-- Don't build samples, and functional tests on EAT, AOT, WBT, and Debugger lanes -->
     <RunWasmSamples Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' != 'true' and  '$(TestWasmBuildTests)' != 'true' and '$(TestWasmDebuggerTests)' != 'true'">true</RunWasmSamples>
+
+    <!-- this is so we can specify a fixed set of tests to run, instead of excluding some tests
+         from the full set -->
+    <RunLimitedSetOfTests Condition="'$(TargetOS)' == 'wasi' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' != 'true'">true</RunLimitedSetOfTests>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
@@ -434,7 +438,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\InvokeEmit\System.Reflection.InvokeEmit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\InvokeInterpreted\System.Reflection.InvokeInterpreted.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System\Reflection\InvokeEmit\System.Runtime.ReflectionInvokeEmit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\ystem\Reflection\InvokeInterpreted\System.Runtime.ReflectionInvokeInterpreted.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System\Reflection\InvokeInterpreted\System.Runtime.ReflectionInvokeInterpreted.Tests.csproj" />
 
     <!-- Most of these need tagging as "requires Ref.Emit". Not much interesting things left to run. Low priority. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight\tests\System.Reflection.Emit.Lightweight.Tests.csproj" />
@@ -546,7 +550,8 @@
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi'">
+  <!-- wasi/interp smoke tests -->
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunAOTCompilation)' != 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
@@ -559,6 +564,21 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Buffers.Tests\System.Buffers.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
+  </ItemGroup>
+
+  <!-- wasi/aot smoke tests -->
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' == 'true'">
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
+  </ItemGroup>
+
+  <!-- wasi/aot non-smoke tests -->
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' != 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Buffers.Tests\System.Buffers.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -596,7 +616,7 @@
                       Include="@(GrpcTestProject)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'">
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(RunLimitedSetOfTests)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'"
@@ -710,6 +730,12 @@
     <ProjectReference Include="$(MonoProjectRoot)sample\wasi\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="$(Samples_BuildInParallel)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(IsXUnitLogCheckerSupported)' == 'true'">
+    <ProjectReference
+      Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
+      AdditionalProperties="%(AdditionalProperties);Configuration=Release;OutDir=$(XUnitLogCheckerLibrariesOutDir)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"

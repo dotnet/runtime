@@ -1865,11 +1865,6 @@ void emitter::emitCheckIGList()
             // Extension groups don't store GC info.
             assert((currIG->igFlags & (IGF_GC_VARS | IGF_BYREF_REGS)) == 0);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // Extension groups can't be branch targets.
-            assert((currIG->igFlags & IGF_FINALLY_TARGET) == 0);
-#endif
-
             // TODO: It would be nice if we could assert that a funclet prolog, funclet epilog, or
             // function epilog could only extend one of the same type. However, epilogs are created
             // using emitCreatePlaceholderIG() and might be in EXTEND groups. Can we force them to
@@ -2730,6 +2725,8 @@ const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
     EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
 #if defined(TARGET_XARCH)
     EA_32BYTE, EA_64BYTE,
+#elif defined(TARGET_ARM64)
+    EA_SCALABLE,
 #endif // TARGET_XARCH
 };
 
@@ -2900,8 +2897,7 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
                             regMaskTP        gcrefRegs,
-                            regMaskTP        byrefRegs,
-                            bool isFinallyTarget DEBUG_ARG(BasicBlock* block))
+                            regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2924,13 +2920,6 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
     VarSetOps::Assign(emitComp, emitInitGCrefVars, GCvars);
     emitThisGCrefRegs = emitInitGCrefRegs = gcrefRegs;
     emitThisByrefRegs = emitInitByrefRegs = byrefRegs;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (isFinallyTarget)
-    {
-        emitCurIG->igFlags |= IGF_FINALLY_TARGET;
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
@@ -3997,12 +3986,6 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", byref");
     }
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (flags & IGF_FINALLY_TARGET)
-    {
-        printf(", ftarget");
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (flags & IGF_FUNCLET_PROLOG)
     {
         printf(", funclet prolog");
@@ -4647,9 +4630,11 @@ void emitter::emitRemoveJumpToNextInst()
         insGroup*     jmpGroup = jmp->idjIG;
         instrDescJmp* nextJmp  = jmp->idjNext;
 
-        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
+        if (jmp->idjIsRemovableJmpCandidate)
         {
 #if DEBUG
+            assert(jmp->idInsFmt() == IF_LABEL);
+            assert(emitIsUncondJump(jmp));
             assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
             assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
                    ((jmpGroup->igNum == previousJumpIgNum) && (jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum)));
@@ -4716,6 +4701,25 @@ void emitter::emitRemoveJumpToNextInst()
                 UNATIVE_OFFSET codeSize = jmp->idCodeSize();
                 jmp->idCodeSize(0);
 
+#ifdef TARGET_AMD64
+                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
+                if (jmp->idjIsAfterCallBeforeEpilog)
+                {
+                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
+                    {
+                        // This jump will become a nop, so set its size now to ensure below calculations are correct
+                        jmp->idCodeSize(1);
+                        codeSize--;
+                    }
+                    else
+                    {
+                        // We don't need a nop if the removed jump isn't before an OS epilog,
+                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
+                        jmp->idjIsAfterCallBeforeEpilog = 0;
+                    }
+                }
+#endif // TARGET_AMD64
+
                 jmpGroup->igSize -= (unsigned short)codeSize;
                 jmpGroup->igFlags |= IGF_UPD_ISZ;
 
@@ -4724,6 +4728,9 @@ void emitter::emitRemoveJumpToNextInst()
             }
             else
             {
+                // The jump was not removed; make sure idjIsRemovableJmpCandidate reflects this
+                jmp->idjIsRemovableJmpCandidate = 0;
+
                 // Update the previousJmp
                 previousJmp = jmp;
 #if DEBUG
@@ -5150,7 +5157,7 @@ AGAIN:
             }
 #endif // DEBUG
 
-            assert(jmp->idAddr()->iiaBBlabel->bbFlags & BBF_HAS_LABEL);
+            assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
             assert(tgtIG);
 
             /* Record the bound target */
@@ -6507,7 +6514,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->bbFlags & BBF_FUNCLET_BEG);
+            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));
@@ -7125,11 +7132,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             NO_WAY("Too many instruction groups");
         }
 
-        // If this instruction group is returned to from a funclet implementing a finally,
-        // on architectures where it is necessary generate GC info for the current instruction as
-        // if it were the instruction following a call.
-        emitGenGCInfoIfFuncletRetTarget(ig, cp);
-
         instrDesc* id = emitFirstInstrDesc(ig->igData);
 
 #ifdef DEBUG
@@ -7656,29 +7658,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     /* Return the amount of code we've generated */
 
     return actualCodeSize;
-}
-
-// See specification comment at the declaration.
-void emitter::emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp)
-{
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // We only emit this GC information on targets where finally's are implemented via funclets,
-    // and the finally is invoked, during non-exceptional execution, via a branch with a predefined
-    // link register, rather than a "true call" for which we would already generate GC info.  Currently,
-    // this means precisely ARM.
-    if (ig->igFlags & IGF_FINALLY_TARGET)
-    {
-        // We don't actually have a call instruction in this case, so we don't have
-        // a real size for that instruction.  We'll use 1.
-        emitStackPop(cp, /*isCall*/ true, /*callInstrSize*/ 1, /*args*/ 0);
-
-        /* Do we need to record a call location for GC purposes? */
-        if (!emitFullGCinfo)
-        {
-            emitRecordGCcall(cp, /*callInstrSize*/ 1);
-        }
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 }
 
 /*****************************************************************************

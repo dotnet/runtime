@@ -1248,7 +1248,7 @@ DONE:
             fgMarkBackwardJump(loopHead, compCurBB);
 
             setMethodHasRecursiveTailcall();
-            compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+            compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
         }
 
         // We only do these OSR checks in the root method because:
@@ -1267,7 +1267,7 @@ DONE:
             {
                 BasicBlock* const successor = compCurBB->GetUniqueSucc();
                 assert(successor->KindIs(BBJ_RETURN));
-                successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+                successor->SetFlags(BBF_TAILCALL_SUCCESSOR);
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
             }
         }
@@ -5329,7 +5329,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 
         return true;
     }
-#endif // TARGET_64BIT
+#endif // USE_PER_FRAME_PINVOKE_INIT
 
     return true;
 }
@@ -5407,9 +5407,10 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) || IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
+    if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
+                               (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
     {
-        // PInvoke in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
+        // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
         // converted to regular method calls earlier using convertPInvokeCalliToCall.
 
         // PInvoke CALLI in IL stubs must be inlined
@@ -6875,7 +6876,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // See what we know about the type of 'this' in the call.
     assert(call->gtArgs.HasThisPointer());
     CallArg*             thisArg      = call->gtArgs.GetThisArg();
-    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal(false);
+    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal();
     bool                 isExact      = false;
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
@@ -7413,7 +7414,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
     {
         setMethodHasRecursiveTailcall();
-        compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+        compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
     }
 
 #ifdef FEATURE_READYTORUN
@@ -7484,7 +7485,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 
     // Flag block as needing scrutiny
     //
-    compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+    compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
     return true;
 }
 
@@ -9795,7 +9796,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
     optMethodFlags |= OMF_HAS_MDARRAYREF;
-    compCurBB->bbFlags |= BBF_HAS_MDARRAYREF;
+    compCurBB->SetFlags(BBF_HAS_MDARRAYREF);
 
     noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
 

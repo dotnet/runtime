@@ -3,8 +3,8 @@
   "author": "Microsoft",
   "classifications": [ "Wasi", "WasiConsole" ],
   "groupIdentity": "Wasi.Console",
-  "precedence": 8000,
-  "identity": "Wasi.Console.8.0",
+  "precedence": 9000,
+  "identity": "Wasi.Console.9.0",
   "name": "Wasi Console App",
   "description": "A project template for creating a .NET app that runs on a WASI runtime",
   "shortName": "wasiconsole",
@@ -21,12 +21,12 @@
       "datatype": "choice",
       "choices": [
         {
-          "choice": "net8.0",
-          "description": "Target net8.0",
-          "displayName": ".NET 8.0"
+          "choice": "net9.0",
+          "description": "Target net9.0",
+          "displayName": ".NET 9.0"
         }
       ],
-      "defaultValue": "net8.0",
+      "defaultValue": "net9.0",
       "replaces": "netX.0",
       "displayName": "framework"
     }

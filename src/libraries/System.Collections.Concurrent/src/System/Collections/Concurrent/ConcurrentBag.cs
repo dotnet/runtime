@@ -438,7 +438,7 @@ namespace System.Collections.Concurrent
                 for (WorkStealingQueue? queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
                 {
                     T? ignored;
-                    while (queue.TrySteal(out ignored, take: true));
+                    while (queue.TrySteal(out ignored, take: true)) ;
                 }
             }
             finally

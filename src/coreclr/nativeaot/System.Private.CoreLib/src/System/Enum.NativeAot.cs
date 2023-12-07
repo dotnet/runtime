@@ -8,9 +8,10 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-using Internal.Reflection.Augments;
 
 using CorElementType = System.Reflection.CorElementType;
 using EETypeElementType = Internal.Runtime.EETypeElementType;
@@ -56,7 +57,7 @@ namespace System
                         values[i] = (TStorage)valuesAsObject[i];
                     }
                     return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
-            });
+                });
         }
 #pragma warning restore
 

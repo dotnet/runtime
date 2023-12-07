@@ -64,7 +64,7 @@ namespace System.Reflection.Tests
 
             for (int genericParameterCount = 0; genericParameterCount < 4; genericParameterCount++)
             {
-                m = t.GetMethod("Moo", genericParameterCount, bf, null, args, null);
+                m = t.GetMethod("Moo", genericParameterCount, bf, args);
                 Assert.NotNull(m);
                 AssertIsMarked(m, genericParameterCount);
 
@@ -74,7 +74,7 @@ namespace System.Reflection.Tests
                 AssertIsMarked(m, genericParameterCount);
             }
 
-            m = t.GetMethod("Moo", 4, bf, null, args, null);
+            m = t.GetMethod("Moo", 4, bf, args);
             Assert.Null(m);
         }
 
@@ -110,7 +110,7 @@ namespace System.Reflection.Tests
             Type t = typeof(TestClass1);
             const BindingFlags bf = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
             Type[] args = { typeof(int) };
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("genericParameterCount", () => t.GetMethod("Moo", -1, bf, null, args, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("genericParameterCount", () => t.GetMethod("Moo", -1, bf, args));
         }
 
         [Theory]
