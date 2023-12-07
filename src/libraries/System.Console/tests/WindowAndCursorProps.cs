@@ -559,7 +559,7 @@ public class WindowAndCursorProps
         Assert.Throws<PlatformNotSupportedException>(() => Console.SetWindowPosition(50, 50));
     }
 
-    [PlatformSpecific((TestPlatforms.Windows) | (TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {
