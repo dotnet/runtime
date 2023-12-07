@@ -414,7 +414,7 @@ namespace ILLink.Shared.TrimAnalysis
 							foreach (var stringParam in argumentValues[0].AsEnumerable ()) {
 								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags) && !MemberTypesAreUnsupported (memberTypes)) {
 									// determine if we've got a prefix (for example, abc* searches for anything starting with abc)
-									var isPrefix = stringValue.Contents.EndsWith('*');
+									var isPrefix = stringValue.Contents.EndsWith("*");
 									var name = stringValue.Contents;
 									if (isPrefix) name = name.Substring(0, name.Length - 1);
 
