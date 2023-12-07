@@ -4317,6 +4317,8 @@ void RethrowNew()
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
 
+    pThread->IncPreventAbort();
+
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     CALL_MANAGED_METHOD_NORET(args)
     GCPROTECT_END();

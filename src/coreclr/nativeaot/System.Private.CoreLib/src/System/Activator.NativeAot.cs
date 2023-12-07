@@ -32,7 +32,7 @@ namespace System
         // This method is intrinsic. The compiler might replace it with more efficient implementation.
         [DebuggerGuidedStepThrough]
         [Intrinsic]
-        public static unsafe T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        public static unsafe T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
             // Grab the pointer to the default constructor of the type. If T doesn't have a default
             // constructor, the intrinsic returns a marker pointer that we check for.

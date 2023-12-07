@@ -122,7 +122,7 @@ namespace System.Threading
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the bound thread, called from mono_background_exec
-        private static void BackgroundJobHandler ()
+        private static void BackgroundJobHandler()
         {
             try
             {

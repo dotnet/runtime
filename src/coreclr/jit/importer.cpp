@@ -39,7 +39,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     /* Check for overflow. If inlining, we may be using a bigger stack */
 
     if ((verCurrentState.esStackDepth >= info.compMaxStack) &&
-        (verCurrentState.esStackDepth >= impStkSize || ((compCurBB->bbFlags & BBF_IMPORTED) == 0)))
+        (verCurrentState.esStackDepth >= impStkSize || !compCurBB->HasFlag(BBF_IMPORTED)))
     {
         BADCODE("stack overflow");
     }
@@ -287,9 +287,9 @@ void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement
     block->bbStmtList = firstStmt;
 
     /* The block should not already be marked as imported */
-    assert((block->bbFlags & BBF_IMPORTED) == 0);
+    assert(!block->HasFlag(BBF_IMPORTED));
 
-    block->bbFlags |= BBF_IMPORTED;
+    block->SetFlags(BBF_IMPORTED);
 }
 
 void Compiler::impEndTreeList(BasicBlock* block)
@@ -297,10 +297,10 @@ void Compiler::impEndTreeList(BasicBlock* block)
     if (impStmtList == nullptr)
     {
         // The block should not already be marked as imported.
-        assert((block->bbFlags & BBF_IMPORTED) == 0);
+        assert(!block->HasFlag(BBF_IMPORTED));
 
         // Empty block. Just mark it as imported.
-        block->bbFlags |= BBF_IMPORTED;
+        block->SetFlags(BBF_IMPORTED);
     }
     else
     {
@@ -1976,8 +1976,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     // hit only under JIT stress. See if the block is the one we injected.
     // Note that EH canonicalization can inject internal blocks here. We might
     // be able to re-use such a block (but we don't, right now).
-    if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE)) ==
-        (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE))
+    if (hndBlk->HasAllFlags(BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE))
     {
         Statement* stmt = hndBlk->firstStmt();
 
@@ -2023,7 +2022,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         // Create extra basic block for the spill
         //
         BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true, /* jumpDest */ hndBlk);
-        newBlk->bbFlags |= (BBF_IMPORTED | BBF_DONT_REMOVE | BBF_NONE_QUIRK);
+        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE | BBF_NONE_QUIRK);
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
@@ -2495,8 +2494,8 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg))
 {
     block->SetJumpKindAndTarget(BBJ_THROW);
-    block->bbFlags |= BBF_FAILED_VERIFICATION;
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->SetFlags(BBF_FAILED_VERIFICATION);
+    block->RemoveFlags(BBF_IMPORTED);
 
     impCurStmtOffsSet(block->bbCodeOffs);
 
@@ -2954,128 +2953,151 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     }
                 }
 
-                const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
-
-                switch (nextCodeAddr[0])
+                const BYTE*  nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
+                const OPCODE nextOpcode   = impGetNonPrefixOpcode(nextCodeAddr, codeEndp);
+                switch (nextOpcode)
                 {
                     // box + isinst + br_true/false
                     case CEE_BRTRUE:
                     case CEE_BRTRUE_S:
                     case CEE_BRFALSE:
                     case CEE_BRFALSE_S:
-                        if ((nextCodeAddr + ((nextCodeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
+                    case CEE_LDNULL:
+                    {
+                        // "ldnull + cgt_un" is used when BOX+ISINST is not fed into a branch, e.g.:
+                        //
+                        //   if (obj is string) {        <--- box + isinst + br_true
+                        //
+                        //   bool b = obj is string;     <--- box + isinst + ldnull + cgt_un
+                        //
+                        //   bool b = obj is not string; <--- box + isinst + ldnull + cgt_un + ldc.i4.0 + ceq
+                        //
+
+                        // For br_true/false, we'll only replace "box + isinst" to a boolean
+                        int returnToken = 1 + sizeof(mdToken);
+                        if (nextOpcode == CEE_LDNULL)
                         {
-                            if (opts == BoxPatterns::MakeInlineObservation)
+                            // for ldnull case, we'll replace the whole "box + isinst + ldnull + cgt_un" sequence
+                            returnToken = 4 + sizeof(mdToken);
+                            if ((opts == BoxPatterns::IsByRefLike) ||
+                                (impGetNonPrefixOpcode(nextCodeAddr + 1, codeEndp) != CEE_CGT_UN))
                             {
-                                compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
-                                return 1 + sizeof(mdToken);
-                            }
-
-                            CorInfoHelpFunc foldAsHelper;
-                            if (opts == BoxPatterns::IsByRefLike)
-                            {
-                                // Treat ByRefLike types as if they were regular boxing operations
-                                // so they can be elided.
-                                foldAsHelper = CORINFO_HELP_BOX;
-                            }
-                            else
-                            {
-                                foldAsHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
-                            }
-
-                            if (foldAsHelper == CORINFO_HELP_BOX)
-                            {
-                                CORINFO_RESOLVED_TOKEN isInstResolvedToken;
-
-                                impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
-
-                                TypeCompareState castResult =
-                                    info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
-                                                                          isInstResolvedToken.hClass);
-
-                                if (castResult != TypeCompareState::May)
-                                {
-                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
-
-                                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
-                                    impPopStack();
-                                    impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
-                                                   typeInfo(TYP_INT));
-                                    return 1 + sizeof(mdToken);
-                                }
-                            }
-                            else if ((foldAsHelper == CORINFO_HELP_BOX_NULLABLE) &&
-                                     ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
-                            {
-                                // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
-                                // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
-                                // the target type.
-                                CORINFO_RESOLVED_TOKEN isInstResolvedToken;
-                                impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
-
-                                CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
-                                CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
-
-                                TypeCompareState castResult =
-                                    info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
-
-                                if (castResult == TypeCompareState::Must)
-                                {
-                                    GenTree* objToBox = impPopStack().val;
-
-                                    // Spill struct to get its address (to access hasValue field)
-                                    // TODO-Bug?: verify if flags matter here
-                                    GenTreeFlags indirFlags = GTF_EMPTY;
-                                    objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
-
-                                    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                    impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
-
-                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
-                                    return 1 + sizeof(mdToken);
-                                }
-                                else if (castResult == TypeCompareState::MustNot)
-                                {
-                                    impPopStack();
-                                    impPushOnStack(gtNewIconNode(0), typeInfo(TYP_INT));
-                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
-                                    return 1 + sizeof(mdToken);
-                                }
+                                break;
                             }
                         }
-                        break;
+
+                        if (opts == BoxPatterns::MakeInlineObservation)
+                        {
+                            compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                            return returnToken;
+                        }
+
+                        CorInfoHelpFunc foldAsHelper;
+                        if (opts == BoxPatterns::IsByRefLike)
+                        {
+                            // Treat ByRefLike types as if they were regular boxing operations
+                            // so they can be elided.
+                            foldAsHelper = CORINFO_HELP_BOX;
+                        }
+                        else
+                        {
+                            foldAsHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                        }
+
+                        if (foldAsHelper == CORINFO_HELP_BOX)
+                        {
+                            CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+                            impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                            TypeCompareState castResult =
+                                info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
+                                                                      isInstResolvedToken.hClass);
+
+                            if (castResult != TypeCompareState::May)
+                            {
+                                JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
+
+                                impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                                impPopStack();
+                                impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
+                                               typeInfo(TYP_INT));
+                                return returnToken;
+                            }
+                        }
+                        else if ((foldAsHelper == CORINFO_HELP_BOX_NULLABLE) &&
+                                 ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
+                        {
+                            // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
+                            // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
+                            // the target type.
+                            CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+                            impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                            CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
+                            CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
+
+                            TypeCompareState castResult =
+                                info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
+
+                            if (castResult == TypeCompareState::Must)
+                            {
+                                GenTree* objToBox = impPopStack().val;
+
+                                // Spill struct to get its address (to access hasValue field)
+                                // TODO-Bug?: verify if flags matter here
+                                GenTreeFlags indirFlags = GTF_EMPTY;
+                                objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
+
+                                static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
+
+                                JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
+                                return returnToken;
+                            }
+                            else if (castResult == TypeCompareState::MustNot)
+                            {
+                                impPopStack();
+                                impPushOnStack(gtNewIconNode(0), typeInfo(TYP_INT));
+                                JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
+                                return returnToken;
+                            }
+                        }
+                    }
+                    break;
 
                     // box + isinst + unbox.any
                     case CEE_UNBOX_ANY:
-                        if ((nextCodeAddr + 1 + sizeof(mdToken)) <= codeEndp)
+                    {
+                        if (opts == BoxPatterns::MakeInlineObservation)
                         {
-                            if (opts == BoxPatterns::MakeInlineObservation)
-                            {
-                                compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
-                                return 2 + sizeof(mdToken) * 2;
-                            }
+                            compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                            return 2 + sizeof(mdToken) * 2;
+                        }
 
-                            // See if the resolved tokens in box, isinst and unbox.any describe types that are equal.
-                            CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
-                            impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
+                        // See if the resolved tokens in box, isinst and unbox.any describe types that are equal.
+                        CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
+                        impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
 
-                            if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                        if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                                                                      pResolvedToken->hClass) == TypeCompareState::Must)
+                        {
+                            CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+                            impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                            // If so, box + isinst + unbox.any is a nop.
+                            if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
                                                                           pResolvedToken->hClass) ==
                                 TypeCompareState::Must)
                             {
-                                CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
-                                impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
-
-                                // If so, box + isinst + unbox.any is a nop.
-                                if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
-                                                                              pResolvedToken->hClass) ==
-                                    TypeCompareState::Must)
-                                {
-                                    JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
-                                    return 2 + sizeof(mdToken) * 2;
-                                }
+                                JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
+                                return 2 + sizeof(mdToken) * 2;
                             }
                         }
+                    }
+                    break;
+
+                    default:
                         break;
                 }
             }
@@ -3227,7 +3249,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // Remember that this basic block contains 'new' of an object,
         // and so does this method
         //
-        compCurBB->bbFlags |= BBF_HAS_NEWOBJ;
+        compCurBB->SetFlags(BBF_HAS_NEWOBJ);
         optMethodFlags |= OMF_HAS_NEWOBJ;
 
         // Assign the boxed object to the box temp.
@@ -4430,7 +4452,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             step = fgNewBBafter(BBJ_ALWAYS, callBlock, true);
             /* The new block will inherit this block's weight */
             step->inheritWeight(block);
-            step->bbFlags |= BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS;
+            step->SetFlags(BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS);
 
 #ifdef DEBUG
             if (verbose)
@@ -4489,7 +4511,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         // the handler region indicated by leaveTarget->bbHndIndex,
         // depending on which is the inner region.
         BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step, leaveTarget);
-        finalStep->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
+        finalStep->SetFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // step's jump target shouldn't be set yet
         assert(!step->HasInitializedJumpDest());
@@ -4648,7 +4670,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 /* The new block will inherit this block's weight */
                 exitBlock->inheritWeight(block);
-                exitBlock->bbFlags |= BBF_IMPORTED;
+                exitBlock->SetFlags(BBF_IMPORTED);
 
                 /* This exit block is the new step */
                 step     = exitBlock;
@@ -4692,7 +4714,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 /* The new block will inherit this block's weight */
                 callBlock->inheritWeight(block);
-                callBlock->bbFlags |= BBF_IMPORTED;
+                callBlock->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4761,7 +4783,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                     step->SetJumpDest(step2);
                     fgAddRefPred(step2, step);
                     step2->inheritWeight(block);
-                    step2->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
+                    step2->CopyFlags(block, BBF_RUN_RARELY);
+                    step2->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                     if (verbose)
@@ -4803,7 +4826,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 /* The new block will inherit this block's weight */
                 callBlock->inheritWeight(block);
-                callBlock->bbFlags |= BBF_IMPORTED;
+                callBlock->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4821,7 +4844,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             /* The new block will inherit this block's weight */
             step->inheritWeight(block);
-            step->bbFlags |= BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS;
+            step->SetFlags(BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS);
 
 #ifdef DEBUG
             if (verbose)
@@ -4905,7 +4928,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 /* The new block will inherit this block's weight */
                 catchStep->inheritWeight(block);
-                catchStep->bbFlags |= BBF_IMPORTED;
+                catchStep->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
                 if (verbose)
@@ -5015,7 +5038,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     if (block->KindIs(BBJ_CALLFINALLY))
     {
         BasicBlock* dupBlock = BasicBlock::New(this, BBJ_CALLFINALLY, block->GetJumpDest());
-        dupBlock->bbFlags    = block->bbFlags;
+        dupBlock->CopyFlags(block);
         fgAddRefPred(dupBlock->GetJumpDest(), dupBlock);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;
@@ -5028,7 +5051,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         //  e) as rarely run
         dupBlock->bbRefs   = 0;
         dupBlock->bbWeight = BB_ZERO_WEIGHT;
-        dupBlock->bbFlags |= BBF_IMPORTED | BBF_INTERNAL | BBF_RUN_RARELY;
+        dupBlock->SetFlags(BBF_IMPORTED | BBF_INTERNAL | BBF_RUN_RARELY);
 
         // Insert the block right after the block which is getting reset so that BBJ_CALLFINALLY and BBJ_ALWAYS
         // will be next to each other.
@@ -5558,7 +5581,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             pInfo->ilOffset                             = ilOffset;
             pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
             call->gtHandleHistogramProfileCandidateInfo = pInfo;
-            compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+            compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
         }
         return call;
     }
@@ -5725,8 +5748,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 //
 bool Compiler::impBlockIsInALoop(BasicBlock* block)
 {
-    return (compIsForInlining() && ((impInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) != 0)) ||
-           ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
+    return (compIsForInlining() && impInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP)) ||
+           block->HasFlag(BBF_BACKWARD_JUMP);
 }
 
 #ifdef _PREFAST_
@@ -5817,7 +5840,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         // Patchpoints at backedge sources, if possible, otherwise targets.
                         //
-                        addPatchpoint = ((block->bbFlags & BBF_BACKWARD_JUMP_SOURCE) == BBF_BACKWARD_JUMP_SOURCE);
+                        addPatchpoint           = block->HasFlag(BBF_BACKWARD_JUMP_SOURCE);
                         mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
                         break;
                     }
@@ -5831,8 +5854,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We should not have allowed OSR if there were backedges in handlers.
                         //
                         assert(!block->hasHndIndex());
-                        addPatchpoint = ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET) &&
-                                        (verCurrentState.esStackDepth == 0);
+                        addPatchpoint = block->HasFlag(BBF_BACKWARD_JUMP_TARGET) && (verCurrentState.esStackDepth == 0);
                         break;
                     }
 
@@ -5844,14 +5866,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // otherwise at backedge sources, if possible. Note a block can be both; if so we
                         // just need one patchpoint.
                         //
-                        if ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET)
+                        if (block->HasFlag(BBF_BACKWARD_JUMP_TARGET))
                         {
                             // We don't know backedge count, so just use ref count.
                             //
                             addPatchpoint = (block->bbRefs > 1) && (verCurrentState.esStackDepth == 0);
                         }
 
-                        if (!addPatchpoint && ((block->bbFlags & BBF_BACKWARD_JUMP_SOURCE) == BBF_BACKWARD_JUMP_SOURCE))
+                        if (!addPatchpoint && block->HasFlag(BBF_BACKWARD_JUMP_SOURCE))
                         {
                             addPatchpoint           = true;
                             mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
@@ -5887,11 +5909,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 // The succBlock had better agree it's a target.
                                 //
-                                assert((succBlock->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET);
+                                assert(succBlock->HasFlag(BBF_BACKWARD_JUMP_TARGET));
 
                                 // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
-                                if ((succBlock->bbFlags & BBF_PATCHPOINT) != 0)
+                                if (succBlock->HasFlag(BBF_PATCHPOINT))
                                 {
                                     // In some cases the target may not be stack-empty at entry.
                                     // If so, we will bypass patchpoints for this backedge.
@@ -5909,7 +5931,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                 block->bbNum, succBlock->bbNum);
 
                                         assert(!succBlock->hasHndIndex());
-                                        succBlock->bbFlags |= BBF_PATCHPOINT;
+                                        succBlock->SetFlags(BBF_PATCHPOINT);
                                     }
                                 }
                             }
@@ -5918,7 +5940,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(!block->hasHndIndex());
-                        block->bbFlags |= BBF_PATCHPOINT;
+                        block->SetFlags(BBF_PATCHPOINT);
                     }
 
                     setMethodHasPatchpoint();
@@ -5929,7 +5951,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Should not see backward branch targets w/o backwards branches.
                 // So if !compHasBackwardsBranch, these flags should never be set.
                 //
-                assert((block->bbFlags & (BBF_BACKWARD_JUMP_TARGET | BBF_BACKWARD_JUMP_SOURCE)) == 0);
+                assert(!block->HasAnyFlag(BBF_BACKWARD_JUMP_TARGET | BBF_BACKWARD_JUMP_SOURCE));
             }
         }
 
@@ -5945,7 +5967,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryRandomOSR = randomOSR > 0;
 
         if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) &&
-            !block->hasHndIndex() && ((block->bbFlags & BBF_PATCHPOINT) == 0))
+            !block->hasHndIndex() && !block->HasFlag(BBF_PATCHPOINT))
         {
             // Block start can have a patchpoint. See if we should add one.
             //
@@ -5975,7 +5997,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             if (addPatchpoint)
             {
-                block->bbFlags |= BBF_PATCHPOINT;
+                block->SetFlags(BBF_PATCHPOINT);
                 setMethodHasPatchpoint();
             }
 
@@ -6006,10 +6028,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         // Is this block a good place for partial compilation?
         //
         if ((block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
-            ((block->bbFlags & BBF_PATCHPOINT) == 0) && !block->hasHndIndex())
+            !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
         {
             JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
-            block->bbFlags |= BBF_PARTIAL_COMPILATION_PATCHPOINT;
+            block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
             setMethodHasPartialCompilationPatchpoint();
 
             // Block will no longer flow to any of its successors.
@@ -6737,7 +6759,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Mark current bb as end of filter */
 
-                assert(compCurBB->bbFlags & BBF_DONT_REMOVE);
+                assert(compCurBB->HasFlag(BBF_DONT_REMOVE));
                 assert(compCurBB->KindIs(BBJ_EHFILTERRET));
 
                 /* Mark catch handler as successor */
@@ -6801,7 +6823,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Mark the basic block as being a JUMP instead of RETURN */
 
-                block->bbFlags |= BBF_HAS_JMP;
+                block->SetFlags(BBF_HAS_JMP);
 
                 /* Set this flag to make sure register arguments have a location assigned
                  * even if we don't use them inside the method */
@@ -6922,7 +6944,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->bbFlags |= BBF_HAS_IDX_LEN;
+                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -7028,7 +7050,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Mark the block as containing an index expression
                 if (op3->OperIs(GT_LCL_VAR) && op1->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->bbFlags |= BBF_HAS_IDX_LEN;
+                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -7331,7 +7353,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->GetJumpDest(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
-                        block->bbFlags |= BBF_NONE_QUIRK;
+                        block->SetFlags(BBF_NONE_QUIRK);
                     }
                     else
                     {
@@ -7404,7 +7426,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetJumpDest(), block);
                             block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
-                            block->bbFlags |= BBF_NONE_QUIRK;
+                            block->SetFlags(BBF_NONE_QUIRK);
                         }
                     }
 
@@ -7579,12 +7601,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->GetJumpDest(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
-                        block->bbFlags |= BBF_NONE_QUIRK;
+                        block->SetFlags(BBF_NONE_QUIRK);
                     }
                     else
                     {
                         assert(block->KindIs(BBJ_ALWAYS));
-                        assert((block->bbFlags & BBF_NONE_QUIRK) != 0);
+                        assert(block->HasFlag(BBF_NONE_QUIRK));
                     }
 
                     if (op1->gtFlags & GTF_GLOB_EFFECT)
@@ -7671,7 +7693,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     assert(foundVal);
                     if (block->JumpsToNext())
                     {
-                        block->bbFlags |= BBF_NONE_QUIRK;
+                        block->SetFlags(BBF_NONE_QUIRK);
                     }
 
 #ifdef DEBUG
@@ -8478,7 +8500,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     newObjThisPtr = nullptr;
 
                     /* Remember that this basic block contains 'new' of an object */
-                    block->bbFlags |= BBF_HAS_NEWOBJ;
+                    block->SetFlags(BBF_HAS_NEWOBJ);
                     optMethodFlags |= OMF_HAS_NEWOBJ;
                 }
                 else
@@ -8598,7 +8620,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         // Remember that this basic block contains 'new' of an object
-                        block->bbFlags |= BBF_HAS_NEWOBJ;
+                        block->SetFlags(BBF_HAS_NEWOBJ);
                         optMethodFlags |= OMF_HAS_NEWOBJ;
 
                         // Append the assignment to the temp/local. Dont need to spill
@@ -11050,13 +11072,13 @@ void Compiler::impPoisonImplicitByrefsBeforeReturn()
 inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 {
 #ifdef DEBUG
-    if (verbose && (block->bbFlags & BBF_IMPORTED))
+    if (verbose && block->HasFlag(BBF_IMPORTED))
     {
         printf("\n" FMT_BB " will be reimported\n", block->bbNum);
     }
 #endif
 
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->RemoveFlags(BBF_IMPORTED);
 }
 
 void Compiler::impVerifyEHBlock(BasicBlock* block)
@@ -11082,7 +11104,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
         // Recursively process the handler block, if we haven't already done so.
         BasicBlock* hndBegBB = HBtab->ebdHndBeg;
 
-        if (((hndBegBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(hndBegBB) == 0))
+        if (!hndBegBB->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(hndBegBB) == 0))
         {
             //  Construct the proper verification stack state
             //   either empty or one that contains just
@@ -11126,7 +11148,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
         {
             BasicBlock* filterBB = HBtab->ebdFilter;
 
-            if (((filterBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(filterBB) == 0))
+            if (!filterBB->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(filterBB) == 0))
             {
                 verCurrentState.esStackDepth = 0;
 
@@ -11170,10 +11192,10 @@ void Compiler::impImportBlock(BasicBlock* block)
     // BBF_INTERNAL blocks only exist during importation due to EH canonicalization. We need to
     // handle them specially. In particular, there is no IL to import for them, but we do need
     // to mark them as imported and put their successors on the pending import list.
-    if (block->bbFlags & BBF_INTERNAL)
+    if (block->HasFlag(BBF_INTERNAL))
     {
         JITDUMP("Marking BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", block->bbNum);
-        block->bbFlags |= BBF_IMPORTED;
+        block->SetFlags(BBF_IMPORTED);
 
         for (BasicBlock* const succBlock : block->Succs())
         {
@@ -11473,7 +11495,7 @@ SPILLSTACK:
     // We do *NOT* want to set it later than this because
     // impReimportSpillClique might clear it if this block is both a
     // predecessor and successor in the current spill clique
-    assert(block->bbFlags & BBF_IMPORTED);
+    assert(block->HasFlag(BBF_IMPORTED));
 
     // If we had a int/native int, or float/double collision, we need to re-import
     if (reimportSpillClique)
@@ -11486,7 +11508,7 @@ SPILLSTACK:
 
         for (BasicBlock* const succ : block->Succs())
         {
-            if ((succ->bbFlags & BBF_IMPORTED) == 0)
+            if (!succ->HasFlag(BBF_IMPORTED))
             {
                 impImportBlockPending(succ);
             }
@@ -11534,12 +11556,12 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // (When we're doing verification, we always attempt the merge to detect verification errors.)
 
     // If the block has not been imported, add to pending set.
-    bool addToPending = ((block->bbFlags & BBF_IMPORTED) == 0);
+    bool addToPending = !block->HasFlag(BBF_IMPORTED);
 
     // Initialize bbEntryState just the first time we try to add this block to the pending list
     // Just because bbEntryState is NULL, doesn't mean the pre-state wasn't previously set
     // We use NULL to indicate the 'common' state to avoid memory allocation
-    if ((block->bbEntryState == nullptr) && ((block->bbFlags & (BBF_IMPORTED | BBF_FAILED_VERIFICATION)) == 0) &&
+    if ((block->bbEntryState == nullptr) && !block->HasAnyFlag(BBF_IMPORTED | BBF_FAILED_VERIFICATION) &&
         (impGetPendingBlockMember(block) == 0))
     {
         verInitBBEntryState(block, &verCurrentState);
@@ -11620,7 +11642,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 
     // Various assertions require us to now to consider the block as not imported (at least for
     // the final time...)
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->RemoveFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -11640,7 +11662,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 {
     JITDUMP("\nimpReimportBlockPending for " FMT_BB, block->bbNum);
 
-    assert(block->bbFlags & BBF_IMPORTED);
+    assert(block->HasFlag(BBF_IMPORTED));
 
     // OK, we must add to the pending list, if it's not already in it.
     if (impGetPendingBlockMember(block) != 0)
@@ -11685,7 +11707,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 
     // Various assertions require us to now to consider the block as not imported (at least for
     // the final time...)
-    block->bbFlags &= ~BBF_IMPORTED;
+    block->RemoveFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -11795,14 +11817,14 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
     // and re-type it/add a cast, but that is complicated and hopefully very rare, so
     // just re-import the whole block (just like we do for successors)
 
-    if (((blk->bbFlags & BBF_IMPORTED) == 0) && (m_pComp->impGetPendingBlockMember(blk) == 0))
+    if (!blk->HasFlag(BBF_IMPORTED) && (m_pComp->impGetPendingBlockMember(blk) == 0))
     {
         // If we haven't imported this block and we're not going to (because it isn't on
         // the pending list) then just ignore it for now.
 
         // This block has either never been imported (EntryState == NULL) or it failed
         // verification. Neither state requires us to force it to be imported now.
-        assert((blk->bbEntryState == nullptr) || (blk->bbFlags & BBF_FAILED_VERIFICATION));
+        assert((blk->bbEntryState == nullptr) || blk->HasFlag(BBF_FAILED_VERIFICATION));
         return;
     }
 
@@ -11821,7 +11843,7 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
 
         m_pComp->impImportBlockPending(blk);
     }
-    else if ((blk != m_pComp->compCurBB) && ((blk->bbFlags & BBF_IMPORTED) != 0))
+    else if ((blk != m_pComp->compCurBB) && blk->HasFlag(BBF_IMPORTED))
     {
         // As described above, we are only visiting predecessors so they can
         // add the appropriate casts, since we have already done that for the current
@@ -12073,10 +12095,10 @@ void Compiler::impImport()
     //
     BasicBlock* entryBlock = fgFirstBB;
 
-    while (entryBlock->bbFlags & BBF_INTERNAL)
+    while (entryBlock->HasFlag(BBF_INTERNAL))
     {
         JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", entryBlock->bbNum);
-        entryBlock->bbFlags |= BBF_IMPORTED;
+        entryBlock->SetFlags(BBF_IMPORTED);
 
         assert(entryBlock->KindIs(BBJ_ALWAYS));
         entryBlock = entryBlock->GetJumpDest();
@@ -12131,7 +12153,7 @@ void Compiler::impImport()
 
         /* Now import the block */
 
-        if (dsc->pdBB->bbFlags & BBF_FAILED_VERIFICATION)
+        if (dsc->pdBB->HasFlag(BBF_FAILED_VERIFICATION))
         {
             verConvertBBToThrowVerificationException(dsc->pdBB DEBUGARG(true));
             impEndTreeList(dsc->pdBB);
@@ -12487,7 +12509,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     // No training data.  Look for loop-like things.
     // We consider a recursive call loop-like.  Do not give the inlining boost to the method itself.
     // However, give it to things nearby.
-    else if ((pInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) &&
+    else if (pInlineInfo->iciBlock->HasFlag(BBF_BACKWARD_JUMP) &&
              (pInlineInfo->fncHandle != pInlineInfo->inlineCandidateInfo->ilCallerHandle))
     {
         frequency = InlineCallsiteFrequency::LOOP;

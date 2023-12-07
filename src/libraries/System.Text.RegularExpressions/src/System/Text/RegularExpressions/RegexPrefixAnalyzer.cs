@@ -389,7 +389,7 @@ namespace System.Text.RegularExpressions
                             int? sameDistance = null;
                             var combined = new Dictionary<int, (RegexCharClass Set, int Count)>();
 
-                            var localResults = new List<RegexFindOptimizations.FixedDistanceSet> ();
+                            var localResults = new List<RegexFindOptimizations.FixedDistanceSet>();
                             for (int i = 0; i < childCount; i++)
                             {
                                 localResults.Clear();

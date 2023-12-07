@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(plaintextLength >= 0);
 
-             //divisor and factor are same and won't overflow.
+            //divisor and factor are same and won't overflow.
             int wholeBlocks = Math.DivRem(plaintextLength, paddingSizeInBytes, out int remainder) * paddingSizeInBytes;
 
             switch (paddingMode)

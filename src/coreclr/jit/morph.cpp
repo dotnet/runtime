@@ -6284,14 +6284,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // fgSetBlockOrder() is going to mark the method as fully interruptible
         // if the block containing this tail call is reachable without executing
         // any call.
-        if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT))
+        if (canFastTailCall || fgFirstBB->HasFlag(BBF_GC_SAFE_POINT) || compCurBB->HasFlag(BBF_GC_SAFE_POINT))
         {
             // No gc poll needed
         }
         else
         {
             JITDUMP("Marking " FMT_BB " as needs gc poll\n", compCurBB->bbNum);
-            compCurBB->bbFlags |= BBF_NEEDS_GCPOLL;
+            compCurBB->SetFlags(BBF_NEEDS_GCPOLL);
             optMethodFlags |= OMF_NEEDS_GCPOLLS;
         }
 
@@ -6302,7 +6302,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         noway_assert(compCurBB->KindIs(BBJ_RETURN));
         if (canFastTailCall)
         {
-            compCurBB->bbFlags |= BBF_HAS_JMP;
+            compCurBB->SetFlags(BBF_HAS_JMP);
         }
         else
         {
@@ -7460,13 +7460,13 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // so mark the scratch block BBF_DONT_REMOVE to prevent empty
         // block removal on it.
         //
-        fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
+        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
         block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
     }
 
     // Finish hooking things up.
     fgAddRefPred(block->GetJumpDest(), block);
-    block->bbFlags &= ~BBF_HAS_JMP;
+    block->RemoveFlags(BBF_HAS_JMP);
 }
 
 //------------------------------------------------------------------------------
@@ -7604,7 +7604,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             GenTree* result = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
             result->gtFlags |= GTF_DONT_CSE;
 
-            compCurBB->bbFlags |= BBF_HAS_CALL; // This block has a call
+            compCurBB->SetFlags(BBF_HAS_CALL); // This block has a call
 
             JITDUMP("\nInserting assignment of a multi-reg call result to a temp:\n");
             DISPSTMT(storeStmt);
@@ -7676,7 +7676,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     if (IsGcSafePoint(call))
     {
-        compCurBB->bbFlags |= BBF_GC_SAFE_POINT;
+        compCurBB->SetFlags(BBF_GC_SAFE_POINT);
     }
 
     // Regardless of the state of the basic block with respect to GC safe point,
@@ -7684,7 +7684,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // transition. Only mark the block for GC Poll insertion on the first morph.
     if (fgGlobalMorph && call->IsUnmanaged() && call->IsSuppressGCTransition())
     {
-        compCurBB->bbFlags |= (BBF_HAS_SUPPRESSGC_CALL | BBF_GC_SAFE_POINT);
+        compCurBB->SetFlags(BBF_HAS_SUPPRESSGC_CALL | BBF_GC_SAFE_POINT);
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
@@ -7709,7 +7709,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         }
     }
 
-    compCurBB->bbFlags |= BBF_HAS_CALL; // This block has a call
+    compCurBB->SetFlags(BBF_HAS_CALL); // This block has a call
 
     // From this point on disallow shared temps to be reused until we are done
     // processing the call.
@@ -13202,7 +13202,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 bTaken    = block->Next();
                 bNotTaken = block->GetJumpDest();
                 block->SetJumpKindAndTarget(BBJ_ALWAYS, bTaken);
-                block->bbFlags |= BBF_NONE_QUIRK;
+                block->SetFlags(BBF_NONE_QUIRK);
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13429,7 +13429,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             assert(foundVal);
             if (block->JumpsToNext())
             {
-                block->bbFlags |= BBF_NONE_QUIRK;
+                block->SetFlags(BBF_NONE_QUIRK);
             }
 
 #ifdef DEBUG
@@ -13563,7 +13563,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
         //
         // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_ALWAYS.
         // We should not convert it to a ThrowBB.
-        if ((block != fgFirstBB) || ((fgFirstBB->bbFlags & BBF_INTERNAL) == 0))
+        if ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL))
         {
             // Convert block to a throw bb
             fgConvertBBToThrowBB(block);
@@ -13706,8 +13706,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             //   - a tail call dispatched via runtime help (IL stubs), in which
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
-            noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) &&
-                          ((compCurBB->bbFlags & BBF_HAS_JMP)) != 0) ||
+            noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) && compCurBB->HasFlag(BBF_HAS_JMP)) ||
                          (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
                          (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
         }
@@ -13853,7 +13852,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
             //
             // Some blocks are ineligible.
             //
-            bool canUsePredAssertions = ((block->bbFlags & BBF_CAN_ADD_PRED) == 0) && !bbIsHandlerBeg(block);
+            bool canUsePredAssertions = !block->HasFlag(BBF_CAN_ADD_PRED) && !bbIsHandlerBeg(block);
 
             // Validate all preds have valid info
             //
@@ -13956,7 +13955,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
     fgMorphStmts(block);
 
     // Do we need to merge the result of this block into a single return block?
-    if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+    if (block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP))
     {
         if ((genReturnBB != nullptr) && (genReturnBB != block))
         {
@@ -14067,11 +14066,11 @@ PhaseStatus Compiler::fgMorphBlocks()
         //
         if (genReturnBB != nullptr)
         {
-            genReturnBB->bbFlags |= BBF_CAN_ADD_PRED;
+            genReturnBB->SetFlags(BBF_CAN_ADD_PRED);
         }
         if (fgFirstBBisScratch())
         {
-            fgFirstBB->Next()->bbFlags |= BBF_CAN_ADD_PRED;
+            fgFirstBB->Next()->SetFlags(BBF_CAN_ADD_PRED);
         }
 
         // Remember this so we can sanity check that no new blocks will get created.
@@ -14095,11 +14094,11 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         if (genReturnBB != nullptr)
         {
-            genReturnBB->bbFlags &= ~BBF_CAN_ADD_PRED;
+            genReturnBB->RemoveFlags(BBF_CAN_ADD_PRED);
         }
         if (fgFirstBBisScratch())
         {
-            fgFirstBB->Next()->bbFlags &= ~BBF_CAN_ADD_PRED;
+            fgFirstBB->Next()->RemoveFlags(BBF_CAN_ADD_PRED);
         }
     }
 
@@ -14153,7 +14152,7 @@ PhaseStatus Compiler::fgMorphBlocks()
 //
 void Compiler::fgMergeBlockReturn(BasicBlock* block)
 {
-    assert(block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert(block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP));
     assert((genReturnBB != nullptr) && (genReturnBB != block));
 
     // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
@@ -14645,7 +14644,7 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    BasicBlockFlags propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
+    BasicBlockFlags propagateFlags = block->GetFlagsRaw() & BBF_GC_SAFE_POINT;
     BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
@@ -14654,23 +14653,23 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true, remainderBlock);
     BasicBlock* asgBlock    = fgNewBBafter(BBJ_ALWAYS, block, true, block->Next());
 
-    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-    remainderBlock->bbFlags |= propagateFlags;
-    helperBlock->bbFlags |= BBF_NONE_QUIRK;
-    asgBlock->bbFlags |= BBF_NONE_QUIRK;
+    block->RemoveFlags(BBF_NEEDS_GCPOLL);
+    remainderBlock->SetFlags(propagateFlags);
+    helperBlock->SetFlags(BBF_NONE_QUIRK);
+    asgBlock->SetFlags(BBF_NONE_QUIRK);
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
-    if ((block->bbFlags & BBF_INTERNAL) == 0)
+    if (!block->HasFlag(BBF_INTERNAL))
     {
-        helperBlock->bbFlags &= ~BBF_INTERNAL;
-        cond2Block->bbFlags &= ~BBF_INTERNAL;
-        cond1Block->bbFlags &= ~BBF_INTERNAL;
-        asgBlock->bbFlags &= ~BBF_INTERNAL;
-        helperBlock->bbFlags |= BBF_IMPORTED;
-        cond2Block->bbFlags |= BBF_IMPORTED;
-        cond1Block->bbFlags |= BBF_IMPORTED;
-        asgBlock->bbFlags |= BBF_IMPORTED;
+        helperBlock->RemoveFlags(BBF_INTERNAL);
+        cond2Block->RemoveFlags(BBF_INTERNAL);
+        cond1Block->RemoveFlags(BBF_INTERNAL);
+        asgBlock->RemoveFlags(BBF_INTERNAL);
+        helperBlock->SetFlags(BBF_IMPORTED);
+        cond2Block->SetFlags(BBF_IMPORTED);
+        cond1Block->SetFlags(BBF_IMPORTED);
+        asgBlock->SetFlags(BBF_IMPORTED);
     }
 
     // Chain the flow correctly.
@@ -14849,9 +14848,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    BasicBlockFlags propagateFlagsToRemainder = block->bbFlags & BBF_GC_SAFE_POINT;
+    BasicBlockFlags propagateFlagsToRemainder = block->GetFlagsRaw() & BBF_GC_SAFE_POINT;
     // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
-    BasicBlockFlags propagateFlagsToAll = block->bbFlags & BBF_COPY_PROPAGATE;
+    BasicBlockFlags propagateFlagsToAll = block->GetFlagsRaw() & BBF_COPY_PROPAGATE;
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
@@ -14860,16 +14859,16 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
-    if ((block->bbFlags & BBF_INTERNAL) == 0)
+    if (!block->HasFlag(BBF_INTERNAL))
     {
-        condBlock->bbFlags &= ~BBF_INTERNAL;
-        elseBlock->bbFlags &= ~BBF_INTERNAL;
-        condBlock->bbFlags |= BBF_IMPORTED;
-        elseBlock->bbFlags |= BBF_IMPORTED;
+        condBlock->RemoveFlags(BBF_INTERNAL);
+        elseBlock->RemoveFlags(BBF_INTERNAL);
+        condBlock->SetFlags(BBF_IMPORTED);
+        elseBlock->SetFlags(BBF_IMPORTED);
     }
 
-    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-    remainderBlock->bbFlags |= (propagateFlagsToRemainder | propagateFlagsToAll);
+    block->RemoveFlags(BBF_NEEDS_GCPOLL);
+    remainderBlock->SetFlags(propagateFlagsToRemainder | propagateFlagsToAll);
 
     condBlock->inheritWeight(block);
 
@@ -14884,8 +14883,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     fgAddRefPred(elseBlock, condBlock);
     fgAddRefPred(remainderBlock, elseBlock);
 
-    condBlock->bbFlags |= (propagateFlagsToAll | BBF_NONE_QUIRK);
-    elseBlock->bbFlags |= (propagateFlagsToAll | BBF_NONE_QUIRK);
+    condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
+    elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)
@@ -14902,11 +14901,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         condBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
-        thenBlock->bbFlags |= propagateFlagsToAll;
-        if ((block->bbFlags & BBF_INTERNAL) == 0)
+        thenBlock->SetFlags(propagateFlagsToAll);
+        if (!block->HasFlag(BBF_INTERNAL))
         {
-            thenBlock->bbFlags &= ~BBF_INTERNAL;
-            thenBlock->bbFlags |= BBF_IMPORTED;
+            thenBlock->RemoveFlags(BBF_INTERNAL);
+            thenBlock->SetFlags(BBF_IMPORTED);
         }
 
         fgAddRefPred(thenBlock, condBlock);
@@ -16133,7 +16132,7 @@ PhaseStatus Compiler::fgMorphArrayOps()
 
     for (BasicBlock* const block : Blocks())
     {
-        if ((block->bbFlags & BBF_HAS_MDARRAYREF) == 0)
+        if (!block->HasFlag(BBF_HAS_MDARRAYREF))
         {
             // No MD array references in this block
             continue;

@@ -744,7 +744,7 @@ bool Compiler::optValnumCSE_Locate()
 
         // Ensure that the BBF_MARKED flag is clear.
         // Everyone who uses this flag is required to clear it afterwards.
-        noway_assert((block->bbFlags & BBF_MARKED) == 0);
+        noway_assert(!block->HasFlag(BBF_MARKED));
 
         /* Walk the statement trees in this basic block */
         for (Statement* const stmt : block->NonPhiStatements())
@@ -1030,7 +1030,7 @@ void Compiler::optValnumCSE_InitDataFlow()
             // backwards to find any CSEs that are generated after the last call in the block.
             //
             BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailBit);
-            if ((block->bbFlags & BBF_HAS_CALL) == 0)
+            if (!block->HasFlag(BBF_HAS_CALL))
             {
                 BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailCrossCallBit);
             }
@@ -1042,7 +1042,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     {
         // If the block doesn't contains a call then skip it...
         //
-        if ((block->bbFlags & BBF_HAS_CALL) == 0)
+        if (!block->HasFlag(BBF_HAS_CALL))
         {
             continue;
         }
@@ -1205,7 +1205,7 @@ public:
     {
         // If this block is marked BBF_NO_CSE_IN (because of RBO), kill all CSEs.
         //
-        if ((block->bbFlags & BBF_NO_CSE_IN) != 0)
+        if (block->HasFlag(BBF_NO_CSE_IN))
         {
             BitVecOps::ClearD(m_comp->cseLivenessTraits, block->bbCseIn);
         }
@@ -1213,7 +1213,7 @@ public:
         // We can skip the calls kill step when our block doesn't have a callsite
         // or we don't have any available CSEs in our bbCseIn
         //
-        if (((block->bbFlags & BBF_HAS_CALL) == 0) || BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
+        if (!block->HasFlag(BBF_HAS_CALL) || BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
         {
             // No callsite in 'block' or 'block->bbCseIn was empty, so we can use bbCseIn directly
             //
@@ -1252,7 +1252,7 @@ public:
         {
             printf("EndMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
-            if (((block->bbFlags & BBF_HAS_CALL) != 0) &&
+            if (block->HasFlag(BBC_HAS_CALL) &&
                 !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
             {
                 printf("  -- cseKill   = %s\n", genES2str(m_comp->cseLivenessTraits, m_comp->cseCallKillsMask));
@@ -1847,7 +1847,7 @@ void CSE_Heuristic::Initialize()
             largeFrame = true;
             break; // early out, we don't need to keep increasing frameSize
         }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (frameSize > 0x7ff)
         {
             // We likely have a large stack frame.
@@ -3631,7 +3631,7 @@ void Compiler::optCleanupCSEs()
     for (BasicBlock* const block : Blocks())
     {
         // And clear the "marked" flag on the block.
-        block->bbFlags &= ~BBF_MARKED;
+        block->RemoveFlags(BBF_MARKED);
 
         // Walk the statement trees in this basic block.
         for (Statement* const stmt : block->NonPhiStatements())
@@ -3657,7 +3657,7 @@ void Compiler::optEnsureClearCSEInfo()
 {
     for (BasicBlock* const block : Blocks())
     {
-        assert((block->bbFlags & BBF_MARKED) == 0);
+        assert(!block->HasFlag(BBF_MARKED));
 
         for (Statement* const stmt : block->NonPhiStatements())
         {
