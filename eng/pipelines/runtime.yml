@@ -66,33 +66,64 @@ extends:
       - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
         - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-      #
-      # Build CoreCLR checked
-      # Only when CoreCLR is changed
-      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          buildConfig: checked
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
           platforms:
-          - linux_x64
-          - linux_arm
-          - linux_arm64
-          - linux_riscv64
-          - linux_musl_arm
-          - linux_musl_arm64
-          - linux_musl_x64
-          - osx_arm64
-          - windows_x86
-          - windows_x64
-          - windows_arm64
+            - linux_x64_xl
+            # - linux_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
           jobParameters:
+            experimental: true
             testGroup: innerloop
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
+            runtimeVariant: llvmfullaot
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            timeoutInMinutes: 300
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  llvmAotStepContainer: linux_x64_llvmaot
+                  testRunNamePrefixSuffix: Mono_Release
+                  testBuildArgs: tree baseservices/mono
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+
+      # #
+      # # Build CoreCLR checked
+      # # Only when CoreCLR is changed
+      # #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      #     buildConfig: checked
+      #     platforms:
+      #     - linux_x64
+      #     - linux_arm
+      #     - linux_arm64
+      #     - linux_riscv64
+      #     - linux_musl_arm
+      #     - linux_musl_arm64
+      #     - linux_musl_x64
+      #     - osx_arm64
+      #     - windows_x86
+      #     - windows_x64
+      #     - windows_arm64
+      #     jobParameters:
+      #       testGroup: innerloop
+      #       condition: >-
+      #         or(
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # #
       # # Build the whole product using GNU compiler toolchain
@@ -1640,33 +1671,3 @@ extends:
       # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
       # Only when Mono is changed
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-            - linux_x64_xl
-            # - linux_arm64
-          variables:
-            - name: timeoutPerTestInMinutes
-              value: 60
-            - name: timeoutPerTestCollectionInMinutes
-              value: 180
-          jobParameters:
-            experimental: true
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
-            runtimeVariant: llvmfullaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-            timeoutInMinutes: 300
-            postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  llvmAotStepContainer: linux_x64_llvmaot
-                  testRunNamePrefixSuffix: Mono_Release
-                  testBuildArgs: tree baseservices/mono
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
