@@ -9162,7 +9162,8 @@ DONE_MORPHING_CHILDREN:
             {
                 if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
                 {
-                    if (tree->IsUnsigned() && op1->IsNeverNegative(this) && op2->IsNeverNegative(this))
+                    if (tree->IsUnsigned() && varTypeIsIntOrI(op1) && varTypeIsIntOrI(op2) &&
+                        op1->IsNeverNegative(this) && op2->IsNeverNegative(this))
                     {
                         // Our branch optimizations don't work well with unsigned comparisons
                         tree->ClearUnsigned();
@@ -9170,6 +9171,7 @@ DONE_MORPHING_CHILDREN:
 
                     if (op2->IsIntegralConst() || op1->IsIntegralConst())
                     {
+
                         tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
                         if (tree->OperIs(GT_CNS_INT))
                         {
