@@ -5462,6 +5462,8 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
             args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
 
+            pThread->IncPreventAbort();
+
             //Ex.RhThrowHwEx(exceptionCode, &exInfo)
             CALL_MANAGED_METHOD_NORET(args)
 
@@ -5554,6 +5556,8 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
 
     //Ex.RhThrowEx(throwable, &exInfo)
     CRITICAL_CALLSITE;
@@ -7559,11 +7563,13 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     GCX_COOP_NO_DTOR();
 
     Thread* pThread = GET_THREAD();
+    pThread->DecPreventAbort();
+
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsFuncletCall(pFrame);
     HandlerFn* pfnHandler = (HandlerFn*)pHandlerIP;
     exInfo->m_sfHighBound = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP;
-    DWORD_PTR dwResumePC;
+    DWORD_PTR dwResumePC = 0;
 
     if (pHandlerIP != NULL)
     {
@@ -7643,6 +7649,29 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     ExceptionTracker::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
+        CopyOSContext(pThread->m_OSContext, pvRegDisplay->pCurrentContext);
+        SetIP(pThread->m_OSContext, (PCODE)dwResumePC);
+        UINT_PTR uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(dwResumePC);
+        if (uAbortAddr)
+        {
+#ifdef TARGET_AMD64
+#ifdef TARGET_UNIX
+            pvRegDisplay->pCurrentContext->Rdi = dwResumePC;
+            pvRegDisplay->pCurrentContext->Rsi = GetIP(pThread->GetAbortContext()); //How can this ever be different from dwResumePC?
+#else
+            pvRegDisplay->pCurrentContext->Rcx = dwResumePC;
+#endif
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+            // On ARM & ARM64, we save off the original PC in Lr. This is the same as done
+            // in HandleManagedFault for H/W generated exceptions.
+            pvRegDisplay->pCurrentContext->Lr = dwResumePC;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            pvRegDisplay->pCurrentContext->Ra = dwResumePC;
+#endif
+
+            SetIP(pvRegDisplay->pCurrentContext, uAbortAddr);
+        }
+
         ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
     }
     else
@@ -7709,6 +7738,8 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
     BEGIN_QCALL;
     GCX_COOP();
     Thread* pThread = GET_THREAD();
+    pThread->DecPreventAbort();
+
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsFuncletCall(pFrame);
     HandlerFn* pfnHandler = (HandlerFn*)pHandlerIP;
@@ -7733,6 +7764,9 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
 #else
     DWORD_PTR dwResumePC = pfnHandler(establisherFrame, NULL);
 #endif        
+
+    pThread->IncPreventAbort();
+
     // Profiler, debugger and ETW events
     exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, GetSP(pvRegDisplay->pCurrentContext) );
     END_QCALL;

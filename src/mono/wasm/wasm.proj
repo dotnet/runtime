@@ -35,7 +35,6 @@
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
-    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
     <EmSdkLLVMAr>$(EMSDK_PATH)\upstream\bin\llvm-ar</EmSdkLLVMAr>
     <EmSdkLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(EmSdkLLVMAr).exe</EmSdkLLVMAr>
   </PropertyGroup>
@@ -374,7 +373,8 @@
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
 
-      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <!-- -lexports.js has the magical property of disabling minification of export names -->
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1 -lexports.js</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationLinkFlags) -msimd128</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>

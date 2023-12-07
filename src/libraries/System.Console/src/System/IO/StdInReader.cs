@@ -155,7 +155,7 @@ namespace System.IO
             // or we need to read a new line from stdin.
             bool freshKeys = _availableKeys.Count == 0;
 
-           // Don't carry over chars from previous ReadLine call.
+            // Don't carry over chars from previous ReadLine call.
             _readLineSB.Clear();
 
             Interop.Sys.InitializeConsoleBeforeRead();

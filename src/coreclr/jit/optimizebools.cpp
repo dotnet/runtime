@@ -735,7 +735,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || ((m_b2->bbFlags & BBF_DONT_REMOVE) != 0))
+    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || m_b2->HasFlag(BBF_DONT_REMOVE))
     {
         // Conditions aren't in the same EH region or m_b2 can't be removed
         return false;
@@ -1009,10 +1009,10 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
     m_b1->SetJumpKindAndTarget(BBJ_ALWAYS, m_b1->Next());
-    m_b1->bbFlags |= BBF_NONE_QUIRK;
+    m_b1->SetFlags(BBF_NONE_QUIRK);
 
     // Fixup flags.
-    m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
+    m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
     if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
@@ -1325,7 +1325,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     // Get rid of the second block
 
     m_comp->fgUnlinkBlockForRemoval(m_b2);
-    m_b2->bbFlags |= BBF_REMOVED;
+    m_b2->SetFlags(BBF_REMOVED);
     // If m_b2 was the last block of a try or handler, update the EH table.
     m_comp->ehUpdateForDeletedBlock(m_b2);
 
@@ -1333,7 +1333,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Get rid of the third block
         m_comp->fgUnlinkBlockForRemoval(m_b3);
-        m_b3->bbFlags |= BBF_REMOVED;
+        m_b3->SetFlags(BBF_REMOVED);
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);
     }
@@ -1901,7 +1901,7 @@ PhaseStatus Compiler::optOptimizeBools()
             }
 
             // The next block must not be marked as BBF_DONT_REMOVE
-            if (b2->bbFlags & BBF_DONT_REMOVE)
+            if (b2->HasFlag(BBF_DONT_REMOVE))
             {
                 continue;
             }
@@ -1948,7 +1948,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 
-                if (b3->bbFlags & BBF_DONT_REMOVE)
+                if (b3->HasFlag(BBF_DONT_REMOVE))
                 {
                     continue;
                 }

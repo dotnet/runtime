@@ -689,6 +689,15 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
     }
+    else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
+    {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isValidUimm12(imm));
+        code |= reg1 << 7;
+        code |= reg2 << 15;
+        code |= imm << 20;
+    }
     else
     {
         NYI_RISCV64("illegal ins within emitIns_R_R_I!");
@@ -698,6 +707,39 @@ void emitter::emitIns_R_R_I(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add an instruction referencing register and two constants.
+ */
+
+void emitter::emitIns_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, ssize_t imm1, ssize_t imm2, insOpts opt) /* = INS_OPTS_NONE */
+{
+    code_t code = emitInsCode(ins);
+
+    if (INS_csrrwi <= ins && ins <= INS_csrrci)
+    {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isValidUimm5(imm1));
+        assert(isValidUimm12(imm2));
+        code |= reg1 << 7;
+        code |= imm1 << 15;
+        code |= imm2 << 20;
+    }
+    else
+    {
+        NYI_RISCV64("illegal ins within emitIns_R_I_I!");
+    }
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
@@ -1003,7 +1045,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     // if for reloc!  4-ins:
     //   auipc reg, offset-hi20
@@ -1068,7 +1110,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
     // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
 
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
     assert((INS_jal <= ins) && (ins <= INS_bgeu));
@@ -1129,7 +1171,7 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     //   ins  reg1, reg2, dst
 
     assert(dst != nullptr);
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -1490,16 +1532,16 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         assert((addr & 1) == 0);
 
         dst += 4;
-        emitGCregDeadUpd(REG_T2, dst);
+        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
 
 #ifdef DEBUG
         code = emitInsCode(INS_auipc);
-        assert((code | (REG_T2 << 7)) == 0x00000397);
-        assert((int)REG_T2 == 7);
+        assert((code | (REG_DEFAULT_HELPER_CALL_TARGET << 7)) == 0x00000397);
+        assert((int)REG_DEFAULT_HELPER_CALL_TARGET == 7);
         code = emitInsCode(INS_jalr);
         assert(code == 0x00000067);
 #endif
-        emitOutput_Instr(dst, 0x00000067 | (REG_T2 << 15) | reg2 << 7);
+        emitOutput_Instr(dst, 0x00000067 | (REG_DEFAULT_HELPER_CALL_TARGET << 15) | reg2 << 7);
 
         emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_JALR);
     }
@@ -1522,23 +1564,23 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         UINT32 high = imm >> 32;
         code        = emitInsCode(INS_lui);
-        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
         code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
         emitOutput_Instr(dst, code);
         dst += 4;
 
-        emitGCregDeadUpd(REG_T2, dst);
+        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
 
         code = emitInsCode(INS_addi);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(high & 0xfff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_slli);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(11 << 20);
         emitOutput_Instr(dst, code);
         dst += 4;
@@ -1546,36 +1588,36 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         UINT32 low = imm & 0xffffffff;
 
         code = emitInsCode(INS_addi);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= ((low >> 21) & 0x7ff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_slli);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(11 << 20);
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_addi);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= ((low >> 10) & 0x7ff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_slli);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(10 << 20);
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_jalr);
         code |= (code_t)reg2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (low & 0x3ff) << 20;
         // the offset default is 0;
         emitOutput_Instr(dst, code);
@@ -3351,6 +3393,51 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         }
         case 0x73:
         {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            if (opcode2 != 0)
+            {
+                const char* rd      = RegNames[(code >> 7) & 0x1f];
+                int         csrtype = (code >> 20);
+                if (opcode2 <= 0x3)
+                {
+                    const char* rs1 = RegNames[(code >> 15) & 0x1f];
+                    switch (opcode2)
+                    {
+                        case 0x1: // CSRRW
+                            printf("csrrw           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        case 0x2: // CSRRS
+                            printf("csrrs           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        case 0x3: // CSRRC
+                            printf("csrrc           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        default:
+                            printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                            break;
+                    }
+                }
+                else
+                {
+                    unsigned imm5 = ((code >> 15) & 0x1f);
+                    switch (opcode2)
+                    {
+                        case 0x5: // CSRRWI
+                            printf("csrrwi           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        case 0x6: // CSRRSI
+                            printf("csrrsi           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        case 0x7: // CSRRCI
+                            printf("csrrci           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        default:
+                            printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                            break;
+                    }
+                }
+            }
+
             if (code == emitInsCode(INS_ebreak))
             {
                 printf("ebreak\n");
@@ -4117,6 +4204,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
     }
 
+#ifdef DEBUG
     if (needCheckOv)
     {
         if (ins == INS_add)
@@ -4157,12 +4245,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
         else
         {
-#ifdef DEBUG
             printf("RISCV64-Invalid ins for overflow check: %s\n", codeGen->genInsName(ins));
-#endif
             assert(!"Invalid ins for overflow check");
         }
     }
+#endif // DEBUG
 
     regNumber dstReg  = dst->GetRegNum();
     regNumber src1Reg = src1->GetRegNum();
