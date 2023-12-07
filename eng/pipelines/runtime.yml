@@ -1647,7 +1647,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - linux_x64
+            - linux_x64_xl
             # - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
