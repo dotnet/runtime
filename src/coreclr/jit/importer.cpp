@@ -2976,7 +2976,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
                         // For br_true/false, we'll only replace "box + isinst" to a boolean
                         int returnToken = 1 + sizeof(mdToken);
-                        if ((nextOpcode == CEE_LDNULL))
+                        if (nextOpcode == CEE_LDNULL)
                         {
                             // for ldnull case, we'll replace the whole "box + isinst + ldnull + cgt_un" sequence
                             returnToken = 4 + sizeof(mdToken);
