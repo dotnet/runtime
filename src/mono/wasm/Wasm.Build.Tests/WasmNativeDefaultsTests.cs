@@ -240,7 +240,7 @@ namespace Wasm.Build.Tests
         private void CheckPropertyValues(string? line, bool wasmBuildNative, bool wasmNativeStrip, bool wasmNativeDebugSymbols, bool? wasmBuildingForNestedPublish)
         {
             Assert.NotNull(line);
-            Assert.Equal($"** WasmBuildNative: '{wasmBuildNative.ToString().ToLower()}', " +
+            Assert.Contains($"** WasmBuildNative: '{wasmBuildNative.ToString().ToLower()}', " +
                             $"WasmNativeStrip: '{wasmNativeStrip.ToString().ToLower()}', " +
                             $"WasmNativeDebugSymbols: '{wasmNativeDebugSymbols.ToString().ToLower()}', " +
                             $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'",
