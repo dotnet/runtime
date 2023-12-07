@@ -577,12 +577,17 @@ public:
     void SetNext(BasicBlock* next)
     {
         // TODO: remove
-        bbNormalJumpDest = next;
         bbNext = next;
         if (next)
         {
             next->bbPrev = this;
         }
+
+        // BBJ_COND convenience: This ensures bbNormalJumpDest is always consistent with bbNext.
+        // For now, if a BBJ_COND's bbJumpDest is not taken, we expect to fall through,
+        // so bbNormalJumpDest must be the next block.
+        // TODO: Remove this once we allow bbNormalJumpDest to diverge from bbNext
+        bbNormalJumpDest = next;
     }
 
     bool IsFirst() const
@@ -670,6 +675,12 @@ public:
     {
         bbJumpKind = jumpKind;
         bbJumpDest = jumpDest;
+
+        // BBJ_COND convenience: We might be setting this block's jump kind to BBJ_COND.
+        // In that case, set bbNormalJumpDest to bbNext to ensure they are consistent after setting the jump kind.
+        // TODO: Allow bbNormalJumpDest to diverge from bbNext
+        // assert(!IsLast());
+        // bbNormalJumpDest = bbNext;
 
         // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
         assert(!HasJumpDest() || HasInitializedJumpDest());

@@ -7031,7 +7031,8 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     Statement* nextFirstStmt;
     Statement* destFirstStmt;
 
-    if (!getSuccCandidate(block->GetNormalJumpDest(), &nextFirstStmt) || !getSuccCandidate(block->GetJumpDest(), &destFirstStmt))
+    if (!getSuccCandidate(block->GetNormalJumpDest(), &nextFirstStmt) ||
+        !getSuccCandidate(block->GetJumpDest(), &destFirstStmt))
     {
         return false;
     }

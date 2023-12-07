@@ -2969,8 +2969,10 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (4)
     //
-    BasicBlock* const hotSuccessor  = guard->OperIs(GT_EQ) ? typeTestBlock->GetJumpDest() : typeTestBlock->GetNormalJumpDest();
-    BasicBlock* const coldSuccessor = guard->OperIs(GT_EQ) ? typeTestBlock->GetNormalJumpDest() : typeTestBlock->GetJumpDest();
+    BasicBlock* const hotSuccessor =
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetJumpDest() : typeTestBlock->GetNormalJumpDest();
+    BasicBlock* const coldSuccessor =
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetNormalJumpDest() : typeTestBlock->GetJumpDest();
 
     if (!hotSuccessor->hasProfileWeight() || !coldSuccessor->hasProfileWeight())
     {

@@ -13158,7 +13158,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
              * Remove the conditional statement */
 
             noway_assert(cond->gtOper == GT_CNS_INT);
-            noway_assert((block->GetNormalJumpDest()->countOfInEdges() > 0) && (block->GetJumpDest()->countOfInEdges() > 0));
+            noway_assert((block->GetNormalJumpDest()->countOfInEdges() > 0) &&
+                         (block->GetJumpDest()->countOfInEdges() > 0));
 
             if (condTree != cond)
             {
@@ -13268,7 +13269,9 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                             edge         = fgGetPredForBlock(bUpdated->GetJumpDest(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, (bUpdated->KindIs(BBJ_COND) ? bUpdated->GetNormalJumpDest() : bUpdated->Next()));
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight,
+                                                 (bUpdated->KindIs(BBJ_COND) ? bUpdated->GetNormalJumpDest()
+                                                                             : bUpdated->Next()));
                             break;
 
                         default:
