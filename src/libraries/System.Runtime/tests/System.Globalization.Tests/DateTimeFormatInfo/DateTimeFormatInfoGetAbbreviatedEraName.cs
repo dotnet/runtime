@@ -23,7 +23,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, 1, "ዓ/ም" };
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, 1, "сл.Хр." };
                 yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 1, "খৃষ্টাব্দ" };
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, "খ্রিঃ" }; // "খৃষ্টাব্দ"
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, PlatformDetection.IsNodeJSOnWindows ? "খৃষ্টাব্দ" : "খ্রিঃ" }; // "খৃষ্টাব্দ"
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 1, "dC" };
                 yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, 1, "dC" };
                 yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, 1, "n.l." };
@@ -212,7 +212,8 @@ namespace System.Globalization.Tests
         [MemberData(nameof(GetAbbreviatedEraName_TestData))]
         public void GetAbbreviatedEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)
         {
-            Assert.Equal(expected, format.GetAbbreviatedEraName(era));
+            var eraName = format.GetAbbreviatedEraName(era);
+            Assert.True(expected == eraName, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {eraName}");
         }
 
         [Theory]

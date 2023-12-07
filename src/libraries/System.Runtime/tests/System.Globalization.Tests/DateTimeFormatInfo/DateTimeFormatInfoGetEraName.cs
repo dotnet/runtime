@@ -33,8 +33,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, 1, "сл.Хр." };
                 yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 0, "খৃষ্টাব্দ" };
                 yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 1, "খৃষ্টাব্দ" };
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 0, "খ্রিঃ" };
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, "খ্রিঃ" };
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 0, PlatformDetection.IsNodeJSOnWindows ? "খৃষ্টাব্দ" : "খ্রিঃ" };
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, PlatformDetection.IsNodeJSOnWindows ? "খৃষ্টাব্দ" : "খ্রিঃ" };
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 0, "dC" };
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 1, "dC" };
                 yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, 0, "dC" };
@@ -387,8 +387,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, 1, "MS" };
                 yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, 0, "н. е." };
                 yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, 1, "н. е." };
-                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 0, "CN" }; // sau CN
-                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 1, "CN" }; // sau CN
+                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 0, PlatformDetection.IsNodeJSOnWindows ? "Sau CN" : "CN" }; // sau CN
+                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 1, PlatformDetection.IsNodeJSOnWindows ? "Sau CN" : "CN" }; // sau CN
                 yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, 0, "公元" };
                 yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, 1, "公元" };
                 yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, 0, "公元" };
@@ -406,7 +406,8 @@ namespace System.Globalization.Tests
         [MemberData(nameof(GetEraName_TestData))]
         public void GetEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)
         {
-            Assert.Equal(expected, format.GetEraName(era));
+            var eraName = format.GetEraName(era);
+            Assert.True(expected == eraName, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {eraName}");
         }
 
         [Theory]

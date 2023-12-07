@@ -42,6 +42,9 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("es-419").DateTimeFormat, new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
             yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
+            var estonianDays = PlatformDetection.IsNodeJSOnWindows ?
+                new string[] { "Pühapäev", "Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede", "Laupäev" } :
+                new string[] { "pühapäev", "esmaspäev", "teisipäev", "kolmapäev", "neljapäev", "reede", "laupäev" }; // same as ICU
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, new string[] { "pühapäev", "esmaspäev", "teisipäev", "kolmapäev", "neljapäev", "reede", "laupäev" } };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, new string[] { "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه" } };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, new string[] { "sunnuntai", "maanantai", "tiistai", "keskiviikko", "torstai", "perjantai", "lauantai" } };
@@ -82,7 +85,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(DayNames_Get_TestData_HybridGlobalization))]
         public void DayNames_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string[] expected)
         {
-            Assert.Equal(expected, format.DayNames);
+            Assert.True(expected == format.DayNames, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.DayNames}");
         }
 
         [Theory]

@@ -37,7 +37,10 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, new string[] { "রবি", "সোম", "মঙ্গল", "বুধ", "বৃহস্পতি", "শুক্র", "শনি" } };
             yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, new string[] { "dg.", "dl.", "dt.", "dc.", "dj.", "dv.", "ds." } };
             yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, new string[] { "ne", "po", "út", "st", "čt", "pá", "so" } };
-            yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, new string[] { "søn.", "man.", "tirs.", "ons.", "tors.", "fre.", "lør." } };
+            var danishDays = PlatformDetection.IsNodeJSOnWindows ?
+                new string[] { "søn", "man", "tir", "ons", "tor", "fre", "lør" } :
+                new string[] { "søn.", "man.", "tirs.", "ons.", "tors.", "fre.", "lør." }; // like ICU
+            yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, danishDays };
             yield return new object[] { new CultureInfo("de-DE").DateTimeFormat, new string[] { "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa" } };
             yield return new object[] { new CultureInfo("el-GR").DateTimeFormat, new string[] { "Κυρ", "Δευ", "Τρί", "Τετ", "Πέμ", "Παρ", "Σάβ" } };
             yield return new object[] { new CultureInfo("en-CA").DateTimeFormat, new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" } }; // should be with dots
@@ -90,7 +93,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(AbbreviatedDayNames_Get_TestData_HybridGlobalization))]
         public void AbbreviatedDayNames_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string[] expected)
         {
-            Assert.Equal(expected, format.AbbreviatedDayNames);
+            Assert.True(expected == format.AbbreviatedDayNames, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.AbbreviatedDayNames}");
         }
 
         [Theory]

@@ -176,8 +176,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("ms-BN").DateTimeFormat, CalendarWeekRule.FirstDay };
                 yield return new object[] { new CultureInfo("ms-MY").DateTimeFormat, CalendarWeekRule.FirstDay };
                 yield return new object[] { new CultureInfo("ms-SG").DateTimeFormat, CalendarWeekRule.FirstDay };
-                yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, CalendarWeekRule.FirstFourDayWeek };
-                yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, CalendarWeekRule.FirstFourDayWeek };
+                yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, PlatformDetection.IsNodeJSOnWindows ? CalendarWeekRule.FirstDay : CalendarWeekRule.FirstFourDayWeek };
+                yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, PlatformDetection.IsNodeJSOnWindows ? CalendarWeekRule.FirstDay : CalendarWeekRule.FirstFourDayWeek };
                 yield return new object[] { new CultureInfo("nl-AW").DateTimeFormat, CalendarWeekRule.FirstDay };
                 yield return new object[] { new CultureInfo("nl-BE").DateTimeFormat, CalendarWeekRule.FirstFourDayWeek };
                 yield return new object[] { new CultureInfo("nl-NL").DateTimeFormat, CalendarWeekRule.FirstFourDayWeek };
@@ -218,7 +218,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(CalendarWeekRule_Get_TestData))]
         public void CalendarWeekRuleTest(DateTimeFormatInfo format, CalendarWeekRule expected)
         {
-            Assert.Equal(expected, format.CalendarWeekRule);
+            Assert.True(expected == format.CalendarWeekRule, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.CalendarWeekRule}");
         }
 
         [Theory]
