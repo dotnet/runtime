@@ -87,7 +87,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if (namedArgument.IsField)
                 {
                     // Field
-                    for (;;)
+                    for (; ; )
                     {
                         FieldInfo? fieldInfo = walk.GetField(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (fieldInfo != null)
@@ -104,7 +104,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 else
                 {
                     // Property
-                    for (;;)
+                    for (; ; )
                     {
                         PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (propertyInfo != null)

@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             using (var tester = NuGetArtifactTester.Open(
                 dirs,
                 "Microsoft.NETCore.App.Host",
-                $"Microsoft.NETCore.App.Host.{dirs.BuildRID}"))
+                $"Microsoft.NETCore.App.Host.{TestContext.BuildRID}"))
             {
                 tester.IsAppHostPack();
             }
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             using (var tester = NuGetArtifactTester.Open(
                 dirs,
                 "Microsoft.NETCore.App.Runtime",
-                $"Microsoft.NETCore.App.Runtime.{dirs.BuildRID}"))
+                $"Microsoft.NETCore.App.Runtime.{TestContext.BuildRID}"))
             {
                 tester.IsRuntimePack();
             }

@@ -28,8 +28,7 @@
     <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibSuffix)</MonoStaticLibFileName>
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">$(MonoStaticLibFileName)</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(MonoSharedLibFileName)</MonoFileName>
-    <MonoAotCrossFileName>mono-aot-cross$(ExeSuffix)</MonoAotCrossFileName>
-    <MonoAotCrossPdbFileName>mono-aot-cross.pdb</MonoAotCrossPdbFileName>
+    <MonoAotCrossName>mono-aot-cross</MonoAotCrossName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
@@ -54,7 +53,6 @@
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
-    <MonoEnableAssertMessages Condition="'$(MonoEnableAssertMessages)' == '' and '$(TargetsWasi)' == 'true'">true</MonoEnableAssertMessages>
     <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
     <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' >= '16.0'">true</MonoUseLibCxx>
   </PropertyGroup>
@@ -109,14 +107,14 @@
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetstvOSSimulator)' != 'true' and '$(TargetstvOS)' == 'true' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="'$(TargetstvOSSimulator)' == 'true' and '$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="'$(TargetsiOSSimulator)' != 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="'$(TargetsiOSSimulator)' == 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
+    <Error Condition="'$(TargetsiOSSimulator)' != 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
+    <Error Condition="'$(TargetsiOSSimulator)' == 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
+    <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
     <Error Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
     <Error Condition="'$(TargetsWasi)' == 'true' and '$(WASI_SDK_PATH)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir."/>
     <Error Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(ANDROID_NDK_ROOT)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
-    <Error Condition="'$(HostOS)' == 'windows' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
+    <Error Condition="'$(HostOS)' == 'windows' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
     <!-- check if Ninja is available and default to it on Unix platforms -->
     <Exec Condition="'$(HostOS)' != 'windows' and '$(Ninja)' == ''" Command="command -v ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
@@ -409,7 +407,7 @@
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
+      <!-- Force running as arm64 even when invoked from an x64 msbuild process -->
       <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
     <!-- Mac Catalyst specific options -->
@@ -423,7 +421,7 @@
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
+      <!-- Force running as arm64 even when invoked from an x64 msbuild process -->
       <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
     <!-- WASM specific options -->
@@ -495,9 +493,7 @@
     </ItemGroup>
     <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
-      <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
-      <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
       <_MonoCMakeArgs Include="-DICU_LIBDIR=$(_IcuLibdir)"/>
@@ -688,7 +684,6 @@
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-$(Platform)-darwin.h</MonoAotOffsetsFile>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-darwin10</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'arm'">arm-apple-darwin10</MonoAotAbi>
-      <MonoAotAbi Condition="'$(Platform)' == 'x86'">i386-apple-darwin10</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-darwin10</MonoAotAbi>
     </PropertyGroup>
 
@@ -730,7 +725,7 @@
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
       <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
-    <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux' or '$(AotHostOS)' == 'linux-musl'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
@@ -740,14 +735,12 @@
     <!-- macOS host specific options -->
     <ItemGroup Condition="'$(AotHostOS)' == 'osx'">
       <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
-      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
       <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
-      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoAOTCXXFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
+      <!-- Force running as arm64 even when invoked from an x64 msbuild process -->
       <_MonoAotBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
 
@@ -858,6 +851,11 @@
       <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
     </ItemGroup>
 
+    <!-- ARM Linux cross build options on CI -->
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux-musl'">
+      <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')&quot;</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')&quot;</_MonoAOTCXXFLAGSOption>
@@ -965,8 +963,7 @@
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</_MonoIncludeInterpStaticFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
-      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossFileName)</_MonoAotCrossFilePath>
-      <_MonoAotCrossPdbFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossPdbFileName)</_MonoAotCrossPdbFilePath>
+      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossName)$(ExeSuffix)</_MonoAotCrossFilePath>
     </PropertyGroup>
     <PropertyGroup>
       <_MonoLLVMHostArchitecture>$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
@@ -993,15 +990,24 @@
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)" Condition="Exists($(_MonoRuntimeStaticFilePath)) and '$(_MonoRuntimeStaticFilePath)' != '$(_MonoRuntimeFilePath)'">
         <Destination>$(RuntimeBinDir)$(MonoStaticLibFileName)</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)" Condition="Exists($(_MonoAotCrossFilePath))">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName)$(ExeSuffix)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dbg" Condition="Exists('$(_MonoAotCrossFilePath).dbg')">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dbg</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dwarf" Condition="Exists('$(_MonoAotCrossFilePath).dwarf')">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dwarf</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb" Condition="Exists('$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb')">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).pdb</Destination>
+      </_MonoRuntimeArtifacts>
       <!-- copy the mono runtime component shared or static libraries -->
       <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsStaticFilePath)">
         <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsStaticFilePath.Filename)%(_MonoRuntimeComponentsStaticFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsSharedFilePath)">
         <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ('$(MonoBundleLLVMOptimizer)' == 'true' or '$(MonoEnableLLVM)' == 'true') and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
         <Destination>$(RuntimeBinDir)libc++.so.1</Destination>
@@ -1014,9 +1020,6 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\lib\libc++abi.so.1">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++abi.so.1</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossPdbFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\llc$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)\llc$(ExeSuffix)</Destination>

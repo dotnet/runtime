@@ -10,19 +10,17 @@
 #include <_version.c>
 #endif
 
-bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path)
+bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
 {
-    pal::string_t lib_path = lib_dir;
-    append_path(&lib_path, lib_name.c_str());
+    pal::string_t file_path = dir;
+    append_path(&file_path, file_name);
 
-    if (!pal::file_exists(lib_path))
-    {
+    if (!pal::file_exists(file_path))
         return false;
-    }
-    if (p_lib_path)
-    {
-        *p_lib_path = lib_path;
-    }
+
+    if (out_file_path)
+        *out_file_path = file_path;
+
     return true;
 }
 

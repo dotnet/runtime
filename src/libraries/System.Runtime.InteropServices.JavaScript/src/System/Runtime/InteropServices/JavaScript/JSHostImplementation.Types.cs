@@ -12,20 +12,33 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public sealed class PromiseHolder
         {
-            public nint GCVHandle;
+            public nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
 #if FEATURE_WASM_THREADS
             // the JavaScript object could only exist on the single web worker and can't migrate to other workers
-            internal int OwnerThreadId;
-            internal SynchronizationContext? SynchronizationContext;
+            internal JSSynchronizationContext SynchronizationContext;
+#endif
+
+#if FEATURE_WASM_THREADS
+            // TODO possibly unify signature with non-MT and pass null
+            public PromiseHolder(JSSynchronizationContext targetContext)
+            {
+                GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
+                SynchronizationContext = targetContext;
+            }
+#else
+            public PromiseHolder()
+            {
+                GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
+            }
 #endif
 
             public PromiseHolder(nint gcvHandle)
             {
-                this.GCVHandle = gcvHandle;
+                GCHandle = gcvHandle;
 #if FEATURE_WASM_THREADS
-                this.OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
-                this.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
+                JSSynchronizationContext.AssertWebWorkerContext();
+                SynchronizationContext = JSSynchronizationContext.CurrentJSSynchronizationContext!;
 #endif
             }
         }

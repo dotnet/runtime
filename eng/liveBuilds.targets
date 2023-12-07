@@ -244,6 +244,8 @@
         IsNative="true" />
 
       <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)src\wasi-default.rsp;
+        $(LibrariesNativeArtifactsPath)src\wasi-link.rsp;
         $(LibrariesNativeArtifactsPath)src\*.c"
         NativeSubDirectory="src"
         IsNative="true" />

@@ -271,6 +271,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -309,6 +310,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -353,6 +355,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -384,6 +387,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       # Build and test clr tools
@@ -533,20 +537,14 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _AOT
+            - browser_wasm_win
+            - wasi_wasm
+            - wasi_wasm_win
+          nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm_win
-          nameSuffix: _AOT
-          runAOT: true
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
 
       # For Wasm.Build.Tests - runtime pack builds
       - template: /eng/pipelines/common/templates/wasm-build-only.yml

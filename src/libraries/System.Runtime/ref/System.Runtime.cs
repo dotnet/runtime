@@ -1287,7 +1287,9 @@ namespace System
         public static string ToHexString(byte[] inArray) { throw null; }
         public static string ToHexString(byte[] inArray, int offset, int length) { throw null; }
         public static string ToHexString(System.ReadOnlySpan<byte> bytes) { throw null; }
-        public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static string ToHexStringLower(byte[] inArray) { throw null; }
+        public static string ToHexStringLower(byte[] inArray, int offset, int length) { throw null; }
+        public static string ToHexStringLower(System.ReadOnlySpan<byte> bytes) { throw null; }
         public static short ToInt16(bool value) { throw null; }
         public static short ToInt16(byte value) { throw null; }
         public static short ToInt16(char value) { throw null; }
@@ -1580,6 +1582,8 @@ namespace System
         public static bool TryFromBase64Chars(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryFromBase64String(string s, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
+        public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
     public readonly partial struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable, System.IParsable<System.DateOnly>, System.ISpanFormattable, System.ISpanParsable<System.DateOnly>, System.IUtf8SpanFormattable
@@ -6164,6 +6168,8 @@ namespace System
         public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
+        public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -14930,6 +14936,8 @@ namespace System.Text
         public System.Text.StringBuilder Replace(char oldChar, char newChar, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count) { throw null; }
+        public System.Text.StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) { throw null; }
+        public System.Text.StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public string ToString(int startIndex, int length) { throw null; }

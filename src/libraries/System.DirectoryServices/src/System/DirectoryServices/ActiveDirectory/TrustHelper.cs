@@ -309,7 +309,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(policyHandle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
-                        uint  win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                         if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
