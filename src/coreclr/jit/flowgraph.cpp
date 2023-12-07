@@ -4052,7 +4052,8 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 
     unsigned numBlocks = fgRunDfs([](BasicBlock* block, unsigned preorderNum) { block->bbPreorderNum = preorderNum; },
                                   [=](BasicBlock* block, unsigned postorderNum) {
-                                      block->bbPostorderNum   = postorderNum;
+                                      block->bbNewPostorderNum = postorderNum;
+                                      assert(postorderNum < fgBBcount);
                                       postOrder[postorderNum] = block;
                                   });
 
@@ -4065,7 +4066,7 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 //
 void Compiler::fgInvalidateDfsTree()
 {
-    m_dfs          = nullptr;
+    m_dfsTree      = nullptr;
     m_loops        = nullptr;
     fgSsaDomTree   = nullptr;
     m_newToOldLoop = nullptr;
@@ -5380,6 +5381,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     {
         BasicBlock* block  = postOrder[i];
         BasicBlock* parent = block->bbIDom;
+        assert(parent != nullptr);
         assert(dfsTree->Contains(block) && dfsTree->Contains(parent));
 
         domTree[i].nextSibling                        = domTree[parent->bbNewPostorderNum].firstChild;

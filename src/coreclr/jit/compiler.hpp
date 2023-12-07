@@ -4919,18 +4919,18 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // fgRunDfs: Run DFS over the flow graph.
 //
 // Type parameters:
-//   TFuncAssignPreorder  - Functor type that takes a BasicBlock* and its preorder number
-//   TFuncAssignPostorder - Functor type that takes a BasicBlock* and its postorder number
+//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
 //
 // Parameters:
-//   assignPreorder  - Functor to assign preorder numbers to blocks
-//   assignPostorder - Functor to assign postorder numbers to blocks
+//   visitPreorder  - Functor to visit block in its preorder
+//   visitPostorder - Functor to visit block in its postorder
 //
 // Returns:
 //   Number of blocks visited.
 //
-template <typename TFuncAssignPreorder, typename TFuncAssignPostorder>
-unsigned Compiler::fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPostorder assignPostorder)
+template <typename VisitPreorder, typename VisitPostorder>
+unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
@@ -4944,7 +4944,7 @@ unsigned Compiler::fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPosto
 
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
         blocks.Emplace(this, firstBB);
-        firstBB->bbPreorderNum = preOrderIndex++;
+        visitPreorder(firstBB, preOrderIndex++);
 
         while (!blocks.Empty())
         {
@@ -4956,13 +4956,13 @@ unsigned Compiler::fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPosto
                 if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
                 {
                     blocks.Emplace(this, succ);
-                    assignPreorder(succ, preOrderIndex++);
+                    visitPreorder(succ, preOrderIndex++);
                 }
             }
             else
             {
                 blocks.Pop();
-                assignPostorder(block, postOrderIndex++);
+                visitPostorder(block, postOrderIndex++);
             }
         }
 

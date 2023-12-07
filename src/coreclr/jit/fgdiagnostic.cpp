@@ -5146,11 +5146,11 @@ void Compiler::fgDebugCheckDfsTree()
     unsigned count =
         fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
                  [=](BasicBlock* block, unsigned postorderNum) {
-                     assert(block->bbPostorderNum == postorderNum);
-                     assert(m_dfs->GetPostOrder()[postorderNum] == block);
+                     assert(block->bbNewPostorderNum == postorderNum);
+                     assert(m_dfsTree->GetPostOrder()[postorderNum] == block);
                  });
 
-    assert(m_dfs->GetPostOrderCount() == count);
+    assert(m_dfsTree->GetPostOrderCount() == count);
 }
 
 /*****************************************************************************/
