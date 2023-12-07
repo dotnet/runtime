@@ -1394,6 +1394,12 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     int srcCount = BuildOperandUses(cast->CastOp());
     BuildDef(cast);
 
+    if (varTypeIsFloating(cast->gtOp1) && !varTypeIsFloating(cast->TypeGet()))
+    {
+        buildInternalIntRegisterDefForNode(cast);
+        buildInternalRegisterUses();
+    }
+
     return srcCount;
 }
 

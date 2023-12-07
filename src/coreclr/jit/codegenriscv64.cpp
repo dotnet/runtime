@@ -3385,7 +3385,25 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+    assert(tmpReg != treeNode->GetRegNum());
+    assert(tmpReg != op1->GetRegNum());
+
     GetEmitter()->emitIns_R_R(ins, dstSize, treeNode->GetRegNum(), op1->GetRegNum());
+
+    // This part emulates the "flush to zero" option because the RISC-V specification does not provide it.
+    instruction feq_ins = INS_feq_s;
+    if (srcType == TYP_DOUBLE)
+    {
+        feq_ins = INS_feq_d;
+    }
+    // Compare op1 with itself to get 0 if op1 is NaN and 1 for any other value
+    GetEmitter()->emitIns_R_R_R(feq_ins, dstSize, tmpReg, op1->GetRegNum(), op1->GetRegNum());
+    // Get subtraction result of REG_ZERO (always 0) and feq result
+    // As a result we get 0 for NaN and -1 (all bits set) for any other value
+    GetEmitter()->emitIns_R_R_R(INS_sub, dstSize, tmpReg, REG_ZERO, tmpReg);
+    // and instruction with received mask produces 0 for NaN and preserves any other value
+    GetEmitter()->emitIns_R_R_R(INS_and, dstSize, treeNode->GetRegNum(), treeNode->GetRegNum(), tmpReg);
 
     genProduceReg(treeNode);
 }

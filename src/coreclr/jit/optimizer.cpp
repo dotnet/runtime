@@ -2704,13 +2704,6 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             break;
 
         case BBJ_ALWAYS:
-            // Fall-through successors are assumed correct and are not modified
-            if (blk->JumpsToNext() && blk->HasFlag(BBF_NONE_QUIRK))
-            {
-                break;
-            }
-
-            FALLTHROUGH;
         case BBJ_LEAVE:
         case BBJ_CALLFINALLY:
         case BBJ_COND:
@@ -3259,7 +3252,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                     weightAdjust = topPredBlock->bbWeight;
                 }
             }
-            else
+            else if (topPredBlock != newT)
             {
                 JITDUMP("in optCanonicalizeLoop (current): redirect bottom->top backedge " FMT_BB " -> " FMT_BB
                         " to " FMT_BB " -> " FMT_BB "\n",
@@ -3290,7 +3283,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                     weightAdjust = topPredBlock->bbWeight;
                 }
             }
-            else
+            else if (topPredBlock != newT)
             {
                 JITDUMP("in optCanonicalizeLoop (outer): redirect %s->top %sedge " FMT_BB " -> " FMT_BB " to " FMT_BB
                         " -> " FMT_BB "\n",
