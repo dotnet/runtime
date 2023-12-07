@@ -219,8 +219,13 @@ namespace System.Formats.Tar.Tests
             string entryFolderName = "folder";
             string destinationFolderName = "folderSibling";
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            // the folder used to store files needs to have a shorter path on Apple mobile platforms,
+            // because the TempDirectory gets created in folder with a path longer than 100 bytes
+            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/CoreSimulator/Devices/tempDir");
+#else
             using TempDirectory root = new TempDirectory();
-
+#endif
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
             string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
 
@@ -295,8 +300,13 @@ namespace System.Formats.Tar.Tests
             string entryFolderName = inverted ? "folderSibling" : "folder";
             string destinationFolderName = inverted ? "folder" : "folderSibling";
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            // the folder used to store files needs to have a shorter path on Apple mobile platforms,
+            // because the TempDirectory gets created in folder with a path longer than 100 bytes
+            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/CoreSimulator/Devices/tempDir");
+#else
             using TempDirectory root = new TempDirectory();
-
+#endif
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
             string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
 
@@ -326,8 +336,13 @@ namespace System.Formats.Tar.Tests
             string linkTargetFileName = "file.txt";
             string linkFileName = "link";
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            // the folder used to store files needs to have a shorter path on Apple mobile platforms,
+            // because the TempDirectory gets created in folder with a path longer than 100 bytes
+            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/CoreSimulator/Devices/tempDir");
+#else
             using TempDirectory root = new TempDirectory();
-
+#endif
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
             string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
 
