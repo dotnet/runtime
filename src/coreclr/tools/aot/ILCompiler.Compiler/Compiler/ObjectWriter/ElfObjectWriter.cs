@@ -30,6 +30,7 @@ namespace ILCompiler.ObjectWriter
         {
             _machine = factory.Target.Architecture switch
             {
+                TargetArchitecture.X86 => ElfNative.EM_386,
                 TargetArchitecture.X64 => ElfNative.EM_X86_64,
                 TargetArchitecture.ARM64 => ElfNative.EM_AARCH64,
                 _ => throw new NotSupportedException("Unsupported architecture")
@@ -222,6 +223,9 @@ namespace ILCompiler.ObjectWriter
         {
             switch (_machine)
             {
+                case ElfNative.EM_386:
+                    EmitRelocationsX86(sectionIndex, relocationList);
+                    break;
                 case ElfNative.EM_X86_64:
                     EmitRelocationsX64(sectionIndex, relocationList);
                     break;
@@ -234,36 +238,35 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void EmitRelocationsARM64(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private void EmitRelocationsX86(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             if (relocationList.Count > 0)
             {
-                Span<byte> relocationEntry = stackalloc byte[24];
-                var relocationStream = new MemoryStream(24 * relocationList.Count);
+                Span<byte> relocationEntry = stackalloc byte[12];
+                var relocationStream = new MemoryStream(12 * relocationList.Count);
                 _sections[sectionIndex].RelocationStream = relocationStream;
                 foreach (SymbolicRelocation symbolicRelocation in relocationList)
                 {
                     uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
                     uint type = symbolicRelocation.Type switch
                     {
-                        RelocType.IMAGE_REL_BASED_DIR64 => ElfNative.R_AARCH64_ABS64,
-                        RelocType.IMAGE_REL_BASED_HIGHLOW => ElfNative.R_AARCH64_ABS32,
-                        RelocType.IMAGE_REL_BASED_RELPTR32 => ElfNative.R_AARCH64_PREL32,
-                        RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => ElfNative.R_AARCH64_CALL26,
-                        RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ElfNative.R_AARCH64_ADR_PREL_PG_HI21,
-                        RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ElfNative.R_AARCH64_ADD_ABS_LO12_NC,
-                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12 => ElfNative.R_AARCH64_TLSLE_ADD_TPREL_HI12,
-                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC => ElfNative.R_AARCH64_TLSLE_ADD_TPREL_LO12_NC,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 => ElfNative.R_AARCH64_TLSDESC_ADR_PAGE21,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12 => ElfNative.R_AARCH64_TLSDESC_LD64_LO12,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12 => ElfNative.R_AARCH64_TLSDESC_ADD_LO12,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL => ElfNative.R_AARCH64_TLSDESC_CALL,
+                        RelocType.IMAGE_REL_BASED_HIGHLOW => ElfNative.R_386_32,
+                        RelocType.IMAGE_REL_BASED_RELPTR32 => ElfNative.R_386_PC32,
+                        RelocType.IMAGE_REL_BASED_REL32 => ElfNative.R_386_PLT32,
+                        RelocType.IMAGE_REL_TLSGD => ElfNative.R_386_TLS_GD,
+                        RelocType.IMAGE_REL_TPOFF => ElfNative.R_386_TLS_TPOFF,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
-                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
-                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
-                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                    long addend = symbolicRelocation.Addend;
+                    if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_REL32)
+                    {
+                        addend -= 4;
+                    }
+
+                    BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)symbolicRelocation.Offset);
+                    BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry.Slice(4), ((uint)symbolIndex << 8) | type);
+                    BinaryPrimitives.WriteInt32LittleEndian(relocationEntry.Slice(8), (int)addend);
                     relocationStream.Write(relocationEntry);
                 }
             }
@@ -304,237 +307,284 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private void EmitRelocationsARM64(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            if (relocationList.Count > 0)
+            {
+                Span<byte> relocationEntry = stackalloc byte[24];
+                var relocationStream = new MemoryStream(24 * relocationList.Count);
+                _sections[sectionIndex].RelocationStream = relocationStream;
+                foreach (SymbolicRelocation symbolicRelocation in relocationList)
+                {
+                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+                    uint type = symbolicRelocation.Type switch
+                    {
+                        RelocType.IMAGE_REL_BASED_DIR64 => ElfNative.R_AARCH64_ABS64,
+                        RelocType.IMAGE_REL_BASED_HIGHLOW => ElfNative.R_AARCH64_ABS32,
+                        RelocType.IMAGE_REL_BASED_RELPTR32 => ElfNative.R_AARCH64_PREL32,
+                        RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => ElfNative.R_AARCH64_CALL26,
+                        RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ElfNative.R_AARCH64_ADR_PREL_PG_HI21,
+                        RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ElfNative.R_AARCH64_ADD_ABS_LO12_NC,
+                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12 => ElfNative.R_AARCH64_TLSLE_ADD_TPREL_HI12,
+                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC => ElfNative.R_AARCH64_TLSLE_ADD_TPREL_LO12_NC,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 => ElfNative.R_AARCH64_TLSDESC_ADR_PAGE21,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12 => ElfNative.R_AARCH64_TLSDESC_LD64_LO12,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12 => ElfNative.R_AARCH64_TLSDESC_ADD_LO12,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL => ElfNative.R_AARCH64_TLSDESC_CALL,
+                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
+                    };
+
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
+                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                    relocationStream.Write(relocationEntry);
+                }
+            }
+        }
+
         protected override void EmitSectionsAndLayout()
         {
         }
 
         protected override void EmitObjectFile(string objectFilePath)
         {
-            using (var outputFileStream = new FileStream(objectFilePath, FileMode.Create))
+            using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
+            switch (_machine)
             {
-                ulong sectionHeaderOffset = (ulong)ElfHeader<ulong>.Size;
-                uint sectionCount = 1; // NULL section
-                bool hasSymTabExtendedIndices = false;
-                Span<byte> tempBuffer = stackalloc byte[sizeof(uint)];
+                case ElfNative.EM_386:
+                    EmitObjectFile<uint>(outputFileStream);
+                    break;
+                default:
+                    EmitObjectFile<ulong>(outputFileStream);
+                    break;
+            }
+        }
 
-                _sections.AddRange(_comdatNameToElfSection.Values);
-                _sections.Add(new SectionDefinition
-                {
-                    Name = ".note.GNU-stack",
-                    Type = ElfNative.SHT_PROGBITS,
-                    Stream = Stream.Null,
-                });
+        private void EmitObjectFile<TSize>(FileStream outputFileStream)
+            where TSize : struct, IBinaryInteger<TSize>
+        {
+            ulong sectionHeaderOffset = (ulong)ElfHeader.GetSize<TSize>();
+            uint sectionCount = 1; // NULL section
+            bool hasSymTabExtendedIndices = false;
+            Span<byte> tempBuffer = stackalloc byte[sizeof(uint)];
 
-                foreach (var section in _sections)
+            _sections.AddRange(_comdatNameToElfSection.Values);
+            _sections.Add(new SectionDefinition
+            {
+                Name = ".note.GNU-stack",
+                Type = ElfNative.SHT_PROGBITS,
+                Stream = Stream.Null,
+            });
+
+            foreach (var section in _sections)
+            {
+                _stringTable.ReserveString(section.Name);
+                section.SectionIndex = (uint)sectionCount;
+                if (section.Alignment > 0)
                 {
-                    _stringTable.ReserveString(section.Name);
-                    section.SectionIndex = (uint)sectionCount;
-                    if (section.Alignment > 0)
-                    {
-                        sectionHeaderOffset = (ulong)((sectionHeaderOffset + (ulong)section.Alignment - 1) & ~(ulong)(section.Alignment - 1));
-                    }
-                    section.SectionOffset = sectionHeaderOffset;
-                    if (section.Type != ElfNative.SHT_NOBITS)
-                    {
-                        sectionHeaderOffset += (ulong)section.Stream.Length;
-                    }
-                    sectionHeaderOffset += (ulong)section.RelocationStream.Length;
+                    sectionHeaderOffset = (ulong)((sectionHeaderOffset + (ulong)section.Alignment - 1) & ~(ulong)(section.Alignment - 1));
+                }
+                section.SectionOffset = sectionHeaderOffset;
+                if (section.Type != ElfNative.SHT_NOBITS)
+                {
+                    sectionHeaderOffset += (ulong)section.Stream.Length;
+                }
+                sectionHeaderOffset += (ulong)section.RelocationStream.Length;
+                sectionCount++;
+                if (section.RelocationStream != Stream.Null)
+                {
+                    _stringTable.ReserveString(".rela" + section.Name);
                     sectionCount++;
+                }
+
+                // Write the section index into the section's group. We store all the groups
+                // at the end so we can modify their contents in this loop safely.
+                if (section.GroupSection is not null)
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, section.SectionIndex);
+                    section.GroupSection.Stream.Write(tempBuffer);
+                }
+            }
+
+            // Reserve all symbol names
+            foreach (var symbol in _symbols)
+            {
+                if (symbol.Name is not null)
+                {
+                    _stringTable.ReserveString(symbol.Name);
+                }
+            }
+            _stringTable.ReserveString(".strtab");
+            _stringTable.ReserveString(".symtab");
+            if (sectionCount >= ElfNative.SHN_LORESERVE)
+            {
+                _stringTable.ReserveString(".symtab_shndx");
+                hasSymTabExtendedIndices = true;
+            }
+
+            uint strTabSectionIndex = sectionCount;
+            sectionHeaderOffset += _stringTable.Size;
+            sectionCount++;
+            uint symTabSectionIndex = sectionCount;
+            sectionHeaderOffset += (ulong)(_symbols.Count * ElfSymbol.GetSize<TSize>());
+            sectionCount++;
+            if (hasSymTabExtendedIndices)
+            {
+                sectionHeaderOffset += (ulong)(_symbols.Count * sizeof(uint));
+                sectionCount++;
+            }
+
+            ElfHeader elfHeader = new ElfHeader
+            {
+                Type = ElfNative.ET_REL,
+                Machine = _machine,
+                Version = ElfNative.EV_CURRENT,
+                SegmentHeaderEntrySize = 0x38,
+                SectionHeaderOffset = sectionHeaderOffset,
+                SectionHeaderEntrySize = (ushort)ElfSectionHeader.GetSize<TSize>(),
+                SectionHeaderEntryCount = sectionCount < ElfNative.SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
+                StringTableIndex = strTabSectionIndex < ElfNative.SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)ElfNative.SHN_XINDEX,
+            };
+            elfHeader.Write<TSize>(outputFileStream);
+
+            foreach (var section in _sections)
+            {
+                if (section.Type != ElfNative.SHT_NOBITS)
+                {
+                    outputFileStream.Position = (long)section.SectionOffset;
+                    section.Stream.Position = 0;
+                    section.Stream.CopyTo(outputFileStream);
                     if (section.RelocationStream != Stream.Null)
                     {
-                        _stringTable.ReserveString(".rela" + section.Name);
-                        sectionCount++;
-                    }
-
-                    // Write the section index into the section's group. We store all the groups
-                    // at the end so we can modify their contents in this loop safely.
-                    if (section.GroupSection is not null)
-                    {
-                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, section.SectionIndex);
-                        section.GroupSection.Stream.Write(tempBuffer);
+                        section.RelocationStream.Position = 0;
+                        section.RelocationStream.CopyTo(outputFileStream);
                     }
                 }
+            }
 
-                // Reserve all symbol names
+            ulong stringTableOffset = (ulong)outputFileStream.Position;
+            _stringTable.Write(outputFileStream);
+
+            ulong symbolTableOffset = (ulong)outputFileStream.Position;
+            foreach (var symbol in _symbols)
+            {
+                symbol.Write<TSize>(outputFileStream, _stringTable);
+            }
+
+            ulong symbolTableExtendedIndicesOffset = (ulong)outputFileStream.Position;
+            if (hasSymTabExtendedIndices)
+            {
                 foreach (var symbol in _symbols)
                 {
-                    if (symbol.Name is not null)
-                    {
-                        _stringTable.ReserveString(symbol.Name);
-                    }
+                    uint index = symbol.Section?.SectionIndex ?? 0;
+                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, index >= ElfNative.SHN_LORESERVE ? index : 0);
+                    outputFileStream.Write(tempBuffer);
                 }
-                _stringTable.ReserveString(".strtab");
-                _stringTable.ReserveString(".symtab");
-                if (sectionCount >= ElfNative.SHN_LORESERVE)
-                {
-                    _stringTable.ReserveString(".symtab_shndx");
-                    hasSymTabExtendedIndices = true;
-                }
+            }
 
-                uint strTabSectionIndex = sectionCount;
-                sectionHeaderOffset += _stringTable.Size;
-                sectionCount++;
-                uint symTabSectionIndex = sectionCount;
-                sectionHeaderOffset += (ulong)(_symbols.Count * ElfSymbol.Size64);
-                sectionCount++;
-                if (hasSymTabExtendedIndices)
-                {
-                    sectionHeaderOffset += (ulong)(_symbols.Count * sizeof(uint));
-                    sectionCount++;
-                }
+            // Null section
+            ElfSectionHeader nullSectionHeader = new ElfSectionHeader
+            {
+                NameIndex = 0,
+                Type = ElfNative.SHT_NULL,
+                Flags = 0u,
+                Address = 0u,
+                Offset = 0u,
+                SectionSize = sectionCount >= ElfNative.SHN_LORESERVE ? sectionCount : 0u,
+                Link = strTabSectionIndex >= ElfNative.SHN_LORESERVE ? strTabSectionIndex : 0u,
+                Info = 0u,
+                Alignment = 0u,
+                EntrySize = 0u,
+            };
+            nullSectionHeader.Write<TSize>(outputFileStream);
 
-                ElfHeader<ulong> elfHeader = new ElfHeader<ulong>
-                {
-                    Type = ElfNative.ET_REL,
-                    Machine = _machine,
-                    Version = ElfNative.EV_CURRENT,
-                    SegmentHeaderEntrySize = 0x38,
-                    SectionHeaderOffset = sectionHeaderOffset,
-                    SectionHeaderEntrySize = (ushort)ElfSectionHeader<ulong>.Size,
-                    SectionHeaderEntryCount = sectionCount < ElfNative.SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
-                    StringTableIndex = strTabSectionIndex < ElfNative.SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)ElfNative.SHN_XINDEX,
-                };
-                elfHeader.Write(outputFileStream);
+            foreach (var section in _sections)
+            {
+                uint groupFlag = section.GroupSection is not null ? ElfNative.SHF_GROUP : 0u;
 
-                foreach (var section in _sections)
+                ElfSectionHeader sectionHeader = new ElfSectionHeader
                 {
-                    if (section.Type != ElfNative.SHT_NOBITS)
-                    {
-                        outputFileStream.Position = (long)section.SectionOffset;
-                        section.Stream.Position = 0;
-                        section.Stream.CopyTo(outputFileStream);
-                        if (section.RelocationStream != Stream.Null)
-                        {
-                            section.RelocationStream.Position = 0;
-                            section.RelocationStream.CopyTo(outputFileStream);
-                        }
-                    }
-                }
-
-                ulong stringTableOffset = (ulong)outputFileStream.Position;
-                _stringTable.Write(outputFileStream);
-
-                ulong symbolTableOffset = (ulong)outputFileStream.Position;
-                foreach (var symbol in _symbols)
-                {
-                    symbol.Write64(outputFileStream, _stringTable);
-                }
-
-                ulong symbolTableExtendedIndicesOffset = (ulong)outputFileStream.Position;
-                if (hasSymTabExtendedIndices)
-                {
-                    foreach (var symbol in _symbols)
-                    {
-                        uint index = symbol.Section?.SectionIndex ?? 0;
-                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, index >= ElfNative.SHN_LORESERVE ? index : 0);
-                        outputFileStream.Write(tempBuffer);
-                    }
-                }
-
-                // Null section
-                ElfSectionHeader<ulong> nullSectionHeader = new ElfSectionHeader<ulong>
-                {
-                    NameIndex = 0,
-                    Type = ElfNative.SHT_NULL,
-                    Flags = 0u,
+                    NameIndex = _stringTable.GetStringOffset(section.Name),
+                    Type = section.Type,
+                    Flags = section.Flags | groupFlag,
                     Address = 0u,
-                    Offset = 0u,
-                    SectionSize = sectionCount >= ElfNative.SHN_LORESERVE ? sectionCount : 0u,
-                    Link = strTabSectionIndex >= ElfNative.SHN_LORESERVE ? strTabSectionIndex : 0u,
-                    Info = 0u,
-                    Alignment = 0u,
-                    EntrySize = 0u,
+                    Offset = section.SectionOffset,
+                    SectionSize = (ulong)section.Stream.Length,
+                    Link = section.Type == ElfNative.SHT_GROUP ? symTabSectionIndex : 0u,
+                    Info = section.Info,
+                    Alignment = (ulong)section.Alignment,
+                    EntrySize = section.Type == ElfNative.SHT_GROUP ? (uint)sizeof(uint) : 0u,
                 };
-                nullSectionHeader.Write(outputFileStream);
+                sectionHeader.Write<TSize>(outputFileStream);
 
-                foreach (var section in _sections)
+                if (section.Type != ElfNative.SHT_NOBITS &&
+                    section.RelocationStream != Stream.Null)
                 {
-                    uint groupFlag = section.GroupSection is not null ? ElfNative.SHF_GROUP : 0u;
-
-                    ElfSectionHeader<ulong> sectionHeader = new ElfSectionHeader<ulong>
+                    sectionHeader = new ElfSectionHeader
                     {
-                        NameIndex = _stringTable.GetStringOffset(section.Name),
-                        Type = section.Type,
-                        Flags = section.Flags | groupFlag,
+                        NameIndex = _stringTable.GetStringOffset(".rela" + section.Name),
+                        Type = ElfNative.SHT_RELA,
+                        Flags = groupFlag,
                         Address = 0u,
-                        Offset = section.SectionOffset,
-                        SectionSize = (ulong)section.Stream.Length,
-                        Link = section.Type == ElfNative.SHT_GROUP ? symTabSectionIndex : 0u,
-                        Info = section.Info,
-                        Alignment = (ulong)section.Alignment,
-                        EntrySize = section.Type == ElfNative.SHT_GROUP ? (uint)sizeof(uint) : 0u,
-                    };
-                    sectionHeader.Write(outputFileStream);
-
-                    if (section.Type != ElfNative.SHT_NOBITS &&
-                        section.RelocationStream != Stream.Null)
-                    {
-                        sectionHeader = new ElfSectionHeader<ulong>
-                        {
-                            NameIndex = _stringTable.GetStringOffset(".rela" + section.Name),
-                            Type = ElfNative.SHT_RELA,
-                            Flags = groupFlag,
-                            Address = 0u,
-                            Offset = section.SectionOffset + sectionHeader.SectionSize,
-                            SectionSize = (ulong)section.RelocationStream.Length,
-                            Link = symTabSectionIndex,
-                            Info = section.SectionIndex,
-                            Alignment = 8u,
-                            EntrySize = 24u,
-                        };
-                        sectionHeader.Write(outputFileStream);
-                    }
-                }
-
-                // String table section
-                ElfSectionHeader<ulong> stringTableSectionHeader = new ElfSectionHeader<ulong>
-                {
-                    NameIndex = _stringTable.GetStringOffset(".strtab"),
-                    Type = ElfNative.SHT_STRTAB,
-                    Flags = 0u,
-                    Address = 0u,
-                    Offset = stringTableOffset,
-                    SectionSize = _stringTable.Size,
-                    Link = 0u,
-                    Info = 0u,
-                    Alignment = 0u,
-                    EntrySize = 0u,
-                };
-                stringTableSectionHeader.Write(outputFileStream);
-
-                // Symbol table section
-                ElfSectionHeader<ulong> symbolTableSectionHeader = new ElfSectionHeader<ulong>
-                {
-                    NameIndex = _stringTable.GetStringOffset(".symtab"),
-                    Type = ElfNative.SHT_SYMTAB,
-                    Flags = 0u,
-                    Address = 0u,
-                    Offset = symbolTableOffset,
-                    SectionSize = (ulong)(_symbols.Count * ElfSymbol.Size64),
-                    Link = strTabSectionIndex,
-                    Info = _localSymbolCount,
-                    Alignment = 0u,
-                    EntrySize = (uint)ElfSymbol.Size64,
-                };
-                symbolTableSectionHeader.Write(outputFileStream);
-
-                if (hasSymTabExtendedIndices)
-                {
-                    ElfSectionHeader<ulong> sectionHeader = new ElfSectionHeader<ulong>
-                    {
-                        NameIndex = _stringTable.GetStringOffset(".symtab_shndx"),
-                        Type = ElfNative.SHT_SYMTAB_SHNDX,
-                        Flags = 0u,
-                        Address = 0u,
-                        Offset = symbolTableExtendedIndicesOffset,
-                        SectionSize = (ulong)(_symbols.Count * sizeof(uint)),
+                        Offset = section.SectionOffset + sectionHeader.SectionSize,
+                        SectionSize = (ulong)section.RelocationStream.Length,
                         Link = symTabSectionIndex,
-                        Info = 0u,
-                        Alignment = 0u,
-                        EntrySize = (uint)sizeof(uint),
+                        Info = section.SectionIndex,
+                        Alignment = 8u,
+                        EntrySize = 24u,
                     };
-                    sectionHeader.Write(outputFileStream);
+                    sectionHeader.Write<TSize>(outputFileStream);
                 }
+            }
+
+            // String table section
+            ElfSectionHeader stringTableSectionHeader = new ElfSectionHeader
+            {
+                NameIndex = _stringTable.GetStringOffset(".strtab"),
+                Type = ElfNative.SHT_STRTAB,
+                Flags = 0u,
+                Address = 0u,
+                Offset = stringTableOffset,
+                SectionSize = _stringTable.Size,
+                Link = 0u,
+                Info = 0u,
+                Alignment = 0u,
+                EntrySize = 0u,
+            };
+            stringTableSectionHeader.Write<TSize>(outputFileStream);
+
+            // Symbol table section
+            ElfSectionHeader symbolTableSectionHeader = new ElfSectionHeader
+            {
+                NameIndex = _stringTable.GetStringOffset(".symtab"),
+                Type = ElfNative.SHT_SYMTAB,
+                Flags = 0u,
+                Address = 0u,
+                Offset = symbolTableOffset,
+                SectionSize = (ulong)(_symbols.Count * ElfSymbol.GetSize<TSize>()),
+                Link = strTabSectionIndex,
+                Info = _localSymbolCount,
+                Alignment = 0u,
+                EntrySize = (uint)ElfSymbol.GetSize<TSize>(),
+            };
+            symbolTableSectionHeader.Write<TSize>(outputFileStream);
+
+            if (hasSymTabExtendedIndices)
+            {
+                ElfSectionHeader sectionHeader = new ElfSectionHeader
+                {
+                    NameIndex = _stringTable.GetStringOffset(".symtab_shndx"),
+                    Type = ElfNative.SHT_SYMTAB_SHNDX,
+                    Flags = 0u,
+                    Address = 0u,
+                    Offset = symbolTableExtendedIndicesOffset,
+                    SectionSize = (ulong)(_symbols.Count * sizeof(uint)),
+                    Link = symTabSectionIndex,
+                    Info = 0u,
+                    Alignment = 0u,
+                    EntrySize = (uint)sizeof(uint),
+                };
+                sectionHeader.Write<TSize>(outputFileStream);
             }
         }
 
@@ -560,17 +610,16 @@ namespace ILCompiler.ObjectWriter
             public ulong SectionOffset { get; set; }
         }
 
-        private sealed class ElfHeader<T>
-            where T : struct, IBinaryInteger<T>
+        private sealed class ElfHeader
         {
             private static ReadOnlySpan<byte> Magic => new byte[] { 0x7f, 0x45, 0x4c, 0x46 };
 
             public ushort Type { get; set; }
             public ushort Machine { get; set; }
             public uint Version { get; set; }
-            public T EntryPoint { get; set; }
-            public T SegmentHeaderOffset { get; set; }
-            public T SectionHeaderOffset { get; set; }
+            public ulong EntryPoint { get; set; }
+            public ulong SegmentHeaderOffset { get; set; }
+            public ulong SectionHeaderOffset { get; set; }
             public uint Flags { get; set; }
             public ushort SegmentHeaderEntrySize { get; set; }
             public ushort SegmentHeaderEntryCount { get; set; }
@@ -578,48 +627,51 @@ namespace ILCompiler.ObjectWriter
             public ushort SectionHeaderEntryCount { get; set; }
             public ushort StringTableIndex { get; set; }
 
-            private static IBinaryInteger<T> TDefault => default(T);
-
-            public static int Size =>
-                Magic.Length +
-                1 + // Class
-                1 + // Endianness
-                1 + // Header version
-                1 + // ABI
-                1 + // ABI version
-                7 + // Padding
-                sizeof(ushort) + // Type
-                sizeof(ushort) + // Machine
-                sizeof(uint) + // Version
-                TDefault.GetByteCount() + // Entry point
-                TDefault.GetByteCount() + // Segment header offset
-                TDefault.GetByteCount() + // Section header offset
-                sizeof(uint) + // Flags
-                sizeof(ushort) + // ELF Header size
-                sizeof(ushort) + // Segment header entry size
-                sizeof(ushort) + // Segment header entry count
-                sizeof(ushort) + // Section header entry size
-                sizeof(ushort) + // Section header entry count
-                sizeof(ushort); // String table index
-
-            public void Write(FileStream stream)
+            public static int GetSize<TSize>()
+                where TSize : struct, IBinaryInteger<TSize>
             {
-                Span<byte> buffer = stackalloc byte[Size];
+                return
+                    Magic.Length +
+                    1 + // Class
+                    1 + // Endianness
+                    1 + // Header version
+                    1 + // ABI
+                    1 + // ABI version
+                    7 + // Padding
+                    sizeof(ushort) + // Type
+                    sizeof(ushort) + // Machine
+                    sizeof(uint) + // Version
+                    default(TSize).GetByteCount() + // Entry point
+                    default(TSize).GetByteCount() + // Segment header offset
+                    default(TSize).GetByteCount() + // Section header offset
+                    sizeof(uint) + // Flags
+                    sizeof(ushort) + // ELF Header size
+                    sizeof(ushort) + // Segment header entry size
+                    sizeof(ushort) + // Segment header entry count
+                    sizeof(ushort) + // Section header entry size
+                    sizeof(ushort) + // Section header entry count
+                    sizeof(ushort); // String table index
+            }
+
+            public void Write<TSize>(FileStream stream)
+                where TSize : struct, IBinaryInteger<TSize>
+            {
+                Span<byte> buffer = stackalloc byte[GetSize<TSize>()];
 
                 buffer.Clear();
                 Magic.CopyTo(buffer.Slice(0, Magic.Length));
-                buffer[4] = typeof(T) == typeof(uint) ? ElfNative.ELFCLASS32 : ElfNative.ELFCLASS64;
+                buffer[4] = typeof(TSize) == typeof(uint) ? ElfNative.ELFCLASS32 : ElfNative.ELFCLASS64;
                 buffer[5] = ElfNative.ELFDATA2LSB;
                 buffer[6] = 1;
                 var tempBuffer = buffer.Slice(16);
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<ushort>)Type).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<ushort>)Machine).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<uint>)Version).WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(EntryPoint.WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(SegmentHeaderOffset.WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(SectionHeaderOffset.WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(EntryPoint).WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(SegmentHeaderOffset).WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(SectionHeaderOffset).WriteLittleEndian(tempBuffer));
                 BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, Flags);
-                BinaryPrimitives.WriteUInt16LittleEndian(tempBuffer.Slice(4), (ushort)Size);
+                BinaryPrimitives.WriteUInt16LittleEndian(tempBuffer.Slice(4), (ushort)buffer.Length);
                 BinaryPrimitives.WriteUInt16LittleEndian(tempBuffer.Slice(6), SegmentHeaderEntrySize);
                 BinaryPrimitives.WriteUInt16LittleEndian(tempBuffer.Slice(8), SegmentHeaderEntryCount);
                 BinaryPrimitives.WriteUInt16LittleEndian(tempBuffer.Slice(10), SectionHeaderEntrySize);
@@ -630,49 +682,51 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private sealed class ElfSectionHeader<TSize>
-            where TSize : struct, IBinaryInteger<TSize>
+        private sealed class ElfSectionHeader
         {
             public uint NameIndex { get; set; }
             public uint Type { get; set; }
-            public TSize Flags { get; set; }
-            public TSize Address { get; set; }
-            public TSize Offset { get; set; }
-            public TSize SectionSize { get; set; }
+            public ulong Flags { get; set; }
+            public ulong Address { get; set; }
+            public ulong Offset { get; set; }
+            public ulong SectionSize { get; set; }
             public uint Link { get; set; }
             public uint Info { get; set; }
-            public TSize Alignment { get; set; }
-            public TSize EntrySize { get; set; }
+            public ulong Alignment { get; set; }
+            public ulong EntrySize { get; set; }
 
-            private static IBinaryInteger<TSize> TSizeDefault => default(TSize);
-
-            public static int Size =>
-                sizeof(uint) + // Name index
-                sizeof(uint) + // Type
-                TSizeDefault.GetByteCount() + // Flags
-                TSizeDefault.GetByteCount() + // Address
-                TSizeDefault.GetByteCount() + // Offset
-                TSizeDefault.GetByteCount() + // Size
-                sizeof(uint) + // Link
-                sizeof(uint) + // Info
-                TSizeDefault.GetByteCount() + // Alignment
-                TSizeDefault.GetByteCount(); // Entry size
-
-            public void Write(FileStream stream)
+            public static int GetSize<TSize>()
+                where TSize : struct, IBinaryInteger<TSize>
             {
-                Span<byte> buffer = stackalloc byte[Size];
+                return
+                    sizeof(uint) + // Name index
+                    sizeof(uint) + // Type
+                    default(TSize).GetByteCount() + // Flags
+                    default(TSize).GetByteCount() + // Address
+                    default(TSize).GetByteCount() + // Offset
+                    default(TSize).GetByteCount() + // Size
+                    sizeof(uint) + // Link
+                    sizeof(uint) + // Info
+                    default(TSize).GetByteCount() + // Alignment
+                    default(TSize).GetByteCount(); // Entry size
+            }
+
+            public void Write<TSize>(FileStream stream)
+                where TSize : struct, IBinaryInteger<TSize>
+            {
+                Span<byte> buffer = stackalloc byte[GetSize<TSize>()];
                 var tempBuffer = buffer;
 
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<uint>)NameIndex).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<uint>)Type).WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(Flags.WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(Address.WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(Offset.WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(SectionSize.WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Flags).WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Address).WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Offset).WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(SectionSize).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<uint>)Link).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<uint>)Info).WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(Alignment.WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(EntrySize.WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Alignment).WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(EntrySize).WriteLittleEndian(tempBuffer));
 
                 stream.Write(buffer);
             }
@@ -687,25 +741,39 @@ namespace ILCompiler.ObjectWriter
             public byte Info { get; init; }
             public byte Other { get; init; }
 
-            public static int Size64 => 24;
-
-            public void Write64(FileStream stream, ElfStringTable stringTable)
+            public static int GetSize<TSize>()
+                where TSize : struct, IBinaryInteger<TSize>
             {
-                Span<byte> buffer = stackalloc byte[Size64];
+                return typeof(TSize) == typeof(uint) ? 16 : 24;
+            }
+
+            public void Write<TSize>(FileStream stream, ElfStringTable stringTable)
+                where TSize : struct, IBinaryInteger<TSize>
+            {
+                Span<byte> buffer = stackalloc byte[GetSize<TSize>()];
+                ushort sectionIndex;
+
+                sectionIndex = Section is { SectionIndex: >= ElfNative.SHN_LORESERVE } ?
+                    (ushort)ElfNative.SHN_XINDEX :
+                    (Section is not null ? (ushort)Section.SectionIndex : (ushort)0u);
 
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer, Name is not null ? stringTable.GetStringOffset(Name) : 0);
-                buffer[4] = Info;
-                buffer[5] = Other;
-                if (Section is { SectionIndex: >= ElfNative.SHN_LORESERVE })
+                if (typeof(TSize) == typeof(uint))
                 {
-                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(6), (ushort)ElfNative.SHN_XINDEX);
+                    TSize.CreateChecked(Value).WriteLittleEndian(buffer.Slice(4));
+                    TSize.CreateChecked(Size).WriteLittleEndian(buffer.Slice(8));
+                    buffer[12] = Info;
+                    buffer[13] = Other;
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(14), sectionIndex);
                 }
                 else
                 {
-                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(6), Section is not null ? (ushort)Section.SectionIndex : (ushort)0u);
+                    buffer[4] = Info;
+                    buffer[5] = Other;
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(6), sectionIndex);
+                    BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(8), Value);
+                    BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(16), Size);
                 }
-                BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(8), Value);
-                BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(16), Size);
 
                 stream.Write(buffer);
             }
