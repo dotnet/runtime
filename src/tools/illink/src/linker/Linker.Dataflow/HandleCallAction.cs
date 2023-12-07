@@ -144,7 +144,7 @@ namespace ILLink.Shared.TrimAnalysis
                 yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
         }
 
-        private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
+        private partial IEnumerable<SystemTypeValue> GetNestedTypesOnTypeWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
         {
             foreach (var nestedType in type.Type.GetNestedTypesOnType(nameIsPrefix ? (t => t.Name.StartsWith(name)) : (t => t.Name == name), bindingFlags))
                 yield return new SystemTypeValue(new TypeProxy(nestedType));

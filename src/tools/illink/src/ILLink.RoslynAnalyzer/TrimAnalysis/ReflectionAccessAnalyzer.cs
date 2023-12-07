@@ -74,7 +74,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		internal void GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchyWithPrefix (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
 		{
-			foreach (var prop in typeSymbol.GetPropertiesOnTypeHierarchy (p => p.Name.StartsWith(name)) : (p => p.Name == name), bindingFlags))
+			foreach (var prop in typeSymbol.GetPropertiesOnTypeHierarchy (nameIsPrefix ? (p => p.Name.StartsWith(name)) : (p => p.Name == name), bindingFlags))
 				GetReflectionAccessDiagnosticsForProperty (diagnosticContext, prop);
 		}
 
