@@ -1222,7 +1222,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             }
         }
 
-        if ((includeEH && (compHndBBtabCount > 0)) || (includeLoops && (optLoopCount > 0)))
+        if (includeEH && (compHndBBtabCount > 0))
         {
             // Generate something like:
             //    subgraph cluster_0 {
@@ -1727,10 +1727,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             INDEBUG(rgnGraph.Verify());
             rgnGraph.Output(fgxFile);
 
-            if (includeLoops)
-            {
-                fgDumpFlowGraphLoops(fgxFile);
-            }
+        }
+
+        if (includeLoops && (m_loops != nullptr))
+        {
+            fgDumpFlowGraphLoops(fgxFile);
         }
     }
 
