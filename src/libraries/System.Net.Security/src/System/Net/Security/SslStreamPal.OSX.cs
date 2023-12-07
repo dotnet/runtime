@@ -62,7 +62,7 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
         {
             return null;
         }

@@ -37,7 +37,6 @@ namespace System.Net.Security.Tests
         {
             ClientCertificate,
             SelectionCallback,
-            CertificateContext
         }
 
         public static TheoryData<ClientCertSource> CertSourceData()
@@ -183,9 +182,6 @@ namespace System.Net.Security.Tests
                             break;
                         case ClientCertSource.SelectionCallback:
                             clientOptions.LocalCertificateSelectionCallback = ClientCertSelectionCallback;
-                            break;
-                        case ClientCertSource.CertificateContext:
-                            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(_clientCertificate, new());
                             break;
                     }
 

@@ -136,7 +136,7 @@ namespace System.Net.Security
             return status;
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested)
         {
             try
             {
@@ -154,6 +154,16 @@ namespace System.Net.Security
                 if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
                 {
                     AttachCertificateStore(cred, certificateContext.Trust._store!);
+                }
+
+                // Windows can fail to get local credentials in case of TLS Resume.
+                // We will store associated certificate in credentials and use it in case
+                // of TLS resume. It will be disposed when the credentials are.
+                if (newCredentialsRequested && sslAuthenticationOptions.CertificateContext != null)
+                {
+                    SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
+                    // We need to create copy to avoid Disposal issue.
+                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.Certificate);
                 }
 
                 return cred;

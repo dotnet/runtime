@@ -18,7 +18,7 @@ namespace System.Net
             string? hostName)
         {
             if (remoteCertificate == null)
-                return  SslPolicyErrors.RemoteCertificateNotAvailable;
+                return SslPolicyErrors.RemoteCertificateNotAvailable;
 
             SslPolicyErrors errors = chain.Build(remoteCertificate)
                 ? SslPolicyErrors.None
@@ -93,7 +93,7 @@ namespace System.Net
 
         // This is only called when we selected local client certificate.
         // Currently this is only when Java crypto asked for it.
-        internal static bool IsLocalCertificateUsed(SafeDeleteContext? _) => true;
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _1, SafeDeleteContext? _2) => true;
 
         //
         // Used only by client SSL code, never returns null.
