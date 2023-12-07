@@ -89,8 +89,6 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
     symbol = eventNode.getAttribute("symbol")
     if any(s in symbol for s in ["ThreadPool", "Contention", "WaitHandle"]):
         return
-    if "WaitHandle" in symbol:
-        return
 
     evtLevel = eventNode.getAttribute("level")[4:]
     evtKeywords = ""
