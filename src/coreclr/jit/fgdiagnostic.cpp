@@ -1726,7 +1726,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             DBEXEC(verbose, rgnGraph.Dump());
             INDEBUG(rgnGraph.Verify());
             rgnGraph.Output(fgxFile);
-
         }
 
         if (includeLoops && (m_loops != nullptr))
