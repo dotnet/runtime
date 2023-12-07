@@ -16,11 +16,10 @@ namespace ILCompiler.ObjectWriter
     public sealed class ElfObjectWriter : UnixObjectWriter
     {
         private readonly ushort _machine;
-        private readonly ElfStringTable _stringTable = new();
-        private readonly List<SectionDefinition> _sections = new();
+        private readonly List<ElfSectionDefinition> _sections = new();
         private readonly List<ElfSymbol> _symbols = new();
         private uint _localSymbolCount;
-        private readonly Dictionary<string, SectionDefinition> _comdatNameToElfSection = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, ElfSectionDefinition> _comdatNameToElfSection = new(StringComparer.Ordinal);
 
         // Symbol table
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
@@ -48,7 +47,7 @@ namespace ILCompiler.ObjectWriter
             int sectionIndex = _sections.Count;
             uint type = 0;
             uint flags = 0;
-            SectionDefinition groupSection = null;
+            ElfSectionDefinition groupSection = null;
 
             if (section.Type == SectionType.Uninitialized)
             {
@@ -72,30 +71,40 @@ namespace ILCompiler.ObjectWriter
                 };
             }
 
-            if (comdatName is not null &&
-                !_comdatNameToElfSection.TryGetValue(comdatName, out groupSection))
+            if (comdatName is not null)
             {
-                Span<byte> tempBuffer = stackalloc byte[sizeof(uint)];
-                groupSection = new SectionDefinition
+                flags |= ElfNative.SHF_GROUP;
+                if (!_comdatNameToElfSection.TryGetValue(comdatName, out groupSection))
                 {
-                    Name = ".group",
-                    Type = ElfNative.SHT_GROUP,
-                    Alignment = 4,
-                    Stream = new MemoryStream(5 * sizeof(uint)),
-                };
+                    Span<byte> tempBuffer = stackalloc byte[sizeof(uint)];
+                    groupSection = new ElfSectionDefinition
+                    {
+                        SectionHeader = new ElfSectionHeader
+                        {
+                            Type = ElfNative.SHT_GROUP,
+                            Alignment = 4,
+                            EntrySize = (uint)sizeof(uint),
+                        },
+                        Name = ".group",
+                        Stream = new MemoryStream(5 * sizeof(uint)),
+                    };
 
-                // Write group flags
-                BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, /*ElfNative.GRP_COMDAT*/1u);
-                groupSection.Stream.Write(tempBuffer);
+                    // Write group flags
+                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, /*ElfNative.GRP_COMDAT*/1u);
+                    groupSection.Stream.Write(tempBuffer);
 
-                _comdatNameToElfSection.Add(comdatName, groupSection);
+                    _comdatNameToElfSection.Add(comdatName, groupSection);
+                }
             }
 
-            _sections.Add(new SectionDefinition
+            _sections.Add(new ElfSectionDefinition
             {
+                SectionHeader = new ElfSectionHeader
+                {
+                    Type = type,
+                    Flags = flags,
+                },
                 Name = sectionName,
-                Type = type,
-                Flags = flags,
                 Stream = sectionStream,
                 GroupSection = groupSection,
             });
@@ -116,8 +125,8 @@ namespace ILCompiler.ObjectWriter
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
-            SectionDefinition elfSection = _sections[sectionIndex];
-            elfSection.Alignment = Math.Max(elfSection.Alignment, alignment);
+            ElfSectionDefinition elfSection = _sections[sectionIndex];
+            elfSection.SectionHeader.Alignment = Math.Max(elfSection.SectionHeader.Alignment, (ulong)alignment);
         }
 
         protected internal override void EmitRelocation(
@@ -177,7 +186,7 @@ namespace ILCompiler.ObjectWriter
             {
                 var section = _sections[definition.SectionIndex];
                 var type =
-                    (section.Flags & ElfNative.SHF_TLS) == ElfNative.SHF_TLS ? ElfNative.STT_TLS :
+                    (section.SectionHeader.Flags & ElfNative.SHF_TLS) == ElfNative.SHF_TLS ? ElfNative.STT_TLS :
                     definition.Size > 0 ? ElfNative.STT_FUNC : ElfNative.STT_NOTYPE;
                 sortedSymbols.Add(new ElfSymbol
                 {
@@ -213,9 +222,9 @@ namespace ILCompiler.ObjectWriter
             }
 
             // Update group sections links
-            foreach ((string comdatName, SectionDefinition groupSection) in _comdatNameToElfSection)
+            foreach ((string comdatName, ElfSectionDefinition groupSection) in _comdatNameToElfSection)
             {
-                groupSection.Info = (uint)_symbolNameToIndex[comdatName];
+                groupSection.SectionHeader.Info = (uint)_symbolNameToIndex[comdatName];
             }
         }
 
@@ -363,34 +372,54 @@ namespace ILCompiler.ObjectWriter
         private void EmitObjectFile<TSize>(FileStream outputFileStream)
             where TSize : struct, IBinaryInteger<TSize>
         {
-            ulong sectionHeaderOffset = (ulong)ElfHeader.GetSize<TSize>();
+            ElfStringTable _stringTable = new();
             uint sectionCount = 1; // NULL section
             bool hasSymTabExtendedIndices = false;
             Span<byte> tempBuffer = stackalloc byte[sizeof(uint)];
 
+            // Merge the group sections at the end of the section lists
             _sections.AddRange(_comdatNameToElfSection.Values);
-            _sections.Add(new SectionDefinition
+
+            // Add marker for non-executable stack
+            _sections.Add(new ElfSectionDefinition
             {
+                SectionHeader = new ElfSectionHeader { Type = ElfNative.SHT_PROGBITS },
                 Name = ".note.GNU-stack",
-                Type = ElfNative.SHT_PROGBITS,
                 Stream = Stream.Null,
             });
 
+            // Reserve all symbol names
+            foreach (var symbol in _symbols)
+            {
+                if (symbol.Name is not null)
+                {
+                    _stringTable.ReserveString(symbol.Name);
+                }
+            }
+
+            // Layout the section content in the output file
+            ulong currentOffset = (ulong)ElfHeader.GetSize<TSize>();
             foreach (var section in _sections)
             {
                 _stringTable.ReserveString(section.Name);
+
+                if (section.SectionHeader.Alignment > 0)
+                {
+                    currentOffset = (ulong)((currentOffset + (ulong)section.SectionHeader.Alignment - 1) & ~(ulong)(section.SectionHeader.Alignment - 1));
+                }
+
+                // Update section layout
                 section.SectionIndex = (uint)sectionCount;
-                if (section.Alignment > 0)
+                section.SectionHeader.Offset = currentOffset;
+                section.SectionHeader.Size = (ulong)section.Stream.Length;
+
+                if (section.SectionHeader.Type != ElfNative.SHT_NOBITS)
                 {
-                    sectionHeaderOffset = (ulong)((sectionHeaderOffset + (ulong)section.Alignment - 1) & ~(ulong)(section.Alignment - 1));
+                    currentOffset += (ulong)section.Stream.Length;
                 }
-                section.SectionOffset = sectionHeaderOffset;
-                if (section.Type != ElfNative.SHT_NOBITS)
-                {
-                    sectionHeaderOffset += (ulong)section.Stream.Length;
-                }
-                sectionHeaderOffset += (ulong)section.RelocationStream.Length;
+                currentOffset += (ulong)section.RelocationStream.Length;
                 sectionCount++;
+
                 if (section.RelocationStream != Stream.Null)
                 {
                     _stringTable.ReserveString(".rela" + section.Name);
@@ -406,14 +435,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            // Reserve all symbol names
-            foreach (var symbol in _symbols)
-            {
-                if (symbol.Name is not null)
-                {
-                    _stringTable.ReserveString(symbol.Name);
-                }
-            }
+            // Reserve names for the predefined sections
             _stringTable.ReserveString(".strtab");
             _stringTable.ReserveString(".symtab");
             if (sectionCount >= ElfNative.SHN_LORESERVE)
@@ -422,36 +444,45 @@ namespace ILCompiler.ObjectWriter
                 hasSymTabExtendedIndices = true;
             }
 
+            // Layout the string and symbol table
             uint strTabSectionIndex = sectionCount;
-            sectionHeaderOffset += _stringTable.Size;
+            currentOffset += _stringTable.Size;
             sectionCount++;
             uint symTabSectionIndex = sectionCount;
-            sectionHeaderOffset += (ulong)(_symbols.Count * ElfSymbol.GetSize<TSize>());
+            currentOffset += (ulong)(_symbols.Count * ElfSymbol.GetSize<TSize>());
             sectionCount++;
             if (hasSymTabExtendedIndices)
             {
-                sectionHeaderOffset += (ulong)(_symbols.Count * sizeof(uint));
+                currentOffset += (ulong)(_symbols.Count * sizeof(uint));
                 sectionCount++;
             }
 
+            // Update group section links
+            foreach (ElfSectionDefinition groupSection in _comdatNameToElfSection.Values)
+            {
+                groupSection.SectionHeader.Link = symTabSectionIndex;
+            }
+
+            // Write the ELF file header
             ElfHeader elfHeader = new ElfHeader
             {
                 Type = ElfNative.ET_REL,
                 Machine = _machine,
                 Version = ElfNative.EV_CURRENT,
                 SegmentHeaderEntrySize = 0x38,
-                SectionHeaderOffset = sectionHeaderOffset,
+                SectionHeaderOffset = currentOffset,
                 SectionHeaderEntrySize = (ushort)ElfSectionHeader.GetSize<TSize>(),
                 SectionHeaderEntryCount = sectionCount < ElfNative.SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
                 StringTableIndex = strTabSectionIndex < ElfNative.SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)ElfNative.SHN_XINDEX,
             };
             elfHeader.Write<TSize>(outputFileStream);
 
+            // Write the section contents and relocations
             foreach (var section in _sections)
             {
-                if (section.Type != ElfNative.SHT_NOBITS)
+                if (section.SectionHeader.Type != ElfNative.SHT_NOBITS)
                 {
-                    outputFileStream.Position = (long)section.SectionOffset;
+                    outputFileStream.Position = (long)section.SectionHeader.Offset;
                     section.Stream.Position = 0;
                     section.Stream.CopyTo(outputFileStream);
                     if (section.RelocationStream != Stream.Null)
@@ -462,6 +493,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
+            // Write the string and symbol table contents
             ulong stringTableOffset = (ulong)outputFileStream.Position;
             _stringTable.Write(outputFileStream);
 
@@ -482,6 +514,8 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
+            // Finally, write the section headers
+
             // Null section
             ElfSectionHeader nullSectionHeader = new ElfSectionHeader
             {
@@ -490,7 +524,7 @@ namespace ILCompiler.ObjectWriter
                 Flags = 0u,
                 Address = 0u,
                 Offset = 0u,
-                SectionSize = sectionCount >= ElfNative.SHN_LORESERVE ? sectionCount : 0u,
+                Size = sectionCount >= ElfNative.SHN_LORESERVE ? sectionCount : 0u,
                 Link = strTabSectionIndex >= ElfNative.SHN_LORESERVE ? strTabSectionIndex : 0u,
                 Info = 0u,
                 Alignment = 0u,
@@ -498,42 +532,29 @@ namespace ILCompiler.ObjectWriter
             };
             nullSectionHeader.Write<TSize>(outputFileStream);
 
+            // User sections and their relocations
             foreach (var section in _sections)
             {
-                uint groupFlag = section.GroupSection is not null ? ElfNative.SHF_GROUP : 0u;
+                section.SectionHeader.NameIndex = _stringTable.GetStringOffset(section.Name);
+                section.SectionHeader.Write<TSize>(outputFileStream);
 
-                ElfSectionHeader sectionHeader = new ElfSectionHeader
-                {
-                    NameIndex = _stringTable.GetStringOffset(section.Name),
-                    Type = section.Type,
-                    Flags = section.Flags | groupFlag,
-                    Address = 0u,
-                    Offset = section.SectionOffset,
-                    SectionSize = (ulong)section.Stream.Length,
-                    Link = section.Type == ElfNative.SHT_GROUP ? symTabSectionIndex : 0u,
-                    Info = section.Info,
-                    Alignment = (ulong)section.Alignment,
-                    EntrySize = section.Type == ElfNative.SHT_GROUP ? (uint)sizeof(uint) : 0u,
-                };
-                sectionHeader.Write<TSize>(outputFileStream);
-
-                if (section.Type != ElfNative.SHT_NOBITS &&
+                if (section.SectionHeader.Type != ElfNative.SHT_NOBITS &&
                     section.RelocationStream != Stream.Null)
                 {
-                    sectionHeader = new ElfSectionHeader
+                    ElfSectionHeader relaSectionHeader = new ElfSectionHeader
                     {
                         NameIndex = _stringTable.GetStringOffset(".rela" + section.Name),
                         Type = ElfNative.SHT_RELA,
-                        Flags = groupFlag,
+                        Flags = section.GroupSection is not null ? ElfNative.SHF_GROUP : 0u,
                         Address = 0u,
-                        Offset = section.SectionOffset + sectionHeader.SectionSize,
-                        SectionSize = (ulong)section.RelocationStream.Length,
+                        Offset = section.SectionHeader.Offset + section.SectionHeader.Size,
+                        Size = (ulong)section.RelocationStream.Length,
                         Link = symTabSectionIndex,
                         Info = section.SectionIndex,
                         Alignment = 8u,
                         EntrySize = 24u,
                     };
-                    sectionHeader.Write<TSize>(outputFileStream);
+                    relaSectionHeader.Write<TSize>(outputFileStream);
                 }
             }
 
@@ -545,7 +566,7 @@ namespace ILCompiler.ObjectWriter
                 Flags = 0u,
                 Address = 0u,
                 Offset = stringTableOffset,
-                SectionSize = _stringTable.Size,
+                Size = _stringTable.Size,
                 Link = 0u,
                 Info = 0u,
                 Alignment = 0u,
@@ -561,7 +582,7 @@ namespace ILCompiler.ObjectWriter
                 Flags = 0u,
                 Address = 0u,
                 Offset = symbolTableOffset,
-                SectionSize = (ulong)(_symbols.Count * ElfSymbol.GetSize<TSize>()),
+                Size = (ulong)(_symbols.Count * ElfSymbol.GetSize<TSize>()),
                 Link = strTabSectionIndex,
                 Info = _localSymbolCount,
                 Alignment = 0u,
@@ -569,6 +590,9 @@ namespace ILCompiler.ObjectWriter
             };
             symbolTableSectionHeader.Write<TSize>(outputFileStream);
 
+            // If the symbol table has references to sections with indexes higher than
+            // SHN_LORESERVE (0xff00) we need to write them down in a separate table
+            // in the .symtab_shndx section.
             if (hasSymTabExtendedIndices)
             {
                 ElfSectionHeader sectionHeader = new ElfSectionHeader
@@ -578,7 +602,7 @@ namespace ILCompiler.ObjectWriter
                     Flags = 0u,
                     Address = 0u,
                     Offset = symbolTableExtendedIndicesOffset,
-                    SectionSize = (ulong)(_symbols.Count * sizeof(uint)),
+                    Size = (ulong)(_symbols.Count * sizeof(uint)),
                     Link = symTabSectionIndex,
                     Info = 0u,
                     Alignment = 0u,
@@ -594,20 +618,14 @@ namespace ILCompiler.ObjectWriter
             writer.EmitObject(objectFilePath, nodes, dumper, logger);
         }
 
-        private sealed class SectionDefinition
+        private sealed class ElfSectionDefinition
         {
-            public string Name { get; init; }
-            public uint Type { get; init; }
-            public ulong Flags { get; init; }
-            public int Alignment { get; set; }
-            public Stream Stream { get; init; }
-            public Stream RelocationStream { get; set; } = Stream.Null;
-            public SectionDefinition GroupSection { get; init; }
-            public uint Info { get; set; }
-
-            // Layout
+            public required ElfSectionHeader SectionHeader { get; init; }
             public uint SectionIndex { get; set; }
-            public ulong SectionOffset { get; set; }
+            public required string Name { get; init; }
+            public required Stream Stream { get; init; }
+            public Stream RelocationStream { get; set; } = Stream.Null;
+            public ElfSectionDefinition GroupSection { get; init; }
         }
 
         private sealed class ElfHeader
@@ -689,7 +707,7 @@ namespace ILCompiler.ObjectWriter
             public ulong Flags { get; set; }
             public ulong Address { get; set; }
             public ulong Offset { get; set; }
-            public ulong SectionSize { get; set; }
+            public ulong Size { get; set; }
             public uint Link { get; set; }
             public uint Info { get; set; }
             public ulong Alignment { get; set; }
@@ -722,7 +740,7 @@ namespace ILCompiler.ObjectWriter
                 tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Flags).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Address).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Offset).WriteLittleEndian(tempBuffer));
-                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(SectionSize).WriteLittleEndian(tempBuffer));
+                tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Size).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<uint>)Link).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<uint>)Info).WriteLittleEndian(tempBuffer));
                 tempBuffer = tempBuffer.Slice(TSize.CreateChecked(Alignment).WriteLittleEndian(tempBuffer));
@@ -737,7 +755,7 @@ namespace ILCompiler.ObjectWriter
             public string Name { get; init; }
             public ulong Value { get; init; }
             public ulong Size { get; init; }
-            public SectionDefinition Section { get; init; }
+            public ElfSectionDefinition Section { get; init; }
             public byte Info { get; init; }
             public byte Other { get; init; }
 
