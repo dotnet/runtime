@@ -77,9 +77,6 @@ jobs:
         # Limiting interp runs as we don't need as much coverage.
         - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
 
-    - ${{ if eq(parameters.platform, 'linux_x64_xl') }}:
-      - Ubuntu.2204.Amd64.xl.Open.rt
-
     # Linux s390x
     - ${{ if eq(parameters.platform, 'linux_s390x') }}:
         - Ubuntu.2004.S390X.Experimental.Open
