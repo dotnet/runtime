@@ -6756,10 +6756,6 @@ protected:
         }
     };
 
-    // Do hoisting of all loops nested within loop "lnum" (an index into the optLoopTable), followed
-    // by the loop "lnum" itself.
-    bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
-
     // Do hoisting for a particular loop
     bool optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
 

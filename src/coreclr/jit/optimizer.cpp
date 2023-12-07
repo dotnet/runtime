@@ -6526,7 +6526,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
 PhaseStatus Compiler::optHoistLoopCode()
 {
     // If we don't have any loops in the method then take an early out now.
-    if (optLoopCount == 0)
+    if (m_loops->NumLoops() == 0)
     {
         JITDUMP("\nNo loops; no hoisting\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -6580,7 +6580,7 @@ PhaseStatus Compiler::optHoistLoopCode()
 
     optComputeInterestingVarSets();
 
-    // Consider all the loop nests, in inner-to-outer order
+    // Consider all the loops, visiting child loops first.
     //
     // TODO-Quirk: Switch this to postorder over the loops, instead of this
     // loop tree based thing. It is not the exact same order, but it will still
@@ -6588,18 +6588,20 @@ PhaseStatus Compiler::optHoistLoopCode()
 
     bool             modified = false;
     LoopHoistContext hoistCtxt(this);
-    for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
+    for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        if (optLoopTable[lnum].lpIsRemoved())
+        if (m_newToOldLoop[loop->GetIndex()] == nullptr)
         {
-            JITDUMP("\nLoop " FMT_LP " was removed\n", lnum);
             continue;
         }
 
-        if (optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP)
-        {
-            modified |= optHoistLoopNest(lnum, &hoistCtxt);
-        }
+#if LOOP_HOIST_STATS
+        // Record stats
+        m_curLoopHasHoistedExpression = false;
+        m_loopsConsidered++;
+#endif // LOOP_HOIST_STATS
+
+        modified |= optHoistThisLoop(loop, &hoistCtxt);
     }
 
 #ifdef DEBUG
@@ -6631,44 +6633,6 @@ PhaseStatus Compiler::optHoistLoopCode()
 #endif // DEBUG
 
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
-
-//------------------------------------------------------------------------
-// optHoistLoopNest: run loop hoisting for indicated loop and all contained loops
-//
-// Arguments:
-//    lnum - loop to process
-//    hoistCtxt - context for the hoisting
-//
-// Returns:
-//    true if any hoisting was done
-//
-bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
-{
-    // Do this loop, then recursively do all nested loops.
-    JITDUMP("\n%s " FMT_LP "\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop",
-            lnum);
-
-#if LOOP_HOIST_STATS
-    // Record stats
-    m_curLoopHasHoistedExpression = false;
-    m_loopsConsidered++;
-#endif // LOOP_HOIST_STATS
-
-    bool modified = false;
-
-    if (optLoopTable[lnum].lpChild != BasicBlock::NOT_IN_LOOP)
-    {
-        for (unsigned child = optLoopTable[lnum].lpChild; child != BasicBlock::NOT_IN_LOOP;
-             child          = optLoopTable[child].lpSibling)
-        {
-            modified |= optHoistLoopNest(child, hoistCtxt);
-        }
-    }
-
-    modified |= optHoistThisLoop(m_oldToNewLoop[lnum], hoistCtxt);
-
-    return modified;
 }
 
 //------------------------------------------------------------------------
@@ -6803,7 +6767,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     // add it here, and let it be added naturally, below.
     //
     // Note that all pre-headers get added first, which means they get considered for hoisting last. It is
-    // assumed that the order does not matter for correctness (since there is no execution order known).
+    // assumed that the order does not matter for correctness.
     // Note that the order does matter for the hoisting profitability heuristics, as we might
     // run out of hoisting budget when processing the blocks.
     //
@@ -6821,33 +6785,23 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     //    }
     // }
     //
-    // When processing the outer loop L00 (with an assumed single exit), we will push on the defExec stack
-    // pre-header 2, pre-header 1, the loop exit block, any IDom tree blocks leading to the entry block,
-    // and finally the entry block. (Note that the child loop iteration order of a loop is from "farthest"
-    // from the loop "head" to "nearest".) Blocks are considered for hoisting in the opposite order.
+    // The order in the siblink links is RPO, so the loop below will push pre-header 1, then pre-header 2.
+    // Then we will push the loop exit block, any IDom tree blocks leading to the header block, and finally
+    // the header block itself. optHoistLoopBlocks performs hoisting in reverse, so we will hoist the header
+    // block first and the pre-headers last.
     //
     // Note that pre-header 3 is not pushed, since it is not a direct child. It would have been processed
     // when loop L02 was considered for hoisting.
-    //
-    // The order of pushing pre-header 1 and pre-header 2 is based on the order in the loop table (which is
-    // convenient). But note that it is arbitrary because there is not guaranteed execution order amongst
-    // the child loops.
 
-    // TODO-Quirk: Switch this order off the old loop table
-    LoopDsc* oldLoop = m_newToOldLoop[loop->GetIndex()];
-
-    for (BasicBlock::loopNumber childLoopNum = oldLoop->lpChild; childLoopNum != BasicBlock::NOT_IN_LOOP;
-         childLoopNum                        = optLoopTable[childLoopNum].lpSibling)
+    for (FlowGraphNaturalLoop* childLoop = loop->GetChild(); childLoop != nullptr; childLoop = childLoop->GetSibling())
     {
-        if (optLoopTable[childLoopNum].lpIsRemoved())
+        if (m_newToOldLoop[childLoop->GetIndex()] == nullptr)
         {
             continue;
         }
 
-        FlowGraphNaturalLoop* childLoop = m_oldToNewLoop[childLoopNum];
-
         assert(childLoop->EntryEdges().size() == 1);
-        BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
+        BasicBlock* childPreHead = childLoop->EntryEdges()[0]->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
         {
             if (fgSsaDomTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))
@@ -6897,7 +6851,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
                 loop->GetHeader()->bbNum, loop->GetIndex());
     }
 
-    JITDUMP("  --  " FMT_BB " (entry block)\n", loop->GetHeader()->bbNum);
+    JITDUMP("  --  " FMT_BB " (header block)\n", loop->GetHeader()->bbNum);
     defExec.Push(loop->GetHeader());
 
     optHoistLoopBlocks(loop, &defExec, hoistCtxt);
