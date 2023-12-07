@@ -8,5 +8,6 @@
 
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <UsingWasiRuntimeWorkload Condition="'$(UsingWasiRuntimeWorkload)' == ''">$(WasiNativeWorkloadAvailable)</UsingWasiRuntimeWorkload>
+    <UsingWasiRuntimeWorkload Condition="'$(PublishAot)' == 'true'">false</UsingWasiRuntimeWorkload>
   </PropertyGroup>
 </Project>

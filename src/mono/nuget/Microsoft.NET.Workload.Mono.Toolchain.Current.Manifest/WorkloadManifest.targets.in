@@ -27,6 +27,7 @@
     <_BrowserWorkloadDisabled>$(_BrowserWorkloadNotSupportedForTFM)</_BrowserWorkloadDisabled>
 
     <_UsingBlazorOrWasmSdk Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' or '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</_UsingBlazorOrWasmSdk>
+    <_UsingBlazorOrWasmSdk Condition="'$(PublishAot)' == 'true'">false</_UsingBlazorOrWasmSdk>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
@@ -64,6 +65,8 @@
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''">$(WasmNativeWorkloadAvailable)</UsingBrowserRuntimeWorkload>
+
+    <UsingBrowserRuntimeWorkload Condition="'$(PublishAot)' == 'true'">false</UsingBrowserRuntimeWorkload>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(NativeLib)' != ''">
