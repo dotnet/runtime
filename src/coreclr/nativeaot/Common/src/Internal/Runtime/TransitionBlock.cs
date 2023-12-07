@@ -44,19 +44,20 @@
 // provided with information mapping that argument into registers and/or stack locations.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Internal.Runtime
 {
 #if TARGET_AMD64
-#pragma warning disable 0169
-#pragma warning disable CA1823
 #if UNIX_AMD64_ABI
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ReturnBlock
     {
         private IntPtr returnValue;
         private IntPtr returnValue2;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ArgumentRegisters
     {
         private IntPtr rdi;
@@ -67,11 +68,13 @@ namespace Internal.Runtime
         private IntPtr r9;
     }
 #else // UNIX_AMD64_ABI
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ReturnBlock
     {
         private IntPtr returnValue;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ArgumentRegisters
     {
         private IntPtr rdx;
@@ -80,16 +83,13 @@ namespace Internal.Runtime
         private IntPtr r9;
     }
 #endif // UNIX_AMD64_ABI
-#pragma warning restore 0169
-#pragma warning restore CA1823
-
-#pragma warning disable 0169
-#pragma warning disable CA1823
+    [StructLayout(LayoutKind.Sequential)]
     internal struct M128A
     {
         private IntPtr a;
         private IntPtr b;
     }
+    [StructLayout(LayoutKind.Sequential)]
     internal struct FloatArgumentRegisters
     {
         private M128A d0;
@@ -103,8 +103,6 @@ namespace Internal.Runtime
         private M128A d7;
 #endif
     }
-#pragma warning restore 0169
-#pragma warning restore CA1823
 
     internal struct ArchitectureConstants
     {
@@ -125,8 +123,7 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 #elif TARGET_ARM64
-#pragma warning disable 0169
-#pragma warning disable CA1823
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ReturnBlock
     {
         private IntPtr returnValue;
@@ -135,6 +132,7 @@ namespace Internal.Runtime
         private IntPtr returnValue4;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ArgumentRegisters
     {
         private IntPtr x0;
@@ -151,11 +149,8 @@ namespace Internal.Runtime
             return sizeof(IntPtr) * 8;
         }
     }
-#pragma warning restore 0169
-#pragma warning restore CA1823
 
-#pragma warning disable 0169
-#pragma warning disable CA1823
+    [StructLayout(LayoutKind.Sequential)]
     internal struct FloatArgumentRegisters
     {
         private double d0;
@@ -167,8 +162,6 @@ namespace Internal.Runtime
         private double d6;
         private double d7;
     }
-#pragma warning restore 0169
-#pragma warning restore CA1823
 
     internal struct ArchitectureConstants
     {
@@ -185,14 +178,14 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 #elif TARGET_X86
-#pragma warning disable 0169, 0649
-#pragma warning disable CA1823
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ReturnBlock
     {
         public IntPtr returnValue;
         public IntPtr returnValue2;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ArgumentRegisters
     {
         public IntPtr edx;
@@ -207,11 +200,10 @@ namespace Internal.Runtime
         }
     }
     // This struct isn't used by x86, but exists for compatibility with the definition of the CallDescrData struct
+    [StructLayout(LayoutKind.Sequential)]
     internal struct FloatArgumentRegisters
     {
     }
-#pragma warning restore 0169, 0649
-#pragma warning restore CA1823
 
     internal struct ArchitectureConstants
     {
@@ -227,8 +219,7 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 #elif TARGET_ARM
-#pragma warning disable 0169
-#pragma warning disable CA1823
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ReturnBlock
     {
         private IntPtr returnValue;
@@ -241,6 +232,7 @@ namespace Internal.Runtime
         private IntPtr returnValue8;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ArgumentRegisters
     {
         private IntPtr r0;
@@ -249,6 +241,7 @@ namespace Internal.Runtime
         private IntPtr r3;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct FloatArgumentRegisters
     {
         private double d0;
@@ -260,8 +253,6 @@ namespace Internal.Runtime
         private double d6;
         private double d7;
     }
-#pragma warning restore 0169
-#pragma warning restore CA1823
 
     internal struct ArchitectureConstants
     {
@@ -278,24 +269,23 @@ namespace Internal.Runtime
     }
 
 #elif TARGET_WASM
-#pragma warning disable 0169
-#pragma warning disable CA1823
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ReturnBlock
     {
         private IntPtr returnValue;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ArgumentRegisters
     {
         // No registers on WASM
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct FloatArgumentRegisters
     {
         // No registers on WASM
     }
-#pragma warning restore 0169
-#pragma warning restore CA1823
 
     internal struct ArchitectureConstants
     {
@@ -316,11 +306,9 @@ namespace Internal.Runtime
     // TransitionBlock is layout of stack frame of method call, saved argument registers and saved callee saved registers. Even though not
     // all fields are used all the time, we use uniform form for simplicity.
     //
+    [StructLayout(LayoutKind.Sequential)]
     internal struct TransitionBlock
     {
-#pragma warning disable 0169,0649
-#pragma warning disable CA1823
-
 #if TARGET_X86
         public ArgumentRegisters m_argumentRegisters;
         public static unsafe int GetOffsetOfArgumentRegisters()
@@ -407,8 +395,6 @@ namespace Internal.Runtime
 #else
 #error Portability problem
 #endif
-#pragma warning restore 0169, 0649
-#pragma warning restore CA1823
 
         // The transition block should define everything pushed by callee. The code assumes in number of places that
         // end of the transition block is caller's stack pointer.
