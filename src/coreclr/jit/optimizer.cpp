@@ -7112,7 +7112,7 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 }
 
 //------------------------------------------------------------------------
-// AddVariableLiveness: Adds the variable liveness information for 'blk' to 'this' LoopDsc
+// AddVariableLiveness: Adds the variable liveness information for 'blk'
 //
 // Arguments:
 //   comp - Compiler instance

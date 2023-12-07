@@ -2350,6 +2350,38 @@ public:
     static BlockToNaturalLoopMap* Build(FlowGraphNaturalLoops* loops);
 };
 
+typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN> FieldHandleSet;
+
+typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
+
+// Represents a distillation of the useful side effects that occur inside a loop.
+// Used by VN to be able to reason more precisely when entering loops.
+struct LoopSideEffects
+{
+    // The loop contains an operation that we assume has arbitrary memory side
+    // effects. If this is set, the fields below may not be accurate (since
+    // they become irrelevant.)
+    bool HasMemoryHavoc[MemoryKindCount];
+    // The set of variables that are IN or OUT during the execution of this loop
+    VARSET_TP VarInOut;
+    // The set of variables that are USE or DEF during the execution of this loop.
+    VARSET_TP VarUseDef;
+    // This has entries for all static field and object instance fields modified
+    // in the loop.
+    FieldHandleSet* FieldsModified = nullptr;
+    // Bits set indicate the set of sz array element types such that
+    // arrays of that type are modified
+    // in the loop.
+    ClassHandleSet* ArrayElemTypesModified = nullptr;
+    bool            ContainsCall           = false;
+
+    LoopSideEffects();
+
+    void AddVariableLiveness(Compiler* comp, BasicBlock* block);
+    void AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
+    void AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd);
+};
+
 //  The following holds information about instr offsets in terms of generated code.
 
 enum class IPmappingDscKind
@@ -4902,8 +4934,7 @@ public:
     struct LoopDsc;
     LoopDsc** m_newToOldLoop;
     FlowGraphNaturalLoop** m_oldToNewLoop;
-    struct LoopSideEffects* m_loopSideEffects;
-    struct HoistCounts* m_loopHoistCounts;
+    LoopSideEffects* m_loopSideEffects;
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
@@ -6721,7 +6752,7 @@ protected:
     // Return true if the tree looks profitable to hoist out of "loop"
     bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
 
-    // Performs the hoisting 'tree' into the PreHeader for "loop"
+    // Performs the hoisting "tree" into the PreHeader for "loop"
     void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
 
     // Note the new SSA uses in tree
@@ -6757,7 +6788,7 @@ private:
     // Add the side effects of "blk" (which is required to be within a loop) to all loops of which it is a part.
     void optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNaturalLoop* mostNestedLoop);
 
-    // Hoist the expression "expr" out of loop "lnum".
+    // Hoist the expression "expr" out of "loop"
     void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, FlowGraphNaturalLoop* loop);
 
 public:
@@ -7121,16 +7152,16 @@ protected:
                           BlockToBlockMap* redirectMap,
                           const RedirectBlockOption = RedirectBlockOption::DoNotChangePredLists);
 
-    // Marks the containsCall information to "lnum" and any parent loops.
+    // Marks the containsCall information to "loop" and any parent loops.
     void AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop);
 
-    // Adds the variable liveness information from 'blk' to "lnum" and any parent loops.
+    // Adds the variable liveness information from 'blk' to "loop" and any parent loops.
     void AddVariableLivenessAllContainingLoops(FlowGraphNaturalLoop* loop, BasicBlock* blk);
 
-    // Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
+    // Adds "fldHnd" to the set of modified fields of "loop" and any parent loops.
     void AddModifiedFieldAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
 
-    // Adds "elemType" to the set of modified array element types of "lnum" and any parent loops.
+    // Adds "elemType" to the set of modified array element types of "loop" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemType);
 
     // Requires that "from" and "to" have the same "bbJumpKind" (perhaps because "to" is a clone
@@ -12235,36 +12266,6 @@ public:
 
     void Append(const char* str);
     void Append(char chr);
-};
-
-typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN> FieldHandleSet;
-
-typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
-
-struct LoopSideEffects
-{
-    // The loop contains an operation that we assume has arbitrary memory side
-    // effects. If this is set, the fields below may not be accurate (since
-    // they become irrelevant.)
-    bool HasMemoryHavoc[MemoryKindCount];
-    // The set of variables that are IN or OUT during the execution of this loop
-    VARSET_TP VarInOut;
-    // The set of variables that are USE or DEF during the execution of this loop.
-    VARSET_TP VarUseDef;
-    // This has entries for all static field and object instance fields modified
-    // in the loop.
-    FieldHandleSet* FieldsModified = nullptr;
-    // Bits set indicate the set of sz array element types such that
-    // arrays of that type are modified
-    // in the loop.
-    ClassHandleSet* ArrayElemTypesModified = nullptr;
-    bool            ContainsCall           = false;
-
-    LoopSideEffects();
-
-    void AddVariableLiveness(Compiler* comp, BasicBlock* block);
-    void AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
-    void AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd);
 };
 
 /*****************************************************************************
