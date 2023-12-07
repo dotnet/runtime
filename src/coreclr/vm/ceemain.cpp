@@ -872,8 +872,6 @@ void EEStartupHelper()
         // of InitJITHelpers1.
         hr = g_pGCHeap->Initialize();
 
-        g_pConfig->SetGCLOHThreshold((DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold());
-
         if (FAILED(hr))
         {
             LogErrorToHost("GC heap initialization failed with error 0x%08X", hr);

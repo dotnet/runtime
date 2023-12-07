@@ -96,7 +96,6 @@ HRESULT EEConfig::Init()
     fGCBreakOnOOM = false;
     iGCconcurrent = 0;
     iGCHoardVM = 0;
-    iGCLOHThreshold = 0;
 
     dwSpinInitialDuration = 0x32;
     dwSpinBackoffFactor = 0x3;
