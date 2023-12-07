@@ -6418,19 +6418,19 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 //
 PhaseStatus Compiler::fgDfsBlocksAndRemove()
 {
-    m_dfs = fgComputeDfs();
+    m_dfsTree = fgComputeDfs();
 
     PhaseStatus status = PhaseStatus::MODIFIED_NOTHING;
-    if (m_dfs->GetPostOrderCount() != fgBBcount)
+    if (m_dfsTree->GetPostOrderCount() != fgBBcount)
     {
 #ifdef DEBUG
         if (verbose)
         {
-            printf("%u/%u blocks are unreachable and will be removed\n", fgBBcount - m_dfs->GetPostOrderCount(),
+            printf("%u/%u blocks are unreachable and will be removed\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
                    fgBBcount);
             for (BasicBlock* block : Blocks())
             {
-                if (!m_dfs->Contains(block))
+                if (!m_dfsTree->Contains(block))
                 {
                     printf("  " FMT_BB "\n", block->bbNum);
                 }
@@ -6438,7 +6438,7 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
         }
 #endif
 
-        fgRemoveUnreachableBlocks([=](BasicBlock* block) { return !m_dfs->Contains(block); });
+        fgRemoveUnreachableBlocks([=](BasicBlock* block) { return !m_dfsTree->Contains(block); });
         status = PhaseStatus::MODIFIED_EVERYTHING;
     }
 

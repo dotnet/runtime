@@ -13864,7 +13864,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
 
                 for (BasicBlock* const pred : block->PredBlocks())
                 {
-                    assert(m_dfs->Contains(pred)); // We should have removed dead blocks before this.
+                    assert(m_dfsTree->Contains(pred)); // We should have removed dead blocks before this.
 
                     // A smaller pred postorder number means the pred appears later in the reverse postorder.
                     // An equal number means pred == block (block is a self-loop).
@@ -14063,9 +14063,9 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         // Morph the blocks in RPO.
         //
-        for (unsigned i = m_dfs->GetPostOrderCount(); i != 0; i--)
+        for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
-            BasicBlock* const block = m_dfs->GetPostOrder()[i - 1];
+            BasicBlock* const block = m_dfsTree->GetPostOrder()[i - 1];
             fgMorphBlock(block);
         }
         assert(bbNumMax == fgBBNumMax);
@@ -14105,8 +14105,7 @@ PhaseStatus Compiler::fgMorphBlocks()
     fgGlobalMorph     = false;
     fgGlobalMorphDone = true;
     compCurBB         = nullptr;
-
-    m_dfs = nullptr;
+    m_dfsTree         = nullptr;
 
 #ifdef DEBUG
     if (optLocalAssertionProp)
