@@ -73,6 +73,8 @@ public class AndroidAppBuilderTask : Task
 
     public string? MinApiLevel { get; set; }
 
+    public string? TargetApiLevel { get; set; }
+
     public string? BuildApiLevel { get; set; }
 
     public string? BuildToolsVersion { get; set; }
@@ -108,6 +110,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.AndroidSdk = AndroidSdk;
         apkBuilder.AndroidNdk = AndroidNdk;
         apkBuilder.MinApiLevel = MinApiLevel;
+        apkBuilder.TargetApiLevel = TargetApiLevel;
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
