@@ -1160,7 +1160,7 @@ namespace Internal.JitInterface
     };
 
 
-    public unsafe struct CORINFO_THREAD_STATIC_INFO_READYTORUN
+    public unsafe struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
     {
         public uint offsetOfThreadLocalStoragePointer;
         public CORINFO_CONST_LOOKUP tlsRootObject;

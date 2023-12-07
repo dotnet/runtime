@@ -1740,9 +1740,9 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 };
 
 //----------------------------------------------------------------------------
-// getThreadLocalStaticInfo_ReadyToRun and CORINFO_THREAD_STATIC_INFO_READYTORUN: The EE instructs the JIT about how to access a thread local field
+// getThreadLocalStaticInfo_NativeAOT and CORINFO_THREAD_STATIC_INFO_NATIVEAOT: The EE instructs the JIT about how to access a thread local field
 
-struct CORINFO_THREAD_STATIC_INFO_READYTORUN
+struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
 {
     uint32_t offsetOfThreadLocalStoragePointer;
     CORINFO_CONST_LOOKUP tlsRootObject;
@@ -2833,8 +2833,8 @@ public:
             bool                                isGCType
             ) = 0;
 
-    virtual void getThreadLocalStaticInfo_ReadyToRun(
-            CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+    virtual void getThreadLocalStaticInfo_NativeAOT(
+            CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
             CORINFO_CLASS_HANDLE cls
             ) = 0;
 

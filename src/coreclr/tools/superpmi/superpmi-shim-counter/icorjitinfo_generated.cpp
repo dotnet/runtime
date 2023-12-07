@@ -770,12 +770,12 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
-void interceptor_ICJI::getThreadLocalStaticInfo_ReadyToRun(
-          CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
           CORINFO_CLASS_HANDLE cls)
 {
-    mcs->AddCall("getThreadLocalStaticInfo_ReadyToRun");
-    original_ICorJitInfo->getThreadLocalStaticInfo_ReadyToRun(pInfo, cls);
+    mcs->AddCall("getThreadLocalStaticInfo_NativeAOT");
+    original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo, cls);
 }
 
 bool interceptor_ICJI::isFieldStatic(

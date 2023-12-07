@@ -1309,7 +1309,7 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
 
 /*********************************************************************/
 
-void CEEInfo::getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls)
+void CEEInfo::getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo, CORINFO_CLASS_HANDLE cls)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called with NativeAOT.

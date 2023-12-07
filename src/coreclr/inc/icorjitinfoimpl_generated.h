@@ -399,8 +399,8 @@ void getThreadLocalStaticBlocksInfo(
           CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
           bool isGCType) override;
 
-void getThreadLocalStaticInfo_ReadyToRun(
-          CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+void getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
           CORINFO_CLASS_HANDLE cls) override;
 
 bool isFieldStatic(

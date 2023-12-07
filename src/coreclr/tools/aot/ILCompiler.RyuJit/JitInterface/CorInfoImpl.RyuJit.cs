@@ -2408,7 +2408,7 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private void getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_STRUCT_* cls)
+        private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo, CORINFO_CLASS_STRUCT_* cls)
         {
             pInfo->offsetOfThreadLocalStoragePointer = (uint)(11 * PointerSize); // 0x58 = 0n88
             pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));

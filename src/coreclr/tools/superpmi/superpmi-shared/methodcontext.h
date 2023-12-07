@@ -478,9 +478,9 @@ public:
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
     void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
 
-    void recGetThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls);
-    void dmpGetThreadLocalStaticInfo_ReadyToRun(DWORDLONG key, const Agnostic_GetThreadStaticInfo_ReadyToRun& value);
-    void repGetThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls);
+    void recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo, CORINFO_CLASS_HANDLE cls);
+    void dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG key, const Agnostic_GetThreadStaticInfo_NativeAOT& value);
+    void repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo, CORINFO_CLASS_HANDLE cls);
 
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
@@ -1138,7 +1138,7 @@ enum mcPackets
     Packet_GetStaticBaseAddress = 206,
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
-    Packet_GetThreadLocalStaticInfo_ReadyToRun = 209,
+    Packet_GetThreadLocalStaticInfo_NativeAOT = 209,
     Packet_GetRISCV64PassStructInRegisterFlags = 210,
     Packet_GetObjectContent = 211,
     Packet_GetTypeLayout = 212,

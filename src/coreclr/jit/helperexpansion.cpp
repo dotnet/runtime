@@ -448,12 +448,12 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
-    return isNativeAOT ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallReadyToRun>(
+    return isNativeAOT ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallNativeAOT>(
                              false /* expand rarely run blocks for NativeAOT */)
                        : fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
 }
 
-bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     assert(opts.IsReadyToRun());
     BasicBlock* block = *pBlock;
@@ -473,10 +473,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
     call->ClearExpTLSFieldAccessLazyCtor();
 
-    CORINFO_THREAD_STATIC_INFO_READYTORUN threadStaticInfo;
-    memset(&threadStaticInfo, 0, sizeof(CORINFO_THREAD_STATIC_INFO_READYTORUN));
+    CORINFO_THREAD_STATIC_INFO_NATIVEAOT threadStaticInfo;
+    memset(&threadStaticInfo, 0, sizeof(CORINFO_THREAD_STATIC_INFO_NATIVEAOT));
 
-    info.compCompHnd->getThreadLocalStaticInfo_ReadyToRun(&threadStaticInfo, call->gtInitClsHnd);
+    info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo, call->gtInitClsHnd);
 
     JITDUMP("tlsRootObject= %p\n", dspPtr(threadStaticInfo.tlsRootObject.addr));
     JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticInfo.tlsIndexObject.addr));

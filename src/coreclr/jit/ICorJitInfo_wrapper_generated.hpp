@@ -941,13 +941,13 @@ void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
     API_LEAVE(getThreadLocalStaticBlocksInfo);
 }
 
-void WrapICorJitInfo::getThreadLocalStaticInfo_ReadyToRun(
-          CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo,
+void WrapICorJitInfo::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
           CORINFO_CLASS_HANDLE cls)
 {
-    API_ENTER(getThreadLocalStaticInfo_ReadyToRun);
-    wrapHnd->getThreadLocalStaticInfo_ReadyToRun(pInfo, cls);
-    API_LEAVE(getThreadLocalStaticInfo_ReadyToRun);
+    API_ENTER(getThreadLocalStaticInfo_NativeAOT);
+    wrapHnd->getThreadLocalStaticInfo_NativeAOT(pInfo, cls);
+    API_LEAVE(getThreadLocalStaticInfo_NativeAOT);
 }
 
 bool WrapICorJitInfo::isFieldStatic(

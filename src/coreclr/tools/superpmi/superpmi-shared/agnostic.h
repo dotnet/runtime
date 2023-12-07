@@ -533,7 +533,7 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORD                         offsetOfGCDataPointer;
 };
 
-struct Agnostic_GetThreadStaticInfo_ReadyToRun
+struct Agnostic_GetThreadStaticInfo_NativeAOT
 {
     DWORD offsetOfThreadLocalStoragePointer;
     Agnostic_CORINFO_CONST_LOOKUP tlsRootObject;

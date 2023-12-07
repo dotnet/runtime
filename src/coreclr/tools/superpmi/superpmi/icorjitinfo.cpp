@@ -891,10 +891,10 @@ void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* p
     jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
-void MyICJI::getThreadLocalStaticInfo_ReadyToRun(CORINFO_THREAD_STATIC_INFO_READYTORUN* pInfo, CORINFO_CLASS_HANDLE cls)
+void MyICJI::getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo, CORINFO_CLASS_HANDLE cls)
 {
-    jitInstance->mc->cr->AddCall("getThreadLocalStaticInfo_ReadyToRun");
-    jitInstance->mc->repGetThreadLocalStaticInfo_ReadyToRun(pInfo, cls);
+    jitInstance->mc->cr->AddCall("getThreadLocalStaticInfo_NativeAOT");
+    jitInstance->mc->repGetThreadLocalStaticInfo_NativeAOT(pInfo, cls);
 }
 
 // Returns true iff "fldHnd" represents a static field.
