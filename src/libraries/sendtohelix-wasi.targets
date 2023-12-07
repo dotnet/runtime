@@ -27,6 +27,8 @@
 
         <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
   -->
+  
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" />
 
   <PropertyGroup>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''">true</IsRunningLibraryTests>
@@ -83,6 +85,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasiAppsJobsList.txt</BuildWasmAppsJobsList>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
   </PropertyGroup>
@@ -160,35 +163,6 @@
 
       <HelixWorkItem Include="@(_DefaultWorkItems -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_workItemTimeout)</Timeout>
-      </HelixWorkItem>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <PropertyGroup>
-      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- for buildwasmapps, the archive path is set in src/libraries/Directory.Build.props, so use that -->
-      <_WasmWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
-    </ItemGroup>
-    <PropertyGroup>
-      <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasi.Build.Tests" Condition="'$(TestUsingWorkloads)' == 'true'">
-        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_workItemTimeout)</Timeout>
-      </HelixWorkItem>
-
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasi.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
-        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>

@@ -24,7 +24,7 @@
 //
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
-    bool blockMayNeedGCPoll = (block->bbFlags & BBF_NEEDS_GCPOLL) != 0;
+    bool blockMayNeedGCPoll = block->HasFlag(BBF_NEEDS_GCPOLL);
     for (Statement* const stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
@@ -88,7 +88,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
         if (opts.OptimizationDisabled())
         {
-            if ((block->bbFlags & (BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL)) == 0)
+            if (!block->HasAnyFlag(BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL))
             {
                 continue;
             }
@@ -137,7 +137,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if ((block->bbFlags & BBF_COLD) != 0)
+        else if (block->HasFlag(BBF_COLD))
         {
             // We don't want to split a cold block.
             //
@@ -200,7 +200,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         Statement* newStmt = nullptr;
 
-        if ((block->bbFlags & BBF_NEEDS_GCPOLL) != 0)
+        if (block->HasFlag(BBF_NEEDS_GCPOLL))
         {
             // This is a block that ends in a tail call; gc probe early.
             //
@@ -248,7 +248,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             fgSetStmtSeq(newStmt);
         }
 
-        block->bbFlags |= BBF_GC_SAFE_POINT;
+        block->SetFlags(BBF_GC_SAFE_POINT);
 #ifdef DEBUG
         if (verbose)
         {
@@ -285,17 +285,18 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         assert(poll->JumpsToNext());
 
         // Update block flags
-        const BasicBlockFlags originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
+        const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
         noway_assert(
             (originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL))) == 0);
-        top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
-                                            BBF_RETLESS_CALL);
+        top->SetFlagsRaw(originalFlags &
+                         (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
+        bottom->SetFlags(originalFlags &
+                         (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
-        poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_NONE_QUIRK);
+        poll->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_NONE_QUIRK));
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
@@ -590,7 +591,7 @@ PhaseStatus Compiler::fgImport()
     unsigned importedILSize = 0;
     for (BasicBlock* const block : Blocks())
     {
-        if ((block->bbFlags & BBF_IMPORTED) != 0)
+        if (block->HasFlag(BBF_IMPORTED))
         {
             // Assume if we generate any IR for the block we generate IR for the entire block.
             if (block->firstStmt() != nullptr)
@@ -664,7 +665,7 @@ bool Compiler::fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2)
     }
 
     // If one block is Hot and the other is Cold then we are in different regions
-    return ((blk1->bbFlags & BBF_COLD) != (blk2->bbFlags & BBF_COLD));
+    return (blk1->HasFlag(BBF_COLD) != blk2->HasFlag(BBF_COLD));
 }
 
 bool Compiler::fgIsBlockCold(BasicBlock* blk)
@@ -676,7 +677,7 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
         return false;
     }
 
-    return ((blk->bbFlags & BBF_COLD) != 0);
+    return blk->HasFlag(BBF_COLD);
 }
 
 /*****************************************************************************
@@ -1454,9 +1455,9 @@ void Compiler::fgAddSyncMethodEnterExit()
         // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
         // handler, and the fault has no enclosing try.
 
-        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
+        tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
 
-        faultBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
+        faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
         faultBB->bbCatchTyp = BBCT_FAULT;
 
         tryBegBB->setTryIndex(XTnew);
@@ -1658,7 +1659,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(genReturnBB != block);
     assert(fgReturnCount <= 1); // We have a single return for synchronized methods
     assert(block->KindIs(BBJ_RETURN));
-    assert((block->bbFlags & BBF_HAS_JMP) == 0);
+    assert(!block->HasFlag(BBF_HAS_JMP));
     assert(block->hasTryIndex());
     assert(!block->hasHndIndex());
     assert(compHndBBtabCount >= 1);
@@ -2193,7 +2194,7 @@ private:
                 comp->genReturnBB = mergedReturnBlock;
                 // Downstream code expects the `genReturnBB` to always remain
                 // once created, so that it can redirect flow edges to it.
-                mergedReturnBlock->bbFlags |= BBF_DONT_REMOVE;
+                mergedReturnBlock->SetFlags(BBF_DONT_REMOVE);
             }
         }
 
@@ -2318,7 +2319,7 @@ PhaseStatus Compiler::fgAddInternal()
     if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         madeChanges |= fgEnsureFirstBBisScratch();
-        fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
+        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
     }
 
     /*
@@ -2430,7 +2431,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     for (BasicBlock* block = fgFirstBB; !lastBlockBeforeGenReturns->NextIs(block); block = block->Next())
     {
-        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        if (block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP))
         {
             merger.Record(block);
         }
@@ -2810,7 +2811,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     /* Allocate a new basic block */
 
     BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS, block);
-    newHead->bbFlags |= (BBF_INTERNAL | BBF_NONE_QUIRK);
+    newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
@@ -2851,7 +2852,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     assert(nullptr == fgGetPredForBlock(block, newHead));
     fgAddRefPred(block, newHead);
 
-    assert((newHead->bbFlags & BBF_INTERNAL) == BBF_INTERNAL);
+    assert(newHead->HasFlag(BBF_INTERNAL));
 }
 
 //------------------------------------------------------------------------
@@ -3253,7 +3254,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
     for (block = firstColdBlock; block != nullptr; block = block->Next())
     {
-        block->bbFlags |= BBF_COLD;
+        block->SetFlags(BBF_COLD);
         block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));
     }
 
@@ -3533,8 +3534,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         //  Mark the block as added by the compiler and not removable by future flow
         // graph optimizations. Note that no bbJumpDest points to these blocks.
         //
-        newBlk->bbFlags |= BBF_IMPORTED;
-        newBlk->bbFlags |= BBF_DONT_REMOVE;
+        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 
         // Figure out what code to insert
         //
@@ -3844,7 +3844,7 @@ bool Compiler::fgHasCycleWithoutGCSafePoint()
 
     for (BasicBlock* block : Blocks())
     {
-        if ((block->bbFlags & BBF_GC_SAFE_POINT) != 0)
+        if (block->HasFlag(BBF_GC_SAFE_POINT))
         {
             continue;
         }
@@ -3866,7 +3866,7 @@ bool Compiler::fgHasCycleWithoutGCSafePoint()
 
             if (succ != nullptr)
             {
-                if ((succ->bbFlags & BBF_GC_SAFE_POINT) != 0)
+                if (succ->HasFlag(BBF_GC_SAFE_POINT))
                 {
                     continue;
                 }

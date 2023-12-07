@@ -785,7 +785,7 @@ void SsaBuilder::AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock
     assert(block->HasPotentialEHSuccs(m_pCompiler));
 
     // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-    if ((block->bbFlags & BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
+    if (block->HasFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
     {
         return;
     }
@@ -1347,7 +1347,7 @@ void SsaBuilder::SetupBBRoot()
     }
 
     BasicBlock* bbRoot = BasicBlock::New(m_pCompiler, BBJ_ALWAYS, m_pCompiler->fgFirstBB);
-    bbRoot->bbFlags |= (BBF_INTERNAL | BBF_NONE_QUIRK);
+    bbRoot->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 
     // May need to fix up preds list, so remember the old first block.
     BasicBlock* oldFirst = m_pCompiler->fgFirstBB;
