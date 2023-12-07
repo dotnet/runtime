@@ -138,11 +138,11 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkPropertiesOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
 			=> _reflectionMarker.MarkPropertiesOnTypeHierarchy(_diagnosticContext.Origin, type.Type, nameIsPrefix ? (p => p.Name.StartsWith(name)) : (p => p.Name == name), bindingFlags);
 
- 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
- 		{
- 			foreach (var method in type.Type.GetMethodsOnTypeHierarchy(nameIsPrefix ? (m => m.Name.StartsWith(name)) : (m => m.Name == name), bindingFlags))
- 				yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
- 		}
+		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
+		{
+			foreach (var method in type.Type.GetMethodsOnTypeHierarchy(_context, nameIsPrefix ? (m => m.Name.StartsWith(name)) : (m => m.Name == name), bindingFlags))
+				yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
+		}
 
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnTypeWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
 		{
