@@ -1552,10 +1552,10 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 
     DWORD newId = InterlockedExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
-    if (newId >= VolatileLoad(&m_maxDynamicEntries))
-    {
-        CrstHolder ch(&m_Crst);
+    CrstHolder ch(&m_Crst);
 
+    if (newId >= m_maxDynamicEntries)
+    {
         if (newId >= m_maxDynamicEntries)
         {
             SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
@@ -1571,7 +1571,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
                 memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
 
             m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-            VolatileStore(&m_maxDynamicEntries, maxDynamicEntries);
+            m_maxDynamicEntries = maxDynamicEntries;
         }
     }
 
