@@ -9,8 +9,8 @@ flowchart
     nongcheap("NonGC Heap\n(Not managed by GC)")
     subgraph gcheap[GC Heaps]
         soh("Small Object Heap (SOH)")
-        poh("Pinned Object Heap (SOH)")
-        loh("Large Object Heap (SOH)")
+        poh("Pinned Object Heap (POH)")
+        loh("Large Object Heap (LOH)")
     end
     style nongcheap stroke:green
 ```
