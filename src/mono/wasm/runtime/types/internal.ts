@@ -190,6 +190,8 @@ export type RuntimeHelpers = {
     memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
+    getMemory(): WebAssembly.Memory,
+    getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
@@ -288,6 +290,9 @@ export type EmscriptenInternals = {
     quit_: Function,
     ExitStatus: ExitStatusError,
     gitHash: string,
+    getMemory(): WebAssembly.Memory,
+    getWasmIndirectFunctionTable(): WebAssembly.Table,
+    updateMemoryViews: () => void,
 };
 export type GlobalObjects = {
     mono: any,
@@ -301,7 +306,6 @@ export type GlobalObjects = {
 export type EmscriptenReplacements = {
     fetch: any,
     require: any,
-    updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;
@@ -459,7 +463,6 @@ export declare interface EmscriptenModuleInternal {
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
     asm: any;
-    getMemory(): WebAssembly.Memory;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;

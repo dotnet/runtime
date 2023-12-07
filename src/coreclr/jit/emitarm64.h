@@ -52,6 +52,7 @@ void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
+void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispArrangement(insOpts opt);
@@ -377,6 +378,10 @@ static code_t insEncodeReg_V_20_to_17(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '9' thru '6' position.
 static code_t insEncodeReg_V_9_to_6(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
+// This encoding requires that the register number be divisible by two.
+static code_t insEncodeReg_V_9_to_6_Times_Two(regNumber reg);
 
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
@@ -862,8 +867,8 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
-    return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableToSimdScalar(opt)) ||
-            (insOptsScalableToScalar(opt)) || insOptsScalableToSimdVector(opt));
+    return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
+            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)));
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -898,39 +903,39 @@ inline static bool insOptsScalableWide(insOpts opt)
             (opt == INS_OPTS_SCALABLE_WIDE_S));
 }
 
-inline static bool insOptsScalableToSimdVector(insOpts opt)
+inline static bool insOptsScalableWithSimdVector(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for conversion to an Advsimd SIMD Vector.
-    return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_H_TO_SIMD_VECTOR) ||
-            (opt == INS_OPTS_SCALABLE_S_TO_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_D_TO_SIMD_VECTOR));
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR));
 }
 
-inline static bool insOptsScalableToSimdScalar(insOpts opt)
+inline static bool insOptsScalableWithSimdScalar(insOpts opt)
 {
-    // `opt` is any of the scalable types that are valid for conversion to a scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR));
+    // `opt` is any of the scalable types that are valid for conversion to/from a scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
 }
 
-inline static bool insOptsScalableToSimdFPScalar(insOpts opt)
+inline static bool insOptsScalableWithSimdFPScalar(insOpts opt)
 {
-    // `opt` is any of the scalable types that are valid for conversion to an FP scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_D_TO_SIMD_SCALAR));
+    // `opt` is any of the scalable types that are valid for conversion to/from a FP scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
 }
 
 inline static bool insOptsScalableWideningToSimdScalar(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for widening then conversion to a scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_B_TO_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_TO_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_TO_SIMD_SCALAR));
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR));
 }
 
-inline static bool insOptsScalableToScalar(insOpts opt)
+inline static bool insOptsScalableWithScalar(insOpts opt)
 {
-    // `opt` is any of the SIMD scalable types that are valid for conversion to scalar.
-    return ((opt == INS_OPTS_SCALABLE_B_TO_SCALAR) || (opt == INS_OPTS_SCALABLE_H_TO_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_TO_SCALAR) || (opt == INS_OPTS_SCALABLE_D_TO_SCALAR));
+    // `opt` is any of the SIMD scalable types that are valid for conversion to/from a scalar.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SCALAR));
 }
 
 static bool isValidImmCond(ssize_t imm);

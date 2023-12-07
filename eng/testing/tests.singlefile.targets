@@ -33,6 +33,9 @@
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
+
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
