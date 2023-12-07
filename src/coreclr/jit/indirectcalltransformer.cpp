@@ -206,7 +206,7 @@ private:
         void CreateRemainder()
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            remainderBlock->bbFlags |= BBF_INTERNAL;
+            remainderBlock->SetFlags(BBF_INTERNAL);
         }
 
         virtual void CreateCheck(uint8_t checkIdx) = 0;
@@ -227,7 +227,7 @@ private:
                                               BasicBlock* jumpDest = nullptr)
         {
             BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
-            block->bbFlags |= BBF_IMPORTED;
+            block->SetFlags(BBF_IMPORTED);
             return block;
         }
 
@@ -368,7 +368,7 @@ private:
             assert(checkIdx == 0);
 
             checkBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock->Next());
-            checkBlock->bbFlags |= BBF_NONE_QUIRK;
+            checkBlock->SetFlags(BBF_NONE_QUIRK);
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
@@ -397,7 +397,7 @@ private:
         virtual void CreateElse()
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
-            elseBlock->bbFlags |= BBF_NONE_QUIRK;
+            elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             GenTree* fixedFptrAddress  = GetFixedFptrAddress();
             GenTree* actualCallAddress = compiler->gtNewIndir(pointerType, fixedFptrAddress);
@@ -927,7 +927,7 @@ private:
             if (call->CanTailCall() && compiler->gtIsRecursiveCall(methodHnd))
             {
                 compiler->setMethodHasRecursiveTailcall();
-                block->bbFlags |= BBF_RECURSIVE_TAILCALL;
+                block->SetFlags(BBF_RECURSIVE_TAILCALL);
                 JITDUMP("[%06u] is a recursive call in tail position\n", compiler->dspTreeID(call));
             }
             else
@@ -1006,13 +1006,13 @@ private:
         {
             // thenBlock always jumps to remainderBlock
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
-            thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
+            thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
             thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
 
             // Also, thenBlock has a single pred - last checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
             checkBlock->SetJumpDest(thenBlock);
-            checkBlock->bbFlags |= BBF_NONE_QUIRK;
+            checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
             compiler->fgAddRefPred(thenBlock, checkBlock);
             compiler->fgAddRefPred(remainderBlock, thenBlock);
@@ -1026,7 +1026,8 @@ private:
         virtual void CreateElse()
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
-            elseBlock->bbFlags |= ((currBlock->bbFlags & BBF_SPLIT_GAINED) | BBF_NONE_QUIRK);
+            elseBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
+            elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)
