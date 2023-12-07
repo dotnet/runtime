@@ -4664,45 +4664,17 @@ void Compiler::fgDebugCheckSsa()
     assert(fgSsaPassesCompleted > 0);
     assert(fgDomsComputed);
 
-    // This class visits the flow graph the same way the SSA builder does.
-    // In particular it may skip over blocks that SSA did not rename.
-    //
-    class SsaCheckDomTreeVisitor : public NewDomTreeVisitor<SsaCheckDomTreeVisitor>
-    {
-        SsaCheckVisitor& m_checkVisitor;
-
-    public:
-        SsaCheckDomTreeVisitor(Compiler* compiler, SsaCheckVisitor& checkVisitor)
-            : NewDomTreeVisitor(compiler), m_checkVisitor(checkVisitor)
-        {
-        }
-
-        void PreOrderVisit(BasicBlock* block)
-        {
-            m_checkVisitor.SetBlock(block);
-
-            for (Statement* const stmt : block->Statements())
-            {
-                m_checkVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-            }
-        }
-    };
-
     // Visit the blocks that SSA initially renamed
     //
-    SsaCheckVisitor        scv(this);
-    SsaCheckDomTreeVisitor visitor(this, scv);
-    visitor.WalkTree(fgSsaDomTree);
-
-    // Also visit any blocks added after SSA was built
-    //
-    for (BasicBlock* const block : Blocks())
+    SsaCheckVisitor scv(this);
+    for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
     {
-        // TODO-Cleanup: fgDomBBcount is the dominator count computed back in
-        // loop finding, not by SSA.
-        if (block->bbNum > fgDomBBcount)
+        BasicBlock* block = m_dfsTree->GetPostOrder()[i];
+        scv.SetBlock(block);
+
+        for (Statement* const stmt : block->Statements())
         {
-            visitor.PreOrderVisit(block);
+            scv.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
 
