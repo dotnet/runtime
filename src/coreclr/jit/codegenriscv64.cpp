@@ -505,7 +505,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -864,7 +864,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 
@@ -1160,7 +1160,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     BasicBlock* const nextBlock = block->Next();
 
-    if (block->bbFlags & BBF_RETLESS_CALL)
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
@@ -1202,7 +1202,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // jump target using bbJumpDest - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    if (!block->HasFlag(BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
         block = nextBlock;
@@ -2591,7 +2591,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -5460,23 +5460,30 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree*  src1 = bndsChk->GetIndex();
-    GenTree*  src2 = bndsChk->GetArrayLength();
-    regNumber reg1 = src1->GetRegNum();
-    regNumber reg2 = src2->GetRegNum();
+    GenTree*  index     = bndsChk->GetIndex();
+    GenTree*  length    = bndsChk->GetArrayLength();
+    regNumber indexReg  = index->GetRegNum();
+    regNumber lengthReg = length->GetRegNum();
 
-    genConsumeRegs(src1);
-    genConsumeRegs(src2);
+    genConsumeRegs(index);
+    genConsumeRegs(length);
+
+    if (genActualType(index->TypeGet()) == TYP_INT)
+    {
+        regNumber tempReg = oper->GetSingleTempReg();
+        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
+        indexReg = tempReg;
+    }
 
 #ifdef DEBUG
-    var_types bndsChkType = genActualType(src2->TypeGet());
-    var_types src1ChkType = genActualType(src1->TypeGet());
+    var_types lengthType = genActualType(length->TypeGet());
+    var_types indexType  = genActualType(index->TypeGet());
     // Bounds checks can only be 32 or 64 bit sized comparisons.
-    assert(bndsChkType == TYP_INT || bndsChkType == TYP_LONG);
-    assert(src1ChkType == TYP_INT || src1ChkType == TYP_LONG);
+    assert(lengthType == TYP_INT || lengthType == TYP_LONG);
+    assert(indexType == TYP_INT || indexType == TYP_LONG);
 #endif // DEBUG
 
-    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, reg1, bndsChk->gtIndRngFailBB, reg2);
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, bndsChk->gtIndRngFailBB, lengthReg);
 }
 
 //---------------------------------------------------------------------

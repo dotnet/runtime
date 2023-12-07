@@ -871,7 +871,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
         if (originalSwitchBB->JumpsToNext())
         {
-            originalSwitchBB->bbFlags |= BBF_NONE_QUIRK;
+            originalSwitchBB->SetFlags(BBF_NONE_QUIRK);
         }
 
         // Remove extra predecessor links if there was more than one case.
@@ -1024,7 +1024,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
         if (afterDefaultCondBlock->JumpsToNext())
         {
-            afterDefaultCondBlock->bbFlags |= BBF_NONE_QUIRK;
+            afterDefaultCondBlock->SetFlags(BBF_NONE_QUIRK);
         }
     }
     // If the number of possible destinations is small enough, we proceed to expand the switch
@@ -1073,7 +1073,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             if (fUsedAfterDefaultCondBlock)
             {
                 BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true, currentBlock->Next());
-                newBlock->bbFlags |= BBF_NONE_QUIRK;
+                newBlock->SetFlags(BBF_NONE_QUIRK);
                 comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
                 currentBlock   = newBlock;
                 currentBBRange = &LIR::AsRange(currentBlock);
@@ -1134,7 +1134,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
             currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, currentBlock->Next());
-            currentBlock->bbFlags &= ~BBF_DONT_REMOVE;
+            currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
     }
@@ -2559,7 +2559,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // The below condition cannot be asserted in lower because fgSimpleLowering()
     // can add a new basic block for range check failure which becomes
     // fgLastBB with block number > loop header block number.
-    // assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
+    // assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
     //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
@@ -2617,7 +2617,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         // this we insert GT_NO_OP as embedded stmt before GT_START_NONGC, if the method
         // has a single basic block and is not a GC-safe point.  The presence of a single
         // nop outside non-gc interruptible region will prevent gc starvation.
-        if ((comp->fgBBcount == 1) && !(comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT))
+        if ((comp->fgBBcount == 1) && !comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT))
         {
             assert(comp->fgFirstBB == comp->compCurBB);
             GenTree* noOp = new (comp, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
@@ -2855,7 +2855,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // Therefore the block containing the tail call should be a GC safe point to avoid
     // GC starvation. It is legal for the block to be unmarked iff the entry block is a
     // GC safe point, as the entry block trivially dominates every reachable block.
-    assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || (comp->fgFirstBB->bbFlags & BBF_GC_SAFE_POINT));
+    assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) || comp->fgFirstBB->HasFlag(BBF_GC_SAFE_POINT));
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.

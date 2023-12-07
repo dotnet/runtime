@@ -1003,7 +1003,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     // if for reloc!  4-ins:
     //   auipc reg, offset-hi20
@@ -1068,7 +1068,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
     // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
 
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
     assert((INS_jal <= ins) && (ins <= INS_bgeu));
@@ -1129,7 +1129,7 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     //   ins  reg1, reg2, dst
 
     assert(dst != nullptr);
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -1490,16 +1490,16 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         assert((addr & 1) == 0);
 
         dst += 4;
-        emitGCregDeadUpd(REG_T2, dst);
+        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
 
 #ifdef DEBUG
         code = emitInsCode(INS_auipc);
-        assert((code | (REG_T2 << 7)) == 0x00000397);
-        assert((int)REG_T2 == 7);
+        assert((code | (REG_DEFAULT_HELPER_CALL_TARGET << 7)) == 0x00000397);
+        assert((int)REG_DEFAULT_HELPER_CALL_TARGET == 7);
         code = emitInsCode(INS_jalr);
         assert(code == 0x00000067);
 #endif
-        emitOutput_Instr(dst, 0x00000067 | (REG_T2 << 15) | reg2 << 7);
+        emitOutput_Instr(dst, 0x00000067 | (REG_DEFAULT_HELPER_CALL_TARGET << 15) | reg2 << 7);
 
         emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_JALR);
     }
@@ -1522,23 +1522,23 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         UINT32 high = imm >> 32;
         code        = emitInsCode(INS_lui);
-        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
         code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
         emitOutput_Instr(dst, code);
         dst += 4;
 
-        emitGCregDeadUpd(REG_T2, dst);
+        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
 
         code = emitInsCode(INS_addi);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(high & 0xfff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_slli);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(11 << 20);
         emitOutput_Instr(dst, code);
         dst += 4;
@@ -1546,36 +1546,36 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         UINT32 low = imm & 0xffffffff;
 
         code = emitInsCode(INS_addi);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= ((low >> 21) & 0x7ff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_slli);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(11 << 20);
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_addi);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= ((low >> 10) & 0x7ff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_slli);
-        code |= (code_t)REG_T2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (code_t)(10 << 20);
         emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_jalr);
         code |= (code_t)reg2 << 7;
-        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
         code |= (low & 0x3ff) << 20;
         // the offset default is 0;
         emitOutput_Instr(dst, code);
@@ -4117,6 +4117,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
     }
 
+#ifdef DEBUG
     if (needCheckOv)
     {
         if (ins == INS_add)
@@ -4157,12 +4158,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
         else
         {
-#ifdef DEBUG
             printf("RISCV64-Invalid ins for overflow check: %s\n", codeGen->genInsName(ins));
-#endif
             assert(!"Invalid ins for overflow check");
         }
     }
+#endif // DEBUG
 
     regNumber dstReg  = dst->GetRegNum();
     regNumber src1Reg = src1->GetRegNum();

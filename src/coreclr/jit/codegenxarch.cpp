@@ -230,7 +230,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_call, block->GetJumpDest());
 
-    if (block->bbFlags & BBF_RETLESS_CALL)
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
@@ -313,7 +313,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, LCL_FINALLY_MARK);
 
     // Now push the address where the finally funclet should return to directly.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    if (!block->HasFlag(BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
         GetEmitter()->emitIns_J(INS_push_hide, nextBlock->GetJumpDest());
@@ -333,7 +333,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // jump target using bbJumpDest - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    if (!block->HasFlag(BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
         block = nextBlock;
@@ -4338,7 +4338,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -10012,7 +10012,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     genInterruptibleUsed = true;
 #endif
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
 #ifdef DEBUG
     if (compiler->opts.dspCode)
@@ -10518,7 +10518,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     assert(!regSet.rsRegsModified(RBM_FPBASE));
     assert(block != nullptr);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
     assert(isFramePointerUsed());
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);

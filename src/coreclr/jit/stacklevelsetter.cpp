@@ -75,7 +75,7 @@ PhaseStatus StackLevelSetter::DoPhase()
 
             BasicBlock* const block = add->acdDstBlk;
             JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
-            block->bbFlags &= ~BBF_DONT_REMOVE;
+            block->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(block, /* unreachable */ true);
             madeChanges = true;
         }

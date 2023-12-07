@@ -7410,7 +7410,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
 {
     assert(ins == INS_mov);
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescLbl* id = emitNewInstrLbl();
 
@@ -7469,7 +7469,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     assert(ins == INS_lea);
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -9087,7 +9087,7 @@ void emitter::emitIns_J(instruction ins,
 
     if (dst != nullptr)
     {
-        assert(dst->bbFlags & BBF_HAS_LABEL);
+        assert(dst->HasFlag(BBF_HAS_LABEL));
         assert(instrCount == 0);
     }
     else
