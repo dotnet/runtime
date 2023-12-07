@@ -51,25 +51,26 @@ namespace System.Net.Mail
 
         internal string Encode(int charsConsumed, bool allowUnicode)
         {
-            string encodedAddresses = string.Empty;
+            StringBuilder? encodedAddresses = null;
 
             //encode each address individually (except the first), fold and separate with a comma
             foreach (MailAddress address in this)
             {
-                if (string.IsNullOrEmpty(encodedAddresses))
+                if (encodedAddresses is null)
                 {
                     //no need to append a comma to the first one because it may be the only one.
-                    encodedAddresses = address.Encode(charsConsumed, allowUnicode);
+                    encodedAddresses = new();
+                    encodedAddresses.Append(address.Encode(charsConsumed, allowUnicode));
                 }
                 else
                 {
                     //appending another one, append a comma to separate and then fold and add the encoded address
                     //the charsConsumed will be 1 because only the first line needs to account for the header itself for
                     //line length; subsequent lines have a single whitespace character because they are folded here
-                    encodedAddresses += ", " + address.Encode(1, allowUnicode);
+                    encodedAddresses.Append(", ").Append(address.Encode(1, allowUnicode));
                 }
             }
-            return encodedAddresses;
+            return encodedAddresses?.ToString() ?? string.Empty;
         }
     }
 }
