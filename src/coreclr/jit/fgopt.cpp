@@ -6411,6 +6411,41 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 }
 
 //-------------------------------------------------------------
+// fgDfsBlocksAndRemove: Compute DFS and delete dead blocks.
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::fgDfsBlocksAndRemove()
+{
+    m_dfsTree = fgComputeDfs();
+
+    PhaseStatus status = PhaseStatus::MODIFIED_NOTHING;
+    if (m_dfsTree->GetPostOrderCount() != fgBBcount)
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("%u/%u blocks are unreachable and will be removed\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
+                   fgBBcount);
+            for (BasicBlock* block : Blocks())
+            {
+                if (!m_dfsTree->Contains(block))
+                {
+                    printf("  " FMT_BB "\n", block->bbNum);
+                }
+            }
+        }
+#endif
+
+        fgRemoveUnreachableBlocks([=](BasicBlock* block) { return !m_dfsTree->Contains(block); });
+        status = PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    return status;
+}
+
+//-------------------------------------------------------------
 // fgGetCodeEstimate: Compute a code size estimate for the block, including all statements
 // and block control flow.
 //
