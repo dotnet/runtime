@@ -1365,7 +1365,7 @@ namespace Internal.Runtime.TypeLoader
             new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
         }
 
-        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
+        public static void ResolveMultipleCells(GenericDictionaryCell[] cells, out IntPtr[] fixups)
         {
             new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }

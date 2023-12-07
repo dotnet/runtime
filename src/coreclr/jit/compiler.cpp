@@ -1965,7 +1965,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
-    fgSsaChecksEnabled         = false;
+    fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -4613,14 +4613,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
-    // Update finally target flags after EH optimizations
-    //
-    DoPhase(this, PHASE_UPDATE_FINALLY_FLAGS, &Compiler::fgUpdateFinallyTargetFlags);
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
 #if DEBUG
     if (lvaEnregEHVars)
     {
@@ -4960,10 +4952,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             //
             // So, disable the ssa checks.
             //
-            if (fgSsaChecksEnabled)
+            if (fgSsaValid)
             {
-                JITDUMP("Disabling SSA checking before assertion prop\n");
-                fgSsaChecksEnabled = false;
+                JITDUMP("Marking SSA as invalid before assertion prop\n");
+                fgSsaValid = false;
             }
 
             if (doAssertionProp)
@@ -5113,14 +5105,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    if (!compMacOsArm64Abi())
-    {
-        // Set stack levels; this information is necessary for x86
-        // but on other platforms it is used only in asserts.
-        // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
-        StackLevelSetter stackLevelSetter(this);
-        stackLevelSetter.Run();
-    }
+    // Set stack levels and analyze throw helper usage.
+    StackLevelSetter stackLevelSetter(this);
+    stackLevelSetter.Run();
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5287,8 +5274,9 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail() &&
+            !block->HasFlag(BBF_NONE_QUIRK))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5307,7 +5295,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             // Loop alignment is disabled for cold blocks
-            assert((block->bbFlags & BBF_COLD) == 0);
+            assert(!block->HasFlag(BBF_COLD));
             BasicBlock* const loopTop              = block->Next();
             bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
             bool              unmarkedLoopAlign    = false;
@@ -5376,7 +5364,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 }
 
                 madeChanges = true;
-                bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+                bbHavingAlign->SetFlags(BBF_HAS_ALIGN);
             }
 
             minBlockSoFar         = BB_MAX_WEIGHT;
@@ -5742,7 +5730,7 @@ void Compiler::ResetOptAnnotations()
     m_dominancePreds     = nullptr;
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
-    fgSsaChecksEnabled   = false;
+    fgSsaValid           = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -6013,6 +6001,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Dczva() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
+        }
+
+        if (JitConfig.EnableArm64Sve() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
         }
 #elif defined(TARGET_XARCH)
         if (JitConfig.EnableHWIntrinsic() != 0)
@@ -10544,7 +10537,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);
-    block->bbFlags |= BBF_HAS_NULLCHECK;
+    block->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
 

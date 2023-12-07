@@ -69,24 +69,9 @@
 EXTERN_C uint32_t _tls_index;
 #endif
 
-struct ThreadStaticBlockInfo
-{
-    uint32_t NonGCMaxThreadStaticBlocks;
-    void** NonGCThreadStaticBlocks;
-
-    uint32_t GCMaxThreadStaticBlocks;
-    void** GCThreadStaticBlocks;
-};
-#ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
-#else
+#ifndef _MSC_VER
 extern "C" void* __tls_get_addr(void* ti);
-__thread ThreadStaticBlockInfo t_ThreadStatics;
-__thread uint32_t t_NonGCThreadStaticBlocksSize;
-__thread uint32_t t_GCThreadStaticBlocksSize;
-#endif // _MSC_VER
+#endif // !_MSC_VER
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -8183,7 +8168,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
-                ModuleID modId = pCaller->GetModule()->GetModuleID();
+                ModuleID modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
                 mdMethodDef methodDef = pCaller->GetMemberDef();
                 ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
             }

@@ -205,7 +205,7 @@ namespace System.Diagnostics
 #if DEBUG
                 // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): { Marshal.GetPInvokeErrorMessage(error) }");
+                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): {Marshal.GetPInvokeErrorMessage(error)}");
 #endif
                 return string.Empty;
             }
@@ -224,7 +224,7 @@ namespace System.Diagnostics
             {
                 // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextW(): { Marshal.GetPInvokeErrorMessage(error) }");
+                Debug.Assert(error == 0, $"Failed GetWindowTextW(): {Marshal.GetPInvokeErrorMessage(error)}");
             }
 #endif
             return title.Slice(0, length).ToString();

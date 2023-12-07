@@ -177,15 +177,9 @@ inline bool varTypeIsArithmetic(T vt)
 }
 
 template <class T>
-inline unsigned varTypeGCtype(T vt)
-{
-    return (unsigned)(varTypeClassification[TypeGet(vt)] & (VTF_GCR | VTF_BYR));
-}
-
-template <class T>
 inline bool varTypeIsGC(T vt)
 {
-    return (varTypeGCtype(vt) != 0);
+    return ((varTypeClassification[TypeGet(vt)] & (VTF_GCR | VTF_BYR)) != 0);
 }
 
 template <class T>
@@ -214,12 +208,6 @@ inline bool varTypeIsShort(T vt)
 
 template <class T>
 inline bool varTypeIsSmall(T vt)
-{
-    return (TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_USHORT);
-}
-
-template <class T>
-inline bool varTypeIsSmallInt(T vt)
 {
     return (TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_USHORT);
 }

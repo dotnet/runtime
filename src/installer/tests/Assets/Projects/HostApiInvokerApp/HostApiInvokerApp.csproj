@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <DefineConstants Condition="'$(OS)' == 'Windows_NT'">WINDOWS;$(DefineConstants)</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- CS8981 - The type name only contains lower-cased ascii characters. -->
+    <NoWarn>$(NoWarn);CS8981</NoWarn>
+  </PropertyGroup>
+
+</Project>

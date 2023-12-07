@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(true, false);
+                    JSHostImplementation.InstallWebWorkerInterop(false);
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                     Task<T> res = body();
                     // This code is exiting thread main() before all promises are resolved.
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(true, false);
+                    JSHostImplementation.InstallWebWorkerInterop(false);
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                     Task res = body();
                     // This code is exiting thread main() before all promises are resolved.
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(false, false);
+                    JSHostImplementation.InstallWebWorkerInterop(false);
                     try
                     {
                         body();

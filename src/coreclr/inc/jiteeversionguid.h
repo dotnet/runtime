@@ -49,7 +49,7 @@ constexpr GUID JITEEVersionIdentifier = { /* 1572ff26-ec9d-48ce-b223-898c65e8e25
     0x48ce,
     {0xb2, 0x23, 0x89, 0x8c, 0x65, 0xe8, 0xe2, 0x57}
   };
-  
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // END JITEEVersionIdentifier

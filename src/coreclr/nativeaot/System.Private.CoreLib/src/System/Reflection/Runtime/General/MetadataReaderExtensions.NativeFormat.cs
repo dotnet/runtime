@@ -612,7 +612,7 @@ namespace System.Reflection.Runtime.General
         public static string ToNamespaceName(this NamespaceDefinitionHandle namespaceDefinitionHandle, MetadataReader reader)
         {
             string ns = "";
-            for (;;)
+            for (; ; )
             {
                 NamespaceDefinition currentNamespaceDefinition = namespaceDefinitionHandle.GetNamespaceDefinition(reader);
                 string name = currentNamespaceDefinition.Name.GetStringOrNull(reader);
@@ -702,7 +702,7 @@ namespace System.Reflection.Runtime.General
         {
             StringBuilder fullName = new StringBuilder(64);
             NamespaceReference namespaceReference;
-            for (;;)
+            for (; ; )
             {
                 namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
                 string namespacePart = namespaceReference.Name.GetStringOrNull(reader);

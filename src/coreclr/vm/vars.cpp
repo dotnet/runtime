@@ -112,6 +112,8 @@ GPTR_IMPL(MethodTable,      g_pEHClass);
 GVAL_IMPL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
+GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
+
 #ifndef DACCESS_COMPILE
 
 // <TODO> @TODO - PROMOTE. </TODO>

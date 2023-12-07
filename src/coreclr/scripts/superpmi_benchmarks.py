@@ -203,7 +203,7 @@ def build_and_run(coreclr_args, output_mch_name):
 
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",
-         "--framework", "net8.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+         "--framework", "net9.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
     # This is specifically for PowerShell.Benchmarks.
