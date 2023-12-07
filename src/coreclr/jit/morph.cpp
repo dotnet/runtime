@@ -13831,7 +13831,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //    highestReachablePostorder - maximum postorder number for a
 //     reachable block.
 //
-void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorder)
+void Compiler::fgMorphBlock(BasicBlock* block)
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
 
@@ -13846,8 +13846,6 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
         }
         else
         {
-            assert(highestReachablePostorder > 0);
-
             // Determine if this block can leverage assertions from its pred blocks.
             //
             // Some blocks are ineligible.
@@ -13866,7 +13864,9 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
 
                 for (BasicBlock* const pred : block->PredBlocks())
                 {
-                    // A smaller pred postorder number means the pred appears later in the postorder.
+                    assert(m_dfs->Contains(pred)); // We should have removed dead blocks before this.
+
+                    // A smaller pred postorder number means the pred appears later in the reverse postorder.
                     // An equal number means pred == block (block is a self-loop).
                     // Either way the assertion info is not available, and we must assume the worst.
                     //
@@ -13876,17 +13876,6 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
                                 pred->bbNum);
                         hasPredAssertions = false;
                         break;
-                    }
-
-                    if (pred->bbPostorderNum > highestReachablePostorder)
-                    {
-                        // This pred was not reachable from the original DFS root set, so
-                        // we can ignore its assertion information.
-                        //
-                        JITDUMP(FMT_BB " ignoring assertions from unreachable pred " FMT_BB
-                                       " [pred postorder num %u, highest reachable %u]\n",
-                                block->bbNum, pred->bbNum, pred->bbPostorderNum, highestReachablePostorder);
-                        continue;
                     }
 
                     // Yes, pred assertions are available.
@@ -14047,11 +14036,6 @@ PhaseStatus Compiler::fgMorphBlocks()
     }
     else
     {
-        // We are optimizing. Process in RPO.
-        //
-        fgRenumberBlocks();
-        const unsigned highestReachablePostorder = fgDfsReversePostorder();
-
         // Disallow general creation of new blocks or edges as it
         // would invalidate RPO.
         //
@@ -14079,10 +14063,10 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         // Morph the blocks in RPO.
         //
-        for (unsigned i = 1; i <= bbNumMax; i++)
+        for (unsigned i = m_dfs->GetPostOrderCount(); i != 0; i--)
         {
-            BasicBlock* const block = fgBBReversePostorder[i];
-            fgMorphBlock(block, highestReachablePostorder);
+            BasicBlock* const block = m_dfs->GetPostOrder()[i - 1];
+            fgMorphBlock(block);
         }
         assert(bbNumMax == fgBBNumMax);
 
@@ -14121,6 +14105,8 @@ PhaseStatus Compiler::fgMorphBlocks()
     fgGlobalMorph     = false;
     fgGlobalMorphDone = true;
     compCurBB         = nullptr;
+
+    m_dfs = nullptr;
 
 #ifdef DEBUG
     if (optLocalAssertionProp)
