@@ -13158,7 +13158,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
              * Remove the conditional statement */
 
             noway_assert(cond->gtOper == GT_CNS_INT);
-            noway_assert((block->Next()->countOfInEdges() > 0) && (block->GetJumpDest()->countOfInEdges() > 0));
+            noway_assert((block->GetNormalJumpDest()->countOfInEdges() > 0) && (block->GetJumpDest()->countOfInEdges() > 0));
 
             if (condTree != cond)
             {
@@ -13183,9 +13183,9 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (cond->AsIntCon()->gtIconVal != 0)
             {
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
-                block->SetJumpKind(BBJ_ALWAYS);
                 bTaken    = block->GetJumpDest();
-                bNotTaken = block->Next();
+                bNotTaken = block->GetNormalJumpDest();
+                block->SetJumpKind(BBJ_ALWAYS);
             }
             else
             {
@@ -13199,7 +13199,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 }
 
                 /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
-                bTaken    = block->Next();
+                bTaken    = block->GetNormalJumpDest();
                 bNotTaken = block->GetJumpDest();
                 block->SetJumpKindAndTarget(BBJ_ALWAYS, bTaken);
                 block->SetFlags(BBF_NONE_QUIRK);
@@ -13258,17 +13258,17 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     switch (bUpdated->GetJumpKind())
                     {
                         case BBJ_COND:
-                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->GetNormalJumpDest(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetNormalJumpDest());
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->GetJumpDest(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, (bUpdated->KindIs(BBJ_COND) ? bUpdated->GetNormalJumpDest() : bUpdated->Next()));
                             break;
 
                         default:
@@ -13904,7 +13904,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
                         }
                         else
                         {
-                            assert(block == pred->Next());
+                            assert(block == pred->GetNormalJumpDest());
                             JITDUMP("Using `if false` assertions from pred " FMT_BB "\n", pred->bbNum);
                             assertionsOut = pred->bbAssertionOutIfFalse;
                         }

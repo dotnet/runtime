@@ -2962,7 +2962,8 @@ void Compiler::fgLinkBasicBlocks()
 
                 // The fall-through block is also reachable
                 assert(curBBdesc->KindIs(BBJ_COND));
-                fgAddRefPred<initializingPreds>(curBBdesc->Next(), curBBdesc, oldEdge);
+                curBBdesc->SetNormalJumpDest(curBBdesc->Next());
+                fgAddRefPred<initializingPreds>(curBBdesc->GetNormalJumpDest(), curBBdesc, oldEdge);
                 break;
             }
 
@@ -4242,7 +4243,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
             case BBJ_COND: // block conditionally jumps to the target
 
-                fgControlFlowPermitted(blk, blk->Next());
+                fgControlFlowPermitted(blk, blk->GetNormalJumpDest());
 
                 fgControlFlowPermitted(blk, blk->GetJumpDest());
 
@@ -5386,8 +5387,8 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                         break;
                     }
 
-                    /* Check if both side of the BBJ_COND now jump to the same block */
-                    if (predBlock->NextIs(succBlock))
+                    /* Check if both sides of the BBJ_COND now jump to the same block */
+                    if (predBlock->HasNormalJumpTo(succBlock))
                     {
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbJumpDest.
                         noway_assert(predBlock->HasJumpTo(block));
@@ -5433,8 +5434,8 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 break;
 
             case BBJ_COND:
-                /* Check for branch to next block */
-                if (bPrev->JumpsToNext())
+                /* Check if both sides of the BBJ_COND now jump to the same block */
+                if (bPrev->HasJumpTo(bPrev->GetNormalJumpDest()))
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
@@ -6336,6 +6337,8 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     }
 
     // Currently bNext is the fall through for bCur
+    // TODO: Allow bbNormalJumpDest to diverge from bbNext for BBJ_COND
+    assert(!bCur->KindIs(BBJ_COND) || bCur->NextIs(bCur->GetNormalJumpDest()));
     BasicBlock* bNext = bCur->Next();
     noway_assert(bNext != nullptr);
 

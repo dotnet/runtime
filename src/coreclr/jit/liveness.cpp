@@ -906,7 +906,7 @@ void Compiler::fgExtendDbgLifetimes()
 
             case BBJ_COND:
                 PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetNormalJumpDest()->bbScope);
                 VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
                 break;
 

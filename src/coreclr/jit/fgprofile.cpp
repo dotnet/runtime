@@ -4736,7 +4736,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     }
                     else
                     {
-                        otherDst = bSrc->Next();
+                        otherDst = bSrc->GetNormalJumpDest();
                     }
                     otherEdge = fgGetPredForBlock(otherDst, bSrc);
 

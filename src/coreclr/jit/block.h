@@ -658,6 +658,14 @@ public:
         bbNormalJumpDest = jumpDest;
     }
 
+    bool HasNormalJumpTo(BasicBlock* jumpDest) const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(jumpDest != nullptr);
+        assert(bbNormalJumpDest != nullptr);
+        return (bbNormalJumpDest == jumpDest);
+    }
+
     void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
     {
         bbJumpKind = jumpKind;

@@ -7349,10 +7349,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     //
                     if (block->KindIs(BBJ_COND))
                     {
-                        JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_ALWAYS\n",
-                                block->bbNum, block->Next()->bbNum);
-                        fgRemoveRefPred(block->GetJumpDest(), block);
+                        JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n",
+                                block->bbNum, block->GetNormalJumpDest()->bbNum);
+                        fgRemoveRefPred(block->GetNormalJumpDest(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
+
+                        // TODO: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
                     else
@@ -7418,14 +7420,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->GetJumpDest()->bbNum);
-                            fgRemoveRefPred(block->Next(), block);
+                            fgRemoveRefPred(block->GetNormalJumpDest(), block);
                             block->SetJumpKind(BBJ_ALWAYS);
                         }
                         else
                         {
+                            // TODO: Update once bbNormalJumpDest can diverge from bbNext
+                            assert(block->NextIs(block->GetNormalJumpDest()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetJumpDest(), block);
                             block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
+
+                            // TODO: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
                     }
@@ -7597,10 +7603,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     //
                     if (block->KindIs(BBJ_COND))
                     {
-                        JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_ALWAYS\n",
-                                block->bbNum, block->Next()->bbNum);
-                        fgRemoveRefPred(block->GetJumpDest(), block);
+                        JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n",
+                                block->bbNum, block->GetNormalJumpDest()->bbNum);
+                        fgRemoveRefPred(block->GetNormalJumpDest(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
+
+                        // TODO: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
                     else
@@ -11271,12 +11279,12 @@ SPILLSTACK:
 
                 /* Note if the next block has more than one ancestor */
 
-                multRef |= block->Next()->bbRefs;
+                multRef |= block->GetNormalJumpDest()->bbRefs;
 
                 /* Does the next block have temps assigned? */
 
-                baseTmp  = block->Next()->bbStkTempsIn;
-                tgtBlock = block->Next();
+                baseTmp  = block->GetNormalJumpDest()->bbStkTempsIn;
+                tgtBlock = block->GetNormalJumpDest();
 
                 if (baseTmp != NO_BASE_TMP)
                 {

@@ -47,7 +47,7 @@ PhaseStatus Compiler::optRedundantBranches()
             {
                 bool madeChangesThisBlock = m_compiler->optRedundantRelop(block);
 
-                BasicBlock* const bbNext = block->Next();
+                BasicBlock* const bbNext = block->GetNormalJumpDest();
                 BasicBlock* const bbJump = block->GetJumpDest();
 
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
@@ -567,7 +567,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                                                 (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
 
                     BasicBlock* const trueSuccessor  = domBlock->GetJumpDest();
-                    BasicBlock* const falseSuccessor = domBlock->Next();
+                    BasicBlock* const falseSuccessor = domBlock->GetNormalJumpDest();
 
                     // If we can trace the flow from the dominating relop, we can infer its value.
                     //
@@ -612,7 +612,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         //
                         const bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
                         JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
-                                domBlock->Next()->bbNum, domBlock->bbNum, dspTreeID(tree),
+                                domBlock->GetNormalJumpDest()->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsFalse ? "false" : "true");
                         relopValue = relopIsFalse ? 0 : 1;
                         break;
@@ -710,7 +710,7 @@ struct JumpThreadInfo
     JumpThreadInfo(Compiler* comp, BasicBlock* block)
         : m_block(block)
         , m_trueTarget(block->GetJumpDest())
-        , m_falseTarget(block->Next())
+        , m_falseTarget(block->GetNormalJumpDest())
         , m_fallThroughPred(nullptr)
         , m_ambiguousVNBlock(nullptr)
         , m_truePreds(BlockSetOps::MakeEmpty(comp))
@@ -1071,8 +1071,8 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
     // latter should prove useful in subsequent work, where we aim to enable jump
     // threading in cases where block has side effects.
     //
-    BasicBlock* const domTrueSuccessor  = domIsSameRelop ? domBlock->GetJumpDest() : domBlock->Next();
-    BasicBlock* const domFalseSuccessor = domIsSameRelop ? domBlock->Next() : domBlock->GetJumpDest();
+    BasicBlock* const domTrueSuccessor  = domIsSameRelop ? domBlock->GetJumpDest() : domBlock->GetNormalJumpDest();
+    BasicBlock* const domFalseSuccessor = domIsSameRelop ? domBlock->GetNormalJumpDest() : domBlock->GetJumpDest();
     JumpThreadInfo    jti(this, block);
 
     for (BasicBlock* const predBlock : block->PredBlocks())

@@ -273,7 +273,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         if (top->KindIs(BBJ_COND))
         {
-            topFallThrough     = top->Next();
+            topFallThrough     = top->GetNormalJumpDest();
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
         }
 
@@ -405,7 +405,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             case BBJ_COND:
                 // replace predecessor in the fall through block.
                 noway_assert(!bottom->IsLast());
-                fgReplacePred(bottom->Next(), top, bottom);
+                fgReplacePred(bottom->GetNormalJumpDest(), top, bottom);
 
                 // fall through for the jump target
                 FALLTHROUGH;
@@ -3229,6 +3229,9 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // This is a slightly more complicated case, because we will
                     // probably need to insert a block to jump to the cold section.
                     //
+
+                    // TODO: Below logic will need additional check once bbNormalJumpDest can diverge from bbNext
+                    assert(prevToFirstColdBlock->HasNormalJumpTo(firstColdBlock));
                     if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
                     {
                         // We can just use this block as the transitionBlock

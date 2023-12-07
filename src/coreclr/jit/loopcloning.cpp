@@ -2083,6 +2083,9 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* newPred = bottom;
     if (bottom->bbFallsThrough())
     {
+        // Once bbNormalJumpDest can diverge from bbNext, BBJ_COND blocks will "fall through"
+        // only if bbNormalJumpDest is still the next block
+        assert(!bottom->KindIs(BBJ_COND) || bottom->NextIs(bottom->GetNormalJumpDest()));
         BasicBlock* bottomNext = bottom->Next();
         JITDUMP("Create branch around cloned loop\n");
         BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
@@ -2175,7 +2178,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             if (blk->KindIs(BBJ_COND))
             {
                 // TODO-Quirk: We see a lot of these cases and some of them cause diffs.
-                BasicBlock* targetBlk = blk->Next();
+                BasicBlock* targetBlk = blk->GetNormalJumpDest();
+                assert(blk->NextIs(targetBlk));
                 if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
                     targetBlk = targetBlk->GetJumpDest();
 
@@ -2236,7 +2240,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 break;
 
             case BBJ_COND:
-                fgAddRefPred(newblk->Next(), newblk);
+                fgAddRefPred(newblk->GetNormalJumpDest(), newblk);
                 fgAddRefPred(newblk->GetJumpDest(), newblk);
                 break;
 
@@ -2965,8 +2969,8 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (4)
     //
-    BasicBlock* const hotSuccessor  = guard->OperIs(GT_EQ) ? typeTestBlock->GetJumpDest() : typeTestBlock->Next();
-    BasicBlock* const coldSuccessor = guard->OperIs(GT_EQ) ? typeTestBlock->Next() : typeTestBlock->GetJumpDest();
+    BasicBlock* const hotSuccessor  = guard->OperIs(GT_EQ) ? typeTestBlock->GetJumpDest() : typeTestBlock->GetNormalJumpDest();
+    BasicBlock* const coldSuccessor = guard->OperIs(GT_EQ) ? typeTestBlock->GetNormalJumpDest() : typeTestBlock->GetJumpDest();
 
     if (!hotSuccessor->hasProfileWeight() || !coldSuccessor->hasProfileWeight())
     {

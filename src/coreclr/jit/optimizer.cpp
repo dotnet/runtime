@@ -4528,7 +4528,9 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
-                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->Next());
+                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->GetNormalJumpDest());
+
+                // TODO: If bbNormalJumpDest can diverge from bbNext, it may not make sense to set BBF_NONE_QUIRK
                 initBlock->SetFlags(BBF_NONE_QUIRK);
             }
             else
@@ -4786,9 +4788,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         return false;
     }
 
-    // Since bTest is a BBJ_COND it will have a bbNext
+    // Since bTest is a BBJ_COND it will have a bbNormalJumpDest
     //
-    BasicBlock* const bJoin = bTest->Next();
+    BasicBlock* const bJoin = bTest->GetNormalJumpDest();
     noway_assert(bJoin != nullptr);
 
     // 'block' must be in the same try region as the condition, since we're going to insert a duplicated condition
@@ -4800,7 +4802,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         return false;
     }
 
-    // The duplicated condition block will branch to bTest->Next(), so that also better be in the
+    // The duplicated condition block will branch to bTest->GetNormalJumpDest(), so that also better be in the
     // same try region (or no try region) to avoid generating illegal flow.
     if (bJoin->hasTryIndex() && !BasicBlock::sameTryRegion(block, bJoin))
     {
@@ -5137,7 +5139,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
 
         FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTop, bTest);
-        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->Next(), bTest);
+        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->GetNormalJumpDest(), bTest);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
                 testToNextWeight);
@@ -5145,7 +5147,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
                 bTest->Next()->bbNum, testToAfterWeight);
 
         edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTop);
-        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->Next());
+        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->GetNormalJumpDest());
 
         // Adjust edges out of block, using the same distribution.
         //
@@ -5157,15 +5159,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
-        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->Next(), bNewCond);
+        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->GetNormalJumpDest(), bNewCond);
         FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->GetJumpDest(), bNewCond);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
-                bNewCond->Next()->bbNum, blockToNextWeight);
+                bNewCond->GetNormalJumpDest()->bbNum, blockToNextWeight);
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
                 bNewCond->GetJumpDest()->bbNum, blockToAfterWeight);
 
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->Next());
+        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetNormalJumpDest());
         edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetJumpDest());
 
 #ifdef DEBUG
@@ -5174,7 +5176,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
         {
             const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
-            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->Next(), checks);
+            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetNormalJumpDest(), checks);
             const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetJumpDest(), checks);
 
             if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
@@ -5190,7 +5192,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     if (verbose)
     {
         printf("\nDuplicated loop exit block at " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", bNewCond->bbNum,
-               bNewCond->Next()->bbNum, bTest->bbNum);
+               bNewCond->GetNormalJumpDest()->bbNum, bTest->bbNum);
         printf("Estimated code size expansion is %d\n", estDupCostSz);
 
         fgDumpBlock(bNewCond);
@@ -8182,7 +8184,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             }
             else
             {
-                skipLoopBlock = head->Next();
+                skipLoopBlock = head->GetNormalJumpDest();
             }
             assert(skipLoopBlock != entry);
 

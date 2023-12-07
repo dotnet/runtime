@@ -211,7 +211,7 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
     BasicBlock* const jump = block->GetJumpDest();
-    BasicBlock* const next = block->Next();
+    BasicBlock* const next = block->GetNormalJumpDest();
 
     // Watch for degenerate case
     //
@@ -862,7 +862,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
                     BasicBlock* const jump               = exitBlock->GetJumpDest();
-                    BasicBlock* const next               = exitBlock->Next();
+                    BasicBlock* const next               = exitBlock->GetNormalJumpDest();
                     FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
                     FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
                     weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;
