@@ -4217,7 +4217,7 @@ BitVecTraits FlowGraphNaturalLoop::LoopBlockTraits()
 //
 bool FlowGraphNaturalLoop::ContainsBlock(BasicBlock* block)
 {
-    if (!m_tree->Contains(block))
+    if (!m_dfsTree->Contains(block))
     {
         return false;
     }
