@@ -4,6 +4,7 @@
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsWasiProject Condition="'$(IsWasiProject)' == ''">true</IsWasiProject>
+    <UpdateWorkloadDependsOn>$(UpdateWorkloadDependsOn);Wasi_UpdateTasksAndTargets</UpdateWorkloadDependsOn>
 
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
@@ -172,5 +173,27 @@
                             Version="$(PackageVersionForWorkloadManifests)" />
       <WorkloadCombinationsToInstall Include="latest" Variants="latest;net8" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="Wasi_UpdateTasksAndTargets" BeforeTargets="WorkloadUpdateTasksAndTargets">
+    <PropertyGroup>
+      <_WorkloadToUpdatePath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-latest'))</_WorkloadToUpdatePath>
+    </PropertyGroup>
+
+    <!-- src/mono/wasi/build/WasiApp.*targets artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/9.0.0-dev/Sdk -->
+    <ItemGroup>
+      <_FilesToUpdate Include="$(MonoProjectRoot)/wasi/build/WasiApp*" Destination="$(_WorkloadToUpdatePath)/packs/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/$(PackageVersion)/Sdk" />
+      <_FilesToUpdate Include="$(MonoProjectRoot)/wasm/build/WasmApp.Common.*" Destination="$(_WorkloadToUpdatePath)/packs/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/$(PackageVersion)/Sdk" />
+
+      <!-- artifacts/bin/WasmAppBuilder/Release/net8.0/WasmAppBuilder.* artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/9.0.0-dev/tasks/net8.0/ -->
+      <_FilesToUpdate Include="$(WasmAppBuilderDir)\**\*" Destination="$(_WorkloadToUpdatePath)/packs/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/$(PackageVersion)/tasks/$(NetCoreAppToolCurrent)" />
+      <!-- artifacts/bin/MonoTargetsTasks/Release/net8.0/MonoTargetsTasks.* artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.MonoTargets.Sdk/9.0.0-dev/tasks/net8.0/ -->
+      <_FilesToUpdate Include="$(MonoTargetsTasksDir)**\*" Destination="$(_WorkloadToUpdatePath)/packs/Microsoft.NET.Runtime.MonoTargets.Sdk/$(PackageVersion)/tasks/$(NetCoreAppToolCurrent)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_FilesToUpdate)" DestinationFolder="%(Destination)" SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="CopiedFiles" />
+    </Copy>
+    <Message Text="Copied %(_FilesToUpdate.Identity) to %(_FilesToUpdate.Destination)" Importance="High" />
   </Target>
 </Project>

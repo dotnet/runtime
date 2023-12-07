@@ -26,6 +26,15 @@
       GetWorkloadInputs;
       _InstallWorkloads
     </InstallWorkloadUsingArtifactsDependsOn>
+
+    <DefaultWorkloadPartsToUpdates>taskstargets+runtimepack+targetingpack+templates</DefaultWorkloadPartsToUpdates>
+    <_WorkloadUpdate Condition="'$(WorkloadPartsToUpdate)' != ''">+$(WorkloadPartsToUpdate.ToLowerInvariant())+</_WorkloadUpdate>
+    <_WorkloadUpdate Condition="'$(WorkloadPartsToUpdate)' == ''">+$(DefaultWorkloadPartsToUpdates)+</_WorkloadUpdate>
+
+    <UpdateWorkloadDependsOn Condition="$(_WorkloadUpdate.contains('+taskstargets+'))">$(UpdateWorkloadDependsOn);WorkloadUpdateTasksAndTargets</UpdateWorkloadDependsOn>
+    <UpdateWorkloadDependsOn Condition="$(_WorkloadUpdate.contains('+runtimepack+'))">$(UpdateWorkloadDependsOn);WorkloadUpdateRuntimePack</UpdateWorkloadDependsOn>
+    <UpdateWorkloadDependsOn Condition="$(_WorkloadUpdate.contains('+targetingpack+'))">$(UpdateWorkloadDependsOn);WorkloadUpdateTargetingPack</UpdateWorkloadDependsOn>
+    <UpdateWorkloadDependsOn Condition="$(_WorkloadUpdate.contains('+templates+'))">$(UpdateWorkloadDependsOn);WorkloadUpdateTemplates</UpdateWorkloadDependsOn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -217,8 +226,17 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     IntermediateOutputPath="$(ArtifactsObjDir)"
       />
 
+    <Exec Command="$(_SdkForWorkloadTestingBasePath)\dotnet-latest\dotnet workload list" StandardOutputImportance="High" />
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
   </Target>
+
+  <Target Name="WorkloadUpdateTasksAndTargets" />
+  <Target Name="WorkloadUpdateRuntimePack" />
+  <Target Name="WorkloadUpdateTargetingPack" />
+  <Target Name="WorkloadUpdateTemplates" />
+
+  <Target Name="UpdateWorkload" DependsOnTargets="$(UpdateWorkloadDependsOn)" />
 </Project>

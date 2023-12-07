@@ -356,4 +356,36 @@
 
       *******************" />
   </Target>
+
+  <Target Name="Wasm_UpdateTasksAndTargets" BeforeTargets="WorkloadUpdateTasksAndTargets">
+    <PropertyGroup>
+      <_WorkloadToUpdatePath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-latest'))</_WorkloadToUpdatePath>
+    </PropertyGroup>
+
+    <Message Text="Updating tasks, and targets for $(RuntimeIdentifier)" Importance="High" />
+
+    <!-- src/mono/wasi/build/WasiApp.*targets artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/9.0.0-dev/Sdk -->
+    <ItemGroup>
+      <_FilesToUpdate Include="$(MonoProjectRoot)/wasm/build/WasmApp*" Destination="$(_WorkloadToUpdatePath)/packs/Microsoft.NET.Runtime.WebAssembly.Sdk/$(PackageVersion)/Sdk" />
+
+      <!-- artifacts/bin/WasmAppBuilder/Release/net8.0/WasmAppBuilder.* artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/9.0.0-dev/tasks/net8.0/ -->
+      <_FilesToUpdate Include="$(WasmAppBuilderDir)\**\*" Destination="$(_WorkloadToUpdatePath)/packs/Microsoft.NET.Runtime.WebAssembly.Sdk/$(PackageVersion)/tasks/$(NetCoreAppToolCurrent)" />
+      <!-- artifacts/bin/MonoTargetsTasks/Release/net8.0/MonoTargetsTasks.* artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.MonoTargets.Sdk/9.0.0-dev/tasks/net8.0/ -->
+      <_FilesToUpdate Include="$(MonoTargetsTasksDir)**\*" Destination="$(_WorkloadToUpdatePath)/packs/Microsoft.NET.Runtime.MonoTargets.Sdk/$(PackageVersion)/tasks/$(NetCoreAppToolCurrent)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_FilesToUpdate)" DestinationFolder="%(Destination)" SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="CopiedFiles" />
+    </Copy>
+    <Message Text="Copied %(_FilesToUpdate.Identity) to %(_FilesToUpdate.Destination)" Importance="High" />
+  </Target>
+
+  <Target Name="Browser_UpdateRuntimePack" BeforeTargets="WorkloadUpdateRuntimePack">
+    <PropertyGroup>
+      <_WorkloadToUpdatePath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-latest'))</_WorkloadToUpdatePath>
+    </PropertyGroup>
+
+    <Message Text="Updating the runtime pack for $(RuntimeIdentifier)" Importance="High" />
+  </Target>
+
 </Project>
