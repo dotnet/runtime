@@ -336,4 +336,5 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         return 0;
     }
 }
+
 #endif
