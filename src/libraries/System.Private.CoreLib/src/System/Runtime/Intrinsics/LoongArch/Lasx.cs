@@ -980,25 +980,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x32_t xvseqi_b(int8x32_t a, int8_t si5)
         ///   LASX: XVSEQI.B Xd.32B, Xj.32B, si5
         /// </summary>
-        public static Vector256<sbyte> CompareEqual(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<sbyte> CompareEqual(Vector256<sbyte> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int16x16_t xvseqi_h(int16x16_t a, int8_t si5)
         ///   LASX: XVSEQI.H Xd.16H, Xj.16H, si5
         /// </summary>
-        public static Vector256<short> CompareEqual(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<short> CompareEqual(Vector256<short> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int32x8_t xvseqi_w(int32x8_t a, int8_t si5)
         ///   LASX: XVSEQI.W Xd.8W, Xj.8W, si5
         /// </summary>
-        public static Vector256<int> CompareEqual(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<int> CompareEqual(Vector256<int> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int64x4_t xvseqi_d(int64x4_t a, int8_t si5)
         ///   LASX: XVSEQI.D Xd.4D, Xj.4D, si5
         /// </summary>
-        public static Vector256<long> CompareEqual(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
+        public static Vector256<long> CompareEqual(Vector256<long> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareEqual(value, si5);
 
         /// <summary>
         /// int8x32_t xvseq_b(int8x32_t a, int8x32_t b)
@@ -1088,25 +1088,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x32_t xvslti_b(int8x32_t a, int8_t si5)
         ///   LASX: XVSLTI.Bd.32B, Xj.32B, si5
         /// </summary>
-        public static Vector256<sbyte> CompareLessThan(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<sbyte> CompareLessThan(Vector256<sbyte> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int16x16_t xvslti_h(int16x16_t a, int8_t si5)
         ///   LASX: XVSLTI.H Xd.16H, Xj.16H, si5
         /// </summary>
-        public static Vector256<short> CompareLessThan(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<short> CompareLessThan(Vector256<short> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int32x8_t xvslti_w(int32x8_t a, int8_t si5)
         ///   LASX: XVSLTI.W Xd.8W, Xj.8W, si5
         /// </summary>
-        public static Vector256<int> CompareLessThan(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<int> CompareLessThan(Vector256<int> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// int64x4_t xvslti_d(int64x4_t a, int8_t si5)
         ///   LASX: XVSLTI.D Xd.4D, Xj.4D, si5
         /// </summary>
-        public static Vector256<long> CompareLessThan(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
+        public static Vector256<long> CompareLessThan(Vector256<long> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThan(value, si5);
 
         /// <summary>
         /// uint8x32_t xvslt_b(int8x32_t a, int8x32_t b)
@@ -1172,25 +1172,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x32_t xvslei_b(int8x32_t a, int8_t si5)
         ///   LASX: XVSLEI.Bd.32B, Xj.32B, si5
         /// </summary>
-        public static Vector256<sbyte> CompareLessThanOrEqual(Vector256<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<sbyte> CompareLessThanOrEqual(Vector256<sbyte> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int16x16_t xvslei_h(int16x16_t a, int8_t si5)
         ///   LASX: XVSLEI.H Xd.16H, Xj.16H, si5
         /// </summary>
-        public static Vector256<short> CompareLessThanOrEqual(Vector256<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<short> CompareLessThanOrEqual(Vector256<short> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int32x8_t xvslei_w(int32x8_t a, int8_t si5)
         ///   LASX: XVSLEI.W Xd.8W, Xj.8W, si5
         /// </summary>
-        public static Vector256<int> CompareLessThanOrEqual(Vector256<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<int> CompareLessThanOrEqual(Vector256<int> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// int64x4_t xvslei_d(int64x4_t a, int8_t si5)
         ///   LASX: XVSLEI.D Xd.4D, Xj.4D, si5
         /// </summary>
-        public static Vector256<long> CompareLessThanOrEqual(Vector256<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
+        public static Vector256<long> CompareLessThanOrEqual(Vector256<long> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) => CompareLessThanOrEqual(value, si5);
 
         /// <summary>
         /// uint8x32_t xvsle_b(int8x32_t a, int8x32_t b)
@@ -1220,25 +1220,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint8x32_t xvslei_bu(uint8x32_t a, uint8_t ui5)
         ///   LASX: XVSLEI.BU Xd.32B, Xj.32B, ui5
         /// </summary>
-        public static Vector256<byte> CompareLessThanOrEqual(Vector256<byte> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<byte> CompareLessThanOrEqual(Vector256<byte> value, [ConstantExpected(Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint16x16_t xvslei_hu(uint16x16_t a, uint8_t ui5)
         ///   LASX: XVSLEI.HU Xd.16H, Xj.16H, ui5
         /// </summary>
-        public static Vector256<ushort> CompareLessThanOrEqual(Vector256<ushort> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<ushort> CompareLessThanOrEqual(Vector256<ushort> value, [ConstantExpected(Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint32x8_t xvslei_wu(uint32x8_t a, uint8_t ui5)
         ///   LASX: XVSLEI.WU Xd.8W, Xj.8W, ui5
         /// </summary>
-        public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> value, [ConstantExpected(Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint64x4_t xvslei_du(uint64x4_t a, uint8_t ui5)
         ///   LASX: XVSLEI.DU Xd.4D, Xj.4D, ui5
         /// </summary>
-        public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
+        public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> value, [ConstantExpected(Max = (byte)(31))] byte ui5) => CompareLessThanOrEqual(value, ui5);
 
         /// <summary>
         /// uint8x32_t xvsle_bu(uint8x32_t a, uint8x32_t b)
@@ -3544,43 +3544,43 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint8x32_t xvsrlrni_b_h(uint16x16_t left, uint16x16_t right, const int n)
         ///   LASX: XVSRLRNI.B.H Xd, Xj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
         /// </summary>
-        public static Vector256<byte> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<byte> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// int8x32_t xvsrlrni_b_h(int16x16_t left, int16x16_t right, const int n)
         ///   LASX: XVSRLRNI.B.H Xd, Xj, ui4
         /// </summary>
-        public static Vector256<sbyte> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<sbyte> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// int16x16_t xvsrlrni_h_w(int32x8_t left, int32x8_t right, const int n)
         ///   LASX: XVSRLRNI.H.W Xd, Xj, ui5
         /// </summary>
-        public static Vector256<short> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<short> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvsrlrni_h_w(uint32x8_t left, uint32x8_t right, const int n)
         ///   LASX: XVSRLRNI.H.W Xd, Xj, ui5
         /// </summary>
-        public static Vector256<ushort> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<ushort> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// int32x8_t xvsrlrni_w_d(int64x4_t left, int64x4_t right, const int n)
         ///   LASX: XVSRLRNI.W.D Xd, Xj, ui6
         /// </summary>
-        public static Vector256<int> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<int> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvsrlrni_w_d(uint64x4_t left, uint64x4_t right, const int n)
         ///   LASX: XVSRLRNI.W.D Xd, Xj, ui6
         /// </summary>
-        public static Vector256<uint> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<uint> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// int64x4_t xvsrlrni_d_q(int128x2_t left, int128x2_t right, const int n)
         /////   LASX: XVSRLRNI.D.Q Xd, Xj, ui7
         ///// </summary>
-        //public static Vector256<long> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
+        //public static Vector256<long> ShiftRightLogicalRoundedNarrowingLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// int8x16_t xvsrlrn_b_h(int16x16_t value, int16x16_t shift)
@@ -3622,25 +3622,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t xvsrarni_b_h(int16x16_t left, int16x16_t right, const int n)
         ///   LASX: XVSRARNI.B.H Xd, Xj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
         /// </summary>
-        public static Vector256<sbyte> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<sbyte> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// int16x16_t xvsrarni_h_w(int32x8_t left, int32x8_t right, const int n)
         ///   LASX: XVSRARNI.H.W Xd, Xj, ui5
         /// </summary>
-        public static Vector256<short> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<short> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// int32x8_t xvsrarni_w_d(int64x4_t left, int64x4_t right, const int n)
         ///   LASX: XVSRARNI.W.D Xd, Xj, ui6
         /// </summary>
-        public static Vector256<int> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
+        public static Vector256<int> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// int64x4_t xvsrarni_d_q(int128x2_t left, int128x2_t right, const int n)
         /////   LASX: XVSRARNI.D.Q Xd, Xj, ui7
         ///// </summary>
-        //public static Vector256<long> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
+        //public static Vector256<long> ShiftRightArithmeticRoundedNarrowingLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingLowerEach128(left, right, shift);
 
         /// <summary>
         /// int8x16_t xvsrarn_b_h(int16x16_t value, int16x16_t shift)
@@ -4282,43 +4282,43 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int32x8_t xvssrlni_b_h(int16x16_t left, int16x16_t right, const byte n)
         ///   LASX: XVSSRLNI.B.H Xd.32B, Xj.16H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector256<sbyte> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<sbyte> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvssrlni_b_h(uint16x16_t left, uint16x16_t right, const byte n)
         ///   LASX: XVSSRLNI.B.H Xd.32B, Xj.16H, ui4
         /// </summary>
-        public static Vector256<byte> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<byte> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int16x16_t xvssrlni_h_w(int32x8_t left, int32x8_t right, const byte n)
         ///   LASX: XVSSRLNI.H.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<short> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<short> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvssrlni_h_w(uint32x8_t left, uint32x8_t right, const byte n)
         ///   LASX: XVSSRLNI.H.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<ushort> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<ushort> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int32x8_t xvssrlni_w_d(int64x4_t left, int64x4_t right, const byte n)
         ///   LASX: XVSSRLNI.W.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<int> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<int> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvssrlni_w_d(uint64x4_t left, uint64x4_t right, const byte n)
         ///   LASX: XVSSRLNI.W.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<uint> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<uint> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// int64x4_t xvssrlni_d_q(int128x2_t left, int128x2_t right, const byte n)
         /////   LASX: XVSSRLNI.D.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<long> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
+        //public static Vector256<long> ShiftRightLogicalNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightLogicalNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int8x16_t xvssrln_b_h(int16x16_t value, int16x16_t shift)
@@ -4360,25 +4360,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x16_t xvssrlni_bu_h(uint16x16_t left, uint16x16_t right, const byte n)
         ///   LASX: XVSSRLNI.BU.H Xd.32B, Xj.16H, ui4
         /// </summary>
-        public static Vector256<byte> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<byte> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvssrlni_hu_w(uint32x8_t left, uint32x8_t right, const byte n)
         ///   LASX: XVSSRLNI.HU.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<ushort> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<ushort> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvssrlni_wu_d(uint64x4_t left, uint64x4_t right, const byte n)
         ///   LASX: XVSSRLNI.WU.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<uint> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<uint> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// uint64x4_t xvssrlni_du_q(uint128x2_t left, uint128x2_t right, const byte n)
         /////   LASX: XVSSRLNI.DU.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<ulong> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<ulonglong> left, Vector256<ulonglong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        //public static Vector256<ulong> ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(Vector256<ulonglong> left, Vector256<ulonglong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightLogicalNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint8x16_t xvssrln_bu_h(uint16x16_t value, uint16x16_t shift)
@@ -4402,25 +4402,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x16_t xvssran_b_h(int16x16_t left, int16x16_t right, const byte n)
         ///   LASX: XVSSRANI.B.H Xd.32B, Xj.16H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector256<sbyte> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<sbyte> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int16x16_t xvssran_h_w(int32x8_t left, int32x8_t right, const byte n)
         ///   LASX: XVSSRANI.H.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<short> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<short> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int32x8_t xvssran_w_d(int64x4_t left, int64x4_t right, const byte n)
         ///   LASX: XVSSRANI.W.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<int> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<int> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// int64x4_t xvssran_d_q(int128x2_t left, int128x2_t right, const byte n)
         /////   LASX: XVSSRANI.D.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<long> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
+        //public static Vector256<long> ShiftRightArithmeticNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightArithmeticNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int8x16_t xvssran_b_h(int16x16_t value, int16x16_t shift)
@@ -4444,25 +4444,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x16_t xvssrani_bu_h(int16x16_t left, int16x16_t right, const byte n)
         ///   LASX: XVSSRANI.BU.H Xd.32B, Xj.16H, ui4
         /// </summary>
-        public static Vector256<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvssrani_hu_w(int32x8_t left, int32x8_t right, const byte n)
         ///   LASX: XVSSRANI.HU.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvssrani_wu_d(int64x4_t left, int64x4_t right, const byte n)
         ///   LASX: XVSSRANI.WU.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// uint64x4_t xvssrani_du_q(int128x2_t left, int128x2_t right, const byte n)
         /////   LASX: XVSSRANI.DU.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<ulong> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        //public static Vector256<ulong> ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightArithmeticNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint8x16_t xvssran_bu_h(int16x16_t value, int16x16_t shift)
@@ -4486,43 +4486,43 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x16_t xvssrlrni_b_h(int16x16_t left, int16x16_t right, const byte n)
         ///   LASX: XVSSRLRNI.B.H Xd.32B, Xj.16H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector256<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvssrlrni_b_h(uint16x16_t left, uint16x16_t right, const byte n)
         ///   LASX: XVSSRLRNI.B.H Xd.32B, Xj.16H, ui4
         /// </summary>
-        public static Vector256<byte> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<byte> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int16x16_t xvssrlrni_h_w(int32x8_t left, int32x8_t right, const byte n)
         ///   LASX: XVSSRLRNI.H.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<short> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<short> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvssrlrni_h_w(uint32x8_t left, uint32x8_t right, const byte n)
         ///   LASX: XVSSRLRNI.H.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<ushort> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<ushort> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int32x8_t xvssrlrni_w_d(int64x4_t left, int64x4_t right, const byte n)
         ///   LASX: XVSSRLRNI.W.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<int> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<int> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvssrlrni_w_d(uint64x4_t left, uint64x4_t right, const byte n)
         ///   LASX: XVSSRLRNI.W.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<uint> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<uint> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// int64x4_t xvssrlrni_d_q(int128x2_t left, int128x2_t right, const byte n)
         /////   LASX: XVSSRLRNI.D.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<long> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        //public static Vector256<long> ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int8x16_t xvssrlrn_b_h(int16x16_t value, int16x16_t shift)
@@ -4564,25 +4564,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x16_t xvssrlrni_bu_h(uint16x16_t left, uint16x16_t right, const byte n)
         ///   LASX: XVSSRLRNI.BU.H Xd.32B, Xj.16H, ui4
         /// </summary>
-        public static Vector256<byte> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<byte> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvssrlrni_hu_w(uint32x8_t left, uint32x8_t right, const byte n)
         ///   LASX: XVSSRLRNI.HU.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<ushort> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<ushort> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvssrlrni_wu_d(uint64x4_t left, uint64x4_t right, const byte n)
         ///   LASX: XVSSRLRNI.WU.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<uint> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<uint> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// uint64x4_t xvssrlrni_du_q(uint128x2_t left, uint128x2_t right, const byte n)
         /////   LASX: XVSSRLRNI.DU.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<ulong> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<ulonglong> left, Vector256<ulonglong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        //public static Vector256<ulong> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<ulonglong> left, Vector256<ulonglong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightLogicalRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint8x16_t xvssrlrn_bu_h(uint16x16_t value, uint16x16_t shift)
@@ -4606,25 +4606,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x16_t xvssrarn_b_h(int16x16_t left, int16x16_t right, const byte n)
         ///   LASX: XVSSRARNI.B.H Xd.32B, Xj.16H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector256<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int16x16_t xvssrarn_h_w(int32x8_t left, int32x8_t right, const byte n)
         ///   LASX: XVSSRARNI.H.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<short> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<short> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int32x8_t xvssrarn_w_d(int64x4_t left, int64x4_t right, const byte n)
         ///   LASX: XVSSRARNI.W.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<int> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        public static Vector256<int> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// int64x4_t xvssrarn_d_q(int128x2_t left, int128x2_t right, const byte n)
         /////   LASX: XVSSRARNI.D.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<long> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
+        //public static Vector256<long> ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateLowerEach128(left, right, shift);
 
         /// <summary>
         /// int8x16_t xvssrarn_b_h(int16x16_t value, int16x16_t shift)
@@ -4648,25 +4648,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x16_t xvssrarni_bu_h(int16x16_t left, int16x16_t right, const byte n)
         ///   LASX: XVSSRARNI.BU.H Xd.32B, Xj.16H, ui4
         /// </summary>
-        public static Vector256<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<short> left, Vector256<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint16x16_t xvssrarni_hu_w(int32x8_t left, int32x8_t right, const byte n)
         ///   LASX: XVSSRARNI.HU.W Xd.16H, Xj.8W, ui5
         /// </summary>
-        public static Vector256<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<int> left, Vector256<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint32x8_t xvssrarni_wu_d(int64x4_t left, int64x4_t right, const byte n)
         ///   LASX: XVSSRARNI.WU.D Xd.8W, Xj.4D, ui6
         /// </summary>
-        public static Vector256<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        public static Vector256<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<long> left, Vector256<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         ///// <summary>
         ///// uint64x4_t xvssrarni_du_q(int128x2_t left, int128x2_t right, const byte n)
         /////   LASX: XVSSRARNI.DU.Q Xd.4D, Xj.2Q, ui7
         ///// </summary>
-        //public static Vector256<ulong> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
+        //public static Vector256<ulong> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(Vector256<longlong> left, Vector256<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) => ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLowerEach128(left, right, shift);
 
         /// <summary>
         /// uint8x16_t xvssrarn_bu_h(int16x16_t value, int16x16_t shift)
@@ -5687,6 +5687,54 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LASX: XVFRSTPI.H Xd.16H, Xj.16H, ui3
         /// </summary>
         public static Vector256<short> IndexOfFirstNegativeElementEach128(Vector256<short> value, const byte save) => IndexOfFirstNegativeElementEach128(value, save);
+
+        /// <summary>
+        /// int8x32_t xvsat_b(int8x32_t value, uint8_t ui3)
+        ///   LASX: XVSAT.B Xd.32B, Xj.32B, ui3
+        /// </summary>
+        public static Vector256<sbyte> VectorSaturate(Vector256<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte bits) => VectorSaturate(value, bits);
+
+        /// <summary>
+        /// int16x16_t xvsat_h(int16x16_t value, uint8_t ui4)
+        ///   LASX: XVSAT.H Xd.16H, Xj.16H, ui4
+        /// </summary>
+        public static Vector256<short> VectorSaturate(Vector256<short> value, [ConstantExpected(Max = (byte)(15))] byte bits) => VectorSaturate(value, bits);
+
+        /// <summary>
+        /// int32x8_t xvsat_w(int32x8_t value, uint8_t ui5)
+        ///   LASX: XVSAT.W Xd.8W, Xj.8W, ui5
+        /// </summary>
+        public static Vector256<int> VectorSaturate(Vector256<int> value, [ConstantExpected(Max = (byte)(31))] byte bits) => VectorSaturate(value, bits);
+
+        /// <summary>
+        /// int64x4_t xvsat_d(int64x4_t value, uint8_t ui6)
+        ///   LASX: XVSAT.D Xd.4D, Xj.4D, ui6
+        /// </summary>
+        public static Vector256<long> VectorSaturate(Vector256<long> value, [ConstantExpected(Max = (byte)(63))] byte bits) => VectorSaturate(value, bits);
+
+        /// <summary>
+        /// uint8x32_t xvsat_bu(uint8x32_t value, uint8_t ui3)
+        ///   LASX: XVSAT.BU Xd.32B, Xj.32B, ui3
+        /// </summary>
+        public static Vector256<byte> VectorSaturateUnsigned(Vector256<byte> value, [ConstantExpected(Max = (byte)(7))] byte bits) => VectorSaturateUnsigned(value, bits);
+
+        /// <summary>
+        /// uint16x16_t xvsat_hu(uint16x16_t value, uint8_t ui4)
+        ///   LASX: XVSAT.HU Xd.16H, Xj.16H, ui4
+        /// </summary>
+        public static Vector256<ushort> VectorSaturateUnsigned(Vector256<ushort> value, [ConstantExpected(Max = (byte)(15))] byte bits) => VectorSaturateUnsigned(value, bits);
+
+        /// <summary>
+        /// uint32x8_t xvsat_wu(uint32x8_t value, uint8_t ui5)
+        ///   LASX: XVSAT.WU Xd.8W, Xj.8W, ui5
+        /// </summary>
+        public static Vector256<uint> VectorSaturateUnsigned(Vector256<uint> value, [ConstantExpected(Max = (byte)(31))] byte bits) => VectorSaturateUnsigned(value, bits);
+
+        /// <summary>
+        /// uint64x4_t xvsat_du(uint64x4_t value, uint8_t ui6)
+        ///   LASX: XVSAT.DU Xd.4D, Xj.4D, ui6
+        /// </summary>
+        public static Vector256<ulong> VectorSaturateUnsigned(Vector256<ulong> value, [ConstantExpected(Max = (byte)(63))] byte bits) => VectorSaturateUnsigned(value, bits);
 
         /// <summary>
         /// int32x8_t vfclass_s(float32x8_t a)

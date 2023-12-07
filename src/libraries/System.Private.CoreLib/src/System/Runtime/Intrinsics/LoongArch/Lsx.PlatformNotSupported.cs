@@ -1154,25 +1154,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vseqi_b(int8x16_t a, int8_t si5)
         ///   LSX: VSEQI.B Vd.16B, Vj.16B, si5
         /// </summary>
-        public static Vector128<sbyte> CompareEqual(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> CompareEqual(Vector128<sbyte> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vseqi_h(int16x8_t a, int8_t si5)
         ///   LSX: VSEQI.H Vd.8H, Vj.8H, si5
         /// </summary>
-        public static Vector128<short> CompareEqual(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> CompareEqual(Vector128<short> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vseqi_w(int32x4_t a, int8_t si5)
         ///   LSX: VSEQI.W Vd.4W, Vj.4W, si5
         /// </summary>
-        public static Vector128<int> CompareEqual(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> CompareEqual(Vector128<int> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int64x2_t vseqi_d(int64x2_t a, int8_t si5)
         ///   LSX: VSEQI.D Vd.2D, Vj.2D, si5
         /// </summary>
-        public static Vector128<long> CompareEqual(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> CompareEqual(Vector128<long> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x16_t vseq_b(int8x16_t a, int8x16_t b)
@@ -1262,25 +1262,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vslti_b(int8x16_t a, int8_t si5)
         ///   LSX: VSLTI.B Vd.16B, Vj.16B, si5
         /// </summary>
-        public static Vector128<sbyte> CompareLessThan(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> CompareLessThan(Vector128<sbyte> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vslti_h(int16x8_t a, int8_t si5)
         ///   LSX: VSLTI.H Vd.8H, Vj.8H, si5
         /// </summary>
-        public static Vector128<short> CompareLessThan(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> CompareLessThan(Vector128<short> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vslti_w(int32x4_t a, int8_t si5)
         ///   LSX: VSLTI.W Vd.4W, Vj.4W, si5
         /// </summary>
-        public static Vector128<int> CompareLessThan(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> CompareLessThan(Vector128<int> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int64x2_t vslti_d(int64x2_t a, int8_t si5)
         ///   LSX: VSLTI.D Vd.2D, Vj.2D, si5
         /// </summary>
-        public static Vector128<long> CompareLessThan(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> CompareLessThan(Vector128<long> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vslt_b(int8x16_t a, int8x16_t b)
@@ -1346,25 +1346,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vslei_b(int8x16_t a, int8_t si5)
         ///   LSX: VSLEI.B Vd.16B, Vj.16B, si5
         /// </summary>
-        public static Vector128<sbyte> CompareLessThanOrEqual(Vector128<sbyte> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> CompareLessThanOrEqual(Vector128<sbyte> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vslei_h(int16x8_t a, int8_t si5)
         ///   LSX: VSLEI.H Vd.8H, Vj.8H, si5
         /// </summary>
-        public static Vector128<short> CompareLessThanOrEqual(Vector128<short> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> CompareLessThanOrEqual(Vector128<short> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vslei_w(int32x4_t a, int8_t si5)
         ///   LSX: VSLEI.W Vd.4W, Vj.4W, si5
         /// </summary>
-        public static Vector128<int> CompareLessThanOrEqual(Vector128<int> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> CompareLessThanOrEqual(Vector128<int> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int64x2_t vslei_d(int64x2_t a, int8_t si5)
         ///   LSX: VSLEI.D Vd.2D, Vj.2D, si5
         /// </summary>
-        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value,  [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value, [ConstantExpected(Min = -16, Max = (byte)(15))] sbyte si5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vsle_b(int8x16_t a, int8x16_t b)
@@ -1394,25 +1394,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint8x16_t vslei_bu(uint8x16_t a, uint8_t ui5)
         ///   LSX: VSLEI.BU Vd.16B, Vj.16B, ui5
         /// </summary>
-        public static Vector128<byte> CompareLessThanOrEqual(Vector128<byte> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> CompareLessThanOrEqual(Vector128<byte> value, [ConstantExpected(Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vslei_hu(uint16x8_t a, uint8_t ui5)
         ///   LSX: VSLEI.HU Vd.8H, Vj.8H, ui5
         /// </summary>
-        public static Vector128<ushort> CompareLessThanOrEqual(Vector128<ushort> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> CompareLessThanOrEqual(Vector128<ushort> value, [ConstantExpected(Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vslei_wu(uint32x4_t a, uint8_t ui5)
         ///   LSX: VSLEI.WU Vd.4W, Vj.4W, ui5
         /// </summary>
-        public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> value, [ConstantExpected(Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint64x2_t vslei_du(uint64x2_t a, uint8_t ui5)
         ///   LSX: VSLEI.DU Vd.2D, Vj.2D, ui5
         /// </summary>
-        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value,  [ConstantExpected(Min = 0, Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> CompareLessThanOrEqual(Vector128<long> value, [ConstantExpected(Max = (byte)(31))] byte ui5) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vsle_bu(uint8x16_t a, uint8x16_t b)
@@ -3686,43 +3686,43 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint8x16_t vsrlrni_b_h(uint16x8_t left, uint16x8_t right, const int n)
         ///   LSX: VSRLRNI.B.H Vd, Vj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x16_t vsrlrni_b_h(int16x8_t left, int16x8_t right, const int n)
         ///   LSX: VSRLRNI.B.H Vd, Vj, ui4
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vsrlrni_h_w(int32x4_t left, int32x4_t right, const int n)
         ///   LSX: VSRLRNI.H.W Vd, Vj, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vsrlrni_h_w(uint32x4_t left, uint32x4_t right, const int n)
         ///   LSX: VSRLRNI.H.W Vd, Vj, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vsrlrni_w_d(int64x2_t left, int64x2_t right, const int n)
         ///   LSX: VSRLRNI.W.D Vd, Vj, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vsrlrni_w_d(uint64x2_t left, uint64x2_t right, const int n)
         ///   LSX: VSRLRNI.W.D Vd, Vj, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// int64x2_t vsrlrni_d_q(int128x1_t left, int128x1_t right, const int n)
         /////   LSX: VSRLRNI.D.Q Vd, Vj, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vsrlrn_b_h(int16x8_t value, int16x8_t shift)
@@ -3860,25 +3860,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int8x16_t vsrarni_b_h(int16x8_t left, int16x8_t right, const int n)
         ///   LSX: VSRARNI.B.H Vd, Vj, ui4    ///NOTE: The Vd is both input and output, so the left shoule be ref type!!!
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vsrarni_h_w(int32x4_t left, int32x4_t right, const int n)
         ///   LSX: VSRARNI.H.W Vd, Vj, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vsrarni_w_d(int64x2_t left, int64x2_t right, const int n)
         ///   LSX: VSRARNI.W.D Vd, Vj, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// int64x2_t vsrarni_d_q(int128x1_t left, int128x1_t right, const int n)
         /////   LSX: VSRARNI.D.Q Vd, Vj, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vsrarn_b_h(int16x8_t value, int16x8_t shift)
@@ -4436,43 +4436,43 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x8_t vssrlni_b_h(int16x8_t left, int16x8_t right, const byte n)
         ///   LSX: VSSRLNI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftRightLogicalNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrlni_b_h(uint16x8_t left, uint16x8_t right, const byte n)
         ///   LSX: VSSRLNI.B.H Vd.16B, Vj.8H, ui4
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vssrlni_h_w(int32x4_t left, int32x4_t right, const byte n)
         ///   LSX: VSSRLNI.H.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightLogicalNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrlni_h_w(uint32x4_t left, uint32x4_t right, const byte n)
         ///   LSX: VSSRLNI.H.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vssrlni_w_d(int64x2_t left, int64x2_t right, const byte n)
         ///   LSX: VSSRLNI.W.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightLogicalNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vssrlni_w_d(uint64x2_t left, uint64x2_t right, const byte n)
         ///   LSX: VSSRLNI.W.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// int64x2_t vssrlni_d_q(int128x1_t left, int128x1_t right, const byte n)
         /////   LSX: VSSRLNI.D.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightLogicalNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<long> ShiftRightLogicalNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vssrln_b_h(int16x8_t value, int16x8_t shift)
@@ -4514,25 +4514,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x8_t vssrlni_bu_h(uint16x8_t left, uint16x8_t right, const byte n)
         ///   LSX: VSSRLNI.BU.H Vd.16B, Vj.8H, ui4
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrlni_hu_w(uint32x4_t left, uint32x4_t right, const byte n)
         ///   LSX: VSSRLNI.HU.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vssrlni_wu_d(uint64x2_t left, uint64x2_t right, const byte n)
         ///   LSX: VSSRLNI.WU.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// uint64x2_t vssrlni_du_q(uint128x1_t left, uint128x1_t right, const byte n)
         /////   LSX: VSSRLNI.DU.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<ulong> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ulonglong> left, Vector128<ulonglong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<ulong> ShiftRightLogicalNarrowingSaturateUnsignedLower(Vector128<ulonglong> left, Vector128<ulonglong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vssrln_bu_h(uint16x8_t value, uint16x8_t shift)
@@ -4556,25 +4556,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x8_t vssran_b_h(int16x8_t left, int16x8_t right, const byte n)
         ///   LSX: VSSRANI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftRightArithmeticNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vssran_h_w(int32x4_t left, int32x4_t right, const byte n)
         ///   LSX: VSSRANI.H.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightArithmeticNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vssran_w_d(int64x2_t left, int64x2_t right, const byte n)
         ///   LSX: VSSRANI.W.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightArithmeticNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// int64x2_t vssran_d_q(int128x1_t left, int128x1_t right, const byte n)
         /////   LSX: VSSRANI.D.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightArithmeticNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<long> ShiftRightArithmeticNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vssran_b_h(int16x8_t value, int16x8_t shift)
@@ -4598,25 +4598,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x8_t vssrani_bu_h(int16x8_t left, int16x8_t right, const byte n)
         ///   LSX: VSSRANI.BU.H Vd.16B, Vj.8H, ui4
         /// </summary>
-        public static Vector128<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrani_hu_w(int32x4_t left, int32x4_t right, const byte n)
         ///   LSX: VSSRANI.HU.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vssrani_wu_d(int64x2_t left, int64x2_t right, const byte n)
         ///   LSX: VSSRANI.WU.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// uint64x2_t vssrani_du_q(int128x1_t left, int128x1_t right, const byte n)
         /////   LSX: VSSRANI.DU.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<ulong> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<ulong> ShiftRightArithmeticNarrowingSaturateUnsignedLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vssran_bu_h(int16x8_t value, int16x8_t shift)
@@ -4640,43 +4640,43 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x8_t vssrlrni_b_h(int16x8_t left, int16x8_t right, const byte n)
         ///   LSX: VSSRLRNI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrlrni_b_h(uint16x8_t left, uint16x8_t right, const byte n)
         ///   LSX: VSSRLRNI.B.H Vd.16B, Vj.8H, ui4
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vssrlrni_h_w(int32x4_t left, int32x4_t right, const byte n)
         ///   LSX: VSSRLRNI.H.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrlrni_h_w(uint32x4_t left, uint32x4_t right, const byte n)
         ///   LSX: VSSRLRNI.H.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vssrlrni_w_d(int64x2_t left, int64x2_t right, const byte n)
         ///   LSX: VSSRLRNI.W.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vssrlrni_w_d(uint64x2_t left, uint64x2_t right, const byte n)
         ///   LSX: VSSRLRNI.W.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// int64x2_t vssrlrni_d_q(int128x1_t left, int128x1_t right, const byte n)
         /////   LSX: VSSRLRNI.D.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<long> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vssrlrn_b_h(int16x8_t value, int16x8_t shift)
@@ -4718,25 +4718,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x8_t vssrlrni_bu_h(uint16x8_t left, uint16x8_t right, const byte n)
         ///   LSX: VSSRLRNI.BU.H Vd.16B, Vj.8H, ui4
         /// </summary>
-        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrlrni_hu_w(uint32x4_t left, uint32x4_t right, const byte n)
         ///   LSX: VSSRLRNI.HU.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<uint> left, Vector128<uint> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vssrlrni_wu_d(uint64x2_t left, uint64x2_t right, const byte n)
         ///   LSX: VSSRLRNI.WU.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// uint64x2_t vssrlrni_du_q(uint128x1_t left, uint128x1_t right, const byte n)
         /////   LSX: VSSRLRNI.DU.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<ulong> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ulonglong> left, Vector128<ulonglong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<ulong> ShiftRightLogicalRoundedNarrowingSaturateUnsignedLower(Vector128<ulonglong> left, Vector128<ulonglong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vssrlrn_bu_h(uint16x8_t value, uint16x8_t shift)
@@ -4760,25 +4760,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// int16x8_t vssrarn_b_h(int16x8_t left, int16x8_t right, const byte n)
         ///   LSX: VSSRARNI.B.H Vd.16B, Vj.8H, ui4  ///NOTE: the Vd is both input and output.
         /// </summary>
-        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vssrarn_h_w(int32x4_t left, int32x4_t right, const byte n)
         ///   LSX: VSSRARNI.H.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vssrarn_w_d(int64x2_t left, int64x2_t right, const byte n)
         ///   LSX: VSSRARNI.W.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// int64x2_t vssrarn_d_q(int128x1_t left, int128x1_t right, const byte n)
         /////   LSX: VSSRARNI.D.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<long> ShiftRightArithmeticRoundedNarrowingSaturateLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vssrarn_b_h(int16x8_t value, int16x8_t shift)
@@ -4802,25 +4802,25 @@ namespace System.Runtime.Intrinsics.LoongArch
         /// uint16x8_t vssrarni_bu_h(int16x8_t left, int16x8_t right, const byte n)
         ///   LSX: VSSRARNI.BU.H Vd.16B, Vj.8H, ui4
         /// </summary>
-        public static Vector128<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Min = 0, Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<short> left, Vector128<short> right, [ConstantExpected(Max = (byte)(15))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vssrarni_hu_w(int32x4_t left, int32x4_t right, const byte n)
         ///   LSX: VSSRARNI.HU.W Vd.8H, Vj.4W, ui5
         /// </summary>
-        public static Vector128<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Min = 0, Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<int> left, Vector128<int> right, [ConstantExpected(Max = (byte)(31))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vssrarni_wu_d(int64x2_t left, int64x2_t right, const byte n)
         ///   LSX: VSSRARNI.WU.D Vd.4W, Vj.2D, ui6
         /// </summary>
-        public static Vector128<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Min = 0, Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<long> left, Vector128<long> right, [ConstantExpected(Max = (byte)(63))] byte shift) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         ///// uint64x2_t vssrarni_du_q(int128x1_t left, int128x1_t right, const byte n)
         /////   LSX: VSSRARNI.DU.Q Vd.2D, Vj.Q, ui7
         ///// </summary>
-        //public static Vector128<ulong> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Min = 0, Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
+        //public static Vector128<ulong> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower(Vector128<longlong> left, Vector128<longlong> right, [ConstantExpected(Max = (byte)(127))] byte shift) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vssrarn_bu_h(int16x8_t value, int16x8_t shift)
@@ -5879,6 +5879,54 @@ namespace System.Runtime.Intrinsics.LoongArch
         ///   LSX: VFRSTPI.H Vd.8H, Vj.8H, ui3
         /// </summary>
         public static Vector128<short> IndexOfFirstNegativeElement(Vector128<short> value, const byte save) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vsat_b(int8x16_t value, uint8_t ui3)
+        ///   LSX: VSAT.B Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<sbyte> VectorSaturate(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte bits) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vsat_h(int16x8_t value, uint8_t ui4)
+        ///   LSX: VSAT.H Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<short> VectorSaturate(Vector128<short> value, [ConstantExpected(Max = (byte)(15))] byte bits) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vsat_w(int32x4_t value, uint8_t ui5)
+        ///   LSX: VSAT.W Vd.4W, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<int> VectorSaturate(Vector128<int> value, [ConstantExpected(Max = (byte)(31))] byte bits) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vsat_d(int64x2_t value, uint8_t ui6)
+        ///   LSX: VSAT.D Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<long> VectorSaturate(Vector128<long> value, [ConstantExpected(Max = (byte)(63))] byte bits) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vsat_bu(uint8x16_t value, uint8_t ui3)
+        ///   LSX: VSAT.BU Vd.16B, Vj.16B, ui3
+        /// </summary>
+        public static Vector128<byte> VectorSaturateUnsigned(Vector128<byte> value, [ConstantExpected(Max = (byte)(7))] byte bits) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vsat_hu(uint16x8_t value, uint8_t ui4)
+        ///   LSX: VSAT.HU Vd.8H, Vj.8H, ui4
+        /// </summary>
+        public static Vector128<ushort> VectorSaturateUnsigned(Vector128<ushort> value, [ConstantExpected(Max = (byte)(15))] byte bits) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vsat_wu(uint32x4_t value, uint8_t ui5)
+        ///   LSX: VSAT.WU Vd.4W, Vj.4W, ui5
+        /// </summary>
+        public static Vector128<uint> VectorSaturateUnsigned(Vector128<uint> value, [ConstantExpected(Max = (byte)(31))] byte bits) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vsat_du(uint64x2_t value, uint8_t ui6)
+        ///   LSX: VSAT.DU Vd.2D, Vj.2D, ui6
+        /// </summary>
+        public static Vector128<ulong> VectorSaturateUnsigned(Vector128<ulong> value, [ConstantExpected(Max = (byte)(63))] byte bits) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vfclass_s(float32x4_t a)
