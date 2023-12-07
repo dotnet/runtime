@@ -98,15 +98,15 @@ jobs:
         - (Alpine.317.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.17-helix-arm64v8
 
 
-    - ${{ if and(eq(parameters.platform, 'linux_x64'), eq(parameters.jobParameters.experimental, true)) }}:
+    - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - Ubuntu.2204.Amd64.xl.Open.rt
 
-    # Linux x64
-    - ${{ if and(eq(parameters.platform, 'linux_x64'), ne(parameters.jobParameters.experimental, true)) }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Ubuntu.2204.Amd64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Ubuntu.2204.Amd64
+    # # Linux x64
+    # - ${{ if and(eq(parameters.platform, 'linux_x64'), ne(parameters.jobParameters.experimental, true)) }}:
+    #   - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+    #     - Ubuntu.2204.Amd64.Open
+    #   - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+    #     - Ubuntu.2204.Amd64
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
