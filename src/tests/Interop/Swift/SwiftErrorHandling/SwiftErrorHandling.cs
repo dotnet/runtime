@@ -55,7 +55,7 @@ public class ErrorHandlingTests
     
     private static void SetErrorMessageForSwift(string message)
     {
-        var messageBytes = Encoding.UTF8.GetBytes(message);
+        var messageBytes = Encoding.UTF8.GetBytes(message + char.MinValue); // Add null terminator
         SetErrorMessage(messageBytes, messageBytes.Length);
     }
 
