@@ -3096,6 +3096,9 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         }
                     }
                     break;
+
+                    default:
+                        break;
                 }
             }
             break;
