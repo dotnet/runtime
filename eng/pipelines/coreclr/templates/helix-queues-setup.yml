@@ -102,7 +102,7 @@ jobs:
       - Ubuntu.2204.Amd64.xl.Open.rt
 
     # Linux x64
-    - ${{ if and(eq(parameters.platform, 'linux_x64'), ne(parameters.jobParameters.experimental, true) }}:
+    - ${{ if and(eq(parameters.platform, 'linux_x64'), ne(parameters.jobParameters.experimental, true)) }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - Ubuntu.2204.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
