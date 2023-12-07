@@ -116,16 +116,6 @@ namespace System.Threading
             SafeWaitHandle? waitHandle = _waitHandle;
             ObjectDisposedException.ThrowIf(waitHandle is null, this);
 
-            bool isWaitHandleKeywordEnabled = NativeRuntimeEventSource.Log.IsEnabled(
-                EventLevel.Informational,
-                NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
-            if (isWaitHandleKeywordEnabled)
-            {
-                NativeRuntimeEventSource.Log.WaitHandleWaitStart(
-                    NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown,
-                    0);
-            }
-
             bool success = false;
             try
             {
@@ -197,11 +187,6 @@ namespace System.Threading
             {
                 if (success)
                     waitHandle.DangerousRelease();
-
-                if (isWaitHandleKeywordEnabled)
-                {
-                    NativeRuntimeEventSource.Log.WaitHandleWaitStop();
-                }
             }
         }
 
