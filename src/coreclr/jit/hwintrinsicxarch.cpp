@@ -1509,8 +1509,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ConvertToUInt32:
         {
             assert(sig->numArgs == 1);
-#ifdef TARGET_AMD64
             assert(varTypeIsFloating(simdBaseType));
+#ifdef TARGET_AMD64
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
