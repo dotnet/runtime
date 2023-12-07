@@ -462,7 +462,7 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <Target Name="_EmitWasmAssembliesFinal" BeforeTargets="AfterWasmBuildApp">
+  <Target Name="_EmitWasmAssembliesFinal" Returns="@(WasmAssembliesFinal)">
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
       <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />

@@ -16,6 +16,7 @@
       _WasmResolveReferences;
       _WasmBuildNativeCore;
       WasmGenerateAppBundle;
+      _EmitWasmAssembliesFinal;
     </_WasmBuildAppCoreDependsOn>
 
     <WasmNestedPublishAppDependsOn>
