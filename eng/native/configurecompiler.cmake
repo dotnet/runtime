@@ -66,7 +66,7 @@ if (MSVC)
   set_property(GLOBAL PROPERTY CLR_EH_OPTION /EHsc)
 
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
-  add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
+  add_link_options($<$<AND:$<LINK_LANGUAGE:C,CXX,ASM,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>>:/guard:cf>)
 
   # Load all imported DLLs from the System32 directory.
   add_linker_flag(/DEPENDENTLOADFLAG:0x800)
@@ -857,6 +857,8 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
+  add_link_options($<$<LINK_LANGUAGE:RC>:/NOENTRY>) # Resource-only libraries don't have an entry point.
+
   if (CLR_CMAKE_HOST_ARCH_I386)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
@@ -880,8 +882,8 @@ if (MSVC)
     set_property(GLOBAL PROPERTY CLR_EH_CONTINUATION ON)
 
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
-    add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:/guard:ehcont>)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
+    add_link_options($<$<AND:$<LINK_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
+    add_link_options($<$<LINK_LANGUAGE:C,CXX,ASM_MASM>:/CETCOMPAT>)
   endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
@@ -992,6 +994,11 @@ if (CLR_CMAKE_HOST_WIN32)
     if (MC STREQUAL "MC-NOTFOUND")
         message(FATAL_ERROR "MC not found")
     endif()
+
+    # CMake doesn't correctly set up building a module with only resources
+    # even though their docs tell users to do so and incremental builds don't work
+    # unless you do so.  So we need to set up the module link command ourselves.
+    set(CMAKE_RC_CREATE_SHARED_MODULE "${CMAKE_RC_CREATE_SHARED_LIBRARY}")
 
 elseif (NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
     # This is a workaround for upstream issue: https://gitlab.kitware.com/cmake/cmake/-/issues/22995.
