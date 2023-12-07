@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <UseMonoRuntime>true</UseMonoRuntime>
+
+    <!-- Top level -->
+    <WasmBuildAppDependsOn>
+      BeforeWasmBuildApp;
+      _WasmBuildAppCore;
+      AfterWasmBuildApp
+    </WasmBuildAppDependsOn>
+
+    <_WasmBuildAppCoreDependsOn>
+      _InitializeCommonProperties;
+      PrepareInputsForWasmBuild;
+      _WasmResolveReferences;
+      _WasmBuildNativeCore;
+      WasmGenerateAppBundle;
+    </_WasmBuildAppCoreDependsOn>
+
+    <WasmNestedPublishAppDependsOn>
+      _PrepareForNestedPublish;
+      _WasmBuildAppCore;
+    </WasmNestedPublishAppDependsOn>
+  </PropertyGroup>
+
+  <!-- meant to be overridden -->
+  <Target Name="BeforeWasmBuildApp" />
+  <Target Name="AfterWasmBuildApp" />
+</Project>

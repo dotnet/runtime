@@ -17,6 +17,8 @@ OBJDIR?=$(TOP)/artifacts/obj
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=wasi /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open
 
+LOG_PATH=$(TOP)/artifacts/log/$(CONFIG)
+
 all: build-all
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/wasi.wasm.$(CONFIG)
@@ -66,6 +68,9 @@ run-tests-%:
 
 run-build-tests:
 	WASI_SDK_PATH=$(WASI_SDK_PATH) $(DOTNET) build $(TOP)/src/mono/wasi//Wasi.Build.Tests/ /t:Test /bl $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+update-wbt-sdk:
+	$(DOTNET) build $(TOP)/src/mono/wasi/Wasi.Build.Tests/ /t:UpdateWorkload /bl:$(LOG_PATH)/Wasi.Build.Tests.UpdateWorkload.binlog $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \

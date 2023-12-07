@@ -1,2 +1,3 @@
 Wasi.Build.Tests.InvariantTests
+Wasi.Build.Tests.SdkMissingTests
 Wasi.Build.Tests.WasiTemplateTests

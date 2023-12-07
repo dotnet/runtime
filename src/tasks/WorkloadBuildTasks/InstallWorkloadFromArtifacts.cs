@@ -43,6 +43,7 @@ namespace Microsoft.Workload.Build.Tasks
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
         public bool           OnlyUpdateManifests{ get; set; }
+        public string?        IntermediateOutputPath { get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
@@ -59,7 +60,7 @@ namespace Microsoft.Workload.Build.Tasks
 
         public override bool Execute()
         {
-            _tempDir = Path.Combine(Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
+            _tempDir = Path.Combine(IntermediateOutputPath ?? Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
             if (Directory.Exists(_tempDir))
                 Directory.Delete(_tempDir, recursive: true);
             Directory.CreateDirectory(_tempDir);
@@ -103,18 +104,15 @@ namespace Microsoft.Workload.Build.Tasks
                                 : throw new LogAsErrorException($"Could not find any workload variant named '{w.variant}'");
                     }).ToArray();
 
-                foreach (InstallWorkloadRequest req in selectedRequests)
-                {
-                    if (Directory.Exists(req.TargetPath))
-                    {
-                        Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
-                        Directory.Delete(req.TargetPath, recursive: true);
-                    }
-                }
-
                 string lastTargetPath = string.Empty;
                 foreach (InstallWorkloadRequest req in selectedRequests)
                 {
+                    if (File.Exists(req.StampPath))
+                    {
+                        Log.LogMessage(MessageImportance.High, $"{req.TargetPath} already has {req.StampPath}, skipping.");
+                        continue;
+                    }
+
                     if (req.TargetPath != lastTargetPath)
                         Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** Preparing {req.TargetPath} **");
                     lastTargetPath = req.TargetPath;
@@ -125,9 +123,10 @@ namespace Microsoft.Workload.Build.Tasks
 
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
-
-                    File.WriteAllText(req.StampPath, string.Empty);
                 }
+
+                foreach (InstallWorkloadRequest req in selectedRequests)
+                    File.WriteAllText(req.StampPath, string.Empty);
 
                 return !Log.HasLoggedErrors;
             }
