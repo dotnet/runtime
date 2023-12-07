@@ -3077,6 +3077,40 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                             }
                         }
                         break;
+
+                    // box + isinst + ldnull + cgt.un
+                    case CEE_LDNULL:
+                        if ((impGetNonPrefixOpcode(nextCodeAddr + 1, codeEndp) == CEE_CGT_UN) &&
+                            (opts == BoxPatterns::None) &&
+                            (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX_NULLABLE) &&
+                            ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
+                        {
+                            // The code is copied from "BOX + ISINST + BR_TRUE/FALSE" case above.
+
+                            CORINFO_RESOLVED_TOKEN isInstTok;
+                            impResolveToken(codeAddr + 1, &isInstTok, CORINFO_TOKENKIND_Casting);
+
+                            CORINFO_CLASS_HANDLE underlyingCls =
+                                info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
+                            TypeCompareState castResult =
+                                info.compCompHnd->compareTypesForCast(underlyingCls, isInstTok.hClass);
+
+                            if (castResult == TypeCompareState::Must)
+                            {
+                                GenTree* objToBox = impGetNodeAddr(impPopStack().val, CHECK_SPILL_ALL, nullptr);
+                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
+                                JITDUMP("\n Importing BOX; ISINST; LDNULL; CGT_UN as nullableVT.hasValue\n")
+                                return 4 + sizeof(mdToken);
+                            }
+                            if (castResult == TypeCompareState::MustNot)
+                            {
+                                impPopStack();
+                                impPushOnStack(gtNewFalse(), typeInfo(TYP_INT));
+                                JITDUMP("\n Importing BOX; ISINST; LDNULL; CGT_UN as constant (false)\n")
+                                return 4 + sizeof(mdToken);
+                            }
+                        }
+                        break;
                 }
             }
             break;
