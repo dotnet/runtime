@@ -2980,7 +2980,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         {
                             // for ldnull case, we'll replace the whole "box + isinst + ldnull + cgt_un" sequence
                             returnToken = 4 + sizeof(mdToken);
-                            if (impGetNonPrefixOpcode(nextCodeAddr + 1, codeEndp) != CEE_CGT_UN)
+                            if ((opts == BoxPatterns::IsByRefLike) ||
+                                (impGetNonPrefixOpcode(nextCodeAddr + 1, codeEndp) != CEE_CGT_UN))
                             {
                                 break;
                             }
