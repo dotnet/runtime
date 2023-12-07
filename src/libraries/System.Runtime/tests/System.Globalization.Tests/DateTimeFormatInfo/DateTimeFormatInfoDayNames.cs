@@ -86,7 +86,10 @@ namespace System.Globalization.Tests
         public void DayNames_Get_ReturnsExpected_HybridGlobalization(string cultureName, string[] expected)
         {
             var format = new CultureInfo(cultureName).DateTimeFormat;
-            Assert.True(expected == format.DayNames, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.DayNames}");
+            int length = format.DayNames.Length;
+            Assert.True(length == expected.Length, $"Length comparison failed for culture: {cultureName}. Expected: {expected.Length}, Actual: {length}");
+            for (int i = 0; i<length; i++)
+                Assert.True(expected[i] == format.DayNames[i], $"Failed for culture: {cultureName} on index: {i}. Expected: {expected[i]}, Actual: {format.DayNames[i]}");
         }
 
         [Theory]
