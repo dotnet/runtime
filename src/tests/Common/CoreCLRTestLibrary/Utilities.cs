@@ -440,6 +440,8 @@ namespace TestLibrary
 
             exitCode = ExecuteAndUnloadInternal(assemblyPath, args, unloadingCallback, out alcWeakRef);
 
+            // Run the GC and finalizer a few times to ensure that any complicated
+            // object trees and runtime data structures that may keep the ALC alive are freed.
             for (int i = 0; i < 8 && alcWeakRef.IsAlive; i++)
             {
                 GC.Collect();
@@ -475,6 +477,8 @@ namespace TestLibrary
             WeakReference alcWeakRef;
             ExecuteAndUnloadInternal(assemblyPath, typeName, methodName, args, out alcWeakRef);
 
+            // Run the GC and finalizer a few times to ensure that any complicated
+            // object trees and runtime data structures that may keep the ALC alive are freed.
             for (int i = 0; i < 8 && alcWeakRef.IsAlive; i++)
             {
                 GC.Collect();
