@@ -689,6 +689,15 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
     }
+    else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
+    {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isValidUimm12(imm));
+        code |= reg1 << 7;
+        code |= reg2 << 15;
+        code |= imm << 20;
+    }
     else
     {
         NYI_RISCV64("illegal ins within emitIns_R_R_I!");
@@ -698,6 +707,39 @@ void emitter::emitIns_R_R_I(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add an instruction referencing register and two constants.
+ */
+
+void emitter::emitIns_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, ssize_t imm1, ssize_t imm2, insOpts opt) /* = INS_OPTS_NONE */
+{
+    code_t code = emitInsCode(ins);
+
+    if (INS_csrrwi <= ins && ins <= INS_csrrci)
+    {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isValidUimm5(imm1));
+        assert(isValidUimm12(imm2));
+        code |= reg1 << 7;
+        code |= imm1 << 15;
+        code |= imm2 << 20;
+    }
+    else
+    {
+        NYI_RISCV64("illegal ins within emitIns_R_I_I!");
+    }
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
@@ -3351,6 +3393,51 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         }
         case 0x73:
         {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            if (opcode2 != 0)
+            {
+                const char* rd      = RegNames[(code >> 7) & 0x1f];
+                int         csrtype = (code >> 20);
+                if (opcode2 <= 0x3)
+                {
+                    const char* rs1 = RegNames[(code >> 15) & 0x1f];
+                    switch (opcode2)
+                    {
+                        case 0x1: // CSRRW
+                            printf("csrrw           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        case 0x2: // CSRRS
+                            printf("csrrs           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        case 0x3: // CSRRC
+                            printf("csrrc           %s, %d, %s\n", rd, csrtype, rs1);
+                            return;
+                        default:
+                            printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                            break;
+                    }
+                }
+                else
+                {
+                    unsigned imm5 = ((code >> 15) & 0x1f);
+                    switch (opcode2)
+                    {
+                        case 0x5: // CSRRWI
+                            printf("csrrwi           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        case 0x6: // CSRRSI
+                            printf("csrrsi           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        case 0x7: // CSRRCI
+                            printf("csrrci           %s, %d, %d\n", rd, csrtype, imm5);
+                            return;
+                        default:
+                            printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                            break;
+                    }
+                }
+            }
+
             if (code == emitInsCode(INS_ebreak))
             {
                 printf("ebreak\n");
