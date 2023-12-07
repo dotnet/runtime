@@ -112,10 +112,6 @@
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
-  <!--
-    FIXME: audit all the locations where toolchain is used, and ensure setuptoolchain is called before that
-    FIXME: wherever toolchain is used, check version should be called before
-  -->
   <PropertyGroup>
     <PrepareInputsForWasmBuildDependsOn>
       _SetupToolchain;
@@ -287,8 +283,19 @@
       <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     </PropertyGroup>
 
-    <!-- FIXME: move to wasmapp.targets -->
-    <MakeDir Directories="$(WasmCachePath)" Condition="'$(WasmCachePath)' != '' and !Exists($(WasmCachePath))" />
+    <PropertyGroup>
+      <WasmAppDir Condition="'$(WasmAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</WasmAppDir>
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
+      <!-- Ensure this is only the filename -->
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' != ''">$([System.IO.Path]::GetFileName($(WasmMainAssemblyFileName)))</WasmMainAssemblyFileName>
+
+      <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
+
+      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
+      <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
+      <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
+    </PropertyGroup>
+
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
   </Target>
 
@@ -321,20 +328,6 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
 
-    <!-- FIXME: move this pg to Initialize.. -->
-    <PropertyGroup>
-      <WasmAppDir Condition="'$(WasmAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</WasmAppDir>
-      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
-      <!-- Ensure this is only the filename -->
-      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' != ''">$([System.IO.Path]::GetFileName($(WasmMainAssemblyFileName)))</WasmMainAssemblyFileName>
-
-      <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
-
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
-      <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
-    </PropertyGroup>
-
     <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_MainAssemblyPath) == ''"
              Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled."
              Importance="Low" />
@@ -357,7 +350,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- FIXME: should this have a dependson? -->
   <Target Name="WasmGenerateAppBundle" DependsOnTargets="$(WasmGenerateAppBundleDependsOn)" Condition="'$(WasmGenerateAppBundle)' == 'true'" />
 
   <Target Name="_WasmGenerateRuntimeConfig"
@@ -784,6 +776,9 @@
             DependsOnTargets="_CheckToolchainIsExpectedVersion;_WasmWriteRspForCompilingBitcode"
             Returns="@(FileWrites)">
 
+    <Error Condition="'$(_IsToolchainMissing)' == 'true'"
+           Text="$(_ToolchainMissingErrorMessage) SDK is required for building native files." />
+
     <ItemGroup>
       <_BitCodeFile Dependencies="%(_BitCodeFile.Dependencies);$(_WasmDefaultsFlagsRsp);$(_WasmCompileBitcodeRsp)" />
 
@@ -817,7 +812,9 @@
   </Target>
 
   <Target Name="_WasmCompileNativeSourceFiles">
-    <!-- FIXME: check wasmclang exists -->
+    <Error Condition="'$(_IsToolchainMissing)' == 'true'"
+           Text="$(_ToolchainMissingErrorMessage) SDK is required for building native files." />
+
     <ItemGroup>
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" Dependencies="%(_WasmRuntimePackSrcFile.Dependencies);$(_WasmDefaultFlagsRsp);$(_WasmCompileRsp)" />
@@ -845,6 +842,9 @@
   </Target>
 
   <Target Name="_GenerateObjectFilesForSingleFileBundle" Returns="@(_WasmObjectFilesForBundle)" Condition="'$(WasmSingleFileBundle)' == 'true'">
+    <Error Condition="'$(_IsToolchainMissing)' == 'true'"
+           Text="$(_ToolchainMissingErrorMessage) SDK is required for building native files." />
+
     <!-- batched on .BundleRegistrationFunctionName+.BundleFile -->
     <EmitBundleObjectFiles
                 FilesToBundle="@(_WasmBundleItem)"
@@ -878,8 +878,5 @@
   </Target>
 
   <Target Name="WasmLinkDotNet" DependsOnTargets="$(WasmLinkDotNetDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
-
-  <!-- FIXME: temporary, old target which used in BeforeTargets by emsdk.cache -->
-  <!-- FIXME: rename to BeforeWasmBuildNative - public target -->
   <Target Name="_PrepareForWasmBuildNative" />
 </Project>

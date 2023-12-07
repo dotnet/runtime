@@ -72,7 +72,6 @@
     <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
   </ItemGroup>
 
-  <!-- FIXME: use the same name -->
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
@@ -373,7 +372,6 @@
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
 
-      <!-- FIXME: what if this is being modified later? -->
       <WasmToolchainEnvVars Include="@(EmscriptenEnvVars)" />
     </ItemGroup>
 
@@ -392,18 +390,19 @@
                 BundleRegistrationFunctionName="mono_register_assemblies_bundle"
                 BundleFile="wasm_bundled_assemblies.o" />
 
-      <!-- FIXME: always included? -->
-      <_WasmBundleItem
-                Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
-                BundleRegistrationFunctionName="mono_register_icu_bundle"
-                BundleFile="wasm_bundled_icu.o" />
+      <!-- TODO for single file bundle -->
+      <!--<_WasmBundleItem-->
+                <!--Include="@(WasmIcuDataFileNames)"-->
+                <!--BundleRegistrationFunctionName="mono_register_icu_bundle"-->
+                <!--BundleFile="wasm_bundled_icu.o" />-->
 
-      <!-- FIXME: if it is missing? -->
-      <_WasmBundleItem
-                Include="$(_ParsedRuntimeConfigFilePath)"
-                BundleRegistrationFunctionName="mono_register_runtimeconfig_bin"
-                BundleFile="wasm_bundled_runtimeconfig_bin.o" />
+      <!--<_WasmBundleItem-->
+                <!--Include="$(_ParsedRuntimeConfigFilePath)"-->
+                <!--BundleRegistrationFunctionName="mono_register_runtimeconfig_bin"-->
+                <!--BundleFile="wasm_bundled_runtimeconfig_bin.o" />-->
     </ItemGroup>
+
+    <MakeDir Directories="$(WasmCachePath)" Condition="'$(WasmCachePath)' != '' and !Exists($(WasmCachePath))" />
 
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
   </Target>

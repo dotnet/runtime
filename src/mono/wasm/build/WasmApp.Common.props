@@ -5,9 +5,7 @@
 
     <!-- Top level -->
     <WasmBuildAppDependsOn>
-      BeforeWasmBuildApp;
       _WasmBuildAppCore;
-      AfterWasmBuildApp
     </WasmBuildAppDependsOn>
 
     <_WasmBuildAppCoreDependsOn>
@@ -24,8 +22,4 @@
       _WasmBuildAppCore;
     </WasmNestedPublishAppDependsOn>
   </PropertyGroup>
-
-  <!-- meant to be overridden -->
-  <Target Name="BeforeWasmBuildApp" />
-  <Target Name="AfterWasmBuildApp" />
 </Project>
