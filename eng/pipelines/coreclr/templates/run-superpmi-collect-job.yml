@@ -60,7 +60,7 @@ jobs:
       - name: PythonScript
         value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe'
       - name: PipScript
-        value: '$(Build.SourcesDirectory)\venv\Scripts\pip3.exe'
+        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe -m pip'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
       - name: MchFilesLocation
