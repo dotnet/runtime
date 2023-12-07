@@ -8,12 +8,10 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
+using OSThreadPriority = Interop.Kernel32.ThreadPriority;
+
 namespace System.Threading
 {
-#pragma warning disable IDE0065 // Using directives must be placed outside of a namespace declaration
-    using OSThreadPriority = Interop.Kernel32.ThreadPriority;
-#pragma warning restore IDE0065
-
     public sealed partial class Thread
     {
         [ThreadStatic]
