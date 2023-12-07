@@ -387,7 +387,7 @@ fi
 
 if [[ ! -z "$experimentname" ]]; then
     configurations="$configurations ExperimentName=$experimentname"
-    if [[ "$experimentname" == "memoryrandomization" ]]; then
+    if [[ "$experimentname" == "memoryRandomization" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memoryRandomization true"
     fi
 fi
