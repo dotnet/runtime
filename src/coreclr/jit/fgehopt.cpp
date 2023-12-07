@@ -175,10 +175,10 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // keep always and have the sole finally block as a pred.
                 // Remove `leaveBlock` as a successor of the finally `lastBlock`, which also removes the predecessor
                 // edge in `leaveBlock` from the finally return.
-                assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
+                assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                 nextBlock = leaveBlock->Next();
                 fgRemoveEhfSuccessor(lastBlock, leaveBlock);
-                leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+                leaveBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                 // Cleanup the postTryFinallyBlock
@@ -198,7 +198,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         firstBlock->bbRefs = 0;
 
         // Remove the handler block.
-        firstBlock->bbFlags &= ~BBF_DONT_REMOVE;
+        firstBlock->RemoveFlags(BBF_DONT_REMOVE);
         constexpr bool unreachable = true;
         fgRemoveBlock(firstBlock, unreachable);
 
@@ -462,8 +462,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const continuation = leave->GetJumpDest();
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
-        assert((leave->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
-        leave->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+        assert(leave->HasFlag(BBF_KEEP_BBJ_ALWAYS));
+        leave->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
 
         // (3) Cleanup the continuation
         fgCleanupContinuation(continuation);
@@ -564,7 +564,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         firstHandlerBlock->bbRefs -= 1;
 
         // (8) The old try entry no longer needs special protection.
-        firstTryBlock->bbFlags &= ~BBF_DONT_REMOVE;
+        firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // Another one bites the dust...
         emptyCount++;
@@ -1061,13 +1061,13 @@ PhaseStatus Compiler::fgCloneFinally()
             if (block == firstBlock)
             {
                 // Mark the block as the start of the cloned finally.
-                newBlock->bbFlags |= BBF_CLONED_FINALLY_BEGIN;
+                newBlock->SetFlags(BBF_CLONED_FINALLY_BEGIN);
             }
 
             if (block == lastBlock)
             {
                 // Mark the block as the end of the cloned finally.
-                newBlock->bbFlags |= BBF_CLONED_FINALLY_END;
+                newBlock->SetFlags(BBF_CLONED_FINALLY_END);
             }
 
             // Make sure clone block state hasn't munged the try region.
@@ -1158,7 +1158,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     // Delete the leave block, which should be marked as
                     // keep always.
-                    assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
+                    assert(leaveBlock->HasFlag(BBF_KEEP_BBJ_ALWAYS));
                     nextBlock = leaveBlock->Next();
 
                     // All preds should be BBJ_EHFINALLYRETs from the finally.
@@ -1170,7 +1170,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                     assert(leaveBlock->bbRefs == 0);
                     assert(leaveBlock->bbPreds == nullptr);
-                    leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+                    leaveBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                     // Make sure iteration isn't going off the deep end.
@@ -1415,7 +1415,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
 
                 bool isJumpToClonedFinally = false;
 
-                if (succBlock->bbFlags & BBF_CLONED_FINALLY_BEGIN)
+                if (succBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                 {
                     // case (b)
                     isJumpToClonedFinally = true;
@@ -1427,12 +1427,13 @@ void Compiler::fgDebugCheckTryFinallyExits()
                         // case (c)
                         BasicBlock* const succSuccBlock = succBlock->GetJumpDest();
 
-                        if (succSuccBlock->bbFlags & BBF_CLONED_FINALLY_BEGIN)
+                        if (succSuccBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                         {
                             isJumpToClonedFinally = true;
                         }
                     }
                 }
+
                 // ~~case (d) via a fallthrough to an empty block to (b)~~ [no longer possible]
 
                 bool isReturnFromFinally = false;
@@ -1442,13 +1443,13 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // to the right finally -- but there are odd cases
                 // like orphaned second halves of callfinally pairs
                 // that we need to tolerate.
-                if (block->bbFlags & BBF_KEEP_BBJ_ALWAYS)
+                if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
                 {
                     isReturnFromFinally = true;
                 }
 
                 // Case (f)
-                if (block->bbFlags & BBF_CLONED_FINALLY_END)
+                if (block->HasFlag(BBF_CLONED_FINALLY_END))
                 {
                     isReturnFromFinally = true;
                 }
@@ -1495,7 +1496,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // The continuation may be a finalStep block.
     // It is now a normal block, so clear the special keep
     // always flag.
-    continuation->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
+    continuation->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // Remove the GT_END_LFIN from the continuation,

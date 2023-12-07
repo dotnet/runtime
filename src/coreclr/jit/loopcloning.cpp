@@ -2029,7 +2029,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // the loop being cloned.
     unsigned char ambientLoop = m_newToOldLoop[loop->GetIndex()]->lpParent;
 
-    BasicBlock* h = preheader;
     // We're going to transform this loop:
     //
     // preheader --> header
@@ -2041,7 +2040,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // ...
     // slow preheader --> slow header
 
-    assert((preheader->bbFlags & BBF_LOOP_PREHEADER) != 0);
+    assert(preheader->HasFlag(BBF_LOOP_PREHEADER));
 
     // Make a new pre-header block for the fast loop.
     JITDUMP("Create new preheader block for fast loop\n");
@@ -2051,11 +2050,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
     fastPreheader->bbWeight     = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     fastPreheader->bbNatLoopNum = ambientLoop;
-    fastPreheader->bbFlags |= BBF_LOOP_PREHEADER;
+    fastPreheader->SetFlags(BBF_LOOP_PREHEADER);
 
     if (fastPreheader->JumpsToNext())
     {
-        fastPreheader->bbFlags |= BBF_NONE_QUIRK;
+        fastPreheader->SetFlags(BBF_NONE_QUIRK);
     }
 
     assert(preheader->KindIs(BBJ_ALWAYS));
@@ -2066,7 +2065,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             loop->GetHeader()->bbNum, fastPreheader->bbNum, loop->GetHeader()->bbNum);
 
     // 'preheader' is no longer the loop preheader; 'fastPreheader' is!
-    preheader->bbFlags &= ~BBF_LOOP_PREHEADER;
+    preheader->RemoveFlags(BBF_LOOP_PREHEADER);
     optUpdateLoopHead((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable), preheader, fastPreheader);
 
     // We are going to create blocks after the lexical last block. If it falls
@@ -2144,7 +2143,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         // and adding compensation for over-estimated instructions.
         if (newBlk->isLoopAlign())
         {
-            newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
+            newBlk->RemoveFlags(BBF_LOOP_ALIGN);
             JITDUMP("Removing LOOP_ALIGN flag from cloned loop in " FMT_BB "\n", newBlk->bbNum);
         }
 #endif
@@ -2153,10 +2152,10 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
         // we don't add the slow loop or its child loops to the loop table. It would be simplest to
         // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
-        if ((newBlk->bbFlags & BBF_LOOP_PREHEADER) != 0)
+        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
         {
             JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
-            newBlk->bbFlags &= ~BBF_LOOP_PREHEADER;
+            newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
         }
 
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
@@ -2185,7 +2184,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 newRedirBlk->copyEHRegion(newPred);
                 newRedirBlk->bbNatLoopNum = ambientLoop;
                 newRedirBlk->bbWeight     = blk->Next()->bbWeight;
-                newRedirBlk->bbFlags |= blk->Next()->bbFlags & (BBF_RUN_RARELY | BBF_PROF_WEIGHT);
+                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
                 newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
 
                 // TODO-Quirk: This next block is not part of the loop and
@@ -2307,7 +2306,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // was inserted by the above function.
     preheader->SetJumpDest(preheader->Next());
     fgAddRefPred(preheader->Next(), preheader);
-    preheader->bbFlags |= BBF_NONE_QUIRK;
+    preheader->SetFlags(BBF_NONE_QUIRK);
 
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.
     assert(condLast->NextIs(fastPreheader));

@@ -6947,7 +6947,7 @@ public:
             assert(lpHead->GetUniqueSucc() == lpEntry);
 
             // The loop block must be marked as a pre-header.
-            assert(lpHead->bbFlags & BBF_LOOP_PREHEADER);
+            assert(lpHead->HasFlag(BBF_LOOP_PREHEADER));
 
             // The loop entry must have a single non-loop predecessor, which is the pre-header.
             // We can't assume here that the bbNum are properly ordered, so we can't do a simple lpContained()
