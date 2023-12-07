@@ -532,6 +532,9 @@ private:
         BBehfDesc*  bbJumpEhf;  // BBJ_EHFINALLYRET descriptor
     };
 
+    // Points to the successor of a BBJ_COND block if bbJumpDest is not taken
+    BasicBlock* bbNormalJumpDest;
+
 public:
     static BasicBlock* New(Compiler* compiler);
     static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
@@ -573,6 +576,8 @@ public:
 
     void SetNext(BasicBlock* next)
     {
+        // TODO: remove
+        bbNormalJumpDest = next;
         bbNext = next;
         if (next)
         {
@@ -637,6 +642,20 @@ public:
         // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
         bbJumpDest = jumpDest;
         assert(!HasJumpDest() || HasInitializedJumpDest());
+    }
+
+    BasicBlock* GetNormalJumpDest() const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(bbNormalJumpDest != nullptr);
+        return bbNormalJumpDest;
+    }
+
+    void SetNormalJumpDest(BasicBlock* jumpDest)
+    {
+        assert(KindIs(BBJ_COND));
+        assert(jumpDest != nullptr);
+        bbNormalJumpDest = jumpDest;
     }
 
     void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
