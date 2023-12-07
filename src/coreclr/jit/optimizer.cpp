@@ -6388,7 +6388,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
     assert(exprBb != nullptr);
     assert(loop->EntryEdges().size() == 1);
 
-    BasicBlock* preheader = loop->EntryEdges()[0]->getSourceBlock();
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
 #ifdef DEBUG
     if (verbose)
     {
@@ -6847,7 +6847,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         FlowGraphNaturalLoop* childLoop = m_oldToNewLoop[childLoopNum];
 
         assert(childLoop->EntryEdges().size() == 1);
-        BasicBlock* childPreHead = childLoop->EntryEdges()[0]->getSourceBlock();
+        BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
         {
             if (fgSsaDomTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))
@@ -7789,7 +7789,7 @@ void Compiler::optHoistCandidate(GenTree*              tree,
 
     // We should already have a pre-header for the loop.
     assert(loop->EntryEdges().size() == 1);
-    BasicBlock* preheader = loop->EntryEdges()[0]->getSourceBlock();
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
 
     // If the block we're hoisting from and the pre-header are in different EH regions, don't hoist.
     // TODO: we could probably hoist things that won't raise exceptions, such as constants.
