@@ -802,7 +802,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     assert(fgFuncletsCreated);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
     unsigned int funcIdx = eh->ebdFuncIndex;
@@ -1518,7 +1518,7 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
     gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_IDX_LEN;
+        block->SetFlags(BBF_HAS_IDX_LEN);
     }
     optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
@@ -1542,7 +1542,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, uns
     gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+        block->SetFlags(BBF_HAS_MD_IDX_LEN);
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrLen;
@@ -1568,7 +1568,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     arrOp->SetIndirExceptionFlags(this);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+        block->SetFlags(BBF_HAS_MD_IDX_LEN);
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -1589,7 +1589,7 @@ inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
     assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
-    basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
+    basicBlock->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
     return nullCheck;
 }
@@ -3020,7 +3020,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (!(block->bbFlags & BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
+    if (!block->HasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
     {
         return false;
     }
@@ -3622,26 +3622,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 
         optAssertionReset(newAssertionCount);
     }
-}
-
-inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
-{
-    if (lpFieldsModified == nullptr)
-    {
-        lpFieldsModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
-    }
-    lpFieldsModified->Set(fldHnd, fieldKind, FieldHandleSet::Overwrite);
-}
-
-inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
-{
-    if (lpArrayElemTypesModified == nullptr)
-    {
-        lpArrayElemTypesModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::ClassHandleSet(comp->getAllocatorLoopHoist());
-    }
-    lpArrayElemTypesModified->Set(structHnd, true, ClassHandleSet::Overwrite);
 }
 
 inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
@@ -5029,15 +5009,15 @@ unsigned Compiler::fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPosto
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func)
 {
-    BitVecTraits traits(m_blocksSize, m_tree->GetCompiler());
+    BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
     bool result = BitVecOps::VisitBits(&traits, m_blocks, [=](unsigned index) {
         // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
         // loop block rpo index = head block rpoIndex + index
         // loop block po index = PostOrderCount - 1 - loop block rpo index
         //                     = headPreOrderIndex - index
-        unsigned poIndex = m_header->bbPostorderNum - index;
-        assert(poIndex < m_tree->GetPostOrderCount());
-        return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
@@ -5061,11 +5041,11 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
 {
-    BitVecTraits traits(m_blocksSize, m_tree->GetCompiler());
+    BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
-        unsigned poIndex = m_header->bbPostorderNum - index;
-        assert(poIndex < m_tree->GetPostOrderCount());
-        return func(m_tree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
