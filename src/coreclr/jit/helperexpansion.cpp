@@ -463,7 +463,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     assert(opts.IsReadyToRun());
-    BasicBlock* block = *pBlock;
+    BasicBlock*     block  = *pBlock;
     CorInfoHelpFunc helper = call->GetHelperNum();
 
     bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE) ||
