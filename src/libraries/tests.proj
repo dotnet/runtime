@@ -533,6 +533,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
 
+    <!-- EXPERIMENTAL DISABLE -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
+
   </ItemGroup>
 
   <ItemGroup>
