@@ -2765,16 +2765,9 @@ ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum val
 {
     assert(MapIsPrecise(map));
 
-    BasicBlock* const     bb     = m_pComp->compCurBB;
-    FlowGraphNaturalLoop* bbLoop = m_pComp->m_blockToLoop->GetLoop(bb);
-
-    // TODO-Quirk: Remove
-    while ((bbLoop != nullptr) && (m_pComp->m_newToOldLoop[bbLoop->GetIndex()] == nullptr))
-    {
-        bbLoop = bbLoop->GetParent();
-    }
-
-    unsigned loopIndex = bbLoop == nullptr ? UINT_MAX : bbLoop->GetIndex();
+    BasicBlock* const     bb        = m_pComp->compCurBB;
+    FlowGraphNaturalLoop* bbLoop    = m_pComp->m_blockToLoop->GetLoop(bb);
+    unsigned              loopIndex = bbLoop == nullptr ? UINT_MAX : bbLoop->GetIndex();
 
     ValueNum const result = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopIndex);
 
@@ -5229,14 +5222,7 @@ ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types type)
     if (block != nullptr)
     {
         FlowGraphNaturalLoop* loop = m_pComp->m_blockToLoop->GetLoop(block);
-
-        // TODO-Quirk: Remove
-        while ((loop != nullptr) && (m_pComp->m_newToOldLoop[loop->GetIndex()] == nullptr))
-        {
-            loop = loop->GetParent();
-        }
-
-        loopIndex = loop == nullptr ? ValueNumStore::NoLoop : loop->GetIndex();
+        loopIndex                  = loop == nullptr ? ValueNumStore::NoLoop : loop->GetIndex();
     }
 
     // VNForFunc(typ, func, vn) but bypasses looking in the cache
@@ -10038,7 +10024,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
             ValueNum              newMemoryVN;
             FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(blk);
-            if ((loop != nullptr) && (loop->GetHeader() == blk) && (m_newToOldLoop[loop->GetIndex()] != nullptr))
+            if ((loop != nullptr) && (loop->GetHeader() == blk))
             {
                 newMemoryVN = fgMemoryVNForLoopSideEffects(memoryKind, blk, loop);
             }

@@ -7035,14 +7035,6 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         return;
     }
 
-    // TODO-Quirk: Remove
-    if (m_newToOldLoop[updateLoop->GetIndex()] == nullptr)
-    {
-        return;
-    }
-
-    assert(!m_newToOldLoop[updateLoop->GetIndex()]->lpIsRemoved());
-
     // If the update block is not the header of a loop containing
     // block, we can also ignore the update.
     //
@@ -8436,17 +8428,8 @@ void Compiler::optComputeLoopSideEffects()
         // limited treatment assignments it has seen the value of.
         loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* loopBlock) {
             FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(loopBlock);
-
-            // TODO-Quirk: Remove
-            while ((loop != nullptr) && (m_newToOldLoop[loop->GetIndex()] == nullptr))
-            {
-                loop = loop->GetParent();
-            }
-
-            if (loop != nullptr)
-            {
-                optComputeLoopSideEffectsOfBlock(loopBlock, loop);
-            }
+            assert(loop != nullptr);
+            optComputeLoopSideEffectsOfBlock(loopBlock, loop);
 
             return BasicBlockVisit::Continue;
         });
@@ -8735,21 +8718,6 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
     }
 }
 
-// TODO-Quirk: Remove
-static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
-{
-    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
-    {
-        if (comp->m_newToOldLoop[child->GetIndex()] != nullptr)
-            return true;
-
-        if (HasOldChildLoop(comp, child))
-            return true;
-    }
-
-    return false;
-}
-
 // Marks the containsCall information to "loop" and any parent loops.
 void Compiler::AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop)
 {
@@ -8758,7 +8726,7 @@ void Compiler::AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop)
     // If this is the inner most loop, reset the LOOP_ALIGN flag
     // because a loop having call will not likely to benefit from
     // alignment
-    if (!HasOldChildLoop(this, loop))
+    if (loop->GetChild() == nullptr)
     {
         BasicBlock* top = loop->GetLexicallyTopMostBlock();
 
