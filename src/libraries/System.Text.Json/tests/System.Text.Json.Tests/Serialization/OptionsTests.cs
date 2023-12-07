@@ -1416,10 +1416,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36605")]
         public static void ConverterRead_VerifyInvalidTypeToConvertFails()
         {
-            var options = new JsonSerializerOptions();
+            var options = new JsonSerializerOptions(JsonSerializerOptions.Default);
+            options.MakeReadOnly();
             Type typeToConvert = typeof(KeyValuePair<int, int>);
             byte[] bytes = Encoding.UTF8.GetBytes(@"{""Key"":1,""Value"":2}");
 

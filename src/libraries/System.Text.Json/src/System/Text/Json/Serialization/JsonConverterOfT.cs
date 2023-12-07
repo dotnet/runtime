@@ -151,6 +151,11 @@ namespace System.Text.Json.Serialization
 
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value, out bool isPopulatedValue)
         {
+            if (typeToConvert != typeof(T))
+            {
+                ThrowHelper.ThrowInvalidOperationException($"Type '{typeToConvert}' is not compatible with converter '{GetType()}'.");
+            }
+
             // For perf and converter simplicity, handle null here instead of forwarding to the converter.
             if (reader.TokenType == JsonTokenType.Null && !HandleNullOnRead && !state.IsContinuation)
             {
