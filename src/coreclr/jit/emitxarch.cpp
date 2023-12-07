@@ -6565,7 +6565,7 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
  *  Add an instruction with two register operands.
  */
 
-void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
+void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
     if (IsMovInstruction(ins))
     {
@@ -6586,6 +6586,13 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idInsFmt(fmt);
     id->idReg1(reg1);
     id->idReg2(reg2);
+
+    if ((instOptions & INS_OPTS_b_MASK) != INS_OPTS_NONE)
+    {
+        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
@@ -11659,6 +11666,7 @@ void emitter::emitDispIns(
                 default:
                 {
                     printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
+                    emitDispEmbRounding(id);
                     break;
                 }
             }

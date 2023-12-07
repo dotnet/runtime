@@ -762,6 +762,19 @@ void CodeGen::genHWIntrinsic_R_RM(
         assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, rmOp);
     }
 
+    if (node->GetEmbRoundingMode() != 0)
+    {
+        // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
+        OperandDesc rmOpDesc = genOperandDesc(rmOp);
+        assert(rmOpDesc.GetKind() == OperandKind::Reg);
+        regNumber rmOpReg = rmOpDesc.GetReg();
+
+        uint8_t mode        = node->GetEmbRoundingMode();
+        insOpts instOptions = GetEmitter()->GetEmbRoundingMode(mode);
+        GetEmitter()->emitIns_R_R(ins, attr, reg, rmOpReg, instOptions);
+        return;
+    }
+
     switch (rmOpDesc.GetKind())
     {
         case OperandKind::ClsVar:

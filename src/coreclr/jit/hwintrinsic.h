@@ -616,8 +616,20 @@ struct HWIntrinsicInfo
         switch (id)
         {
             case NI_AVX512F_Add:
+            case NI_AVX512F_Divide:
+            case NI_AVX512F_Multiply:
+            case NI_AVX512F_Subtract:
+
+            case NI_AVX512F_AddScalar:
+            case NI_AVX512F_DivideScalar:
+            case NI_AVX512F_MultiplyScalar:
+            case NI_AVX512F_SubtractScalar:
+            case NI_AVX512F_SqrtScalar:
                 return 3;
 
+            case NI_AVX512F_Sqrt:
+                return 2;
+            
             default:
                 unreached();
         }

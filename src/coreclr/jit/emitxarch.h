@@ -635,7 +635,7 @@ void emitIns_R_I(instruction ins,
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
-void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
+void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival);
 
