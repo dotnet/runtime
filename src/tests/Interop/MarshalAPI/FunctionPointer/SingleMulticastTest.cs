@@ -12,6 +12,7 @@ partial class FunctionPtr
     public static DelegateWithLong s_DelWithLongBool = new DelegateWithLong(MethodWithLongBool);
     public static MultiDelegateWithLong s_MultidelWithLong = new MultiDelegateWithLong(MethodWithLong);
 
+    [Fact]
     public static void RunGetFcnPtrSingleMulticastTest()
     {
         Console.WriteLine($"Running {nameof(RunGetFcnPtrSingleMulticastTest)}...");
