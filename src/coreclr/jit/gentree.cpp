@@ -18560,6 +18560,34 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             break;
         }
 
+        case CORINFO_HELP_BOX:
+        {
+            GenTree* typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            if (typeArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                objClass    = gtGetHelperArgClassHandle(typeArg);
+                *pIsNonNull = false;
+                *pIsExact   = false;
+            }
+        }
+        break;
+
+        case CORINFO_HELP_BOX_NULLABLE:
+        {
+            GenTree* typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            if (typeArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                CORINFO_CLASS_HANDLE nullableCls = gtGetHelperArgClassHandle(typeArg);
+                if (nullableCls != NO_CLASS_HANDLE)
+                {
+                    objClass    = info.compCompHnd->getTypeForBox(nullableCls);
+                    *pIsNonNull = false;
+                    *pIsExact   = false;
+                }
+            }
+        }
+        break;
+
         case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTARRAY:
