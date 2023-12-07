@@ -56,11 +56,11 @@ jobs:
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonSetupScript
-        value: 'echo'
+        value: 'py -3 -m venv $(Build.SourcesDirectory)\venv'
       - name: PythonScript
-        value: 'py -3'
+        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe'
       - name: PipScript
-        value: 'py -3 -m pip'
+        value: '$(Build.SourcesDirectory)\venv\Scripts\pip3.exe'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
       - name: MchFilesLocation
