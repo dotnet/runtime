@@ -13870,7 +13870,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // An equal number means pred == block (block is a self-loop).
                     // Either way the assertion info is not available, and we must assume the worst.
                     //
-                    if (pred->bbPostorderNum <= block->bbPostorderNum)
+                    if (pred->bbNewPostorderNum <= block->bbNewPostorderNum)
                     {
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
