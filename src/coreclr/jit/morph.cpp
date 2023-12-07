@@ -9145,7 +9145,7 @@ DONE_MORPHING_CHILDREN:
             {
                 tree->AsOp()->gtOp1 = op2;
                 tree->AsOp()->gtOp2 = op1;
-                tree->ChangeOper(GenTree::SwapRelop(tree->OperGet()), GenTree::PRESERVE_VN);
+                tree->gtOper        = GenTree::SwapRelop(tree->OperGet());
                 std::swap(op1, op2);
                 oper = tree->OperGet();
             }
