@@ -8,9 +8,10 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-using Internal.Reflection.Augments;
 
 using CorElementType = System.Reflection.CorElementType;
 using EETypeElementType = Internal.Runtime.EETypeElementType;
@@ -20,28 +21,25 @@ namespace System
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
 #pragma warning disable IDE0060
-        internal static EnumInfo GetEnumInfo(Type enumType, bool getNames = true)
+        internal static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
             Debug.Assert(enumType != null);
-            Debug.Assert(enumType is RuntimeType);
             Debug.Assert(enumType.IsEnum);
 
-            RuntimeType rt = (RuntimeType)enumType;
-            return Type.GetTypeCode(RuntimeAugments.GetEnumUnderlyingType(rt.TypeHandle)) switch
+            return enumType.TypeHandle.ToEETypePtr().ElementType switch
             {
-                TypeCode.SByte or TypeCode.Byte => GetEnumInfo<byte>(rt),
-                TypeCode.Int16 or TypeCode.UInt16 => GetEnumInfo<ushort>(rt),
-                TypeCode.Int32 or TypeCode.UInt32 => GetEnumInfo<uint>(rt),
-                TypeCode.Int64 or TypeCode.UInt64 => GetEnumInfo<ulong>(rt),
+                EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
+                EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
+                EETypeElementType.Int32 or EETypeElementType.UInt32 => GetEnumInfo<uint>(enumType),
+                EETypeElementType.Int64 or EETypeElementType.UInt64 => GetEnumInfo<ulong>(enumType),
                 _ => throw new NotSupportedException(),
             };
         }
 
-        internal static EnumInfo<TStorage> GetEnumInfo<TStorage>(Type enumType, bool getNames = true)
+        internal static EnumInfo<TStorage> GetEnumInfo<TStorage>(RuntimeType enumType, bool getNames = true)
             where TStorage : struct, INumber<TStorage>
         {
             Debug.Assert(enumType != null);
-            Debug.Assert(enumType is RuntimeType);
             Debug.Assert(enumType.IsEnum);
             Debug.Assert(
                 typeof(TStorage) == typeof(byte) ||
@@ -59,7 +57,7 @@ namespace System
                         values[i] = (TStorage)valuesAsObject[i];
                     }
                     return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
-            });
+                });
         }
 #pragma warning restore
 
@@ -151,19 +149,6 @@ namespace System
             Debug.Assert(enumType.IsEnum);
 
             return GetEnumInfo(enumType).UnderlyingType;
-        }
-
-        //
-        // Checks if value.GetType() matches enumType exactly.
-        //
-        internal static bool ValueTypeMatchesEnumType(Type enumType, object value)
-        {
-            EETypePtr enumEEType;
-            if (!enumType.TryGetEEType(out enumEEType))
-                return false;
-            if (!(enumEEType == value.GetEETypePtr()))
-                return false;
-            return true;
         }
 
         [Conditional("BIGENDIAN")]

@@ -15,9 +15,9 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CMAKE_HOST_UNIX)
     # Make sure a public symbol is created for Instrumentor_GetInsCount
     if(CLR_CMAKE_HOST_APPLE)
-        add_link_options(LINKER:-export_dynamic)
+        add_linker_flag(-Wl,-export_dynamic)
     else()
-        add_link_options(LINKER:--export-dynamic)
+        add_linker_flag(-Wl,--export-dynamic)
     endif(CLR_CMAKE_HOST_APPLE)
 endif(CLR_CMAKE_HOST_UNIX)
 

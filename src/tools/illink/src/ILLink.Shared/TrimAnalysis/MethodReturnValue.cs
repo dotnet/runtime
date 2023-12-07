@@ -4,7 +4,12 @@
 // This is needed due to NativeAOT which doesn't enable nullable globally yet
 #nullable enable
 
+using ILLink.Shared.TypeSystemProxy;
+
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal sealed partial record class MethodReturnValue : ValueWithDynamicallyAccessedMembers;
+	internal sealed partial record class MethodReturnValue : ValueWithDynamicallyAccessedMembers, IValueWithStaticType
+	{
+		public TypeProxy? StaticType { get; }
+	}
 }

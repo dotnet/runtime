@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Buffers;
+using System.Text;
 
 namespace System
 {
@@ -301,7 +301,7 @@ namespace System
             bool iriParsing = Uri.IriParsingStatic(syntax)
                                 && ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.EscapeUnescape);
 
-            for (int next = start; next < end; )
+            for (int next = start; next < end;)
             {
                 char ch = (char)0;
 

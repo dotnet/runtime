@@ -1195,43 +1195,33 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			int subtype = decode_value (p, &p);
 
-			if (!target)
-				return FALSE;
-
-			if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC) {
-				if (strcmp (target->name, "runtime_invoke_dynamic") != 0)
-					return FALSE;
-				ref->method = target;
-			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT) {
-				/* Direct wrapper */
+			switch (subtype) {
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC: {
+				ref->method = mono_marshal_get_runtime_invoke_dynamic ();
+				break;
+			}
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT: {
 				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, FALSE);
-			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL) {
-				/* Virtual direct wrapper */
+				break;
+			}
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL: {
 				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, TRUE);
-			} else {
-				MonoMethodSignature *sig;
-
-				sig = decode_signature_with_target (module, NULL, p, &p);
-				info = mono_marshal_get_wrapper_info (target);
-				g_assert (info);
-
-				if (info->subtype != subtype) {
-					g_free (sig);
-					return FALSE;
-				}
-				g_assert (info->d.runtime_invoke.sig);
-				const gboolean same_sig = mono_metadata_signature_equal (sig, info->d.runtime_invoke.sig);
-				g_free (sig);
-				if (same_sig)
-					ref->method = target;
-				else
-					return FALSE;
+				break;
+			}
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL: {
+				MonoMethodSignature *sig = decode_signature_with_target (module, NULL, p, &p);
+				ref->method = mono_marshal_get_runtime_invoke_for_sig (sig);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
 			}
 			break;
 		}
@@ -3969,6 +3959,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_GC_NURSERY_BITS:
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		break;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		ji->data.uindex = decode_value (p, &p);

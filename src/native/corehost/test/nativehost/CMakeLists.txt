@@ -41,7 +41,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND HEADERS
         ./comhost_test.h)
 
-    add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/DELAYLOAD:nethost.dll>)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
 endif()
 
 include(../../hostmisc/hostmisc.cmake)

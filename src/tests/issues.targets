@@ -712,6 +712,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfig/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfigTester/*">
+            <Issue>Test expects being run with corerun</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
             <Issue>Just-in-time compilation test</Issue>
         </ExcludeList>
@@ -753,9 +756,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: SAFEARRAY</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/WeakReference/WeakReferenceTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: AssemblyLoadContext.LoadFromAssemblyPath</Issue>
@@ -2443,10 +2443,6 @@
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
         </ExcludeList>
 
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
             <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
         </ExcludeList>
@@ -3035,9 +3031,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleakthd/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>tries to access project source code - not supported on mobile and wasm</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
             <Issue>https://github.com/dotnet/runtime/issues/56814</Issue>
         </ExcludeList>
@@ -3236,6 +3229,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/pollingcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorTwoThreadsThreeCC/**">
+            <Issue>System.Threading.Thread.ThrowIfNoThreadStart: PlatformNotSupportedException</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
@@ -3349,9 +3345,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/**/*">
             <Issue>https://github.com/dotnet/runtime/issues/73539</Issue>
@@ -3606,10 +3599,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Span/Indexer/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
-            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">

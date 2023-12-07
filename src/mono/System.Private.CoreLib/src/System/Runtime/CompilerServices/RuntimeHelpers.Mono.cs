@@ -30,11 +30,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
-        public static int OffsetToStringData
-        {
-            [Intrinsic]
-            get => OffsetToStringData;
-        }
+        public static int OffsetToStringData => string.OFFSET_TO_STRING;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int InternalGetHashCode(object? o);
@@ -43,7 +39,7 @@ namespace System.Runtime.CompilerServices
         public static int GetHashCode(object? o)
         {
             // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.GetHashCode function
-            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+            if (Threading.ObjectHeader.TryGetHashCode(o, out int hash))
                 return hash;
             return InternalGetHashCode(o);
         }
@@ -60,7 +56,7 @@ namespace System.Runtime.CompilerServices
         internal static int TryGetHashCode(object? o)
         {
             // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.TryGetHashCode function
-            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+            if (Threading.ObjectHeader.TryGetHashCode(o, out int hash))
                 return hash;
             return 0;
         }

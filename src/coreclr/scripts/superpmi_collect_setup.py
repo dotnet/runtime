@@ -405,7 +405,7 @@ def setup_benchmark(workitem_directory, arch):
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
         # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "8.0-preview", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
@@ -561,7 +561,9 @@ def main(main_args):
 
         # Build nativeaot tests
         if coreclr_args.collection_type == "nativeaot":
+            build_file = "build.cmd" if is_windows else "build.sh"
             tests_build_file = "build.cmd" if is_windows else "build.sh"
+            run_command([os.path.join(source_directory, build_file), "Tools.ILLink", "-arch", arch, "-c", coreclr_args.build_type])
             run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", arch, coreclr_args.build_type, "tree", "nativeaot/SmokeTests"], source_directory)
 
         # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a

@@ -7,11 +7,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime.Augments;
-
+using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.FieldAccessors;
 using Internal.Reflection.Execution.MethodInvokers;
+using Internal.Reflection.Execution.PayForPlayExperience;
+using Internal.Reflection.Extensions.NonPortable;
+using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
 
 namespace Internal.Reflection.Execution
 {
@@ -21,59 +24,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        public sealed override Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
-        {
-            return RuntimeAugments.NewArray(typeHandleForArrayType, count);
-        }
-
-        public sealed override Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds)
-        {
-            return RuntimeAugments.NewMultiDimArray(typeHandleForArrayType, lengths, lowerBounds);
-        }
-
-        public sealed override RuntimeTypeHandle ProjectionTypeForArrays
-        {
-            get
-            {
-                return RuntimeAugments.ProjectionTypeForArrays;
-            }
-        }
-
-        public sealed override bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
-        {
-            return RuntimeAugments.IsAssignableFrom(dstType, srcType);
-        }
-
-        public sealed override bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
-        {
-            return RuntimeAugments.TryGetBaseType(typeHandle, out baseTypeHandle);
-        }
-
-        public sealed override IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.TryGetImplementedInterfaces(typeHandle);
-        }
-
-        public sealed override void VerifyInterfaceIsImplemented(RuntimeTypeHandle typeHandle, RuntimeTypeHandle ifaceHandle)
-        {
-            if (RuntimeAugments.IsInterface(typeHandle))
-            {
-                throw new ArgumentException(SR.Argument_InterfaceMap);
-            }
-
-            if (!RuntimeAugments.IsInterface(ifaceHandle))
-            {
-                throw new ArgumentException(SR.Arg_MustBeInterface);
-            }
-
-            if (RuntimeAugments.IsAssignableFrom(ifaceHandle, typeHandle))
-            {
-                return;
-            }
-
-            throw new ArgumentException(SR.Arg_NotFoundIFace);
-        }
-
         public sealed override void GetInterfaceMap(Type instanceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods)
         {
             MethodInfo[] ifaceMethods = interfaceType.GetMethods();
@@ -88,7 +38,7 @@ namespace Internal.Reflection.Execution
                     goto notFound;
                 }
 
-                MethodBase methodBase = RuntimeAugments.Callbacks.GetMethodBaseFromStartAddressIfAvailable(classRtMethodHandle);
+                MethodBase methodBase = ReflectionExecution.GetMethodBaseFromStartAddressIfAvailable(classRtMethodHandle);
                 if (methodBase == null)
                 {
                     goto notFound;
@@ -154,8 +104,49 @@ namespace Internal.Reflection.Execution
 
         public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)
         {
-            return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
-                ;
+            return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk;
+        }
+
+        public override MethodInfo GetDelegateMethod(Delegate del)
+        {
+            return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
+        }
+
+        public override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        {
+            return ReflectionExecution.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
+        }
+
+        public override IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
+        {
+            return TypeLoaderEnvironment.GetStaticClassConstructionContext(typeHandle);
+        }
+
+        // Obtain it lazily to avoid using RuntimeAugments.Callbacks before it is initialized
+        public override AssemblyBinder AssemblyBinder => AssemblyBinderImplementation.Instance;
+
+        public override Exception CreateMissingMetadataException(Type pertainant)
+        {
+            return MissingMetadataExceptionCreator.Create(pertainant);
+        }
+
+        public override Exception CreateNonInvokabilityException(MemberInfo pertainant)
+        {
+            string resourceName = SR.Object_NotInvokable;
+
+            if (pertainant is MethodBase methodBase)
+            {
+                resourceName = methodBase.IsConstructedGenericMethod ? SR.MakeGenericMethod_NoMetadata : SR.Object_NotInvokable;
+                if (methodBase is ConstructorInfo)
+                {
+                    Type declaringType = methodBase.DeclaringType;
+                    if (declaringType.BaseType == typeof(MulticastDelegate))
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_CannotInvokeDelegateCtor);
+                }
+            }
+
+            string pertainantString = MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(pertainant);
+            return new NotSupportedException(SR.Format(resourceName, pertainantString ?? "?"));
         }
     }
 }

@@ -439,15 +439,11 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void EmitDebugFunctionInfo(IntPtr objWriter, byte[] methodName, int methodSize, uint methodTypeIndex);
         public void EmitDebugFunctionInfo(ObjectNode node, int methodSize)
         {
-            uint methodTypeIndex = 0;
-
-            var methodNode = node as IMethodNode;
-            if (methodNode != null)
+            if (node is IMethodNode methodNode)
             {
-                methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
+                uint methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
+                EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, methodSize, methodTypeIndex);
             }
-
-            EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, methodSize, methodTypeIndex);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -1217,11 +1213,16 @@ namespace ILCompiler.DependencyAnalysis
                         objectWriter.EmitDebugFunctionInfo(node, nodeContents.Data.Length);
                     }
 
+                    // Ensure any allocated MethodTables have debug info
                     if (node is ConstructedEETypeNode MethodTable)
                     {
                         objectWriter._userDefinedTypeDescriptor.GetTypeIndex(MethodTable.Type, needsCompleteType: true);
                     }
                 }
+
+                // Ensure all fields associated with generated static bases have debug info
+                foreach (MetadataType typeWithStaticBase in objectWriter._nodeFactory.MetadataManager.GetTypesWithStaticBases())
+                    objectWriter._userDefinedTypeDescriptor.GetTypeIndex(typeWithStaticBase, needsCompleteType: true);
 
                 // Native side of the object writer is going to do more native memory allocations.
                 // Free up as much memory as possible so that we don't get OOM killed.

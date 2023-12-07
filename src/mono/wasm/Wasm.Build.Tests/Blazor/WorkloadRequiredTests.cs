@@ -84,7 +84,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         if (invariant)
             AddItemsPropertiesToProject(projectFile, extraProperties: "<InvariantGlobalization>true</InvariantGlobalization>");
 
-        string counterPath = Path.Combine(Path.GetDirectoryName(projectFile)!, "Components", "Pages", "Counter.razor");
+        string counterPath = Path.Combine(Path.GetDirectoryName(projectFile)!, "Pages", "Counter.razor");
         string allText = File.ReadAllText(counterPath);
         string ccText = "currentCount++;";
         if (allText.IndexOf(ccText) < 0)

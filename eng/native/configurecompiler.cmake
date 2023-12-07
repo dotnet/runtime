@@ -68,10 +68,6 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
-  # Load all imported DLLs from the System32 directory.
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEPENDENTLOADFLAG:0x800")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEPENDENTLOADFLAG:0x800")
-
   # Linker flags
   #
   set (WINDOWS_SUBSYSTEM_VERSION 6.01)
@@ -82,55 +78,63 @@ if (MSVC)
     set(WINDOWS_SUBSYSTEM_VERSION 6.03) #windows subsystem - arm64 minimum is 6.03
   endif ()
 
-  #shrink pdb size
-  add_link_options(/PDBCOMPRESS)
-
-  add_link_options(/DEBUG)
-  add_link_options(/DEBUGTYPE:CV,FIXUP)
-
-  # Do not create Side-by-Side Assembly Manifest
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/MANIFEST:NO>)
+  #Do not create Side-by-Side Assembly Manifest
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
   # can handle addresses larger than 2 gigabytes
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/LARGEADDRESSAWARE>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
+  #shrink pdb size
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS")
 
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/IGNORE:4197,4013,4254,4070,4221>)
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUGTYPE:CV,FIXUP")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4197,4013,4254,4070,4221")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}")
 
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUGTYPE:CV,FIXUP")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
   # For sanitized builds, we bump up the stack size to 8MB to match behavior on Unix platforms.
   # Sanitized builds can use significantly more stack space than non-sanitized builds due to instrumentation.
   # We don't want to change the default stack size for all builds, as that will likely cause confusion and will
   # increase memory usage.
   if (CLR_CMAKE_ENABLE_SANITIZERS)
-    add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/STACK:0x800000>)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x800000")
   else()
-    add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/STACK:0x180000>)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x180000")
   endif()
 
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
-    add_link_options(/sourcelink:${CLR_SOURCELINK_FILE_PATH})
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
 
   if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
     # Debug build specific flags
-    # The Ninja generator doesn't appear to have the default `/INCREMENTAL` that
+    # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
     # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
-    add_link_options($<$<CONFIG:DEBUG>:/INCREMENTAL:NO>)
-    add_link_options($<$<CONFIG:DEBUG>:/OPT:NOICF>)
-    add_link_options($<$<CONFIG:DEBUG>:/OPT:NOREF>)
+    add_linker_flag(/INCREMENTAL:NO DEBUG)
+    add_linker_flag(/OPT:NOREF DEBUG)
+    add_linker_flag(/OPT:NOICF DEBUG)
   endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
-  # Options for all but DEBUG
-  add_link_options($<$<CONFIG:CHECKED,RELWITHDEBINFO,RELEASE>:/INCREMENTAL:NO>)
 
   # Checked build specific flags
-  add_link_options($<$<CONFIG:CHECKED>:/OPT:NOICF>)
+  add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
+  add_linker_flag(/OPT:REF CHECKED)
+  add_linker_flag(/OPT:NOICF CHECKED)
 
   # Release build specific flags
-  add_link_options($<$<CONFIG:RELEASE,RELWITHDEBINFO>:/OPT:ICF>)
-
-  # Set LTCG for RELEASE and RELWITHDEBINFO builds that are compatible
+  add_linker_flag(/LTCG RELEASE)
+  add_linker_flag(/OPT:REF RELEASE)
+  add_linker_flag(/OPT:ICF RELEASE)
+  add_linker_flag(/INCREMENTAL:NO RELEASE)
   set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+
+  # ReleaseWithDebugInfo build specific flags
+  add_linker_flag(/LTCG RELWITHDEBINFO)
+  add_linker_flag(/OPT:REF RELWITHDEBINFO)
+  add_linker_flag(/OPT:ICF RELWITHDEBINFO)
   set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
 
 elseif (CLR_CMAKE_HOST_UNIX)
@@ -267,7 +271,7 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
   else()
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
-    add_link_options("${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
+    add_linker_flag("${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
   endif()
 endif()
 
@@ -279,20 +283,17 @@ endif()
 #
 if(CLR_CMAKE_HOST_UNIX)
   foreach(ADDTL_LINKER_FLAG ${CLR_ADDITIONAL_LINKER_FLAGS})
-    add_link_options(${ADDTL_LINKER_FLAG})
-    if(${ADDTL_LINKER_FLAG} MATCHES "-fuse_ld=")
-        set(FUSE_LD ${ADDTL_LINKER_FLAG})
-    endif()
+    add_linker_flag(${ADDTL_LINKER_FLAG})
   endforeach()
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options("LINKER:--build-id=sha1")
-  add_link_options("LINKER:-z,relro,-z,now")
+  add_linker_flag(-Wl,--build-id=sha1)
+  add_linker_flag(-Wl,-z,relro,-z,now)
 elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options("LINKER:--build-id=sha1")
+  add_linker_flag("-Wl,--build-id=sha1")
 elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
@@ -300,10 +301,10 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
 elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_definitions(-D_XOPEN_SOURCE)
-  add_link_options("LINKER:-bind_at_load")
+  add_linker_flag("-Wl,-bind_at_load")
 elseif(CLR_CMAKE_HOST_HAIKU)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options("LINKER:--no-undefined")
+  add_linker_flag("-Wl,--no-undefined")
 endif()
 
 #------------------------------------
@@ -559,6 +560,11 @@ if (CLR_CMAKE_HOST_UNIX)
   if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
     add_compile_options(-Wimplicit-fallthrough)
   endif()
+
+  # VLAs are non standard in C++, aren't available on Windows and
+  # are a warning by default since clang 18.
+  # For consistency, enable warnings for all compiler versions.
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wvla>)
 
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
@@ -872,7 +878,7 @@ if (MSVC)
 
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
     add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:/guard:ehcont>)
-    add_link_options($<$<AND:$<NOT:$<LINK_LANGUAGE:RC>>>:/CETCOMPAT>)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
   endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
@@ -888,8 +894,8 @@ if (MSVC)
     # We won't do this for sanitized builds as the dynamic CRT is not compatible with the static sanitizer runtime and
     # the dynamic sanitizer runtime is not redistributable. Sanitized runtime builds are not production-time scenarios
     # so we don't get the benefits of a dynamic CRT for sanitized runtime builds.
-    add_link_options($<$<CONFIG:RELEASE>:/NODEFAULTLIB:libucrt.lib>)
-    add_link_options($<$<CONFIG:RELEASE>:/DEFAULTLIB:ucrt.lib>)
+    add_linker_flag(/NODEFAULTLIB:libucrt.lib RELEASE)
+    add_linker_flag(/DEFAULTLIB:ucrt.lib RELEASE)
   endif()
 
   add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/ZH:SHA_256>)
@@ -924,7 +930,7 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
     add_compile_options(-fprofile-arcs)
     add_compile_options(-ftest-coverage)
-    add_link_options(--coverage)
+    add_linker_flag(--coverage)
   else()
     message(FATAL_ERROR "Code coverage builds not supported on current platform")
   endif(CLR_CMAKE_HOST_UNIX)

@@ -63,7 +63,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
-    add_link_options("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
+    add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
 
 else()
     if(CLR_CMAKE_TARGET_FREEBSD)
@@ -98,17 +98,17 @@ add_definitions(-DFEATURE_STATIC_HOST=1)
 
 if(CLR_CMAKE_TARGET_WIN32)
     # Disable manifest generation into the file .exe on Windows
-    add_link_options(/MANIFEST:NO)
+    add_linker_flag("/MANIFEST:NO")
 
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
-    add_link_options(/INCREMENTAL:NO)
+    add_linker_flag("/INCREMENTAL:NO")
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options(/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll)
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_link_options(/DELAYLOAD:version.dll)
+    add_linker_flag("/DELAYLOAD:version.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -215,6 +215,10 @@ elseif (CLR_CMAKE_TARGET_SUNOS)
      LIST(APPEND NATIVE_LIBS
          socket
      )
+elseif (CLR_CMAKE_TARGET_HAIKU)
+     LIST(APPEND NATIVE_LIBS
+         network
+     )
 endif(CLR_CMAKE_TARGET_APPLE)
 
 # On *BSD, we always use the libunwind that's part of the OS
@@ -237,7 +241,7 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD
 endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
 if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_RISCV64)
-    add_link_options(LINKER:-z,notext)
+    add_linker_flag(-Wl,-z,notext)
 endif()
 
 if(CLR_CMAKE_TARGET_APPLE)

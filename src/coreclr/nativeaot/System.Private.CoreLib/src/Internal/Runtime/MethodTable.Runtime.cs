@@ -41,12 +41,13 @@ namespace Internal.Runtime
             }
         }
 
-        // Returns true for actual primitives only, returns false for enums
+        // Returns true for actual primitives only, returns false for enums and void
         internal bool IsActualPrimitive
         {
             get
             {
-                return IsPrimitive && NonArrayBaseType == MethodTable.Of<ValueType>();
+                return (ElementType is > EETypeElementType.Void and < EETypeElementType.ValueType)
+                    && NonArrayBaseType == MethodTable.Of<ValueType>();
             }
         }
     }

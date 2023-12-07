@@ -4,10 +4,10 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -462,7 +462,8 @@ namespace System.Linq.Expressions.Compiler
             return cr.Finish(expr);
         }
 
-        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "A NewArrayExpression has already been created. The original creator will get a warning that it is not trim compatible.")]
         private Result RewriteNewArrayExpression(Expression expr, Stack stack)
         {
             var node = (NewArrayExpression)expr;

@@ -17,13 +17,13 @@
 //    Reflection.Execution.dll
 
 using System;
-using System.Reflection;
-using System.Runtime;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using Internal.Runtime.CompilerHelpers;
@@ -44,12 +44,6 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         // One-time initialization.
         //==============================================================================================
-        [CLSCompliant(false)]
-        public static void Initialize(ReflectionExecutionDomainCallbacks callbacks)
-        {
-            s_reflectionExecutionDomainCallbacks = callbacks;
-        }
-
         [CLSCompliant(false)]
         public static void InitializeLookups(TypeLoaderCallbacks callbacks)
         {
@@ -126,17 +120,9 @@ namespace Internal.Runtime.Augments
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pImmutableLengths, lengths.Length);
         }
 
-        public static unsafe bool MightBeUnconstructedType(RuntimeTypeHandle type)
-        {
-            // If there are no vtable slots the type is likely an unconstructed type.
-            // But could also be an interface with no virtuals. We can't distinguish those.
-            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots != 0);
-            return CreateEETypePtr(type).ToPointer()->NumVtableSlots == 0;
-        }
-
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetRuntimeHelperForType(type.ToEETypePtr(), RuntimeHelperKind.AllocateObject);
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -332,11 +318,6 @@ namespace Internal.Runtime.Augments
             ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
-        public static object GetEnumValue(Enum e)
-        {
-            return e.GetValue();
-        }
-
         public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
         {
             Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);
@@ -448,41 +429,9 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        //
-        // Return a type's transitive implemented interface list using the runtime type system. If the underlying runtime type system does not support
-        // this operation, return null and TypeInfo.ImplementedInterfaces will fall back to metadata. Note that returning null is not the same thing
-        // as returning a 0-length enumerable.
-        //
-        public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
-        {
-            EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef || eeType.IsFunctionPointer)
-                return null;
-
-            LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
-            for (int i = 0; i < eeType.Interfaces.Count; i++)
-            {
-                EETypePtr ifcEEType = eeType.Interfaces[i];
-                RuntimeTypeHandle ifcrth = new RuntimeTypeHandle(ifcEEType);
-                implementedInterfaces.Add(ifcrth);
-            }
-            return implementedInterfaces.ToArray();
-        }
-
-        private static RuntimeTypeHandle CreateRuntimeTypeHandle(EETypePtr eeType)
-        {
-            return new RuntimeTypeHandle(eeType);
-        }
-
-        private static EETypePtr CreateEETypePtr(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return runtimeTypeHandle.ToEETypePtr();
-        }
-
         public static int GetGCDescSize(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return RuntimeImports.RhGetGCDescSize(eeType);
+            return RuntimeImports.RhGetGCDescSize(typeHandle.ToEETypePtr());
         }
 
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
@@ -492,14 +441,12 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
         {
-            EETypePtr eeInterface = typeHandle.ToEETypePtr().Interfaces[index];
-            return CreateRuntimeTypeHandle(eeInterface);
+            return new RuntimeTypeHandle(typeHandle.ToEETypePtr().Interfaces[index]);
         }
 
         public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
         {
-            EETypePtr eeInterfaceType = CreateEETypePtr(interfaceTypeHandle);
-            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(eeInterfaceType, slotNumber);
+            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(interfaceTypeHandle.ToEETypePtr(), slotNumber);
             if (cell == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return cell;
@@ -571,13 +518,13 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
         {
-            return RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot));
+            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToEETypePtr(), interfaceType.ToEETypePtr(), checked((ushort)slot));
         }
 
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
             EETypePtr genericContextPtr = default;
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot), &genericContextPtr);
+            IntPtr result = RuntimeImports.RhResolveDispatchOnType(instanceType.ToEETypePtr(), interfaceType.ToEETypePtr(), checked((ushort)slot), &genericContextPtr);
             if (result != IntPtr.Zero)
                 genericContext = new RuntimeTypeHandle(genericContextPtr);
             else
@@ -587,7 +534,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr ResolveDispatch(object instance, RuntimeTypeHandle interfaceType, int slot)
         {
-            return RuntimeImports.RhResolveDispatch(instance, CreateEETypePtr(interfaceType), checked((ushort)slot));
+            return RuntimeImports.RhResolveDispatch(instance, interfaceType.ToEETypePtr(), checked((ushort)slot));
         }
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
@@ -741,34 +688,9 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
-        {
-            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, factory, contextObject, out auxResult);
-        }
-
         //==============================================================================================
         // Internals
         //==============================================================================================
-        [CLSCompliant(false)]
-        public static ReflectionExecutionDomainCallbacks CallbacksIfAvailable
-        {
-            get
-            {
-                return s_reflectionExecutionDomainCallbacks;
-            }
-        }
-
-        [CLSCompliant(false)]
-        public static ReflectionExecutionDomainCallbacks Callbacks
-        {
-            get
-            {
-                ReflectionExecutionDomainCallbacks callbacks = s_reflectionExecutionDomainCallbacks;
-                Debug.Assert(callbacks != null);
-                return callbacks;
-            }
-        }
 
         internal static TypeLoaderCallbacks TypeLoaderCallbacksIfAvailable
         {
@@ -809,7 +731,6 @@ namespace Internal.Runtime.Augments
             return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
-        private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
 
         public static object CreateThunksHeap(IntPtr commonStubAddress)
@@ -879,27 +800,12 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhpCancelThreadAbort(thread);
         }
 
-        public static void RhYield()
-        {
-            RuntimeImports.RhYield();
-        }
-
         public static bool SupportsRelativePointers
         {
             get
             {
                 return Internal.Runtime.MethodTable.SupportsRelativePointers;
             }
-        }
-
-        public static bool IsPrimitive(RuntimeTypeHandle typeHandle)
-        {
-            return typeHandle.ToEETypePtr().IsPrimitive && !typeHandle.ToEETypePtr().IsEnum;
-        }
-
-        public static byte[] ComputePublicKeyToken(byte[] publicKey)
-        {
-            return System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
         }
     }
 }

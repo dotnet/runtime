@@ -15,8 +15,9 @@ parameters:
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
         eng/testing/workloads-testing.targets
-        src/libraries/sendtohelix-wasm.targets
+        src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
+        src/libraries/sendtohelix-wasm.targets
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
@@ -212,6 +213,7 @@ jobs:
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
+      - src/mono/mono.proj
       - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
@@ -226,7 +228,12 @@ jobs:
       - src/mono/wasm/host/*
       - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
+      - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/wasi/build/*
+      - src/mono/wasi/runtime/*
+      - src/mono/wasi/testassets/*
+      - src/mono/wasi/Wasi.Build.Tests/*
       - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
@@ -266,12 +273,14 @@ jobs:
       - src/mono/wasi/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
+      - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    # Wasm except Wasm.build.Tests, and debugger
+    # Wasm except Wasm.build.Tests, Wasi.build.Tests and debugger
     - subset: wasm_specific_except_wbt_dbg
       combined: true
       include:
@@ -285,7 +294,13 @@ jobs:
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/wasm/debugger/*
       - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
+      - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/wasi/build/*
+      - src/mono/wasi/runtime/*
+      - src/mono/wasi/testassets/*
+      - src/mono/wasi/Wasi.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
         src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
       - src/mono/nuget/Microsoft.NET.Workload*

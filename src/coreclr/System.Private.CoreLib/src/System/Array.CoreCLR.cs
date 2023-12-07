@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,9 +14,25 @@ namespace System
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstance")]
+        private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds,
+            [MarshalAs(UnmanagedType.Bool)] bool fromArrayType, ObjectHandleOnStack retArray);
 
+        private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            Array? retArray = null;
+            InternalCreate(new QCallTypeHandle(ref elementType), rank, pLengths, pLowerBounds,
+                fromArrayType: false, ObjectHandleOnStack.Create(ref retArray));
+            return retArray!;
+        }
+
+        private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            Array? retArray = null;
+            InternalCreate(new QCallTypeHandle(ref arrayType), rank, pLengths, pLowerBounds,
+                fromArrayType: true, ObjectHandleOnStack.Create(ref retArray));
+            return retArray!;
+        }
 
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
@@ -184,7 +199,7 @@ namespace System
                 nint flattenedIndex = 0;
                 for (int i = 0; i < indices.Length; i++)
                 {
-                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length  + i);
+                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length + i);
                     int length = Unsafe.Add(ref bounds, i);
                     if ((uint)index >= (uint)length)
                         ThrowHelper.ThrowIndexOutOfRangeException();

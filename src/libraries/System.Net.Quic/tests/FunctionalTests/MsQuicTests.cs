@@ -551,6 +551,49 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [Fact]
+        public async Task ConnectWithCertificate_MissingTargetHost_Succeeds()
+        {
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates("localhost");
+            try
+            {
+                var quicOptions = new QuicListenerOptions()
+                {
+                    // loopback may resolve to IPv6
+                    ListenEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+                await using QuicListener listener = await CreateQuicListener(quicOptions);
+
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(new DnsEndPoint("localhost", listener.LocalEndPoint.Port));
+                // Do not set target host on client options, it should be taken from remote endpoint and used for both ClientHello SNI and Server cert validation
+                clientOptions.ClientAuthenticationOptions.TargetHost = null;
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+                    Assert.Equal(SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                    return true;
+                };
+
+                await CreateQuicConnection(clientOptions);
+            }
+            finally
+            {
+                foreach (X509Certificate2 cert in chain)
+                {
+                    cert.Dispose();
+                }
+                certificate.Dispose();
+            }
+        }
+
         [ConditionalTheory]
         [InlineData("127.0.0.1", true)]
         [InlineData("::1", true)]
@@ -728,7 +771,7 @@ namespace System.Net.Quic.Tests
 
             // Open one stream, second call should block
             await using var stream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
-            await stream.WriteAsync(new byte[64*1024], completeWrites: true);
+            await stream.WriteAsync(new byte[64 * 1024], completeWrites: true);
             await Assert.ThrowsAsync<TimeoutException>(() => clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional).AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
 
             await clientConnection.DisposeAsync();
@@ -1056,6 +1099,7 @@ namespace System.Net.Quic.Tests
 
         [Fact]
         [OuterLoop("May take several seconds")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85331", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrLower))]
         public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
         {
             const int writeSize = 64 * 1024;
