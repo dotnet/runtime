@@ -59,7 +59,7 @@ namespace System.Reflection.Emit.Tests
                 // Type param
                 tbg.DefineField("FieldGParam", tbg.GetGenericArguments()[0], FieldAttributes.Public | FieldAttributes.Static);
                 // Open type
-                tbg.DefineField("FieldOpen", typeof(List<>).MakeGenericType([tbg.GetGenericArguments()[1]]), FieldAttributes.Public | FieldAttributes.Static);
+                tbg.DefineField("FieldListOfT", typeof(List<>).MakeGenericType([tbg.GetGenericArguments()[1]]), FieldAttributes.Public | FieldAttributes.Static);
                 tbg.CreateType();
 
                 TypeBuilder tbg2 = module.DefineType("GType2", TypeAttributes.Public, typeof(object));
@@ -84,7 +84,7 @@ namespace System.Reflection.Emit.Tests
                 // Type pointer
                 tb3.DefineField("FieldPointer", tb1.MakePointerType(), FieldAttributes.Public | FieldAttributes.Static);
                 // Generic instance
-                tb3.DefineField("FieldGInst", typeof(List<int>), FieldAttributes.Public | FieldAttributes.Static);
+                tb3.DefineField("FieldGListOfInt", typeof(List<int>), FieldAttributes.Public | FieldAttributes.Static);
                 // Generic instance of tbuilder
                 tb3.DefineField("FieldGInstTBuilder", tbg2.MakeGenericType([typeof(int), typeof(string)]), FieldAttributes.Public | FieldAttributes.Static);
                 tb3.CreateType();
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit.Tests
                 // Fields
                 TypeBuilder tbFields = module.DefineType("Type4", TypeAttributes.Public, typeof(object));
                 // Field with a constant
-                tbFields.DefineField("FieldInt", typeof(int), FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasDefault).SetConstant(42);
+                tbFields.DefineField("FieldInt", typeof(int), FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasDefault | FieldAttributes.Literal).SetConstant(42);
                 // Field with an offset
                 tbFields.DefineField("FieldOffset", typeof(int), FieldAttributes.Public | FieldAttributes.Static).SetOffset(64);
                 // Modreq/modopt
@@ -142,6 +142,7 @@ namespace System.Reflection.Emit.Tests
                 // method
                 var mb = tb5.DefineMethod("Method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), cmodsReq1, cmodsOpt1, [typeof(int), typeof(object)], new Type[][] { cmodsReq1, null }, new Type[][] { cmodsOpt1, null });
                 mb.SetImplementationFlags(MethodImplAttributes.NoInlining);
+                mb.GetILGenerator().Emit(OpCodes.Ldc_I4_0);
                 mb.GetILGenerator().Emit(OpCodes.Ret);
                 gParams = mb.DefineGenericParameters("K", "T");
                 // Constraints
@@ -158,6 +159,7 @@ namespace System.Reflection.Emit.Tests
                 // override method
                 tb5.AddInterfaceImplementation(typeof(IComparable));
                 mb = tb5.DefineMethod("MethodOverride", MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.Standard | CallingConventions.HasThis, typeof(int), [typeof(object)]);
+                mb.GetILGenerator().Emit(OpCodes.Ldc_I4_1);
                 mb.GetILGenerator().Emit(OpCodes.Ret);
                 tb5.DefineMethodOverride(mb, typeof(IComparable).GetMethod("CompareTo"));
                 tb5.CreateType();
@@ -165,10 +167,12 @@ namespace System.Reflection.Emit.Tests
                 // Properties
                 TypeBuilder tb_properties = module.DefineType("TypeProperties", TypeAttributes.Public, typeof(object));
                 var mbGet = tb_properties.DefineMethod("GetMethod1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+                mbGet.GetILGenerator().Emit(OpCodes.Ldc_I4_1);
                 mbGet.GetILGenerator().Emit(OpCodes.Ret);
-                var mbSet = tb_properties.DefineMethod("SetMethod1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+                var mbSet = tb_properties.DefineMethod("SetMethod1", MethodAttributes.Public, CallingConventions.Standard, typeof(void), [typeof(int)]);
                 mbSet.GetILGenerator().Emit(OpCodes.Ret);
                 var mbOther = tb_properties.DefineMethod("OtherMethod1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+                mbOther.GetILGenerator().Emit(OpCodes.Ldc_I4_1);
                 mbOther.GetILGenerator().Emit(OpCodes.Ret);
                 var propertyb = tb_properties.DefineProperty("AProperty", PropertyAttributes.HasDefault, typeof(int), [typeof(object)]);
                 propertyb.SetCustomAttribute(cattrb);
@@ -179,21 +183,21 @@ namespace System.Reflection.Emit.Tests
                 tb_properties.CreateType();
 
                 // Events TODO: not supported yet
-                /*TypeBuilder tb_events = module.DefineType("type_events", TypeAttributes.Public, typeof(object));
-                var mb_add = tb_events.DefineMethod("add_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
-                mb_add.GetILGenerator().Emit(OpCodes.Ret);
-                var mb_raise = tb_events.DefineMethod("raise_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
-                mb_raise.GetILGenerator().Emit(OpCodes.Ret);
-                var mb_remove = tb_events.DefineMethod("remove_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
-                mb_remove.GetILGenerator().Emit(OpCodes.Ret);
-                var eventb = tb_events.DefineEvent("Event1", EventAttributes.SpecialName, typeof(int));
+                /*TypeBuilder tbEvents = module.DefineType("typeEvents", TypeAttributes.Public, typeof(object));
+                var mbAdd = tbEvents.DefineMethod("add_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
+                mbAdd.GetILGenerator().Emit(OpCodes.Ret);
+                var mbRaise = tbEvents.DefineMethod("raise_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
+                mbRaise.GetILGenerator().Emit(OpCodes.Ret);
+                var mbRemove = tbEvents.DefineMethod("remove_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
+                mbRemove.GetILGenerator().Emit(OpCodes.Ret);
+                var eventb = tbEvents.DefineEvent("Event1", EventAttributes.SpecialName, typeof(int));
                 eventb.SetCustomAttribute(cattrb);
-                eventb.SetAddOnMethod(mb_add);
-                eventb.SetRaiseMethod(mb_raise);
-                eventb.SetRemoveOnMethod(mb_remove);
-                tb_events.CreateType();*/
+                eventb.SetAddOnMethod(mbAdd);
+                eventb.SetRaiseMethod(mbRaise);
+                eventb.SetRemoveOnMethod(mbRemove);
+                tbEvents.CreateType();*/
                 saveMethod.Invoke(ab, [file.Path]);
-
+                Console.WriteLine("Assembly saved to " + file.Path);
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 CheckAssembly(assemblyFromDisk);
             }
@@ -270,14 +274,13 @@ namespace System.Reflection.Emit.Tests
             // Type param encoding
             var field = gtype1.GetField("FieldGParam");
             Assert.Equal(gparams[0], field.FieldType);
-            field = gtype1.GetField("FieldOpen");
+            field = gtype1.GetField("FieldListOfT");
             Assert.Equal("List`1", field.FieldType.Name);
 
             // Type encoding
             var t = a.GetType("Type3");
             Assert.Equal(typeNested, t.GetField("FieldNested").FieldType);
-            // TODO: FieldType is not loaded
-            //Assert.Equal(typeof(TimeZoneInfo.AdjustmentRule), t.GetField("FieldNestedRef").FieldType);
+            Assert.Equal(typeof(TimeZoneInfo.AdjustmentRule).FullName, t.GetField("FieldNestedRef").FieldType.FullName);
             Assert.Equal(typeof(int).FullName, t.GetField("FieldInt").FieldType.FullName);
             Assert.Equal(typeof(object[]).FullName, t.GetField("FieldArrayTyperef").FieldType.FullName);
             Assert.Equal(type1.MakeArrayType(), t.GetField("FieldSzArray").FieldType);
@@ -287,7 +290,7 @@ namespace System.Reflection.Emit.Tests
             arraytype1 = Array.CreateInstance(typeof(int), [10, 10], [1, 1]).GetType();
             Assert.Equal(arraytype1.FullName, t.GetField("FieldMultiDimArray").FieldType.FullName);
             Assert.Equal(type1.MakePointerType(), t.GetField("FieldPointer").FieldType);
-            Assert.Equal(typeof(List<int>).FullName, t.GetField("FieldGInst").FieldType.FullName);
+            Assert.Equal(typeof(List<int>).FullName, t.GetField("FieldGListOfInt").FieldType.FullName);
             Type gType = t.GetField("FieldGInstTBuilder").FieldType;
             Assert.True(gType.IsConstructedGenericType);
             Assert.Equal(2, gType.GenericTypeArguments.Length);
@@ -298,7 +301,7 @@ namespace System.Reflection.Emit.Tests
             var type4 = a.GetType("Type4");
             field = type4.GetField("FieldInt");
             Assert.NotNull(field);
-            //Assert.Equal(42, field.GetRawConstantValue());// Not for RoField
+            Assert.Equal(42, field.GetRawConstantValue());
             field = type4.GetField("FieldOffset");
             Assert.NotNull(field);
             /* TODO: Not supported yet
@@ -415,8 +418,8 @@ namespace System.Reflection.Emit.Tests
             CheckCattr(prop.GetCustomAttributesData());
 
             // Events
-            /*var type_events = a.GetType("type_events");
-            var ev = type_events.GetEvent("Event1");
+            /*var typeEvents = a.GetType("type_events");
+            var ev = typeEvents.GetEvent("Event1");
             Assert.NotNull(ev);
             var m = ev.AddMethod;
             Assert.NotNull(m);

@@ -426,13 +426,23 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    typeHandle = AddTypeReference(type, GetAssemblyReference(type.Assembly));
+                    typeHandle = AddTypeReference(type, GetResolutionScopeHandle(type));
                 }
 
                 _typeReferences.Add(type, typeHandle);
             }
 
             return typeHandle;
+        }
+
+        private EntityHandle GetResolutionScopeHandle(Type type)
+        {
+            if (type.IsNested)
+            {
+                return GetTypeReferenceOrSpecificationHandle(type.DeclaringType!);
+            }
+
+            return GetAssemblyReference(type.Assembly);
         }
 
         private TypeSpecificationHandle AddTypeSpecification(Type type) =>
@@ -572,10 +582,10 @@ namespace System.Reflection.Emit
                 bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
-        private TypeReferenceHandle AddTypeReference(Type type, AssemblyReferenceHandle parent) =>
+        private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope) =>
             _metadataBuilder.AddTypeReference(
-                resolutionScope: parent,
-                @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
+                resolutionScope: resolutionScope,
+                @namespace: (type.Namespace == null || type.IsNested) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
                 name: _metadataBuilder.GetOrAddString(type.Name));
 
         private MemberReferenceHandle AddMemberReference(string memberName, EntityHandle parent, BlobBuilder signature) =>
