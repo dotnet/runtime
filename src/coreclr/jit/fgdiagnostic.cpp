@@ -1724,11 +1724,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 }
             }
 
-            // All the regions have been added. Now, output them.
-            DBEXEC(verbose, rgnGraph.Dump());
-            INDEBUG(rgnGraph.Verify());
-            rgnGraph.Output(fgxFile);
-
             // Add regions for the loops. Note that loops are assumed to be contiguous from `lpTop` to `lpBottom`.
 
             if (includeOldLoops)
@@ -1768,6 +1763,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpTop, loop.lpBottom);
                 }
             }
+
+            // All the regions have been added. Now, output them.
+            DBEXEC(verbose, rgnGraph.Dump());
+            INDEBUG(rgnGraph.Verify());
+            rgnGraph.Output(fgxFile);
         }
 
         if (includeLoops && (m_loops != nullptr))
