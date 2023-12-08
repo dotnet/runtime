@@ -533,7 +533,7 @@ private:
         BBehfDesc*  bbEhfTarget;  // BBJ_EHFINALLYRET descriptor
     };
 
-    // Points to the successor of a BBJ_COND block if bbTarget is not taken
+    // Points to the successor of a BBJ_COND block if bbTrueTarget is not taken
     BasicBlock* bbFalseTarget;
 
 public:
