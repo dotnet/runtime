@@ -89,26 +89,7 @@ namespace System
         }
 #endif
 
-        private static event EventHandler? s_processExit;
-
-        // We invoke process exit callback through an indirection.
-        // Most apps will not install a callback in the first place.
-        // To invoke the callback, we need to pass the current AppDomain.
-        // AppDomain brings lots of unnecessary dependencies into trimmed apps.
-        // The indirection is set up when the callback is installed so that
-        // only apps that install a callback have AppDomain in the closure.
-        private static Action s_invokeProcessExitCallback;
-
-        internal static void AddProcessExitCallback(EventHandler eventHandler)
-        {
-            s_processExit += eventHandler;
-            s_invokeProcessExitCallback ??= () => s_processExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
-        }
-
-        internal static void RemoveProcessExitCallback(EventHandler eventHandler)
-        {
-            s_processExit -= eventHandler;
-        }
+        internal static event EventHandler? ProcessExit;
 
         internal static void OnProcessExit()
         {
@@ -118,7 +99,7 @@ namespace System
                 EventListener.DisposeOnShutdown();
             }
 
-            s_invokeProcessExitCallback();
+            ProcessExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
         }
 
         /// <summary>

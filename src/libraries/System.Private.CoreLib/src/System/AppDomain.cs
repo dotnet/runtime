@@ -74,8 +74,8 @@ namespace System
 
         public event EventHandler? ProcessExit
         {
-            add { AppContext.AddProcessExitCallback(value); }
-            remove { AppContext.RemoveProcessExitCallback(value); }
+            add { AppContext.ProcessExit += value; }
+            remove { AppContext.ProcessExit -= value; }
         }
 
         public string ApplyPolicy(string assemblyName)
