@@ -2128,8 +2128,7 @@ namespace System.Net.Tests
                         string data = await client.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
                         Assert.StartsWith("aaaa", data);
                     });
-                }
-            ).WaitAsync(TestHelper.PassingTestTimeout);
+                });
         }
 
         [Theory]

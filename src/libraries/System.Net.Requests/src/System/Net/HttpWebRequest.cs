@@ -1183,7 +1183,10 @@ namespace System.Net
                     request.Headers.ConnectionClose = true;
                 }
 
-                request.Headers.ExpectContinue = _servicePoint?.Expect100Continue ?? true;
+                if (_servicePoint?.Expect100Continue == true)
+                {
+                    request.Headers.ExpectContinue = true;
+                }
 
                 request.Version = ProtocolVersion;
 
