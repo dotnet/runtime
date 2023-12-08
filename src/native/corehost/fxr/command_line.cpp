@@ -158,7 +158,7 @@ namespace
 
             app_candidate = argv[*new_argoff];
 
-            bool is_app_managed = ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false);
+            bool is_app_managed = utils::ends_with(app_candidate, _X(".dll"), false) || utils::ends_with(app_candidate, _X(".exe"), false);
             if (!is_app_managed)
             {
                 trace::verbose(_X("Application '%s' is not a managed executable."), app_candidate.c_str());

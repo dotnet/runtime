@@ -50,16 +50,6 @@ bool utils::ends_with(const pal::string_t& value, const pal::char_t* suffix, siz
         cmp(value.c_str() + value.size() - suffix_len, suffix) == 0;
 }
 
-bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case)
-{
-    return utils::ends_with(value, suffix.c_str(), suffix.size(), match_case);
-}
-
-bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case)
-{
-    return utils::starts_with(value, prefix.c_str(), prefix.size(), match_case);
-}
-
 void append_path(pal::string_t* path1, const pal::char_t* path2)
 {
     if (pal::is_path_rooted(path2))
@@ -78,17 +68,19 @@ void append_path(pal::string_t* path1, const pal::char_t* path2)
 
 pal::string_t strip_executable_ext(const pal::string_t& filename)
 {
-    pal::string_t exe_suffix = pal::exe_suffix();
-    if (exe_suffix.empty())
-    {
+    const pal::char_t* exe_suffix = pal::exe_suffix();
+    if (exe_suffix == nullptr)
         return filename;
-    }
 
-    if (ends_with(filename, exe_suffix, false))
+    size_t suffix_len = pal::strlen(exe_suffix);
+    if (suffix_len == 0)
+        return filename;
+
+    if (utils::ends_with(filename, exe_suffix, suffix_len, false))
     {
         // We need to strip off the old extension
         pal::string_t result(filename);
-        result.erase(result.size() - exe_suffix.size());
+        result.erase(result.size() - suffix_len);
         return result;
     }
 
