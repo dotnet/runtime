@@ -3136,19 +3136,16 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     const regNumber zeroReg = REG_ZR;
 #endif
 
-    // TODO-ARM64: mark initBlkNode->Data() as contained and use WZR/XZR
-
     if (initBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile initBlock Operation
         instGen_MemoryBarrier();
     }
 
-    //  mov     zeroReg, wzr
-    //  str     zeroReg, [dstReg]
+    //  str     xzr, [dstReg]
     //  mov     offsetReg, <block size>
     //.LOOP:
-    //  str     zeroReg, [dstReg, offsetReg]
+    //  str     xzr, [dstReg, offsetReg]
     //  subs    offsetReg, offsetReg, #8
     //  bne     .LOOP
 
