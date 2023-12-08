@@ -410,7 +410,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
 #endif
 
-    if (totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
+    if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
     if (pArrayMT->ContainsPointers())
