@@ -77,6 +77,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 ISet<T> set = GenericISetFactory(count);
+                IReadOnlySet<T> readOnlySet = set;
                 int seed = 92834;
                 T newValue = CreateT(seed++);
                 while (set.Contains(newValue))
@@ -85,7 +86,9 @@ namespace System.Collections.Tests
                 if (!DuplicateValuesAllowed)
                     Assert.False(set.Add(newValue));
                 Assert.Equal(count + 1, set.Count);
+                Assert.Equal(count + 1, readOnlySet.Count);
                 Assert.True(set.Contains(newValue));
+                Assert.True(readOnlySet.Contains(newValue));
             }
         }
 
@@ -159,6 +162,7 @@ namespace System.Collections.Tests
 
         private void Validate_IsProperSubsetOf(ISet<T> set, IEnumerable<T> enumerable)
         {
+            IReadOnlySet<T> readOnlySet = set;
             bool setContainsValueNotInEnumerable = false;
             bool enumerableContainsValueNotInSet = false;
             IEqualityComparer<T> comparer = GetIEqualityComparer();
@@ -179,10 +183,12 @@ namespace System.Collections.Tests
                 }
             }
             Assert.Equal(!setContainsValueNotInEnumerable && enumerableContainsValueNotInSet, set.IsProperSubsetOf(enumerable));
+            Assert.Equal(!setContainsValueNotInEnumerable && enumerableContainsValueNotInSet, readOnlySet.IsProperSubsetOf(enumerable));
         }
 
         private void Validate_IsProperSupersetOf(ISet<T> set, IEnumerable<T> enumerable)
         {
+            IReadOnlySet<T> readOnlySet = set;
             bool isProperSuperset = true;
             bool setContainsElementsNotInEnumerable = false;
             IEqualityComparer<T> comparer = GetIEqualityComparer();
@@ -204,54 +210,66 @@ namespace System.Collections.Tests
             }
             isProperSuperset = isProperSuperset && setContainsElementsNotInEnumerable;
             Assert.Equal(isProperSuperset, set.IsProperSupersetOf(enumerable));
+            Assert.Equal(isProperSuperset, readOnlySet.IsProperSupersetOf(enumerable));
         }
 
         private void Validate_IsSubsetOf(ISet<T> set, IEnumerable<T> enumerable)
         {
+            IReadOnlySet<T> readOnlySet = set;
             IEqualityComparer<T> comparer = GetIEqualityComparer();
             foreach (T value in set)
                 if (!enumerable.Contains(value, comparer))
                 {
                     Assert.False(set.IsSubsetOf(enumerable));
+                    Assert.False(readOnlySet.IsSubsetOf(enumerable));
                     return;
                 }
             Assert.True(set.IsSubsetOf(enumerable));
+            Assert.True(readOnlySet.IsSubsetOf(enumerable));
         }
 
         private void Validate_IsSupersetOf(ISet<T> set, IEnumerable<T> enumerable)
         {
+            IReadOnlySet<T> readOnlySet = set;
             IEqualityComparer<T> comparer = GetIEqualityComparer();
             foreach (T value in enumerable)
                 if (!set.Contains(value, comparer))
                 {
                     Assert.False(set.IsSupersetOf(enumerable));
+                    Assert.False(readOnlySet.IsSupersetOf(enumerable));
                     return;
                 }
             Assert.True(set.IsSupersetOf(enumerable));
+            Assert.True(readOnlySet.IsSupersetOf(enumerable));
         }
 
         private void Validate_Overlaps(ISet<T> set, IEnumerable<T> enumerable)
         {
+            IReadOnlySet<T> readOnlySet = set;
             IEqualityComparer<T> comparer = GetIEqualityComparer();
             foreach (T value in enumerable)
             {
                 if (set.Contains(value, comparer))
                 {
                     Assert.True(set.Overlaps(enumerable));
+                    Assert.True(readOnlySet.Overlaps(enumerable));
                     return;
                 }
             }
             Assert.False(set.Overlaps(enumerable));
+            Assert.False(readOnlySet.Overlaps(enumerable));
         }
 
         private void Validate_SetEquals(ISet<T> set, IEnumerable<T> enumerable)
         {
+            IReadOnlySet<T> readOnlySet = set;
             IEqualityComparer<T> comparer = GetIEqualityComparer();
             foreach (T value in set)
             {
                 if (!enumerable.Contains(value, comparer))
                 {
                     Assert.False(set.SetEquals(enumerable));
+                    Assert.False(readOnlySet.SetEquals(enumerable));
                     return;
                 }
             }
@@ -260,10 +278,12 @@ namespace System.Collections.Tests
                 if (!set.Contains(value, comparer))
                 {
                     Assert.False(set.SetEquals(enumerable));
+                    Assert.False(readOnlySet.SetEquals(enumerable));
                     return;
                 }
             }
             Assert.True(set.SetEquals(enumerable));
+            Assert.True(readOnlySet.SetEquals(enumerable));
         }
 
         private void Validate_SymmetricExceptWith(ISet<T> set, IEnumerable<T> enumerable)
@@ -302,12 +322,19 @@ namespace System.Collections.Tests
         public void ISet_Generic_NullEnumerableArgument(int count)
         {
             ISet<T> set = GenericISetFactory(count);
+            IReadOnlySet<T> readOnlySet = set;
             Assert.Throws<ArgumentNullException>(() => set.IsProperSubsetOf(null));
+            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsProperSubsetOf(null));
             Assert.Throws<ArgumentNullException>(() => set.IsProperSupersetOf(null));
+            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsProperSupersetOf(null));
             Assert.Throws<ArgumentNullException>(() => set.IsSubsetOf(null));
+            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsSubsetOf(null));
             Assert.Throws<ArgumentNullException>(() => set.IsSupersetOf(null));
+            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsSupersetOf(null));
             Assert.Throws<ArgumentNullException>(() => set.Overlaps(null));
+            Assert.Throws<ArgumentNullException>(() => readOnlySet.Overlaps(null));
             Assert.Throws<ArgumentNullException>(() => set.SetEquals(null));
+            Assert.Throws<ArgumentNullException>(() => readOnlySet.SetEquals(null));
             if (!IsReadOnly)
             {
                 Assert.Throws<ArgumentNullException>(() => set.ExceptWith(null));

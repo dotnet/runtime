@@ -9,15 +9,17 @@ namespace System.Collections.Generic
 {
     // Base interface for all collections, defining enumerators, size, and
     // synchronization methods.
-    public interface ICollection<T> : IEnumerable<T>
+    public interface ICollection<T> : IReadOnlyCollection<T>
     {
-        int Count
+        new int Count
         {
 #if MONO
             [DynamicDependency(nameof(Array.InternalArray__ICollection_get_Count), typeof(Array))]
 #endif
             get;
         }
+
+        int IReadOnlyCollection<T>.Count => Count;
 
         bool IsReadOnly
         {

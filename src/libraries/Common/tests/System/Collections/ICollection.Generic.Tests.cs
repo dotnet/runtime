@@ -130,7 +130,9 @@ namespace System.Collections.Tests
         public void ICollection_Generic_Count_Validity(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
+            IReadOnlyCollection<T> readOnlyCollection = collection;
             Assert.Equal(count, collection.Count);
+            Assert.Equal(count, readOnlyCollection.Count);
         }
 
         #endregion

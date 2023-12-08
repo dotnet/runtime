@@ -263,15 +263,18 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 if (!DefaultValueAllowed)
                 {
                     Assert.Throws<ArgumentNullException>(() => dictionary[default(TKey)]);
+                    Assert.Throws<ArgumentNullException>(() => readOnlyDictionary[default(TKey)]);
                 }
                 else
                 {
                     TValue value = CreateTValue(3452);
                     dictionary[default(TKey)] = value;
                     Assert.Equal(value, dictionary[default(TKey)]);
+                    Assert.Equal(value, readOnlyDictionary[default(TKey)]);
                 }
             }
         }
@@ -281,8 +284,10 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_ItemGet_MissingNonDefaultKey_ThrowsKeyNotFoundException(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             TKey missingKey = GetNewKey(dictionary);
             Assert.Throws<KeyNotFoundException>(() => dictionary[missingKey]);
+            Assert.Throws<KeyNotFoundException>(() => readOnlyDictionary[missingKey]);
         }
 
         [Theory]
@@ -292,10 +297,12 @@ namespace System.Collections.Tests
             if (DefaultValueAllowed && !IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 TKey missingKey = default(TKey);
                 while (dictionary.ContainsKey(missingKey))
                     dictionary.Remove(missingKey);
                 Assert.Throws<KeyNotFoundException>(() => dictionary[missingKey]);
+                Assert.Throws<KeyNotFoundException>(() => readOnlyDictionary[missingKey]);
             }
         }
 
@@ -304,9 +311,11 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_ItemGet_PresentKeyReturnsCorrectValue(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             foreach (KeyValuePair<TKey, TValue> pair in dictionary)
             {
                 Assert.Equal(pair.Value, dictionary[pair.Key]);
+                Assert.Equal(pair.Value, readOnlyDictionary[pair.Key]);
             }
         }
 
@@ -384,8 +393,10 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             IEnumerable<TKey> expected = dictionary.Select((pair) => pair.Key);
             Assert.True(expected.SequenceEqual(dictionary.Keys));
+            Assert.True(expected.SequenceEqual(readOnlyDictionary.Keys));
         }
 
         [Theory]
@@ -395,7 +406,9 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 ICollection<TKey> keys = dictionary.Keys;
+                IEnumerable<TKey> readOnlyKeys = readOnlyDictionary.Keys;
                 int previousCount = keys.Count;
                 if (count > 0)
                     Assert.NotEmpty(keys);
@@ -403,10 +416,12 @@ namespace System.Collections.Tests
                 if (IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection)
                 {
                     Assert.Empty(keys);
+                    Assert.Empty(readOnlyKeys);
                 }
                 else
                 {
                     Assert.Equal(previousCount, keys.Count);
+                    Assert.Equal(previousCount, readOnlyKeys.Count);
                 }
             }
         }
@@ -418,13 +433,18 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 ICollection<TKey> keys = dictionary.Keys;
+                IEnumerator<TKey> readOnlyKeys = readOnlyDictionary.Keys;
                 IEnumerator<TKey> keysEnum = keys.GetEnumerator();
+                IEnumerator<TKey> readOnlyKeysEnum = readOnlyKeys.GetEnumerator();
                 dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
                 if (count == 0 ? Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException : IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
                 {
                     Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
                     Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
+                    Assert.Throws<InvalidOperationException>(() => readOnlyKeysEnum.MoveNext());
+                    Assert.Throws<InvalidOperationException>(() => readOnlyKeysEnum.Reset());
                 }
                 else
                 {
@@ -433,6 +453,11 @@ namespace System.Collections.Tests
                         _ = keysEnum.Current;
                     }
                     keysEnum.Reset();
+                    if (readOnlyKeysEnum.MoveNext())
+                    {
+                        _ = readOnlyKeysEnum.Current;
+                    }
+                    readOnlyKeysEnum.Reset();
                 }
             }
         }
@@ -454,12 +479,21 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_Keys_Enumeration_Reset(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             ICollection<TKey> keys = dictionary.Keys;
+            IEnumerable<TKey> readOnlyKeys = readOnlyDictionary.Keys;
             IEnumerator<TKey> enumerator = keys.GetEnumerator();
+            IEnumerator<TKey> readOnlyEnumerator = readOnlyKeys.GetEnumerator();
             if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
+            {
                 enumerator.Reset();
+                readOnlyEnumerator.Reset();
+            }
             else
+            {
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+                Assert.Throws<NotSupportedException>(() => readOnlyEnumerator.Reset());
+            }
         }
 
         #endregion
@@ -471,8 +505,10 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_Values_ContainsAllCorrectValues(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             IEnumerable<TValue> expected = dictionary.Select((pair) => pair.Value);
             Assert.True(expected.SequenceEqual(dictionary.Values));
+            Assert.True(expected.SequenceEqual(readOnlyDictionary.Values));
         }
 
         [Theory]
@@ -482,6 +518,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 int seed = 431;
                 foreach (KeyValuePair<TKey, TValue> pair in dictionary.ToList())
                 {
@@ -491,6 +528,7 @@ namespace System.Collections.Tests
                     dictionary.Add(missingKey, pair.Value);
                 }
                 Assert.Equal(count * 2, dictionary.Values.Count);
+                Assert.Equal(count * 2, readOnlyDictionary.Values.Count());
             }
         }
 
@@ -499,10 +537,15 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_Values_ModifyingTheDictionaryUpdatesTheCollection(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             ICollection<TValue> values = dictionary.Values;
+            IEnumerable<TValue> readOnlyValues = readOnlyDictionary.Values;
             int previousCount = values.Count;
             if (count > 0)
+            {
                 Assert.NotEmpty(values);
+                Assert.NotEmpty(readOnlyValues);
+            }
 
             if (!IsReadOnly)
             {
@@ -510,10 +553,12 @@ namespace System.Collections.Tests
                 if (IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection)
                 {
                     Assert.Empty(values);
+                    Assert.Empty(readOnlyValues);
                 }
                 else
                 {
                     Assert.Equal(previousCount, values.Count);
+                    Assert.Equal(previousCount, readOnlyValues.Count());
                 }
             }
         }
@@ -525,13 +570,18 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 ICollection<TValue> values = dictionary.Values;
+                IEnumerable<TValue> readOnlyValues = readOnlyDictionary.Values;
                 IEnumerator<TValue> valuesEnum = values.GetEnumerator();
+                IEnumerator<TValue> readOnlyValuesEnum = readOnlyValues.GetEnumerator();
                 dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
                 if (count == 0 ? Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException : IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
                 {
                     Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
                     Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
+                    Assert.Throws<InvalidOperationException>(() => readOnlyValuesEnum.MoveNext());
+                    Assert.Throws<InvalidOperationException>(() => readOnlyValuesEnum.Reset());
                 }
                 else
                 {
@@ -540,6 +590,11 @@ namespace System.Collections.Tests
                         _ = valuesEnum.Current;
                     }
                     valuesEnum.Reset();
+                    if (readOnlyValuesEnum.MoveNext())
+                    {
+                        _ = readOnlyValuesEnum.Current;
+                    }
+                    readOnlyValuesEnum.Reset();
                 }
             }
         }
@@ -561,12 +616,21 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_Values_Enumeration_Reset(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             ICollection<TValue> values = dictionary.Values;
+            IEnumerable<TValue> readOnlyValues = readOnlyDictionary.Values;
             IEnumerator<TValue> enumerator = values.GetEnumerator();
+            IEnumerator<TValue> readOnlyEnumerator = readOnlyValues.GetEnumerator();
             if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
+            {
                 enumerator.Reset();
+                readOnlyEnumerator.Reset();
+            }
             else
+            {
                 Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+                Assert.Throws<NotSupportedException>(() => readOnlyEnumerator.Reset());
+            }
         }
 
         #endregion
@@ -708,8 +772,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 TKey missingKey = GetNewKey(dictionary);
                 Assert.False(dictionary.ContainsKey(missingKey));
+                Assert.False(readOnlyDictionary.ContainsKey(missingKey));
             }
         }
 
@@ -720,9 +786,11 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 TKey missingKey = GetNewKey(dictionary);
                 dictionary.Add(missingKey, CreateTValue(34251));
                 Assert.True(dictionary.ContainsKey(missingKey));
+                Assert.True(readOnlyDictionary.ContainsKey(missingKey));
             }
         }
 
@@ -731,6 +799,7 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_ContainsKey_DefaultKeyNotContainedInDictionary(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             if (DefaultValueAllowed)
             {
                 if (!IsReadOnly)
@@ -740,12 +809,14 @@ namespace System.Collections.Tests
                     while (dictionary.ContainsKey(missingKey))
                         dictionary.Remove(missingKey);
                     Assert.False(dictionary.ContainsKey(missingKey));
+                    Assert.False(readOnlyDictionary.ContainsKey(missingKey));
                 }
             }
             else
             {
                 // throws ArgumentNullException
                 Assert.Throws<ArgumentNullException>(() => dictionary.ContainsKey(default(TKey)));
+                Assert.Throws<ArgumentNullException>(() => readOnlyDictionary.ContainsKey(default(TKey)));
             }
         }
 
@@ -756,10 +827,12 @@ namespace System.Collections.Tests
             if (DefaultValueAllowed && !IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 TKey missingKey = default(TKey);
                 if (!dictionary.ContainsKey(missingKey))
                     dictionary.Add(missingKey, CreateTValue(5341));
                 Assert.True(dictionary.ContainsKey(missingKey));
+                Assert.True(readOnlyDictionary.ContainsKey(missingKey));
             }
         }
 
@@ -907,10 +980,12 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_TryGetValue_ValidKeyNotContainedInDictionary(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             TKey missingKey = GetNewKey(dictionary);
             TValue value = CreateTValue(5123);
             TValue outValue;
             Assert.False(dictionary.TryGetValue(missingKey, out outValue));
+            Assert.False(readOnlyDictionary.TryGetValue(missingKey, out outValue));
         }
 
         [Theory]
@@ -920,11 +995,14 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 TKey missingKey = GetNewKey(dictionary);
                 TValue value = CreateTValue(5123);
                 TValue outValue;
                 dictionary.TryAdd(missingKey, value);
                 Assert.True(dictionary.TryGetValue(missingKey, out outValue));
+                Assert.Equal(value, outValue);
+                Assert.True(readOnlyDictionary.TryGetValue(missingKey, out outValue));
                 Assert.Equal(value, outValue);
             }
         }
@@ -934,6 +1012,7 @@ namespace System.Collections.Tests
         public void IDictionary_Generic_TryGetValue_DefaultKeyNotContainedInDictionary(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
             TValue outValue;
             if (DefaultValueAllowed)
             {
@@ -943,11 +1022,13 @@ namespace System.Collections.Tests
                     while (dictionary.ContainsKey(missingKey))
                         dictionary.Remove(missingKey);
                     Assert.False(dictionary.TryGetValue(missingKey, out outValue));
+                    Assert.False(readOnlyDictionary.TryGetValue(missingKey, out outValue));
                 }
             }
             else
             {
                 Assert.Throws<ArgumentNullException>(() => dictionary.TryGetValue(default(TKey), out outValue));
+                Assert.Throws<ArgumentNullException>(() => readOnlyDictionary.TryGetValue(default(TKey), out outValue));
             }
         }
 
@@ -958,11 +1039,14 @@ namespace System.Collections.Tests
             if (DefaultValueAllowed && !IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+                IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 TKey missingKey = default(TKey);
                 TValue value = CreateTValue(5123);
                 TValue outValue;
                 dictionary.TryAdd(missingKey, value);
                 Assert.True(dictionary.TryGetValue(missingKey, out outValue));
+                Assert.Equal(value, outValue);
+                Assert.True(readOnlyDictionary.TryGetValue(missingKey, out outValue));
                 Assert.Equal(value, outValue);
             }
         }

@@ -103,8 +103,11 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_NegativeIndex_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
+            IReadOnlyList<T> readOnlyList = list;
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[-1]);
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[int.MinValue]);
         }
 
         [Theory]
@@ -112,8 +115,11 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
+            IReadOnlyList<T> readOnlyList = list;
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[count]);
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[count + 1]);
         }
 
         [Theory]
@@ -121,8 +127,10 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_ValidGetWithinListBounds(int count)
         {
             IList<T> list = GenericIListFactory(count);
+            IReadOnlyList<T> readOnlyList = list;
             T result;
             Assert.All(Enumerable.Range(0, count), index => result = list[index]);
+            Assert.All(Enumerable.Range(0, count), index => result = readOnlyList[index]);
         }
 
         #endregion

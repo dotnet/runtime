@@ -9,32 +9,40 @@ namespace System.Collections.Generic
     // Keys can be any non-null object.  Values can be any object.
     // You can look up a value in an IDictionary via the default indexed
     // property, Items.
-    public interface IDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>>
+    public interface IDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>>, IReadOnlyDictionary<TKey, TValue>
     {
         // Interfaces are not serializable
         // The Item property provides methods to read and edit entries
         // in the Dictionary.
-        TValue this[TKey key]
+        new TValue this[TKey key]
         {
             get;
             set;
         }
 
+        TValue IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
+
         // Returns a collections of the keys in this dictionary.
-        ICollection<TKey> Keys
+        new ICollection<TKey> Keys
         {
             get;
         }
 
+        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
+
         // Returns a collections of the values in this dictionary.
-        ICollection<TValue> Values
+        new ICollection<TValue> Values
         {
             get;
         }
+
+        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
         // Returns whether this dictionary contains a particular key.
         //
-        bool ContainsKey(TKey key);
+        new bool ContainsKey(TKey key);
+
+        bool IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
 
         // Adds a key-value pair to the dictionary.
         //
@@ -44,6 +52,8 @@ namespace System.Collections.Generic
         //
         bool Remove(TKey key);
 
-        bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
+        new bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
+
+        bool IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, out TValue value) => TryGetValue(key, out value);
     }
 }

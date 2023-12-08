@@ -8,7 +8,7 @@ namespace System.Collections.Generic
     /// by some comparer. It also supports basic set operations such as Union, Intersection,
     /// Complement and Exclusive Complement.
     /// </summary>
-    public interface ISet<T> : ICollection<T>
+    public interface ISet<T> : ICollection<T>, IReadOnlySet<T>
     {
         //Add ITEM to the set, return true if added, false if duplicate
         new bool Add(T item);
@@ -26,21 +26,37 @@ namespace System.Collections.Generic
         void SymmetricExceptWith(IEnumerable<T> other);
 
         //Check if this set is a subset of other
-        bool IsSubsetOf(IEnumerable<T> other);
+        new bool IsSubsetOf(IEnumerable<T> other);
+
+        bool IReadOnlySet<T>.IsSubsetOf(IEnumerable<T> other) => IsSubsetOf(other);
 
         //Check if this set is a superset of other
-        bool IsSupersetOf(IEnumerable<T> other);
+        new bool IsSupersetOf(IEnumerable<T> other);
+
+        bool IReadOnlySet<T>.IsSupersetOf(IEnumerable<T> other) => IsSupersetOf(other);
 
         //Check if this set is a subset of other, but not the same as it
-        bool IsProperSupersetOf(IEnumerable<T> other);
+        new bool IsProperSupersetOf(IEnumerable<T> other);
+
+        bool IReadOnlySet<T>.IsProperSupersetOf(IEnumerable<T> other) => IsProperSupersetOf(other);
 
         //Check if this set is a superset of other, but not the same as it
-        bool IsProperSubsetOf(IEnumerable<T> other);
+        new bool IsProperSubsetOf(IEnumerable<T> other);
+
+        bool IReadOnlySet<T>.IsProperSubsetOf(IEnumerable<T> other) => IsProperSubsetOf(other);
 
         //Check if this set has any elements in common with other
-        bool Overlaps(IEnumerable<T> other);
+        new bool Overlaps(IEnumerable<T> other);
+
+        bool IReadOnlySet<T>.Overlaps(IEnumerable<T> other) => Overlaps(other);
 
         //Check if this set contains the same and only the same elements as other
-        bool SetEquals(IEnumerable<T> other);
+        new bool SetEquals(IEnumerable<T> other);
+
+        bool IReadOnlySet<T>.SetEquals(IEnumerable<T> other) => SetEquals(other);
+
+        new bool Contains(T item) => ((ICollection<T>)this).Contains(item);
+
+        bool IReadOnlySet<T>.Contains(T value) => ((ICollection<T>)this).Contains(value);
     }
 }
