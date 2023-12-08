@@ -166,7 +166,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         //
         // We may be disallowing edge creation, except for edges targeting special blocks.
         //
-        assert(fgSafeFlowEdgeCreation || ((block->bbFlags & BBF_CAN_ADD_PRED) != 0));
+        assert(fgSafeFlowEdgeCreation || block->HasFlag(BBF_CAN_ADD_PRED));
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
@@ -353,10 +353,6 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             fgRemoveRefPred(block->GetJumpDest(), block);
-            break;
-
-        case BBJ_NONE:
-            fgRemoveRefPred(block->Next(), block);
             break;
 
         case BBJ_COND:

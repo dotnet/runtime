@@ -1,12 +1,40 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "openssl.h"
 #include "pal_evp.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
+#include <pthread.h>
 
 #define SUCCESS 1
+
+static const EVP_MD* g_evpFetchMd5 = NULL;
+static pthread_once_t g_evpFetch = PTHREAD_ONCE_INIT;
+
+static void EnsureFetchEvpMdAlgorithms(void)
+{
+    // This is called from a pthread_once - this method should not be called directly.
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_MD_fetch))
+    {
+        ERR_clear_error();
+
+        // Try to fetch an MD5 implementation that will work regardless if
+        // FIPS is enforced or not.
+        g_evpFetchMd5 = EVP_MD_fetch(NULL, "MD5", "-fips");
+    }
+#endif
+
+    // No error queue impact.
+    // If EVP_MD_fetch is unavailable, use the implicit loader. If it failed, use the implicit loader as a last resort.
+    if (g_evpFetchMd5 == NULL)
+    {
+        g_evpFetchMd5 = EVP_md5();
+    }
+}
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
@@ -21,6 +49,13 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
         // we'll do it here.
         ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
+    }
+
+    // For OpenSSL 1.x, set the non-FIPS allow flag for MD5. OpenSSL 3 does this differently with EVP_MD_fetch
+    // and no longer has this flag.
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM && type == EVP_md5())
+    {
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
     }
 
     int ret = EVP_DigestInit_ex(ctx, type, NULL);
@@ -98,6 +133,11 @@ int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t le
                 return EVP_DigestFinalXOF(ctx, md, len);
             }
         }
+    #else
+        // Use each parameter to avoid unused parameter warnings.
+        (void)(ctx);
+        (void)(md);
+        (void)(len);
     #endif
 
     return 0;
@@ -230,8 +270,8 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 
 const EVP_MD* CryptoNative_EvpMd5(void)
 {
-    // No error queue impact.
-    return EVP_md5();
+    pthread_once(&g_evpFetch, EnsureFetchEvpMdAlgorithms);
+    return g_evpFetchMd5;
 }
 
 const EVP_MD* CryptoNative_EvpSha1(void)

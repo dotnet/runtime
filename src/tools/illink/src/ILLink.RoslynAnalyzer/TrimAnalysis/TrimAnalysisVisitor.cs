@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
@@ -16,12 +17,19 @@ using Microsoft.CodeAnalysis.Operations;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using StateValue = ILLink.RoslynAnalyzer.DataFlow.LocalDataFlowState<
 	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>,
-	ILLink.Shared.DataFlow.ValueSetLattice<ILLink.Shared.DataFlow.SingleValue>
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContext,
+	ILLink.Shared.DataFlow.ValueSetLattice<ILLink.Shared.DataFlow.SingleValue>,
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContextLattice
 	>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public class TrimAnalysisVisitor : LocalDataFlowVisitor<MultiValue, ValueSetLattice<SingleValue>>
+	public class TrimAnalysisVisitor : LocalDataFlowVisitor<
+		MultiValue,
+		FeatureContext,
+		ValueSetLattice<SingleValue>,
+		FeatureContextLattice,
+		FeatureChecksValue>
 	{
 		public readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
 
@@ -32,17 +40,32 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// but the interesting ones for the ILLink are nearly always less than 32 elements.
 		const int MaxTrackedArrayValues = 32;
 
+		FeatureChecksVisitor _featureChecksVisitor;
+
 		public TrimAnalysisVisitor (
-			LocalStateLattice<MultiValue, ValueSetLattice<SingleValue>> lattice,
+			Compilation compilation,
+			LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
 			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			TrimAnalysisPatternStore trimAnalysisPatterns,
-			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState
-		) : base (lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
+			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState,
+			DataFlowAnalyzerContext dataFlowAnalyzerContext)
+			: base (compilation, lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
 		{
-			_multiValueLattice = lattice.Lattice.ValueLattice;
+			_multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
+			_featureChecksVisitor = new FeatureChecksVisitor (dataFlowAnalyzerContext);
+		}
+
+		public override FeatureChecksValue? GetConditionValue (IOperation branchValueOperation, StateValue state)
+		{
+			return _featureChecksVisitor.Visit (branchValueOperation, state);
+		}
+
+		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
+		{
+			currentState.Context = currentState.Context.Union (new FeatureContext (featureChecksValue.EnabledFeatures));
 		}
 
 		// Override visitor methods to create tracked values when visiting operations
@@ -78,7 +101,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			var arrayValue = ArrayValue.Create (Visit (operation.DimensionSizes[0], state));
 			var elements = operation.Initializer?.ElementValues.Select (val => Visit (val, state)).ToArray () ?? System.Array.Empty<MultiValue> ();
-			foreach (var array in arrayValue.Cast<ArrayValue> ()) {
+			foreach (var array in arrayValue.AsEnumerable ().Cast<ArrayValue> ()) {
 				for (int i = 0; i < elements.Length; i++) {
 					array.IndexValues.Add (i, ArrayValue.SanitizeArrayElementValue(elements[i]));
 				}
@@ -141,7 +164,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (TryGetConstantValue (fieldRef, out var constValue))
 				return constValue;
 
-			return GetFieldTargetValue (fieldRef.Field, fieldRef);
+			var current = state.Current;
+			return GetFieldTargetValue (fieldRef.Field, fieldRef, in current.Context);
 		}
 
 		public override MultiValue VisitTypeOf (ITypeOfOperation typeOfOperation, StateValue state)
@@ -159,11 +183,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				MultiValue rightValue = Visit (operation.RightOperand, argument);
 
 				MultiValue result = TopValue;
-				foreach (var left in leftValue) {
+				foreach (var left in leftValue.AsEnumerable ()) {
 					if (left is UnknownValue)
 						result = _multiValueLattice.Meet (result, left);
 					else if (left is ConstIntValue leftConstInt) {
-						foreach (var right in rightValue) {
+						foreach (var right in rightValue.AsEnumerable ()) {
 							if (right is UnknownValue)
 								result = _multiValueLattice.Meet (result, right);
 							else if (right is ConstIntValue rightConstInt) {
@@ -184,10 +208,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// - method calls
 		// - value returned from a method
 
-		public override MultiValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation)
+		public override MultiValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, in FeatureContext featureContext)
 		{
 			TrimAnalysisPatterns.Add (
-				new TrimAnalysisFieldAccessPattern (field, fieldReferenceOperation, OwningSymbol)
+				new TrimAnalysisFieldAccessPattern (field, fieldReferenceOperation, OwningSymbol, featureContext)
 			);
 
 			return new FieldValue (field);
@@ -196,7 +220,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public override MultiValue GetParameterTargetValue (IParameterSymbol parameter)
 			=> new MethodParameterValue (parameter);
 
-		public override void HandleAssignment (MultiValue source, MultiValue target, IOperation operation)
+		public override void HandleAssignment (MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
 		{
 			if (target.Equals (TopValue))
 				return;
@@ -205,7 +229,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// annotated with DAMT.
 			TrimAnalysisPatterns.Add (
 				// This will copy the values if necessary
-				new TrimAnalysisAssignmentPattern (source, target, operation, OwningSymbol),
+				new TrimAnalysisAssignmentPattern (source, target, operation, OwningSymbol, featureContext),
 				isReturnValue: false
 			);
 		}
@@ -216,7 +240,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return UnknownValue.Instance;
 
 			MultiValue result = TopValue;
-			foreach (var value in arrayValue) {
+			foreach (var value in arrayValue.AsEnumerable ()) {
 				if (value is ArrayValue arr && arr.TryGetValueByIndex (index, out var elementValue))
 					result = _multiValueLattice.Meet (result, elementValue);
 				else
@@ -228,7 +252,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public override void HandleArrayElementWrite (MultiValue arrayValue, MultiValue indexValue, MultiValue valueToWrite, IOperation operation, bool merge)
 		{
 			int? index = indexValue.AsConstInt ();
-			foreach (var arraySingleValue in arrayValue) {
+			foreach (var arraySingleValue in arrayValue.AsEnumerable ()) {
 				if (arraySingleValue is ArrayValue arr) {
 					if (index == null) {
 						// Reset the array to all unknowns - since we don't know which index is being assigned
@@ -243,7 +267,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
-		public override MultiValue HandleMethodCall (IMethodSymbol calledMethod, MultiValue instance, ImmutableArray<MultiValue> arguments, IOperation operation)
+		public override MultiValue HandleMethodCall (
+			IMethodSymbol calledMethod,
+			MultiValue instance,
+			ImmutableArray<MultiValue> arguments,
+			IOperation operation,
+			in FeatureContext featureContext)
 		{
 			// For .ctors:
 			// - The instance value is empty (TopValue) and that's a bit wrong.
@@ -264,10 +293,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				instance,
 				arguments,
 				operation,
-				OwningSymbol));
+				OwningSymbol,
+				featureContext));
 
 			foreach (var argument in arguments) {
-				foreach (var argumentValue in argument) {
+				foreach (var argumentValue in argument.AsEnumerable ()) {
 					if (argumentValue is ArrayValue arrayValue)
 						arrayValue.IndexValues.Clear ();
 				}
@@ -308,7 +338,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				break;
 
 			case IntrinsicId.Object_GetType: {
-					foreach (var valueNode in instance) {
+					foreach (var valueNode in instance.AsEnumerable ()) {
 						// Note that valueNode can be statically typed as some generic argument type.
 						// For example:
 						//   void Method<T>(T instance) { instance.GetType().... }
@@ -374,7 +404,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
-		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
+		public override void HandleReturnValue (MultiValue returnValue, IOperation operation, in FeatureContext featureContext)
 		{
 			// Return statements should only happen inside of method bodies.
 			Debug.Assert (OwningSymbol is IMethodSymbol);
@@ -385,18 +415,19 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				var returnParameter = new MethodReturnValue (method);
 
 				TrimAnalysisPatterns.Add (
-					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation, OwningSymbol),
+					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation, OwningSymbol, featureContext),
 					isReturnValue: true
 				);
 			}
 		}
 
-		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation)
+		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, FeatureContext featureContext)
 		{
 			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
 				method,
 				operation,
-				OwningSymbol
+				OwningSymbol,
+				featureContext
 			));
 
 			return TopValue;

@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.Security;
 using System.IO;
+using System.Net.Security;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices.JavaScript;
-using System.Collections.Concurrent;
 
 namespace System.Net.Http
 {
@@ -334,7 +334,7 @@ namespace System.Net.Http
         {
             bool? allowAutoRedirect = _isAllowAutoRedirectTouched ? AllowAutoRedirect : null;
 #if FEATURE_WASM_THREADS
-            return JSHost.CurrentOrMainJSSynchronizationContext.Send(() =>
+            return JSHost.CurrentOrMainJSSynchronizationContext.Post(() =>
             {
 #endif
                 return Impl(request, cancellationToken, allowAutoRedirect);
@@ -365,7 +365,7 @@ namespace System.Net.Http
         {
             cancellationToken.ThrowIfCancellationRequested();
 #if FEATURE_WASM_THREADS
-            return _transformStream.SynchronizationContext.Send(() => Impl(this, buffer, cancellationToken));
+            return _transformStream.SynchronizationContext.Post(() => Impl(this, buffer, cancellationToken));
 #else
             return Impl(this, buffer, cancellationToken);
 #endif
@@ -474,24 +474,25 @@ namespace System.Net.Http
                 return;
 
 #if FEATURE_WASM_THREADS
-            FetchResponse?.SynchronizationContext.Send(static (WasmFetchResponse self) =>
+            FetchResponse?.SynchronizationContext.Post(static (WasmFetchResponse self) =>
             {
                 lock (self.ThisLock)
                 {
-                    if (self._isDisposed)
-                        return;
-                    self._isDisposed = true;
-                    self._abortRegistration.Dispose();
-                    self._abortController.Dispose();
-                    if (!self.FetchResponse!.IsDisposed)
+                    if (!self._isDisposed)
                     {
-                        BrowserHttpInterop.AbortResponse(self.FetchResponse);
+                        self._isDisposed = true;
+                        self._abortRegistration.Dispose();
+                        self._abortController.Dispose();
+                        if (!self.FetchResponse!.IsDisposed)
+                        {
+                            BrowserHttpInterop.AbortResponse(self.FetchResponse);
+                        }
+                        self.FetchResponse.Dispose();
+                        self.FetchResponse = null;
                     }
-                    self.FetchResponse.Dispose();
-                    self.FetchResponse = null;
+                    return Task.CompletedTask;
                 }
             }, this);
-
 #else
             _isDisposed = true;
             _abortRegistration.Dispose();
@@ -521,7 +522,7 @@ namespace System.Net.Http
             _fetchResponse = fetchResponse;
         }
 
-        // TODO alocate smaller buffer and call multiple times
+        // TODO allocate smaller buffer and call multiple times
         private async ValueTask<byte[]> GetResponseData(CancellationToken cancellationToken)
         {
             Task<int> promise;
@@ -557,12 +558,13 @@ namespace System.Net.Http
         {
             _fetchResponse.ThrowIfDisposed();
 #if FEATURE_WASM_THREADS
-            return _fetchResponse.FetchResponse!.SynchronizationContext.Send(() => Impl(this));
+            return _fetchResponse.FetchResponse!.SynchronizationContext.Post(() => Impl(this));
 #else
             return Impl(this);
 #endif
             static async Task<Stream> Impl(BrowserHttpContent self)
             {
+                self._fetchResponse.ThrowIfDisposed();
                 byte[] data = await self.GetResponseData(CancellationToken.None).ConfigureAwait(true);
                 return new MemoryStream(data, writable: false);
             }
@@ -576,13 +578,14 @@ namespace System.Net.Http
             ArgumentNullException.ThrowIfNull(stream, nameof(stream));
             _fetchResponse.ThrowIfDisposed();
 #if FEATURE_WASM_THREADS
-            return _fetchResponse.FetchResponse!.SynchronizationContext.Send(() => Impl(this, stream, cancellationToken));
+            return _fetchResponse.FetchResponse!.SynchronizationContext.Post(() => Impl(this, stream, cancellationToken));
 #else
             return Impl(this, stream, cancellationToken);
 #endif
 
             static async Task Impl(BrowserHttpContent self, Stream stream, CancellationToken cancellationToken)
             {
+                self._fetchResponse.ThrowIfDisposed();
                 byte[] data = await self.GetResponseData(cancellationToken).ConfigureAwait(true);
                 await stream.WriteAsync(data, cancellationToken).ConfigureAwait(true);
             }
@@ -621,13 +624,14 @@ namespace System.Net.Http
             ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
             _fetchResponse.ThrowIfDisposed();
 #if FEATURE_WASM_THREADS
-            return await _fetchResponse.FetchResponse!.SynchronizationContext.Send(() => Impl(this, buffer, cancellationToken)).ConfigureAwait(true);
+            return await _fetchResponse.FetchResponse!.SynchronizationContext.Post(() => Impl(this, buffer, cancellationToken)).ConfigureAwait(true);
 #else
             return await Impl(this, buffer, cancellationToken).ConfigureAwait(true);
 #endif
 
             static async Task<int> Impl(WasmHttpReadStream self, Memory<byte> buffer, CancellationToken cancellationToken)
             {
+                self._fetchResponse.ThrowIfDisposed();
                 Task<int> promise;
                 using (Buffers.MemoryHandle handle = buffer.Pin())
                 {

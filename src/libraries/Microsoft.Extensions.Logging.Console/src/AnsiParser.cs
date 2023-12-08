@@ -174,13 +174,13 @@ namespace Microsoft.Extensions.Logging.Console
             color = number switch
             {
                 30 => ConsoleColor.Black,
-                31 => isBright ? ConsoleColor.Red: ConsoleColor.DarkRed,
-                32 => isBright ? ConsoleColor.Green: ConsoleColor.DarkGreen,
-                33 => isBright ? ConsoleColor.Yellow: ConsoleColor.DarkYellow,
-                34 => isBright ? ConsoleColor.Blue: ConsoleColor.DarkBlue,
-                35 => isBright ? ConsoleColor.Magenta: ConsoleColor.DarkMagenta,
-                36 => isBright ? ConsoleColor.Cyan: ConsoleColor.DarkCyan,
-                37 => isBright ? ConsoleColor.White: ConsoleColor.Gray,
+                31 => isBright ? ConsoleColor.Red : ConsoleColor.DarkRed,
+                32 => isBright ? ConsoleColor.Green : ConsoleColor.DarkGreen,
+                33 => isBright ? ConsoleColor.Yellow : ConsoleColor.DarkYellow,
+                34 => isBright ? ConsoleColor.Blue : ConsoleColor.DarkBlue,
+                35 => isBright ? ConsoleColor.Magenta : ConsoleColor.DarkMagenta,
+                36 => isBright ? ConsoleColor.Cyan : ConsoleColor.DarkCyan,
+                37 => isBright ? ConsoleColor.White : ConsoleColor.Gray,
                 _ => null
             };
             return color != null || number == 39;

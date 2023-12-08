@@ -68,9 +68,6 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
-  # Load all imported DLLs from the System32 directory.
-  add_linker_flag(/DEPENDENTLOADFLAG:0x800)
-
   # Linker flags
   #
   set (WINDOWS_SUBSYSTEM_VERSION 6.01)
@@ -563,6 +560,11 @@ if (CLR_CMAKE_HOST_UNIX)
   if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
     add_compile_options(-Wimplicit-fallthrough)
   endif()
+
+  # VLAs are non standard in C++, aren't available on Windows and
+  # are a warning by default since clang 18.
+  # For consistency, enable warnings for all compiler versions.
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wvla>)
 
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)

@@ -127,7 +127,7 @@ namespace System.Resources
             if (table == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-             // Use IDictionary.GetEnumerator() for backward compatibility. Callers expect the enumerator to return DictionaryEntry instances.
+            // Use IDictionary.GetEnumerator() for backward compatibility. Callers expect the enumerator to return DictionaryEntry instances.
             return ((IDictionary)table).GetEnumerator();
         }
 

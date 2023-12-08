@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Internal.Runtime;
 using Internal.Runtime.CompilerHelpers;
@@ -162,7 +162,7 @@ namespace System.Runtime.CompilerServices
                 // If the threads are deadlocked for any reason other a class constructor cycling, this loop will never
                 // terminate - this is by design. If the user code inside the class constructors were to
                 // deadlock themselves, then that's a bug in user code.
-                for (;;)
+                for (; ; )
                 {
                     using (s_cctorGlobalLock.EnterScope())
                     {

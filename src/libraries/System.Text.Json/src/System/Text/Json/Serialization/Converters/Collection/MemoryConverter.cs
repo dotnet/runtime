@@ -2,12 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class MemoryConverter<T> : JsonCollectionConverter<Memory<T>, T>
     {
         internal override bool CanHaveMetadata => false;
+        public override bool HandleNull => true;
+
+        internal override bool OnTryRead(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options,
+            scoped ref ReadStack state,
+            out Memory<T> value)
+        {
+            if (reader.TokenType is JsonTokenType.Null)
+            {
+                value = default;
+                return true;
+            }
+
+            return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
+        }
 
         protected override void Add(in T value, ref ReadStack state)
         {

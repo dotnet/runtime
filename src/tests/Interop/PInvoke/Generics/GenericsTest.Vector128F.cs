@@ -36,26 +36,28 @@ unsafe partial class GenericsNative
     public static extern Vector128<float> AddVector128Fs(in Vector128<float> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector128F()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVector128F()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128F(1.0f, 2.0f, 3.0f, 4.0f));
 
         Vector128<float> value2;
         GenericsNative.GetVector128FOut(1.0f, 2.0f, 3.0f, 4.0f, &value2);
-        Assert.Equal(value2.GetElement(0), 1.0f);
-        Assert.Equal(value2.GetElement(1), 2.0f);
-        Assert.Equal(value2.GetElement(2), 3.0f);
-        Assert.Equal(value2.GetElement(3), 4.0f);
+        Assert.Equal(1.0f, value2.GetElement(0));
+        Assert.Equal(2.0f, value2.GetElement(1));
+        Assert.Equal(3.0f, value2.GetElement(2));
+        Assert.Equal(4.0f, value2.GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128FOut(1.0f, 2.0f, 3.0f, 4.0f, out Vector128<float> value3));
 
         Vector128<float>* value4 = GenericsNative.GetVector128FPtr(1.0f, 2.0f, 3.0f, 4.0f);
-        Assert.Equal(value4->GetElement(0), 1.0f);
-        Assert.Equal(value4->GetElement(1), 2.0f);
-        Assert.Equal(value4->GetElement(2), 3.0f);
-        Assert.Equal(value4->GetElement(3), 4.0f);
+        Assert.Equal(1.0f, value4->GetElement(0));
+        Assert.Equal(2.0f, value4->GetElement(1));
+        Assert.Equal(3.0f, value4->GetElement(2));
+        Assert.Equal(4.0f, value4->GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128FRef(1.0f, 2.0f, 3.0f, 4.0f));
 
