@@ -2063,7 +2063,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                         fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
 
-                    if (predBlock->TargetIs(nonCanonicalBlock))
+                    if (predBlock->TrueTargetIs(nonCanonicalBlock))
                     {
                         fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
@@ -2176,14 +2176,23 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
                                              BasicBlock* canonicalBlock,
                                              FlowEdge*   predEdge)
 {
-    assert(predBlock->TargetIs(nonCanonicalBlock));
-
     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
 
     // Remove the old flow
     fgRemoveRefPred(nonCanonicalBlock, predBlock);
 
     // Wire up the new flow
-    predBlock->SetTarget(canonicalBlock);
+    if (predBlock->KindIs(BBJ_ALWAYS))
+    {
+        assert(predBlock->TargetIs(nonCanonicalBlock));
+        predBlock->SetTarget(canonicalBlock);
+    }
+    else
+    {
+        assert(predBlock->KindIs(BBJ_COND));
+        assert(predBlock->TrueTargetIs(nonCanonicalBlock));
+        predBlock->SetTrueTarget(canonicalBlock);
+    }
+
     fgAddRefPred(canonicalBlock, predBlock, predEdge);
 }
