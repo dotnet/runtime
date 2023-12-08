@@ -462,7 +462,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
 bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    assert(opts.IsReadyToRun());
+    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
     BasicBlock*     block  = *pBlock;
     CorInfoHelpFunc helper = call->GetHelperNum();
 
@@ -596,8 +596,6 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         assert(BasicBlock::sameEHRegion(prevBb, targetSymbCondBB));
         assert(BasicBlock::sameEHRegion(prevBb, lazyCtorBB));
 
-        // lazyCtorBB is the new previous block going forward
-        prevBb = lazyCtorBB;
         JITDUMP("lazyCtorBB: " FMT_BB "\n", lazyCtorBB->bbNum);
         JITDUMP("targetSymbCondBB: " FMT_BB "\n", targetSymbCondBB->bbNum);
     }
@@ -621,7 +619,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
         GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
-        dllRef          = gtNewIndir(TYP_UINT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        dllRef          = gtNewIndir(TYP_I_IMPL, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
 
         // Add the dllRef to produce thread local storage reference for coreclr
@@ -701,6 +699,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             assert(targetSymbCondBB != nullptr);
             assert(lazyCtorBB != nullptr);
 
+            prevBb->SetJumpDest(targetSymbCondBB);
             targetSymbCondBB->SetJumpDest(tlsRootNullCondBB);
             lazyCtorBB->SetJumpDest(block);
 
@@ -713,6 +712,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         {
             fgRemoveRefPred(block, prevBb);
             fgAddRefPred(tlsRootNullCondBB, prevBb);
+            prevBb->SetJumpDest(tlsRootNullCondBB);
         }
 
         //
