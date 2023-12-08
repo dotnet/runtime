@@ -140,6 +140,7 @@ The main types provided by this library are:
 * `System.Threading.RateLimiting.ReplenishingRateLimiter`
 * `System.Threading.RateLimiting.SlidingWindowRateLimiter`
 * `System.Threading.RateLimiting.TokenBucketRateLimiter`
+* `System.Threading.RateLimiting.PartitionedRateLimiter<TResource>`
 
 ## Additional Documentation
 
