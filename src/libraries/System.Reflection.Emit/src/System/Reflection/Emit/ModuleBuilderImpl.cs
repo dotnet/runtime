@@ -478,7 +478,7 @@ namespace System.Reflection.Emit
 
             Type[] parameterTypes = new Type[parameterInfos.Length];
 
-            for (int i=0; i<parameterInfos.Length; i++)
+            for (int i = 0; i < parameterInfos.Length; i++)
             {
                 parameterTypes[i] = parameterInfos[i].ParameterType;
             }

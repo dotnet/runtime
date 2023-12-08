@@ -470,7 +470,7 @@ static code_t insEncodeSveElemsize(insOpts opt);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
-static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(insOpts opt);
+static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)

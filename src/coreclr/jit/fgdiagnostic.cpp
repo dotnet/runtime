@@ -86,14 +86,14 @@ void Compiler::fgDebugCheckUpdate()
     {
         /* no unreachable blocks */
 
-        if ((block->countOfInEdges() == 0) && !(block->bbFlags & BBF_DONT_REMOVE))
+        if ((block->countOfInEdges() == 0) && !block->HasFlag(BBF_DONT_REMOVE))
         {
             noway_assert(!"Unreachable block not removed!");
         }
 
         /* no empty blocks */
 
-        if (block->isEmpty() && !(block->bbFlags & BBF_DONT_REMOVE))
+        if (block->isEmpty() && !block->HasFlag(BBF_DONT_REMOVE))
         {
             switch (block->GetJumpKind())
             {
@@ -122,11 +122,11 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-imported blocks */
 
-        if (!(block->bbFlags & BBF_IMPORTED))
+        if (!block->HasFlag(BBF_IMPORTED))
         {
             /* internal blocks do not count */
 
-            if (!(block->bbFlags & BBF_INTERNAL))
+            if (!block->HasFlag(BBF_INTERNAL))
             {
                 noway_assert(!"Non IMPORTED block not removed!");
             }
@@ -156,7 +156,7 @@ void Compiler::fgDebugCheckUpdate()
 
         if (block->KindIs(BBJ_ALWAYS) && prevIsCallAlwaysPair)
         {
-            noway_assert(block->bbFlags & BBF_KEEP_BBJ_ALWAYS);
+            noway_assert(block->HasFlag(BBF_KEEP_BBJ_ALWAYS));
         }
 
         /* For a BBJ_CALLFINALLY block we make sure that we are followed by */
@@ -164,7 +164,7 @@ void Compiler::fgDebugCheckUpdate()
         /* or that it's a BBF_RETLESS_CALL */
         if (block->KindIs(BBJ_CALLFINALLY))
         {
-            assert((block->bbFlags & BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
+            assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
         }
 
         /* no un-compacted blocks */
@@ -877,11 +877,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (displayBlockFlags)
             {
                 // Don't display the `[` `]` unless we're going to display something.
-                const bool            isTryEntryBlock = bbIsTryBeg(block);
-                const BasicBlockFlags allDisplayedBlockFlags =
-                    BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
+                const bool isTryEntryBlock = bbIsTryBeg(block);
 
-                if (isTryEntryBlock || ((block->bbFlags & allDisplayedBlockFlags) != 0))
+                if (isTryEntryBlock ||
+                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
+                                      BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -889,23 +889,23 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         fprintf(fgxFile, "T");
                     }
-                    if (block->bbFlags & BBF_FUNCLET_BEG)
+                    if (block->HasFlag(BBF_FUNCLET_BEG))
                     {
                         fprintf(fgxFile, "F");
                     }
-                    if (block->bbFlags & BBF_RUN_RARELY)
+                    if (block->HasFlag(BBF_RUN_RARELY))
                     {
                         fprintf(fgxFile, "R");
                     }
-                    if (block->bbFlags & BBF_LOOP_HEAD)
+                    if (block->HasFlag(BBF_LOOP_HEAD))
                     {
                         fprintf(fgxFile, "L");
                     }
-                    if (block->bbFlags & BBF_LOOP_PREHEADER)
+                    if (block->HasFlag(BBF_LOOP_PREHEADER))
                     {
                         fprintf(fgxFile, "P");
                     }
-                    if (block->bbFlags & BBF_LOOP_ALIGN)
+                    if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
                         fprintf(fgxFile, "A");
                     }
@@ -995,7 +995,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, ", shape = \"trapezium\"");
             }
-            else if (block->bbFlags & BBF_INTERNAL)
+            else if (block->HasFlag(BBF_INTERNAL))
             {
                 fprintf(fgxFile, ", shape = \"note\"");
             }
@@ -1016,15 +1016,15 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            inHandler=\"%s\"", "true");
             }
-            if ((fgFirstBB->hasProfileWeight()) && ((block->bbFlags & BBF_COLD) == 0))
+            if ((fgFirstBB->hasProfileWeight()) && !block->HasFlag(BBF_COLD))
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
-            if (block->bbFlags & BBF_HAS_NEWOBJ)
+            if (block->HasFlag(BBF_HAS_NEWOBJ))
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
-            if (block->bbFlags & BBF_LOOP_HEAD)
+            if (block->HasFlag(BBF_LOOP_HEAD))
             {
                 fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
@@ -1845,7 +1845,7 @@ void Compiler::fgDispDoms()
 
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags            = block->bbFlags;
+    const unsigned __int64 flags            = block->GetFlagsRaw();
     unsigned               bbNumMax         = fgBBNumMax;
     int                    maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
@@ -2927,7 +2927,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (fgFirstFuncletBB != nullptr)
         {
             assert(fgFirstFuncletBB->hasHndIndex() == true);
-            assert(fgFirstFuncletBB->bbFlags & BBF_FUNCLET_BEG);
+            assert(fgFirstFuncletBB->HasFlag(BBF_FUNCLET_BEG));
         }
     }
 #endif // FEATURE_EH_FUNCLETS
@@ -2998,7 +2998,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // This may not be true for unimported blocks, if
         // we haven't run post-importation cleanup yet.
         //
-        if (compPostImportationCleanupDone || ((block->bbFlags & BBF_IMPORTED) != 0))
+        if (compPostImportationCleanupDone || block->HasFlag(BBF_IMPORTED))
         {
             if (block->KindIs(BBJ_COND))
             {
@@ -3384,7 +3384,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             if (!fgGlobalMorphDone && call->CanTailCall() && gtIsRecursiveCall(call))
             {
                 assert(doesMethodHaveRecursiveTailcall());
-                assert((block->bbFlags & BBF_RECURSIVE_TAILCALL) != 0);
+                assert(block->HasFlag(BBF_RECURSIVE_TAILCALL));
             }
 
             for (CallArg& arg : call->gtArgs.Args())
@@ -4767,7 +4767,7 @@ void Compiler::fgDebugCheckLoopTable()
     unsigned newBBnum = 1;
     for (BasicBlock* const block : Blocks())
     {
-        if ((block->bbFlags & BBF_REMOVED) == 0)
+        if (!block->HasFlag(BBF_REMOVED))
         {
             assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
             assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
@@ -4998,7 +4998,7 @@ void Compiler::fgDebugCheckLoopTable()
             ++preHeaderCount;
 
             BasicBlock* h = loop.lpHead;
-            assert(h->bbFlags & BBF_LOOP_PREHEADER);
+            assert(h->HasFlag(BBF_LOOP_PREHEADER));
 
             // The pre-header can only be BBJ_ALWAYS and must enter the loop.
             BasicBlock* e = loop.lpEntry;
@@ -5123,7 +5123,7 @@ void Compiler::fgDebugCheckLoopTable()
             loopNum = optLoopTable[loopNum].lpParent;
         }
 
-        if (block->bbFlags & BBF_LOOP_PREHEADER)
+        if (block->HasFlag(BBF_LOOP_PREHEADER))
         {
             // Note that the bbNatLoopNum will not point to the loop where this is a pre-header, since bbNatLoopNum
             // is only set on the blocks from `top` to `bottom`, and `head` is outside that.

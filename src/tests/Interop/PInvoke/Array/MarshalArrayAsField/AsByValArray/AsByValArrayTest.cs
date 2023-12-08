@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace MarshalArrayAsField.ByValArray;
+
 #region Sequential
 #region sequential struct definition
 [StructLayout(LayoutKind.Sequential)]
@@ -1177,6 +1179,8 @@ public class Test
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try

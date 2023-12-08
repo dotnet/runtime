@@ -106,6 +106,12 @@ static bool isValidUimm11(ssize_t value)
     return (0 == (value >> 11));
 }
 
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding.
+static bool isValidUimm5(ssize_t value)
+{
+    return (0 == (value >> 5));
+}
+
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
 static bool isValidSimm20(ssize_t value)
 {
@@ -188,6 +194,9 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
 
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, ssize_t imm1, ssize_t imm2, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt = INS_OPTS_NONE);

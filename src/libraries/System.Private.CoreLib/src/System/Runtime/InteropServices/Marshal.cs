@@ -440,7 +440,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt16(Object, Int32, Char) may be unavailable in future releases.")]
-        public static void WriteInt16([In, Out]object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
+        public static void WriteInt16([In, Out] object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
         public static void WriteInt16(IntPtr ptr, char val) => WriteInt16(ptr, 0, (short)val);
 
@@ -601,7 +601,7 @@ namespace System.Runtime.InteropServices
             PtrToStructureHelper(ptr, boxedStructure, allowValueClasses: false);
         }
 
-        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(IntPtr ptr)
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
             {
