@@ -1916,7 +1916,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             break;
 
         case BBJ_COND:
-            m_succs[0] = block->bbNext;
+            m_succs[0] = block->bbFalseTarget;
             m_begin    = &m_succs[0];
 
             // If both fall-through and branch successors are identical, then only include
@@ -1927,7 +1927,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             }
             else
             {
-                m_succs[1] = block->bbTarget;
+                m_succs[1] = block->bbTrueTarget;
                 m_end      = &m_succs[2];
             }
             break;
