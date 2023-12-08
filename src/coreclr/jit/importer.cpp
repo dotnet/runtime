@@ -7355,8 +7355,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         block->SetJumpKind(BBJ_ALWAYS);
 
                         // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to
-                        // set
-                        // BBF_NONE_QUIRK
+                        // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
                     else
@@ -7434,8 +7433,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
 
                             // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense
-                            // to set
-                            // BBF_NONE_QUIRK
+                            // to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
                     }
@@ -7613,8 +7611,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         block->SetJumpKind(BBJ_ALWAYS);
 
                         // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to
-                        // set
-                        // BBF_NONE_QUIRK
+                        // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
                     else
