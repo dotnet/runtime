@@ -537,9 +537,9 @@ private:
 
 public:
     static BasicBlock* New(Compiler* compiler);
-    static BasicBlock* New(Compiler* compiler, BBKinds jumpKind, BasicBlock* jumpDest = nullptr);
-    static BasicBlock* New(Compiler* compiler, BBswtDesc* jumpSwt);
-    static BasicBlock* New(Compiler* compiler, BBKinds jumpKind, unsigned jumpOffs);
+    static BasicBlock* New(Compiler* compiler, BBKinds kind, BasicBlock* target = nullptr);
+    static BasicBlock* New(Compiler* compiler, BBswtDesc* swtTarget);
+    static BasicBlock* New(Compiler* compiler, BBKinds kind, unsigned targetOffs);
 
     BBKinds GetKind() const
     {
@@ -660,19 +660,19 @@ public:
         return bbFalseTarget;
     }
 
-    void SetFalseTarget(BasicBlock* jumpDest)
+    void SetFalseTarget(BasicBlock* target)
     {
         assert(KindIs(BBJ_COND));
-        assert(jumpDest != nullptr);
-        bbFalseTarget = jumpDest;
+        assert(target != nullptr);
+        bbFalseTarget = target;
     }
 
-    bool FalseTargetIs(BasicBlock* jumpDest) const
+    bool FalseTargetIs(BasicBlock* target) const
     {
         assert(KindIs(BBJ_COND));
-        assert(jumpDest != nullptr);
+        assert(target != nullptr);
         assert(bbFalseTarget != nullptr);
-        return (bbFalseTarget == jumpDest);
+        return (bbFalseTarget == target);
     }
 
     void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
@@ -690,10 +690,10 @@ public:
         return (bbTarget != nullptr);
     }
 
-    bool TargetIs(const BasicBlock* jumpDest) const
+    bool TargetIs(const BasicBlock* target) const
     {
         assert(HasInitializedTarget());
-        return (bbTarget == jumpDest);
+        return (bbTarget == target);
     }
 
     bool JumpsToNext() const
@@ -842,7 +842,7 @@ public:
     unsigned dspPreds();               // Print the predecessors (bbPreds)
     void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
                                        // regions are printed: see NumSucc() for details.
-    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
+    void dspKind();                // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);

@@ -678,7 +678,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
 // Display a compact representation of the bbKind, that is, where this block branches.
 // This is similar to code in Compiler::fgTableDispBasicBlock(), but doesn't have that code's requirements to align
 // things strictly.
-void BasicBlock::dspJumpKind()
+void BasicBlock::dspKind()
 {
     switch (bbKind)
     {
@@ -792,7 +792,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     dspBlockILRange();
     if (showKind)
     {
-        dspJumpKind();
+        dspKind();
     }
     if (showPreds)
     {
@@ -1592,15 +1592,15 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target /* = nullptr */)
 {
     BasicBlock* block = BasicBlock::New(compiler);
 
     // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
     // yet.
     // The checks will be done any time the jump kind/target is read or written to after initialization.
-    block->bbKind = jumpKind;
-    block->bbTarget = jumpDest;
+    block->bbKind = kind;
+    block->bbTarget = target;
 
     if (block->KindIs(BBJ_THROW))
     {
@@ -1610,19 +1610,19 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds jumpKind, BasicBlock* ju
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* jumpSwt)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* swtTarget)
 {
     BasicBlock* block = BasicBlock::New(compiler);
     block->bbKind = BBJ_SWITCH;
-    block->bbSwtTarget  = jumpSwt;
+    block->bbSwtTarget  = swtTarget;
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds jumpKind, unsigned jumpOffs)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, unsigned targetOffs)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-    block->bbKind = jumpKind;
-    block->bbTargetOffs = jumpOffs;
+    block->bbKind = kind;
+    block->bbTargetOffs = targetOffs;
     return block;
 }
 
