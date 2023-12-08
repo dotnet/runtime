@@ -6438,7 +6438,32 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
         }
 #endif
 
-        fgRemoveUnreachableBlocks([=](BasicBlock* block) { return !m_dfsTree->Contains(block); });
+        // The DFS we run is not precise around call-finally, so
+        // `fgRemoveUnreachableBlocks` can expose newly unreachable blocks
+        // that we did not uncover during the DFS. If we did remove any
+        // call-finally blocks then iterate to closure. This is a very rare
+        // case.
+        while (true)
+        {
+            bool anyCallFinallyPairs = false;
+            fgRemoveUnreachableBlocks([=, &anyCallFinallyPairs](BasicBlock* block) {
+                if (!m_dfsTree->Contains(block))
+                {
+                    anyCallFinallyPairs |= block->isBBCallAlwaysPair();
+                    return true;
+                }
+
+                return false;
+            });
+
+            if (!anyCallFinallyPairs)
+            {
+                break;
+            }
+
+            m_dfsTree = fgComputeDfs();
+        }
+
         status = PhaseStatus::MODIFIED_EVERYTHING;
     }
 

@@ -6052,7 +6052,11 @@ public:
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
+    template<typename TFuncAssignPreorder, typename TFuncAssignPostorder>
+    unsigned fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPostorder assignPostorder);
+
     FlowGraphDfsTree* fgComputeDfs();
+    void fgInvalidateDfsTree();
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
@@ -6117,6 +6121,8 @@ public:
     void fgDebugCheckProfileWeights(ProfileChecks checks);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
+
+    void fgDebugCheckDfsTree();
 
 #endif // DEBUG
 
