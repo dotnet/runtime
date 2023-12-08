@@ -1004,6 +1004,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Setup();
                 // Log("JavaScriptTestHelper.mjs imported");
             }
+            await Task.Yield();
         }
 
         public static Task DisposeAsync()

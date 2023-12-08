@@ -19,7 +19,7 @@ import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
 import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback } from "./diagnostics";
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
-import { mono_log_debug, mono_log_warn, mono_wasm_trace_logger } from "./logging";
+import { mono_log_warn, mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
 import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
 import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
@@ -163,7 +163,7 @@ export function replace_linker_placeholders(imports: WebAssembly.Imports) {
             const stubFn = env[shortName];
             if (typeof stubFn !== "function") throw new Error(`Expected ${shortName} to be a function`);
             env[shortName] = realFn;
-            mono_log_debug(`Replaced WASM import ${shortName} stub ${stubFn.name} with ${realFn.name || "minified implementation"}`);
+            // mono_log_debug(`Replaced WASM import ${shortName} stub ${stubFn.name} with ${realFn.name || "minified implementation"}`);
         }
     }
 

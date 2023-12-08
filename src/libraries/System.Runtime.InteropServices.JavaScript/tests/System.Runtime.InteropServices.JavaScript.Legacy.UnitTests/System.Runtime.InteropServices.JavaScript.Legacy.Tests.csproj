@@ -8,6 +8,7 @@
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
     <Scenario>WasmTestOnBrowser</Scenario>
+    <_XUnitBackgroundExec>false</_XUnitBackgroundExec>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WasmEnableLegacyJsInterop)' != 'false'">
