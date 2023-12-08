@@ -1551,7 +1551,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
     CONTRACTL_END;
 
     CrstHolder ch(&m_Crst);
-    DWORD newId = m_cDynamicEntries++;
+    DWORD newId = (LONG)m_cDynamicEntries++;
 
     if (newId >= m_maxDynamicEntries)
     {
