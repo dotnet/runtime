@@ -147,7 +147,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
                 }
                 srcNextIdx += srcGrapheme.length;
             }
-            if (j == needleSegments.length) {
+            if (j === needleSegments.length) {
                 result = srcIdx - srcGrapheme.length;
                 if (fromBeginning)
                     break;
