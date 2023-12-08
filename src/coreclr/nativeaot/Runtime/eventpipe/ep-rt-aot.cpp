@@ -395,22 +395,15 @@ ep_rt_aot_current_process_get_id (void)
     return static_cast<uint32_t>(GetCurrentProcessId ());
 }
 
-#ifdef TARGET_UNIX
-inline uint64_t THREADSilentGetCurrentThreadId()
-{
-    static __thread uint64_t tid;
-    if (!tid)
-        tid = PalGetCurrentOSThreadId();
-    return tid;
-}
-#endif
-
 ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
 #ifdef TARGET_UNIX
-    return static_cast<ep_rt_thread_id_t>(THREADSilentGetCurrentThreadId());
+    static __thread uint64_t tid;
+    if (!tid)
+        tid = PalGetCurrentOSThreadId();
+    return static_cast<ep_rt_thread_id_t>(tid);
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif
