@@ -1979,31 +1979,31 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         switch (block->GetJumpKind())
         {
             case BBJ_COND:
-                printf("-> " FMT_BB "%*s ( cond )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s ( cond )", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_CALLFINALLY:
-                printf("-> " FMT_BB "%*s (callf )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s (callf )", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_ALWAYS:
                 if (flags & BBF_KEEP_BBJ_ALWAYS)
                 {
-                    printf("-> " FMT_BB "%*s (ALWAYS)", block->GetJumpDest()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                    printf("-> " FMT_BB "%*s (ALWAYS)", block->GetTarget()->bbNum,
+                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 }
                 else
                 {
-                    printf("-> " FMT_BB "%*s (always)", block->GetJumpDest()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                    printf("-> " FMT_BB "%*s (always)", block->GetTarget()->bbNum,
+                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 }
                 break;
 
             case BBJ_LEAVE:
-                printf("-> " FMT_BB "%*s (leave )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s (leave )", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_EHFINALLYRET:
@@ -2047,13 +2047,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHFILTERRET:
-                printf("-> " FMT_BB "%*s (fltret)", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s (fltret)", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_EHCATCHRET:
-                printf("-> " FMT_BB "%*s ( cret )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s ( cret )", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_THROW:
@@ -3104,9 +3104,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         // Blocks with these jump kinds must have non-null jump targets
-        if (block->HasJumpDest())
+        if (block->HasTarget())
         {
-            assert(block->HasInitializedJumpDest());
+            assert(block->HasInitializedTarget());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
@@ -3124,7 +3124,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         {
             if (succBlock->KindIs(BBJ_CALLFINALLY))
             {
-                BasicBlock* finallyBlock = succBlock->GetJumpDest();
+                BasicBlock* finallyBlock = succBlock->GetTarget();
                 assert(finallyBlock->hasHndIndex());
                 unsigned finallyIndex = finallyBlock->getHndIndex();
 

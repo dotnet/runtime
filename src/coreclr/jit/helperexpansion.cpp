@@ -292,7 +292,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     fallbackBb->SetFlags(BBF_NONE_QUIRK);
 
     // Set nullcheckBb's real jump target
-    nullcheckBb->SetJumpDest(fallbackBb);
+    nullcheckBb->SetTarget(fallbackBb);
 
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
@@ -352,7 +352,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     if (needsSizeCheck)
     {
         // sizeCheckBb is the first block after prevBb
-        prevBb->SetJumpDest(sizeCheckBb);
+        prevBb->SetTarget(sizeCheckBb);
         fgAddRefPred(sizeCheckBb, prevBb);
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         fgAddRefPred(nullcheckBb, sizeCheckBb);
@@ -365,7 +365,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     else
     {
         // nullcheckBb is the first block after prevBb
-        prevBb->SetJumpDest(nullcheckBb);
+        prevBb->SetTarget(nullcheckBb);
         fgAddRefPred(nullcheckBb, prevBb);
         // No size check, nullcheckBb jumps to fast path
         fgAddRefPred(fastPathBb, nullcheckBb);
@@ -781,16 +781,16 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
 
     // Set maxThreadStaticBlocksCondBB's real jump target
-    maxThreadStaticBlocksCondBB->SetJumpDest(fallbackBb);
+    maxThreadStaticBlocksCondBB->SetTarget(fallbackBb);
 
     // Set threadStaticBlockNullCondBB's real jump target
-    threadStaticBlockNullCondBB->SetJumpDest(fastPathBb);
+    threadStaticBlockNullCondBB->SetTarget(fastPathBb);
 
     //
     // Update preds in all new blocks
     //
     assert(prevBb->KindIs(BBJ_ALWAYS));
-    prevBb->SetJumpDest(maxThreadStaticBlocksCondBB);
+    prevBb->SetTarget(maxThreadStaticBlocksCondBB);
     fgRemoveRefPred(block, prevBb);
     fgAddRefPred(maxThreadStaticBlocksCondBB, prevBb);
 
@@ -1166,7 +1166,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // prevBb always flows into isInitedBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
-    prevBb->SetJumpDest(isInitedBb);
+    prevBb->SetTarget(isInitedBb);
     prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
     fgAddRefPred(isInitedBb, prevBb);
@@ -1509,7 +1509,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fgRemoveRefPred(block, prevBb);
     // prevBb flows into lengthCheckBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
-    prevBb->SetJumpDest(lengthCheckBb);
+    prevBb->SetTarget(lengthCheckBb);
     prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
     fgAddRefPred(lengthCheckBb, prevBb);

@@ -190,14 +190,14 @@ void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 
 //------------------------------------------------------------------------
 // AssignLikelihoodJump: update edge likelihood for a block that always
-//   transfers control to bbJumpDest
+//   transfers control to bbTarget
 //
 // Arguments;
 //   block -- block in question
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
+    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
     edge->setLikelihood(1.0);
 }
 
@@ -210,7 +210,7 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
-    BasicBlock* const jump = block->GetJumpDest();
+    BasicBlock* const jump = block->GetTarget();
     BasicBlock* const next = block->GetFalseTarget();
 
     // Watch for degenerate case
@@ -861,7 +861,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                             " to reflect capping; current likelihood is " FMT_WT "\n",
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
-                    BasicBlock* const jump               = exitBlock->GetJumpDest();
+                    BasicBlock* const jump               = exitBlock->GetTarget();
                     BasicBlock* const next               = exitBlock->GetFalseTarget();
                     FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
                     FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);

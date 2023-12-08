@@ -675,7 +675,7 @@ private:
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
+                    m_compiler->fgRemoveRefPred(block->GetTarget(), block);
                     block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
                     block->SetFlags(BBF_NONE_QUIRK);
                 }
@@ -1551,7 +1551,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         assert(topBlock->KindIs(BBJ_ALWAYS));
         assert(topBlock->HasJumpTo(bottomBlock));
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        topBlock->SetJumpDest(topBlock->Next());
+        topBlock->SetTarget(topBlock->Next());
         topBlock->SetFlags(BBF_NONE_QUIRK);
         fgRemoveRefPred(bottomBlock, topBlock);
         fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);

@@ -604,17 +604,17 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
-            RETURN_ON_ABORT(func(bbJumpDest));
+            RETURN_ON_ABORT(func(bbTarget));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            RETURN_ON_ABORT(func(bbJumpDest));
+            RETURN_ON_ABORT(func(bbTarget));
             return VisitEHSuccs(comp, func);
 
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbJumpDest));
+            RETURN_ON_ABORT(func(bbTarget));
 
             // If this is a "leave helper" block (the empty BBJ_ALWAYS block
             // that pairs with a preceding BBJ_CALLFINALLY block to implement a
@@ -630,9 +630,9 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbFalseTarget));
 
-            if (bbJumpDest != bbFalseTarget)
+            if (bbTarget != bbFalseTarget)
             {
-                RETURN_ON_ABORT(func(bbJumpDest));
+                RETURN_ON_ABORT(func(bbTarget));
             }
 
             return VisitEHSuccs(comp, func);
@@ -691,14 +691,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            return func(bbJumpDest);
+            return func(bbTarget);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbFalseTarget));
 
-            if (bbJumpDest != bbFalseTarget)
+            if (bbTarget != bbFalseTarget)
             {
-                RETURN_ON_ABORT(func(bbJumpDest));
+                RETURN_ON_ABORT(func(bbTarget));
             }
 
             return BasicBlockVisit::Continue;

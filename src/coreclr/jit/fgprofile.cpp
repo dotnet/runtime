@@ -1008,7 +1008,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // We're leaving a try or catch, not a handler.
                     // Treat this as a normal edge.
                     //
-                    BasicBlock* const target = block->GetJumpDest();
+                    BasicBlock* const target = block->GetTarget();
 
                     // In some bad IL cases we may not have a target.
                     // In others we may see something other than LEAVE be most-nested in a try.
@@ -3781,8 +3781,8 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->HasInitializedJumpDest());
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
+        assert(block->HasInitializedTarget());
+        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
         return;
@@ -3792,7 +3792,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbJumpDest of
+    // to just yet (specially, in WalkSpanningTree, we may not add the bbTarget of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit
@@ -4409,7 +4409,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     // Does this block flow into only one other block
                     if (bSrc->KindIs(BBJ_ALWAYS))
                     {
-                        bOnlyNext = bSrc->GetJumpDest();
+                        bOnlyNext = bSrc->GetTarget();
                     }
                     else
                     {
@@ -4426,7 +4426,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 // Does this block flow into only one other block
                 if (bDst->KindIs(BBJ_ALWAYS))
                 {
-                    bOnlyNext = bDst->GetJumpDest();
+                    bOnlyNext = bDst->GetTarget();
                 }
                 else
                 {
@@ -4732,7 +4732,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     BasicBlock* otherDst;
                     if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetJumpDest();
+                        otherDst = bSrc->GetTarget();
                     }
                     else
                     {

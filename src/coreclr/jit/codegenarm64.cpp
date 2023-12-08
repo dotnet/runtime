@@ -2158,7 +2158,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R0, REG_SPBASE, /* canSkip */ false);
     }
-    GetEmitter()->emitIns_J(INS_bl_local, block->GetJumpDest());
+    GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
 
     BasicBlock* const nextBlock = block->Next();
 
@@ -2181,7 +2181,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+        BasicBlock* const jumpDest = nextBlock->GetTarget();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -2201,7 +2201,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
+    // jump target using bbTarget - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
     if (!block->HasFlag(BBF_RETLESS_CALL))
@@ -2216,7 +2216,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 {
     // For long address (default): `adrp + add` will be emitted.
     // For short address (proven later): `adr` will be emitted.
-    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -4654,7 +4654,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
-    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->GetJumpDest(), reg);
+    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->GetTarget(), reg);
 }
 
 //------------------------------------------------------------------------
@@ -4872,7 +4872,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
         instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_tbz : INS_tbnz;
         int         imm = genLog2((size_t)compareImm);
 
-        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->GetJumpDest(), reg, imm);
+        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->GetTarget(), reg, imm);
     }
     else
     {
@@ -4880,7 +4880,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
         instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_cbz : INS_cbnz;
 
-        GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->GetJumpDest(), reg);
+        GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->GetTarget(), reg);
     }
 }
 

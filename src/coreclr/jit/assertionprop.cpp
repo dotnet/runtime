@@ -5728,7 +5728,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
                 if (jumpDestAssertionIndex != NO_ASSERTION_INDEX)
                 {
-                    // Update jumpDestValueGen if we have an assertion for the bbJumpDest edge
+                    // Update jumpDestValueGen if we have an assertion for the bbTarget edge
                     optImpliedAssertions(jumpDestAssertionIndex, jumpDestValueGen);
                     BitVecOps::AddElemD(apTraits, jumpDestValueGen, jumpDestAssertionIndex - 1);
                 }
@@ -5755,7 +5755,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
             optPrintAssertionIndices(block->bbAssertionGen);
             if (block->KindIs(BBJ_COND))
             {
-                printf(" => " FMT_BB " valueGen = ", block->GetJumpDest()->bbNum);
+                printf(" => " FMT_BB " valueGen = ", block->GetTarget()->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
@@ -6315,7 +6315,7 @@ PhaseStatus Compiler::optAssertionPropMain()
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->KindIs(BBJ_COND))
             {
-                printf(" " FMT_BB " = ", block->GetJumpDest()->bbNum);
+                printf(" " FMT_BB " = ", block->GetTarget()->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }

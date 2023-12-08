@@ -527,12 +527,12 @@ private:
     /* The following union describes the jump target(s) of this block */
     union {
         unsigned    bbJumpOffs; // PC offset (temporary only)
-        BasicBlock* bbJumpDest; // basic block
+        BasicBlock* bbTarget; // basic block
         BBswtDesc*  bbJumpSwt;  // switch descriptor
         BBehfDesc*  bbJumpEhf;  // BBJ_EHFINALLYRET descriptor
     };
 
-    // Points to the successor of a BBJ_COND block if bbJumpDest is not taken
+    // Points to the successor of a BBJ_COND block if bbTarget is not taken
     BasicBlock* bbFalseTarget;
 
 public:
@@ -549,10 +549,10 @@ public:
     void SetJumpKind(BBjumpKinds jumpKind)
     {
         // If this block's jump kind requires a target, ensure it is already set
-        assert(!HasJumpDest() || HasInitializedJumpDest());
+        assert(!HasTarget() || HasInitializedTarget());
         bbJumpKind = jumpKind;
         // If new jump kind requires a target, ensure a target is already set
-        assert(!HasJumpDest() || HasInitializedJumpDest());
+        assert(!HasTarget() || HasInitializedTarget());
     }
 
     BasicBlock* Prev() const
@@ -583,7 +583,7 @@ public:
         }
 
         // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
-        // For now, if a BBJ_COND's bbJumpDest is not taken, we expect to fall through,
+        // For now, if a BBJ_COND's bbTarget is not taken, we expect to fall through,
         // so bbFalseTarget must be the next block.
         // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
         bbFalseTarget = next;
@@ -627,25 +627,25 @@ public:
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
-    bool HasJumpDest() const
+    bool HasTarget() const
     {
-        // These block types should always have bbJumpDest set
+        // These block types should always have bbTarget set
         return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
     }
 
-    BasicBlock* GetJumpDest() const
+    BasicBlock* GetTarget() const
     {
-        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(!HasJumpDest() || HasInitializedJumpDest());
-        return bbJumpDest;
+        // If bbJumpKind indicates this block has a jump, bbTarget cannot be null
+        assert(!HasTarget() || HasInitializedTarget());
+        return bbTarget;
     }
 
-    void SetJumpDest(BasicBlock* jumpDest)
+    void SetTarget(BasicBlock* target)
     {
-        // SetJumpKindAndTarget() nulls jumpDest for non-jump kinds,
-        // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
-        bbJumpDest = jumpDest;
-        assert(!HasJumpDest() || HasInitializedJumpDest());
+        // SetJumpKindAndTarget() nulls target for non-jump kinds,
+        // so don't use SetTarget() to null bbTarget without updating bbJumpKind.
+        bbTarget = target;
+        assert(!HasTarget() || HasInitializedTarget());
     }
 
     BasicBlock* GetFalseTarget() const
@@ -678,28 +678,28 @@ public:
     void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
     {
         bbJumpKind = jumpKind;
-        bbJumpDest = jumpDest;
+        bbTarget = jumpDest;
 
-        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(!HasJumpDest() || HasInitializedJumpDest());
+        // If bbJumpKind indicates this block has a jump, bbTarget cannot be null
+        assert(!HasTarget() || HasInitializedTarget());
     }
 
-    bool HasInitializedJumpDest() const
+    bool HasInitializedTarget() const
     {
-        assert(HasJumpDest());
-        return (bbJumpDest != nullptr);
+        assert(HasTarget());
+        return (bbTarget != nullptr);
     }
 
     bool HasJumpTo(const BasicBlock* jumpDest) const
     {
-        assert(HasInitializedJumpDest());
-        return (bbJumpDest == jumpDest);
+        assert(HasInitializedTarget());
+        return (bbTarget == jumpDest);
     }
 
     bool JumpsToNext() const
     {
-        assert(HasInitializedJumpDest());
-        return (bbJumpDest == bbNext);
+        assert(HasInitializedTarget());
+        return (bbTarget == bbNext);
     }
 
     BBswtDesc* GetJumpSwt() const
@@ -1879,7 +1879,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            m_succs[0] = block->bbJumpDest;
+            m_succs[0] = block->bbTarget;
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
@@ -1896,7 +1896,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             }
             else
             {
-                m_succs[1] = block->bbJumpDest;
+                m_succs[1] = block->bbTarget;
                 m_end      = &m_succs[2];
             }
             break;

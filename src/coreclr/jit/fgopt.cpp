@@ -136,11 +136,11 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 
         if (b1->KindIs(BBJ_COND))
         {
-            return fgReachable(b1->GetFalseTarget(), b2) || fgReachable(b1->GetJumpDest(), b2);
+            return fgReachable(b1->GetFalseTarget(), b2) || fgReachable(b1->GetTarget(), b2);
         }
         else
         {
-            return fgReachable(b1->GetJumpDest(), b2);
+            return fgReachable(b1->GetTarget(), b2);
         }
     }
 
@@ -1802,7 +1802,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    fgFirstBB->SetJumpDest(entryJumpTarget);
+                    fgFirstBB->SetTarget(entryJumpTarget);
                     fgRemoveRefPred(osrEntry, fgFirstBB);
                     fgAddRefPred(entryJumpTarget, fgFirstBB);
 
@@ -2309,12 +2309,12 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_COND:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpDest());
+            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetTarget());
 
-            /* Update the predecessor list for 'bNext->bbJumpDest' */
-            fgReplacePred(bNext->GetJumpDest(), bNext, block);
+            /* Update the predecessor list for 'bNext->bbTarget' */
+            fgReplacePred(bNext->GetTarget(), bNext, block);
 
-            /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbJumpDest' */
+            /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbTarget' */
             if (bNext->KindIs(BBJ_COND) && !bNext->HasJumpTo(bNext->GetFalseTarget()))
             {
                 fgReplacePred(bNext->GetFalseTarget(), bNext, block);
@@ -2347,7 +2347,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     assert(block->KindIs(bNext->GetJumpKind()));
 
-    if (bNext->KindIs(BBJ_COND, BBJ_ALWAYS) && bNext->GetJumpDest()->isLoopAlign())
+    if (bNext->KindIs(BBJ_COND, BBJ_ALWAYS) && bNext->GetTarget()->isLoopAlign())
     {
         // `bNext` has a backward target to some block which mean bNext is part of a loop.
         // `block` into which `bNext` is compacted should be updated with its loop number
@@ -2684,7 +2684,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     }
 
     // Don't optimize a jump to a removed block
-    if (bDest->GetJumpDest()->HasFlag(BBF_REMOVED))
+    if (bDest->GetTarget()->HasFlag(BBF_REMOVED))
     {
         optimizeJump = false;
     }
@@ -2708,7 +2708,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         if (verbose)
         {
             printf("\nOptimizing a jump to an unconditional jump (" FMT_BB " -> " FMT_BB " -> " FMT_BB ")\n",
-                   block->bbNum, bDest->bbNum, bDest->GetJumpDest()->bbNum);
+                   block->bbNum, bDest->bbNum, bDest->GetTarget()->bbNum);
         }
 #endif // DEBUG
 
@@ -2755,7 +2755,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
             }
 
-            FlowEdge* edge2 = fgGetPredForBlock(bDest->GetJumpDest(), bDest);
+            FlowEdge* edge2 = fgGetPredForBlock(bDest->GetTarget(), bDest);
 
             if (edge2 != nullptr)
             {
@@ -2787,9 +2787,9 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         }
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
-        block->SetJumpDest(bDest->GetJumpDest());
+        block->SetTarget(bDest->GetTarget());
 
-        fgAddRefPred(bDest->GetJumpDest(), block, fgRemoveRefPred(bDest, block));
+        fgAddRefPred(bDest->GetTarget(), block, fgRemoveRefPred(bDest, block));
 
         return true;
     }
@@ -2856,7 +2856,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 }
 
                 // TODO-NoFallThrough: Once BBJ_COND blocks have pointers to their false branches,
-                // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block->bbJumpDest.
+                // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block->bbTarget.
                 if (bPrev->bbFallsThrough() && !block->JumpsToNext())
                 {
                     break;
@@ -2897,7 +2897,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
              * to ensure we generate code for the block, if we keep it.
              */
             {
-                BasicBlock* succBlock = block->GetJumpDest();
+                BasicBlock* succBlock = block->GetTarget();
 
                 if ((succBlock != nullptr) && !BasicBlock::sameEHRegion(block, succBlock))
                 {
@@ -3058,7 +3058,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
             if (optimizeJump)
             {
-                bNewDest = bDest->GetJumpDest();
+                bNewDest = bDest->GetTarget();
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -3656,10 +3656,10 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
             return false;
         }
 
-        if (target->GetJumpDest()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
+        if (target->GetTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
         {
             JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->GetJumpDest()->bbNum);
+                    target->GetTarget()->bbNum);
             return false;
         }
     }
@@ -3694,8 +3694,8 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     // Fix up block's flow
     //
-    block->SetJumpKindAndTarget(BBJ_COND, target->GetJumpDest());
-    fgAddRefPred(block->GetJumpDest(), block);
+    block->SetJumpKindAndTarget(BBJ_COND, target->GetTarget());
+    fgAddRefPred(block->GetTarget(), block);
     fgRemoveRefPred(target, block);
 
     // add an unconditional block after this block to jump to the target block's fallthrough block
@@ -3707,7 +3707,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     //
     next->inheritWeight(block);
     fgAddRefPred(next, block);
-    fgAddRefPred(next->GetJumpDest(), next);
+    fgAddRefPred(next->GetTarget(), next);
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
             block->bbNum, target->bbNum, next->bbNum);
@@ -3893,14 +3893,14 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    BasicBlock* bDest = bJump->GetJumpDest();
+    BasicBlock* bDest = bJump->GetTarget();
 
     if (!bDest->KindIs(BBJ_COND))
     {
         return false;
     }
 
-    if (!bJump->NextIs(bDest->GetJumpDest()))
+    if (!bJump->NextIs(bDest->GetTarget()))
     {
         return false;
     }
@@ -4487,7 +4487,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
         {
             case BBJ_ALWAYS:
 
-                if (bPrev->GetJumpDest()->isRunRarely())
+                if (bPrev->GetTarget()->isRunRarely())
                 {
                     reason = "Unconditional jump to a rarely run block";
                 }
@@ -4503,7 +4503,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
             case BBJ_COND:
 
-                if (block->isRunRarely() && bPrev->GetJumpDest()->isRunRarely())
+                if (block->isRunRarely() && bPrev->GetTarget()->isRunRarely())
                 {
                     reason = "Both sides of a conditional jump are rarely run";
                 }
@@ -4771,7 +4771,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         // Setup bDest
         if (bPrev->KindIs(BBJ_COND, BBJ_ALWAYS))
         {
-            bDest          = bPrev->GetJumpDest();
+            bDest          = bPrev->GetTarget();
             forwardBranch  = fgIsForwardBranch(bPrev);
             backwardBranch = !forwardBranch;
         }
@@ -5601,7 +5601,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     BasicBlock* jumpBlk = nullptr;
 
                     if (bEnd->KindIs(BBJ_ALWAYS) && !bEnd->JumpsToNext() &&
-                        (!isRare || bEnd->GetJumpDest()->isRunRarely()) && fgIsForwardBranch(bEnd, bPrev))
+                        (!isRare || bEnd->GetTarget()->isRunRarely()) && fgIsForwardBranch(bEnd, bPrev))
                     {
                         // Set nearBlk to be the block in [startBlk..endBlk]
                         // such that nearBlk->NextIs(bEnd->JumpDest)
@@ -5616,7 +5616,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                             if (nearBlk != bPrev)
                             {
                                 // Check if nearBlk satisfies our requirement
-                                if (nearBlk->NextIs(bEnd->GetJumpDest()))
+                                if (nearBlk->NextIs(bEnd->GetTarget()))
                                 {
                                     break;
                                 }
@@ -5760,7 +5760,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             if (bStart2 == nullptr)
             {
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetJumpDest(bStart);
+                bPrev->SetTarget(bStart);
             }
             else
             {
@@ -5768,7 +5768,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 noway_assert(insertAfterBlk->NextIs(block));
 
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetJumpDest(block);
+                bPrev->SetTarget(block);
             }
         }
 
@@ -5989,13 +5989,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
             if (block->KindIs(BBJ_ALWAYS))
             {
-                bDest = block->GetJumpDest();
+                bDest = block->GetTarget();
                 if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, bDest))
                 {
                     assert(block->KindIs(BBJ_COND));
                     change   = true;
                     modified = true;
-                    bDest    = block->GetJumpDest();
+                    bDest    = block->GetTarget();
                     bNext    = block->GetFalseTarget();
 
                     // TODO-NoFallThrough: Adjust the above logic once bbFalseTarget can diverge from bbNext
@@ -6008,7 +6008,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
             if (block->KindIs(BBJ_ALWAYS))
             {
-                bDest = block->GetJumpDest();
+                bDest = block->GetTarget();
                 if (bDest == bNext)
                 {
                     // Skip jump optimizations, and try to compact block and bNext later
@@ -6018,7 +6018,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             }
             else if (block->KindIs(BBJ_COND))
             {
-                bDest = block->GetJumpDest();
+                bDest = block->GetTarget();
                 if (bDest == bNext)
                 {
                     // TODO-NoFallThrough: Fix above condition once bbFalseTarget can diverge from bbNext
@@ -6087,7 +6087,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     // * don't consider lexical predecessors, or we may confuse loop recognition
                     // * don't consider blocks of different rarities
                     //
-                    BasicBlock* const bNextJumpDest    = bNext->GetJumpDest();
+                    BasicBlock* const bNextJumpDest    = bNext->GetTarget();
                     const bool        isJumpToJoinFree = !isJumpAroundEmpty && (bDest->bbRefs == 1) &&
                                                   (bNextJumpDest->bbRefs > 1) && (bDest->bbNum > block->bbNum) &&
                                                   (block->isRunRarely() == bDest->isRunRarely());
@@ -6204,9 +6204,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         }
 
                         // Optimize the Conditional JUMP to go to the new target
-                        block->SetJumpDest(bNext->GetJumpDest());
+                        block->SetTarget(bNext->GetTarget());
 
-                        fgAddRefPred(bNext->GetJumpDest(), block, fgRemoveRefPred(bNext->GetJumpDest(), bNext));
+                        fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTarget(), bNext));
 
                         /*
                           Unlink bNext from the BasicBlock list; note that we can
@@ -7032,7 +7032,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     Statement* destFirstStmt;
 
     if (!getSuccCandidate(block->GetFalseTarget(), &nextFirstStmt) ||
-        !getSuccCandidate(block->GetJumpDest(), &destFirstStmt))
+        !getSuccCandidate(block->GetTarget(), &destFirstStmt))
     {
         return false;
     }
@@ -7062,7 +7062,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
 
     fgUnlinkStmt(block->GetFalseTarget(), nextFirstStmt);
     fgInsertStmtNearEnd(block, nextFirstStmt);
-    fgUnlinkStmt(block->GetJumpDest(), destFirstStmt);
+    fgUnlinkStmt(block->GetTarget(), destFirstStmt);
     block->CopyFlags(block->GetFalseTarget(), BBF_COPY_PROPAGATE);
 
     return true;

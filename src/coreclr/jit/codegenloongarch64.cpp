@@ -1518,7 +1518,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
     }
-    GetEmitter()->emitIns_J(INS_bl, block->GetJumpDest());
+    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
     BasicBlock* const nextBlock = block->Next();
 
@@ -1541,7 +1541,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+        BasicBlock* const jumpDest = nextBlock->GetTarget();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -1561,7 +1561,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
+    // jump target using bbTarget - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
     if (!block->HasFlag(BBF_RETLESS_CALL))
@@ -1574,7 +1574,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -4334,7 +4334,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(ins != INS_invalid);
     assert(regs != 0);
 
-    emit->emitIns_J(ins, compiler->compCurBB->GetJumpDest(), regs); // 5-bits;
+    emit->emitIns_J(ins, compiler->compCurBB->GetTarget(), regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
@@ -4910,7 +4910,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_JCC:
         {
-            BasicBlock* tgtBlock = compiler->compCurBB->GetJumpDest();
+            BasicBlock* tgtBlock = compiler->compCurBB->GetTarget();
 #if !FEATURE_FIXED_OUT_ARGS
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS

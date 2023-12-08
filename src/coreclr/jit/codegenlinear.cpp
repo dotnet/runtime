@@ -748,11 +748,11 @@ void CodeGen::genCodeForBBlist()
                 // with a jump, do not remove jumps from such blocks.
                 // Do not remove a jump between hot and cold regions.
                 bool isRemovableJmpCandidate =
-                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetJumpDest());
+                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetTarget());
 
-                inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
+                inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
 #else
-                inst_JMP(EJ_jmp, block->GetJumpDest());
+                inst_JMP(EJ_jmp, block->GetTarget());
 #endif // TARGET_XARCH
             }
 
@@ -769,14 +769,14 @@ void CodeGen::genCodeForBBlist()
                 // During emitter, this information will be used to calculate the loop size.
                 // Depending on the loop size, decision of whether to align a loop or not will be taken.
                 //
-                // In the emitter, we need to calculate the loop size from `block->bbJumpDest` through
+                // In the emitter, we need to calculate the loop size from `block->bbTarget` through
                 // `block` (inclusive). Thus, we need to ensure there is a label on the lexical fall-through
                 // block, even if one is not otherwise needed, to be able to calculate the size of this
                 // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
 
-                if (block->GetJumpDest()->isLoopAlign())
+                if (block->GetTarget()->isLoopAlign())
                 {
-                    GetEmitter()->emitSetLoopBackEdge(block->GetJumpDest());
+                    GetEmitter()->emitSetLoopBackEdge(block->GetTarget());
 
                     if (!block->IsLast())
                     {
@@ -2617,7 +2617,7 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
-    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetJumpDest());
+    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTarget());
 }
 
 //------------------------------------------------------------------------

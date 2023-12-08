@@ -352,11 +352,11 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            fgRemoveRefPred(block->GetJumpDest(), block);
+            fgRemoveRefPred(block->GetTarget(), block);
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->GetJumpDest(), block);
+            fgRemoveRefPred(block->GetTarget(), block);
             fgRemoveRefPred(block->GetFalseTarget(), block);
             break;
 

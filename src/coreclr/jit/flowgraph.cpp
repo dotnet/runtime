@@ -278,10 +278,10 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetJumpDest());
+        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetTarget());
         BBjumpKinds   oldJumpKind = top->GetJumpKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
-        poll->SetJumpDest(bottom);
+        poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
 
         // Update block flags
@@ -412,7 +412,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgReplacePred(bottom->GetJumpDest(), top, bottom);
+                fgReplacePred(bottom->GetTarget(), top, bottom);
                 break;
             case BBJ_SWITCH:
                 NO_WAY("SWITCH should be a call rather than an inlined poll.");
@@ -1681,7 +1681,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     if (verbose)
     {
         printf("Synchronized method - convert block " FMT_BB " to BBJ_ALWAYS [targets " FMT_BB "]\n", block->bbNum,
-               block->GetJumpDest()->bbNum);
+               block->GetTarget()->bbNum);
     }
 #endif
 }
@@ -2835,7 +2835,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             {
                 case BBJ_CALLFINALLY:
                     noway_assert(predBlock->HasJumpTo(block));
-                    predBlock->SetJumpDest(newHead);
+                    predBlock->SetTarget(newHead);
                     fgRemoveRefPred(block, predBlock);
                     fgAddRefPred(newHead, predBlock);
                     break;
@@ -3536,7 +3536,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 #endif // DEBUG
 
         //  Mark the block as added by the compiler and not removable by future flow
-        // graph optimizations. Note that no bbJumpDest points to these blocks.
+        // graph optimizations. Note that no bbTarget points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 

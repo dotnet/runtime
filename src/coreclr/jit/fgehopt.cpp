@@ -155,7 +155,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 noway_assert(currentBlock->isBBCallAlwaysPair());
 
                 BasicBlock* const leaveBlock          = currentBlock->Next();
-                BasicBlock* const postTryFinallyBlock = leaveBlock->GetJumpDest();
+                BasicBlock* const postTryFinallyBlock = leaveBlock->GetTarget();
 
                 JITDUMP("Modifying callfinally " FMT_BB " leave " FMT_BB " finally " FMT_BB " continuation " FMT_BB
                         "\n",
@@ -374,7 +374,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             continue;
         }
 
-        BasicBlock* const callFinally = firstTryBlock->GetJumpDest();
+        BasicBlock* const callFinally = firstTryBlock->GetTarget();
 
         // Look for call always pair. Note this will also disqualify
         // empty try removal in cases where the finally doesn't
@@ -454,12 +454,12 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Time to optimize.
         //
         // (1) Convert the callfinally to a normal jump to the handler
-        assert(callFinally->HasInitializedJumpDest());
+        assert(callFinally->HasInitializedTarget());
         callFinally->SetJumpKind(BBJ_ALWAYS);
 
         // Identify the leave block and the continuation
         BasicBlock* const leave        = callFinally->Next();
-        BasicBlock* const continuation = leave->GetJumpDest();
+        BasicBlock* const continuation = leave->GetTarget();
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
         assert(leave->HasFlag(BBF_KEEP_BBJ_ALWAYS));
@@ -810,7 +810,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             if (block->KindIs(BBJ_ALWAYS))
             {
-                jumpDest = block->GetJumpDest();
+                jumpDest = block->GetTarget();
             }
 
             if (jumpDest == nullptr)
@@ -831,7 +831,7 @@ PhaseStatus Compiler::fgCloneFinally()
             // Found a block that invokes the finally.
             //
             BasicBlock* const finallyReturnBlock  = jumpDest->Next();
-            BasicBlock* const postTryFinallyBlock = finallyReturnBlock->GetJumpDest();
+            BasicBlock* const postTryFinallyBlock = finallyReturnBlock->GetTarget();
             bool              isUpdate            = false;
 
             // See if this is the one we want to use to inspire cloning.
@@ -1078,7 +1078,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
             assert(newBlock->KindIs(BBJ_ALWAYS));
-            assert(!newBlock->HasInitializedJumpDest());
+            assert(!newBlock->HasInitializedTarget());
         }
 
         if (!clonedOk)
@@ -1102,7 +1102,7 @@ PhaseStatus Compiler::fgCloneFinally()
             BasicBlock* newBlock = blockMap[block];
             // Jump kind/target should not be set yet
             assert(newBlock->KindIs(BBJ_ALWAYS));
-            assert(!newBlock->HasInitializedJumpDest());
+            assert(!newBlock->HasInitializedTarget());
 
             if (block->KindIs(BBJ_EHFINALLYRET))
             {
@@ -1137,7 +1137,7 @@ PhaseStatus Compiler::fgCloneFinally()
             if (currentBlock->isBBCallAlwaysPair() && currentBlock->HasJumpTo(firstBlock))
             {
                 BasicBlock* const leaveBlock          = currentBlock->Next();
-                BasicBlock* const postTryFinallyBlock = leaveBlock->GetJumpDest();
+                BasicBlock* const postTryFinallyBlock = leaveBlock->GetTarget();
 
                 // Note we must retarget all callfinallies that have this
                 // continuation, or we can't clean up the continuation
@@ -1425,7 +1425,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                     if (succBlock->isEmpty())
                     {
                         // case (c)
-                        BasicBlock* const succSuccBlock = succBlock->GetJumpDest();
+                        BasicBlock* const succSuccBlock = succBlock->GetTarget();
 
                         if (succSuccBlock->HasFlag(BBF_CLONED_FINALLY_BEGIN))
                         {
@@ -1657,7 +1657,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 
                 // Locate the continuation
                 BasicBlock* const leaveBlock        = currentBlock->Next();
-                BasicBlock* const continuationBlock = leaveBlock->GetJumpDest();
+                BasicBlock* const continuationBlock = leaveBlock->GetTarget();
 
                 // If this is the first time we've seen this
                 // continuation, register this callfinally as the
@@ -1759,7 +1759,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
 
     // Screen out cases that are not callfinallys to the right
     // handler.
-    BasicBlock* const callFinally = block->GetJumpDest();
+    BasicBlock* const callFinally = block->GetTarget();
 
     if (!callFinally->isBBCallAlwaysPair())
     {
@@ -1774,7 +1774,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     // Ok, this is a callfinally that invokes the right handler.
     // Get its continuation.
     BasicBlock* const leaveBlock        = callFinally->Next();
-    BasicBlock* const continuationBlock = leaveBlock->GetJumpDest();
+    BasicBlock* const continuationBlock = leaveBlock->GetTarget();
 
     // Find the canonical callfinally for that continuation.
     BasicBlock* const canonicalCallFinally = continuationMap[continuationBlock];
@@ -1791,7 +1791,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     JITDUMP("Redirecting branch in " FMT_BB " from " FMT_BB " to " FMT_BB ".\n", block->bbNum, callFinally->bbNum,
             canonicalCallFinally->bbNum);
 
-    block->SetJumpDest(canonicalCallFinally);
+    block->SetTarget(canonicalCallFinally);
     fgAddRefPred(canonicalCallFinally, block);
     assert(callFinally->bbRefs > 0);
     fgRemoveRefPred(callFinally, block);
@@ -2184,6 +2184,6 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
     fgRemoveRefPred(nonCanonicalBlock, predBlock);
 
     // Wire up the new flow
-    predBlock->SetJumpDest(canonicalBlock);
+    predBlock->SetTarget(canonicalBlock);
     fgAddRefPred(canonicalBlock, predBlock, predEdge);
 }

@@ -499,14 +499,14 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     if ((skipUnmarkLoop == false) &&                     // If we want to unmark this loop...
         block->KindIs(BBJ_ALWAYS, BBJ_COND) &&           // This block reaches conditionally or always
-        block->GetJumpDest()->isLoopHead() &&            // to a loop head...
+        block->GetTarget()->isLoopHead() &&            // to a loop head...
         (fgCurBBEpochSize == fgBBNumMax + 1) &&          // We didn't add new blocks since last renumber...
-        (block->GetJumpDest()->bbNum <= block->bbNum) && // This is a backedge...
+        (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
         fgDomsComputed &&                                // Given the doms are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1) &&        //
-        fgReachable(block->GetJumpDest(), block))        // Block's destination (target of back edge) can reach block...
+        fgReachable(block->GetTarget(), block))        // Block's destination (target of back edge) can reach block...
     {
-        optUnmarkLoopBlocks(block->GetJumpDest(), block); // Unscale the blocks in such loop.
+        optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
     }
 }
 
@@ -1773,10 +1773,10 @@ private:
     {
         if (head->KindIs(BBJ_ALWAYS))
         {
-            if (head->GetJumpDest()->bbNum <= bottom->bbNum && head->GetJumpDest()->bbNum >= top->bbNum)
+            if (head->GetTarget()->bbNum <= bottom->bbNum && head->GetTarget()->bbNum >= top->bbNum)
             {
                 // OK - we enter somewhere within the loop.
-                return head->GetJumpDest();
+                return head->GetTarget();
             }
             else
             {
@@ -2114,7 +2114,7 @@ private:
 
         if (newMoveAfter->KindIs(BBJ_ALWAYS, BBJ_COND))
         {
-            unsigned int destNum = newMoveAfter->GetJumpDest()->bbNum;
+            unsigned int destNum = newMoveAfter->GetTarget()->bbNum;
             if ((destNum >= top->bbNum) && (destNum <= bottom->bbNum) && !loopBlocks.IsMember(destNum))
             {
                 // Reversing this branch out of block `newMoveAfter` could confuse this algorithm
@@ -2281,7 +2281,7 @@ private:
                 }
 
                 // Redirect the Conditional JUMP to go to `oldNext`
-                block->SetJumpDest(oldNext);
+                block->SetTarget(oldNext);
             }
             else
             {
@@ -2362,8 +2362,8 @@ private:
             case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                assert(block->HasInitializedJumpDest());
-                exitPoint = block->GetJumpDest();
+                assert(block->HasInitializedTarget());
+                exitPoint = block->GetTarget();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
@@ -2715,13 +2715,13 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_CALLFINALLY:
         case BBJ_COND:
             // All of these have a single jump destination to update.
-            if (redirectMap->Lookup(blk->GetJumpDest(), &newJumpDest))
+            if (redirectMap->Lookup(blk->GetTarget(), &newJumpDest))
             {
                 if (updatePreds)
                 {
-                    fgRemoveRefPred(blk->GetJumpDest(), blk);
+                    fgRemoveRefPred(blk->GetTarget(), blk);
                 }
-                blk->SetJumpDest(newJumpDest);
+                blk->SetTarget(newJumpDest);
                 if (updatePreds || addPreds)
                 {
                     fgAddRefPred(newJumpDest, blk);
@@ -2729,7 +2729,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             }
             else if (addPreds)
             {
-                fgAddRefPred(blk->GetJumpDest(), blk);
+                fgAddRefPred(blk->GetTarget(), blk);
             }
             break;
 
@@ -2815,7 +2815,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetJumpKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
         default:
-            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetJumpDest());
+            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetTarget());
             to->CopyFlags(from, BBF_NONE_QUIRK);
             break;
     }
@@ -2927,7 +2927,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         newH->SetFlags(BBF_NONE_QUIRK);
         newH->inheritWeight(h);
         newH->bbNatLoopNum = h->bbNatLoopNum;
-        h->SetJumpDest(newH);
+        h->SetTarget(newH);
 
         fgRemoveRefPred(t, h);
         fgAddRefPred(newH, h);
@@ -3203,12 +3203,12 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
 
     if (h->KindIs(BBJ_COND))
     {
-        BasicBlock* const hj = h->GetJumpDest();
+        BasicBlock* const hj = h->GetTarget();
         assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
     }
     else
     {
-        h->SetJumpDest(newT);
+        h->SetTarget(newT);
     }
 
     fgRemoveRefPred(t, h);
@@ -3424,7 +3424,7 @@ BasicBlock* Compiler::optLoopEntry(BasicBlock* preHeader)
 {
     assert(preHeader->HasFlag(BBF_LOOP_PREHEADER));
     assert(preHeader->KindIs(BBJ_ALWAYS));
-    return preHeader->GetJumpDest();
+    return preHeader->GetTarget();
 }
 
 //-----------------------------------------------------------------------------
@@ -4381,7 +4381,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
                     assert(newBlock->KindIs(BBJ_ALWAYS));
-                    assert(!newBlock->HasInitializedJumpDest());
+                    assert(!newBlock->HasInitializedTarget());
 
                     if (block == bottom)
                     {
@@ -4410,7 +4410,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 {
                     // Jump kind/target should not be set yet
                     BasicBlock* newBlock = blockMap[block];
-                    assert(!newBlock->HasInitializedJumpDest());
+                    assert(!newBlock->HasInitializedTarget());
 
                     // Now copy the jump kind/target
                     optCopyBlkDest(block, newBlock);
@@ -4427,8 +4427,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 if (clonedTopPrev->KindIs(BBJ_ALWAYS))
                 {
-                    assert(!clonedTopPrev->HasInitializedJumpDest());
-                    clonedTopPrev->SetJumpDest(clonedTop);
+                    assert(!clonedTopPrev->HasInitializedTarget());
+                    clonedTopPrev->SetTarget(clonedTop);
                 }
 
                 fgAddRefPred(clonedTop, clonedTop->Prev());
@@ -4527,7 +4527,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 Statement* initBlockBranchStmt = initBlock->lastStmt();
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
-                fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
+                fgRemoveRefPred(initBlock->GetTarget(), initBlock);
                 initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->GetFalseTarget());
 
                 // TODO-NoFallThrough: If bbFalseTarget can diverge from bbNext, it may not make sense to set
@@ -4561,9 +4561,9 @@ PhaseStatus Compiler::optUnrollLoops()
             {
                 BasicBlock* clonedBottom = blockMap[bottom];
                 assert(clonedBottom->KindIs(BBJ_ALWAYS));
-                assert(!clonedBottom->HasInitializedJumpDest());
+                assert(!clonedBottom->HasInitializedTarget());
 
-                clonedBottom->SetJumpDest(tail);
+                clonedBottom->SetTarget(tail);
                 fgAddRefPred(tail, clonedBottom);
                 fgRemoveRefPred(tail, bottom);
             }
@@ -4771,7 +4771,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // Get hold of the jump target
-    BasicBlock* const bTest = block->GetJumpDest();
+    BasicBlock* const bTest = block->GetTarget();
 
     // Does the bTest consist of 'jtrue(cond) block' ?
     if (!bTest->KindIs(BBJ_COND))
@@ -4782,7 +4782,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // bTest must be a backwards jump to block->bbNext
     // This will be the top of the loop.
     //
-    BasicBlock* const bTop = bTest->GetJumpDest();
+    BasicBlock* const bTop = bTest->GetTarget();
 
     if (!block->NextIs(bTop))
     {
@@ -4811,7 +4811,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // It has to be a forward jump. Defer this check until after all the cheap checks
-    // are done, since it iterates forward in the block list looking for bbJumpDest.
+    // are done, since it iterates forward in the block list looking for bbTarget.
     //  TODO-CQ: Check if we can also optimize the backwards jump as well.
     //
     if (!fgIsForwardBranch(block))
@@ -5161,15 +5161,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
         FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->GetFalseTarget(), bNewCond);
-        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->GetJumpDest(), bNewCond);
+        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->GetTarget(), bNewCond);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
                 bNewCond->GetFalseTarget()->bbNum, blockToNextWeight);
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
-                bNewCond->GetJumpDest()->bbNum, blockToAfterWeight);
+                bNewCond->GetTarget()->bbNum, blockToAfterWeight);
 
         edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetFalseTarget());
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetJumpDest());
+        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetTarget());
 
 #ifdef DEBUG
         // If we're checkig profile data, see if profile for the two target blocks is consistent.
@@ -5178,7 +5178,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         {
             const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
             const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetFalseTarget(), checks);
-            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetJumpDest(), checks);
+            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetTarget(), checks);
 
             if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
             {
@@ -8181,7 +8181,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             BasicBlock* skipLoopBlock;
             if (head->FalseTargetIs(entry))
             {
-                skipLoopBlock = head->GetJumpDest();
+                skipLoopBlock = head->GetTarget();
             }
             else
             {
@@ -8281,7 +8281,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             case BBJ_COND:
                 if (predBlock->HasJumpTo(entry))
                 {
-                    predBlock->SetJumpDest(preHead);
+                    predBlock->SetTarget(preHead);
                     noway_assert(!predBlock->FalseTargetIs(preHead));
                 }
                 else
@@ -8295,7 +8295,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
                 noway_assert(predBlock->HasJumpTo(entry));
-                predBlock->SetJumpDest(preHead);
+                predBlock->SetTarget(preHead);
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);
                 break;

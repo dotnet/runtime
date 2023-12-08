@@ -274,7 +274,7 @@ private:
             if (checkBlock != currBlock)
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
-                currBlock->SetJumpDest(checkBlock);
+                currBlock->SetTarget(checkBlock);
                 compiler->fgAddRefPred(checkBlock, currBlock);
             }
 
@@ -1011,7 +1011,7 @@ private:
 
             // Also, thenBlock has a single pred - last checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetJumpDest(thenBlock);
+            checkBlock->SetTarget(thenBlock);
             checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
             compiler->fgAddRefPred(thenBlock, checkBlock);

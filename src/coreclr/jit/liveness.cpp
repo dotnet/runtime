@@ -891,7 +891,7 @@ void Compiler::fgExtendDbgLifetimes()
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetTarget()->bbScope);
                 break;
 
             case BBJ_CALLFINALLY:
@@ -901,13 +901,13 @@ void Compiler::fgExtendDbgLifetimes()
                     PREFIX_ASSUME(!block->IsLast());
                     VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
                 }
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetTarget()->bbScope);
                 break;
 
             case BBJ_COND:
                 PREFIX_ASSUME(!block->IsLast());
                 VarSetOps::UnionD(this, initVars, block->GetFalseTarget()->bbScope);
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetTarget()->bbScope);
                 break;
 
             case BBJ_SWITCH:

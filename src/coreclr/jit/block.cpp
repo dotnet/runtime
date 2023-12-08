@@ -297,7 +297,7 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbJumpDest);
+    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
 }
 
 //------------------------------------------------------------------------
@@ -711,11 +711,11 @@ void BasicBlock::dspJumpKind()
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" -> " FMT_BB " (fltret)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (fltret)", bbTarget->bbNum);
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> " FMT_BB " (cret)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (cret)", bbTarget->bbNum);
             break;
 
         case BBJ_THROW:
@@ -729,24 +729,24 @@ void BasicBlock::dspJumpKind()
         case BBJ_ALWAYS:
             if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
-                printf(" -> " FMT_BB " (ALWAYS)", bbJumpDest->bbNum);
+                printf(" -> " FMT_BB " (ALWAYS)", bbTarget->bbNum);
             }
             else
             {
-                printf(" -> " FMT_BB " (always)", bbJumpDest->bbNum);
+                printf(" -> " FMT_BB " (always)", bbTarget->bbNum);
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> " FMT_BB " (leave)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (leave)", bbTarget->bbNum);
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> " FMT_BB " (callf)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (callf)", bbTarget->bbNum);
             break;
 
         case BBJ_COND:
-            printf(" -> " FMT_BB " (cond)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (cond)", bbTarget->bbNum);
             break;
 
         case BBJ_SWITCH:
@@ -993,7 +993,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
-    return KindIs(BBJ_ALWAYS) ? bbJumpDest : nullptr;
+    return KindIs(BBJ_ALWAYS) ? bbTarget : nullptr;
 }
 
 // Static vars.
@@ -1149,7 +1149,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbJumpDest == bbNext)
+            if (bbTarget == bbNext)
             {
                 return 1;
             }
@@ -1202,7 +1202,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            return bbJumpDest;
+            return bbTarget;
 
         case BBJ_COND:
             if (i == 0)
@@ -1212,8 +1212,8 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             else
             {
                 assert(i == 1);
-                assert(bbNext != bbJumpDest);
-                return bbJumpDest;
+                assert(bbNext != bbTarget);
+                return bbTarget;
             }
 
         case BBJ_EHFINALLYRET:
@@ -1272,7 +1272,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbJumpDest == bbNext)
+            if (bbTarget == bbNext)
             {
                 return 1;
             }
@@ -1311,8 +1311,8 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     {
         case BBJ_EHFILTERRET:
             // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == bbJumpDest);
-            return bbJumpDest;
+            assert(comp->fgFirstBlockOfHandler(this) == bbTarget);
+            return bbTarget;
 
         case BBJ_EHFINALLYRET:
             assert(bbJumpEhf != nullptr);
@@ -1323,7 +1323,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            return bbJumpDest;
+            return bbTarget;
 
         case BBJ_COND:
             if (i == 0)
@@ -1333,8 +1333,8 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             else
             {
                 assert(i == 1);
-                assert(bbNext != bbJumpDest);
-                return bbJumpDest;
+                assert(bbNext != bbTarget);
+                return bbTarget;
             }
 
         case BBJ_SWITCH:
@@ -1600,7 +1600,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock
     // yet.
     // The checks will be done any time the jump kind/target is read or written to after initialization.
     block->bbJumpKind = jumpKind;
-    block->bbJumpDest = jumpDest;
+    block->bbTarget = jumpDest;
 
     if (block->KindIs(BBJ_THROW))
     {

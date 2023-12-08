@@ -864,8 +864,8 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
             newBlk->inheritWeight(insertAfter);
             newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetJumpDest()->bbNum);
-            comp->fgAddRefPred(newBlk->GetJumpDest(), newBlk);
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTarget()->bbNum);
+            comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
 
             if (insertAfter->bbFallsThrough())
             {
@@ -898,8 +898,8 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         newBlk->inheritWeight(insertAfter);
         newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetJumpDest()->bbNum);
-        comp->fgAddRefPred(newBlk->GetJumpDest(), newBlk);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTarget()->bbNum);
+        comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
 
         if (insertAfter->bbFallsThrough())
         {
@@ -2181,7 +2181,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 BasicBlock* targetBlk = blk->GetFalseTarget();
                 assert(blk->NextIs(targetBlk));
                 if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
-                    targetBlk = targetBlk->GetJumpDest();
+                    targetBlk = targetBlk->GetTarget();
 
                 // Need to insert a block.
                 BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, targetBlk);
@@ -2223,7 +2223,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         assert(b && newblk != nullptr);
 
         // Jump target should not be set yet
-        assert(!newblk->HasInitializedJumpDest());
+        assert(!newblk->HasInitializedTarget());
 
         // First copy the jump destination(s) from "blk".
         optCopyBlkDest(blk, newblk);
@@ -2236,12 +2236,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         {
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgAddRefPred(newblk->GetJumpDest(), newblk);
+                fgAddRefPred(newblk->GetTarget(), newblk);
                 break;
 
             case BBJ_COND:
                 fgAddRefPred(newblk->GetFalseTarget(), newblk);
-                fgAddRefPred(newblk->GetJumpDest(), newblk);
+                fgAddRefPred(newblk->GetTarget(), newblk);
                 break;
 
             case BBJ_SWITCH:
@@ -2298,8 +2298,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // We haven't set the jump target yet
     assert(slowPreheader->KindIs(BBJ_ALWAYS));
-    assert(!slowPreheader->HasInitializedJumpDest());
-    slowPreheader->SetJumpDest(slowHeader);
+    assert(!slowPreheader->HasInitializedTarget());
+    slowPreheader->SetTarget(slowHeader);
 
     fgAddRefPred(slowHeader, slowPreheader);
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowPreheader->bbNum, slowHeader->bbNum);
@@ -2308,7 +2308,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // Now redirect the old preheader to jump to the first new condition that
     // was inserted by the above function.
-    preheader->SetJumpDest(preheader->Next());
+    preheader->SetTarget(preheader->Next());
     fgAddRefPred(preheader->Next(), preheader);
     preheader->SetFlags(BBF_NONE_QUIRK);
 
@@ -2970,9 +2970,9 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
     // Check for (4)
     //
     BasicBlock* const hotSuccessor =
-        guard->OperIs(GT_EQ) ? typeTestBlock->GetJumpDest() : typeTestBlock->GetFalseTarget();
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetTarget() : typeTestBlock->GetFalseTarget();
     BasicBlock* const coldSuccessor =
-        guard->OperIs(GT_EQ) ? typeTestBlock->GetFalseTarget() : typeTestBlock->GetJumpDest();
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetFalseTarget() : typeTestBlock->GetTarget();
 
     if (!hotSuccessor->hasProfileWeight() || !coldSuccessor->hasProfileWeight())
     {
