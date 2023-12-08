@@ -350,7 +350,11 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
     else
         *(DWORD*)instrToReplace = INTERRUPT_INSTR;
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
+    bool protectReturn = ispointerKind;
+    if (protectReturn)
+        *(DWORD*)instrToReplace = INTERRUPT_INSTR_PROTECT_RET;
+    else
+        *(DWORD*)instrToReplace = INTERRUPT_INSTR;
 #else
     _ASSERTE(!"not implemented for platform");
 #endif
@@ -780,7 +784,28 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         instructionIsACallThroughRegister = TRUE;
     }
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
+    const DWORD instr = *((DWORD*)savedInstrPtr - 1);
+    const int REG_RA = 0x1;
+    const int JAL = 0x6f;
+    const int JALR = 0x67;
+    if (((instr & 0x7F) == JAL) && (((instr >> 7) & 0x1f) == REG_RA))
+        instructionIsACallThroughImmediate = TRUE;
+    else
+    if (((instr & 0x7F) == JALR) && (((instr >> 7) & 0x1f) == REG_RA))
+    {
+        int offset = ((instr >> 20) & 0xfff);
+        if (offset & 0x800)
+        {
+            offset |= 0xfffff000;
+        }
+        // Don't handle offsets for now
+        _ASSERTE(offset == 0);
+        instructionIsACallThroughRegister = TRUE;
+    }
+    int opcode = (instr & 0x7F);
+    LOG((LF_GCROOTS, LL_INFO10, "GCCOVER: Doing replaceSafePointInstructionWithGcStressInstr: op=%d imm=%d reg=%d\n",
+            opcode, instructionIsACallThroughImmediate, instructionIsACallThroughRegister));
+
 #endif  // _TARGET_XXXX_
 
     // safe point must always be after a call instruction
@@ -1028,7 +1053,29 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
         return 0; // Fail
     }
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
+    const DWORD instr = *reinterpret_cast<DWORD*>(instrPtr);
+    const int REG_RA = 0x1;
+    const int JAL = 0x6f;
+    const int JALR = 0x67;
+    if (((instr & 0x7F) == JALR) && (((instr >> 7) & 0x1f) == REG_RA))
+    {
+        // call through register
+        *nextInstr = instrPtr + 4;
+
+        int offset = ((instr >> 20) & 0xfff);
+        if (offset & 0x800)
+        {
+            offset |= 0xfffff000;
+        }
+        _ASSERTE(offset == 0);
+        unsigned int regnum = (instr >> 15) & 0x1f;
+        // TODO: Make sure that produced value is correct
+        size_t value = getRegVal(regnum, regs) & 0xfffffffffffffffe;
+        return (BYTE *)value;
+    }
+    else if (((instr & 0x7F) == JAL) && (((instr >> 7) & 0x1f) == REG_RA)) {
+        _ASSERTE(!"Not implemented CallThroughImmediate - RISCV");
+    }
 #endif
 
 #ifdef TARGET_AMD64
@@ -1495,7 +1542,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
     afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"not implemented for RISCV64 NYI");
+
     DWORD instrVal = *(DWORD *)instrPtr;
     forceStack[6] = &instrVal;            // This is so I can see it fastchecked
 
