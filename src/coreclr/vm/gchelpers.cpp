@@ -913,7 +913,7 @@ STRINGREF AllocateString( DWORD cchStringLength )
     SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
 
     GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
-    if (totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
+    if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
     StringObject* orString = (StringObject*)Alloc(totalSize, flags);
