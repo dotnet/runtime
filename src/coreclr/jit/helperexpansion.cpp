@@ -286,7 +286,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
     BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo,
-                                                  nullcheckBb->GetNormalJumpDest(), true);
+                                                  nullcheckBb->GetFalseTarget(), true);
 
     assert(fallbackBb->JumpsToNext());
     fallbackBb->SetFlags(BBF_NONE_QUIRK);
@@ -1096,7 +1096,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
     // that only accepts a single argument
     BasicBlock* helperCallBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->GetNormalJumpDest(), true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->GetFalseTarget(), true);
     assert(helperCallBb->JumpsToNext());
     helperCallBb->SetFlags(BBF_NONE_QUIRK);
 
@@ -1451,7 +1451,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // In theory, we could just emit the const U8 data to the data section and use GT_BLK here
     // but that would be a bit less efficient since we would have to load the data from memory.
     //
-    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->GetNormalJumpDest());
+    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->GetFalseTarget());
     assert(fastpathBb->JumpsToNext());
     fastpathBb->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 

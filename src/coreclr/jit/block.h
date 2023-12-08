@@ -533,7 +533,7 @@ private:
     };
 
     // Points to the successor of a BBJ_COND block if bbJumpDest is not taken
-    BasicBlock* bbNormalJumpDest;
+    BasicBlock* bbFalseTarget;
 
 public:
     static BasicBlock* New(Compiler* compiler);
@@ -582,11 +582,11 @@ public:
             next->bbPrev = this;
         }
 
-        // BBJ_COND convenience: This ensures bbNormalJumpDest is always consistent with bbNext.
+        // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
         // For now, if a BBJ_COND's bbJumpDest is not taken, we expect to fall through,
-        // so bbNormalJumpDest must be the next block.
-        // TODO-NoFallThrough: Remove this once we allow bbNormalJumpDest to diverge from bbNext
-        bbNormalJumpDest = next;
+        // so bbFalseTarget must be the next block.
+        // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
+        bbFalseTarget = next;
     }
 
     bool IsFirst() const
@@ -648,31 +648,31 @@ public:
         assert(!HasJumpDest() || HasInitializedJumpDest());
     }
 
-    BasicBlock* GetNormalJumpDest() const
+    BasicBlock* GetFalseTarget() const
     {
         assert(KindIs(BBJ_COND));
 
-        // So long as bbNormalJumpDest tracks bbNext in SetNext(), it is possible for bbNormalJumpDest to be null
+        // So long as bbFalseTarget tracks bbNext in SetNext(), it is possible for bbFalseTarget to be null
         // if this block is unlinked from the block list.
-        // So check bbNext before triggering the assert if bbNormalJumpDest is null.
-        // TODO-NoFallThrough: Remove IsLast() check once bbNormalJumpDest isn't hard-coded to bbNext
-        assert((bbNormalJumpDest != nullptr) || IsLast());
-        return bbNormalJumpDest;
+        // So check bbNext before triggering the assert if bbFalseTarget is null.
+        // TODO-NoFallThrough: Remove IsLast() check once bbFalseTarget isn't hard-coded to bbNext
+        assert((bbFalseTarget != nullptr) || IsLast());
+        return bbFalseTarget;
     }
 
-    void SetNormalJumpDest(BasicBlock* jumpDest)
+    void SetFalseTarget(BasicBlock* jumpDest)
     {
         assert(KindIs(BBJ_COND));
         assert(jumpDest != nullptr);
-        bbNormalJumpDest = jumpDest;
+        bbFalseTarget = jumpDest;
     }
 
-    bool HasNormalJumpTo(BasicBlock* jumpDest) const
+    bool FalseTargetIs(BasicBlock* jumpDest) const
     {
         assert(KindIs(BBJ_COND));
         assert(jumpDest != nullptr);
-        assert(bbNormalJumpDest != nullptr);
-        return (bbNormalJumpDest == jumpDest);
+        assert(bbFalseTarget != nullptr);
+        return (bbFalseTarget == jumpDest);
     }
 
     void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)

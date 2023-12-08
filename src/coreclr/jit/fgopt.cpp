@@ -136,7 +136,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 
         if (b1->KindIs(BBJ_COND))
         {
-            return fgReachable(b1->GetNormalJumpDest(), b2) || fgReachable(b1->GetJumpDest(), b2);
+            return fgReachable(b1->GetFalseTarget(), b2) || fgReachable(b1->GetJumpDest(), b2);
         }
         else
         {
@@ -2314,10 +2314,10 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             /* Update the predecessor list for 'bNext->bbJumpDest' */
             fgReplacePred(bNext->GetJumpDest(), bNext, block);
 
-            /* Update the predecessor list for 'bNext->bbNormalJumpDest' if it is different than 'bNext->bbJumpDest' */
-            if (bNext->KindIs(BBJ_COND) && !bNext->HasJumpTo(bNext->GetNormalJumpDest()))
+            /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbJumpDest' */
+            if (bNext->KindIs(BBJ_COND) && !bNext->HasJumpTo(bNext->GetFalseTarget()))
             {
-                fgReplacePred(bNext->GetNormalJumpDest(), bNext, block);
+                fgReplacePred(bNext->GetFalseTarget(), bNext, block);
             }
             break;
 
@@ -2565,14 +2565,14 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 //
 void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
-    noway_assert(block->KindIs(BBJ_COND) && block->HasJumpTo(block->GetNormalJumpDest()));
+    noway_assert(block->KindIs(BBJ_COND) && block->HasJumpTo(block->GetFalseTarget()));
     assert(compRationalIRForm == block->IsLIR());
 
-    FlowEdge* flow = fgGetPredForBlock(block->GetNormalJumpDest(), block);
+    FlowEdge* flow = fgGetPredForBlock(block->GetFalseTarget(), block);
     noway_assert(flow->getDupCount() == 2);
 
     // Change the BBJ_COND to BBJ_ALWAYS, and adjust the refCount and dupCount.
-    --block->GetNormalJumpDest()->bbRefs;
+    --block->GetFalseTarget()->bbRefs;
     block->SetJumpKind(BBJ_ALWAYS);
     block->SetFlags(BBF_NONE_QUIRK);
     flow->decrementDupCount();
@@ -2582,7 +2582,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     {
         printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
                " is true or false)\n",
-               block->bbNum, block->GetNormalJumpDest()->bbNum);
+               block->bbNum, block->GetFalseTarget()->bbNum);
     }
 #endif
 
@@ -3649,10 +3649,10 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     //
     if (opts.IsOSR())
     {
-        if (target->GetNormalJumpDest()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
+        if (target->GetFalseTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
         {
             JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->GetNormalJumpDest()->bbNum);
+                    target->GetFalseTarget()->bbNum);
             return false;
         }
 
@@ -3701,7 +3701,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // add an unconditional block after this block to jump to the target block's fallthrough block
     //
     assert(!target->IsLast());
-    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetNormalJumpDest());
+    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
 
     // The new block 'next' will inherit its weight from 'block'
     //
@@ -3731,7 +3731,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 {
     assert(block->KindIs(BBJ_COND));
     assert(block->HasJumpTo(bNext));
-    assert(block->HasNormalJumpTo(bNext));
+    assert(block->FalseTargetIs(bNext));
     assert(block->PrevIs(bPrev));
 
 #ifdef DEBUG
@@ -3913,7 +3913,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     // do not jump into another try region
-    BasicBlock* bDestNormalTarget = bDest->GetNormalJumpDest();
+    BasicBlock* bDestNormalTarget = bDest->GetFalseTarget();
     if (bDestNormalTarget->hasTryIndex() && !BasicBlock::sameTryRegion(bJump, bDestNormalTarget))
     {
         return false;
@@ -4107,13 +4107,13 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
     bJump->SetJumpKindAndTarget(BBJ_COND, bDestNormalTarget);
-    bJump->SetNormalJumpDest(bJump->Next());
+    bJump->SetFalseTarget(bJump->Next());
 
     /* Update bbRefs and bbPreds */
 
     // bJump now falls through into the next block
     //
-    fgAddRefPred(bJump->GetNormalJumpDest(), bJump);
+    fgAddRefPred(bJump->GetFalseTarget(), bJump);
 
     // bJump no longer jumps to bDest
     //
@@ -5996,9 +5996,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     change   = true;
                     modified = true;
                     bDest    = block->GetJumpDest();
-                    bNext    = block->GetNormalJumpDest();
+                    bNext    = block->GetFalseTarget();
 
-                    // TODO-NoFallThrough: Adjust the above logic once bbNormalJumpDest can diverge from bbNext
+                    // TODO-NoFallThrough: Adjust the above logic once bbFalseTarget can diverge from bbNext
                     assert(block->NextIs(bNext));
                 }
             }
@@ -6021,8 +6021,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 bDest = block->GetJumpDest();
                 if (bDest == bNext)
                 {
-                    // TODO-NoFallThrough: Fix above condition once bbNormalJumpDest can diverge from bbNext
-                    assert(block->HasNormalJumpTo(bNext));
+                    // TODO-NoFallThrough: Fix above condition once bbFalseTarget can diverge from bbNext
+                    assert(block->FalseTargetIs(bNext));
                     if (fgOptimizeBranchToNext(block, bNext, bPrev))
                     {
                         change   = true;
@@ -6065,8 +6065,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
-                    // bbNormalJumpDest cannot be null
-                    assert(block->HasNormalJumpTo(bNext));
+                    // bbFalseTarget cannot be null
+                    assert(block->FalseTargetIs(bNext));
                     assert(bNext != nullptr);
 
                     // case (a)
@@ -6146,9 +6146,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             //
                             BasicBlock* const bDestNext = bDest->Next();
 
-                            // Once bbNormalJumpDest and bbNext can diverge, this assert will hit
+                            // Once bbFalseTarget and bbNext can diverge, this assert will hit
                             // TODO-NoFallThrough: Remove fall-through for BBJ_COND below
-                            assert(!bDest->KindIs(BBJ_COND) || bDest->HasNormalJumpTo(bDestNext));
+                            assert(!bDest->KindIs(BBJ_COND) || bDest->FalseTargetIs(bDestNext));
 
                             // Move bDest
                             //
@@ -6176,7 +6176,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                                 fgAddRefPred(bFixup, bDest);
                                 fgAddRefPred(bDestNext, bFixup);
 
-                                bDest->SetNormalJumpDest(bDest->Next());
+                                bDest->SetFalseTarget(bDest->Next());
                             }
                         }
                     }
@@ -6982,7 +6982,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     // ternaries in C#).
     // The logic below could be generalized to BBJ_SWITCH, but this currently
     // has almost no CQ benefit but does have a TP impact.
-    if (!block->KindIs(BBJ_COND) || block->HasJumpTo(block->GetNormalJumpDest()))
+    if (!block->KindIs(BBJ_COND) || block->HasJumpTo(block->GetFalseTarget()))
     {
         return false;
     }
@@ -7031,7 +7031,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     Statement* nextFirstStmt;
     Statement* destFirstStmt;
 
-    if (!getSuccCandidate(block->GetNormalJumpDest(), &nextFirstStmt) ||
+    if (!getSuccCandidate(block->GetFalseTarget(), &nextFirstStmt) ||
         !getSuccCandidate(block->GetJumpDest(), &destFirstStmt))
     {
         return false;
@@ -7060,10 +7060,10 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
 
     JITDUMP("We can; moving statement\n");
 
-    fgUnlinkStmt(block->GetNormalJumpDest(), nextFirstStmt);
+    fgUnlinkStmt(block->GetFalseTarget(), nextFirstStmt);
     fgInsertStmtNearEnd(block, nextFirstStmt);
     fgUnlinkStmt(block->GetJumpDest(), destFirstStmt);
-    block->CopyFlags(block->GetNormalJumpDest(), BBF_COPY_PROPAGATE);
+    block->CopyFlags(block->GetFalseTarget(), BBF_COPY_PROPAGATE);
 
     return true;
 }

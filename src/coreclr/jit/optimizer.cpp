@@ -1379,7 +1379,7 @@ void Compiler::optCheckPreds()
                     {
                         break;
                     }
-                    noway_assert(bb->HasNormalJumpTo(block));
+                    noway_assert(bb->FalseTargetIs(block));
                     break;
                 case BBJ_EHFILTERRET:
                 case BBJ_ALWAYS:
@@ -3015,7 +3015,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
             //
             BasicBlock* const t = optLoopTable[loopInd].lpTop;
             assert(siblingB->KindIs(BBJ_COND));
-            assert(siblingB->HasNormalJumpTo(t));
+            assert(siblingB->FalseTargetIs(t));
 
             JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
 
@@ -3190,7 +3190,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // Because of this, introducing a block before t automatically gives us
     // the right flow out of h.
     //
-    assert(!h->KindIs(BBJ_COND) || h->HasNormalJumpTo(t));
+    assert(!h->KindIs(BBJ_COND) || h->FalseTargetIs(t));
     assert(h->HasJumpTo(t) || !h->KindIs(BBJ_ALWAYS));
     assert(h->KindIs(BBJ_ALWAYS, BBJ_COND));
 
@@ -4528,9 +4528,9 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
-                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->GetNormalJumpDest());
+                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->GetFalseTarget());
 
-                // TODO-NoFallThrough: If bbNormalJumpDest can diverge from bbNext, it may not make sense to set
+                // TODO-NoFallThrough: If bbFalseTarget can diverge from bbNext, it may not make sense to set
                 // BBF_NONE_QUIRK
                 initBlock->SetFlags(BBF_NONE_QUIRK);
             }
@@ -4789,9 +4789,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         return false;
     }
 
-    // Since bTest is a BBJ_COND it will have a bbNormalJumpDest
+    // Since bTest is a BBJ_COND it will have a bbFalseTarget
     //
-    BasicBlock* const bJoin = bTest->GetNormalJumpDest();
+    BasicBlock* const bJoin = bTest->GetFalseTarget();
     noway_assert(bJoin != nullptr);
 
     // 'block' must be in the same try region as the condition, since we're going to insert a duplicated condition
@@ -4803,7 +4803,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         return false;
     }
 
-    // The duplicated condition block will branch to bTest->GetNormalJumpDest(), so that also better be in the
+    // The duplicated condition block will branch to bTest->GetFalseTarget(), so that also better be in the
     // same try region (or no try region) to avoid generating illegal flow.
     if (bJoin->hasTryIndex() && !BasicBlock::sameTryRegion(block, bJoin))
     {
@@ -5140,7 +5140,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
 
         FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTop, bTest);
-        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->GetNormalJumpDest(), bTest);
+        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->GetFalseTarget(), bTest);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
                 testToNextWeight);
@@ -5148,7 +5148,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
                 bTest->Next()->bbNum, testToAfterWeight);
 
         edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTop);
-        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->GetNormalJumpDest());
+        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->GetFalseTarget());
 
         // Adjust edges out of block, using the same distribution.
         //
@@ -5160,15 +5160,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
-        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->GetNormalJumpDest(), bNewCond);
+        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->GetFalseTarget(), bNewCond);
         FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->GetJumpDest(), bNewCond);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
-                bNewCond->GetNormalJumpDest()->bbNum, blockToNextWeight);
+                bNewCond->GetFalseTarget()->bbNum, blockToNextWeight);
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
                 bNewCond->GetJumpDest()->bbNum, blockToAfterWeight);
 
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetNormalJumpDest());
+        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetFalseTarget());
         edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetJumpDest());
 
 #ifdef DEBUG
@@ -5177,7 +5177,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
         {
             const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
-            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetNormalJumpDest(), checks);
+            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetFalseTarget(), checks);
             const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetJumpDest(), checks);
 
             if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
@@ -5193,7 +5193,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     if (verbose)
     {
         printf("\nDuplicated loop exit block at " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", bNewCond->bbNum,
-               bNewCond->GetNormalJumpDest()->bbNum, bTest->bbNum);
+               bNewCond->GetFalseTarget()->bbNum, bTest->bbNum);
         printf("Estimated code size expansion is %d\n", estDupCostSz);
 
         fgDumpBlock(bNewCond);
@@ -8179,13 +8179,13 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         {
             // Allow for either the fall-through or branch to target 'entry'.
             BasicBlock* skipLoopBlock;
-            if (head->HasNormalJumpTo(entry))
+            if (head->FalseTargetIs(entry))
             {
                 skipLoopBlock = head->GetJumpDest();
             }
             else
             {
-                skipLoopBlock = head->GetNormalJumpDest();
+                skipLoopBlock = head->GetFalseTarget();
             }
             assert(skipLoopBlock != entry);
 
@@ -8282,11 +8282,11 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 if (predBlock->HasJumpTo(entry))
                 {
                     predBlock->SetJumpDest(preHead);
-                    noway_assert(!predBlock->HasNormalJumpTo(preHead));
+                    noway_assert(!predBlock->FalseTargetIs(preHead));
                 }
                 else
                 {
-                    noway_assert((entry == top) && (predBlock == head) && predBlock->HasNormalJumpTo(preHead));
+                    noway_assert((entry == top) && (predBlock == head) && predBlock->FalseTargetIs(preHead));
                 }
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);

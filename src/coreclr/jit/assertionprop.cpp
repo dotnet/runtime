@@ -5558,7 +5558,7 @@ public:
             {
                 // Scenario where next block and conditional block, both point to the same block.
                 // In such case, intersect the assertions present on both the out edges of predBlock.
-                assert(predBlock->HasNormalJumpTo(block));
+                assert(predBlock->FalseTargetIs(block));
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
                 if (VerboseDataflow())

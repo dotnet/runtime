@@ -7350,11 +7350,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
-                                block->GetNormalJumpDest()->bbNum);
-                        fgRemoveRefPred(block->GetNormalJumpDest(), block);
+                                block->GetFalseTarget()->bbNum);
+                        fgRemoveRefPred(block->GetFalseTarget(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
 
-                        // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to
+                        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
@@ -7421,18 +7421,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->GetJumpDest()->bbNum);
-                            fgRemoveRefPred(block->GetNormalJumpDest(), block);
+                            fgRemoveRefPred(block->GetFalseTarget(), block);
                             block->SetJumpKind(BBJ_ALWAYS);
                         }
                         else
                         {
-                            // TODO-NoFallThrough: Update once bbNormalJumpDest can diverge from bbNext
-                            assert(block->NextIs(block->GetNormalJumpDest()));
+                            // TODO-NoFallThrough: Update once bbFalseTarget can diverge from bbNext
+                            assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetJumpDest(), block);
                             block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
 
-                            // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense
+                            // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense
                             // to set BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
@@ -7606,11 +7606,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
-                                block->GetNormalJumpDest()->bbNum);
-                        fgRemoveRefPred(block->GetNormalJumpDest(), block);
+                                block->GetFalseTarget()->bbNum);
+                        fgRemoveRefPred(block->GetFalseTarget(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
 
-                        // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to
+                        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
@@ -11282,12 +11282,12 @@ SPILLSTACK:
 
                 /* Note if the next block has more than one ancestor */
 
-                multRef |= block->GetNormalJumpDest()->bbRefs;
+                multRef |= block->GetFalseTarget()->bbRefs;
 
                 /* Does the next block have temps assigned? */
 
-                baseTmp  = block->GetNormalJumpDest()->bbStkTempsIn;
-                tgtBlock = block->GetNormalJumpDest();
+                baseTmp  = block->GetFalseTarget()->bbStkTempsIn;
+                tgtBlock = block->GetFalseTarget();
 
                 if (baseTmp != NO_BASE_TMP)
                 {

@@ -2962,8 +2962,8 @@ void Compiler::fgLinkBasicBlocks()
 
                 // The fall-through block is also reachable
                 assert(curBBdesc->KindIs(BBJ_COND));
-                curBBdesc->SetNormalJumpDest(curBBdesc->Next());
-                fgAddRefPred<initializingPreds>(curBBdesc->GetNormalJumpDest(), curBBdesc, oldEdge);
+                curBBdesc->SetFalseTarget(curBBdesc->Next());
+                fgAddRefPred<initializingPreds>(curBBdesc->GetFalseTarget(), curBBdesc, oldEdge);
                 break;
             }
 
@@ -4243,7 +4243,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
             case BBJ_COND: // block conditionally jumps to the target
 
-                fgControlFlowPermitted(blk, blk->GetNormalJumpDest());
+                fgControlFlowPermitted(blk, blk->GetFalseTarget());
 
                 fgControlFlowPermitted(blk, blk->GetJumpDest());
 
@@ -5031,7 +5031,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // an immediately following block of a BBJ_SWITCH (which has
         // no fall-through path). For this case, simply insert a new
         // fall-through block after 'curr'.
-        // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, this will be unnecessary for BBJ_COND
+        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, this will be unnecessary for BBJ_COND
         newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */, /* jumpDest */ succ);
         newBlock->SetFlags(BBF_NONE_QUIRK);
         assert(newBlock->JumpsToNext());
@@ -5389,7 +5389,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     }
 
                     /* Check if both sides of the BBJ_COND now jump to the same block */
-                    if (predBlock->HasNormalJumpTo(succBlock))
+                    if (predBlock->FalseTargetIs(succBlock))
                     {
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbJumpDest.
                         noway_assert(predBlock->HasJumpTo(block));
@@ -5436,7 +5436,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             case BBJ_COND:
                 /* Check if both sides of the BBJ_COND now jump to the same block */
-                if (bPrev->HasJumpTo(bPrev->GetNormalJumpDest()))
+                if (bPrev->HasJumpTo(bPrev->GetFalseTarget()))
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
@@ -6338,8 +6338,8 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     }
 
     // Currently bNext is the fall through for bCur
-    // TODO-NoFallThrough: Allow bbNormalJumpDest to diverge from bbNext for BBJ_COND
-    assert(!bCur->KindIs(BBJ_COND) || bCur->NextIs(bCur->GetNormalJumpDest()));
+    // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext for BBJ_COND
+    assert(!bCur->KindIs(BBJ_COND) || bCur->NextIs(bCur->GetFalseTarget()));
     BasicBlock* bNext = bCur->Next();
     noway_assert(bNext != nullptr);
 

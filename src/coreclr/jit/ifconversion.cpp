@@ -122,7 +122,7 @@ bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 bool OptIfConversionDsc::IfConvertCheckThenFlow()
 {
     m_flowFound           = false;
-    BasicBlock* thenBlock = m_startBlock->GetNormalJumpDest();
+    BasicBlock* thenBlock = m_startBlock->GetFalseTarget();
 
     for (int thenLimit = 0; thenLimit < m_checkLimit; thenLimit++)
     {
@@ -571,7 +571,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->GetNormalJumpDest(), &m_thenOperation))
+    if (!IfConvertCheckStmts(m_startBlock->GetFalseTarget(), &m_thenOperation))
     {
         return false;
     }
@@ -738,7 +738,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->GetNormalJumpDest(), m_startBlock);
+    m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
     assert(m_startBlock->HasInitializedJumpDest());
     m_startBlock->SetJumpKind(BBJ_ALWAYS);
 
