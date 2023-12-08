@@ -726,7 +726,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     if (st != 0)
     {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = posix_madvise(address, size, MADV_DONTNEED);
+        st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
 
 #ifdef MADV_DONTDUMP
         // Ensure DONTDUMP is still applied.
