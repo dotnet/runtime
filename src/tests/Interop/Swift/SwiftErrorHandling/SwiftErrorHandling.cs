@@ -12,8 +12,8 @@ public class ErrorHandlingTests
 {
     private const string SwiftLib = "libSwiftErrorHandling.dylib";
 
-    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message5bytes6lengthySPys5UInt8VG_SitF")]
-    public static extern void SetErrorMessage(byte[] strBytes, int length);
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message5bytesySPys4Int8VG_tF")]
+    public static extern void SetErrorMessage(byte[] strBytes);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0SiSb_tKF")]
@@ -55,8 +55,8 @@ public class ErrorHandlingTests
     
     private static void SetErrorMessageForSwift(string message)
     {
-        var messageBytes = Encoding.UTF8.GetBytes(message);
-        SetErrorMessage(messageBytes, messageBytes.Length);
+        byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+        SetErrorMessage(messageBytes);
     }
 
     private unsafe static string GetErrorMessageFromSwift(SwiftError error)

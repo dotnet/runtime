@@ -9,8 +9,7 @@ public enum MyError: Error {
 
 var errorMessage: String = ""
 
-public func setMyErrorMessage(bytes: UnsafePointer<CChar>, length: Int) {
-    let data = Data(bytes: bytes, count: length)
+public func setMyErrorMessage(bytes: UnsafePointer<CChar>) {
     errorMessage = String(validatingUTF8: bytes)!
 }
 
