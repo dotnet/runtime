@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
 {
-    public sealed class ElfObjectWriter : UnixObjectWriter
+    internal sealed class ElfObjectWriter : UnixObjectWriter
     {
         private readonly ushort _machine;
         private readonly List<ElfSectionDefinition> _sections = new();
@@ -24,7 +24,7 @@ namespace ILCompiler.ObjectWriter
         // Symbol table
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
 
-        private ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
+        public ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
             _machine = factory.Target.Architecture switch
@@ -610,12 +610,6 @@ namespace ILCompiler.ObjectWriter
                 };
                 sectionHeader.Write<TSize>(outputFileStream);
             }
-        }
-
-        public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
-        {
-            using ElfObjectWriter writer = new ElfObjectWriter(factory, options);
-            writer.EmitObject(objectFilePath, nodes, dumper, logger);
         }
 
         private sealed class ElfSectionDefinition

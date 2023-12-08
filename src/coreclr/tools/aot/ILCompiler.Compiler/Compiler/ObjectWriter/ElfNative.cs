@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 namespace ILCompiler.ObjectWriter
 {
-    public static class ElfNative
+    internal static class ElfNative
     {
         public const byte EV_CURRENT = 1;
 

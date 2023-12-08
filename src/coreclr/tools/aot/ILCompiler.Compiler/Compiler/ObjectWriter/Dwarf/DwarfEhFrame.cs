@@ -12,7 +12,7 @@ using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
-    public class DwarfEhFrame
+    internal sealed class DwarfEhFrame
     {
         private SectionWriter _sectionWriter;
         private bool _is64Bit;

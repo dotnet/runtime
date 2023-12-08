@@ -24,7 +24,7 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
-    public sealed class CoffObjectWriter : ObjectWriter
+    internal sealed class CoffObjectWriter : ObjectWriter
     {
         private sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
 
@@ -53,7 +53,7 @@ namespace ILCompiler.ObjectWriter
         private ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
         private ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
-        private CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
+        public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
             _machine = factory.Target.Architecture switch
@@ -666,12 +666,6 @@ namespace ILCompiler.ObjectWriter
         {
             _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
             _debugFileTableBuilder.Write(_debugSymbolSectionWriter.Stream);
-        }
-
-        public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
-        {
-            using CoffObjectWriter objectWriter = new CoffObjectWriter(factory, options);
-            objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
         }
 
         private sealed class CoffHeader

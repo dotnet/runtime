@@ -16,7 +16,7 @@ using Melanzana.MachO;
 
 namespace ILCompiler.ObjectWriter
 {
-    public sealed class MachObjectWriter : UnixObjectWriter
+    internal sealed class MachObjectWriter : UnixObjectWriter
     {
         private sealed record CompactUnwindCode(string PcStartSymbolName, uint PcLength, uint Code, string LsdaSymbolName = null, string PersonalitySymbolName = null);
 
@@ -34,7 +34,7 @@ namespace ILCompiler.ObjectWriter
         private MachSymbolTable _symbolTable;
         private MachDynamicLinkEditSymbolTable _dySymbolTable;
 
-        private MachObjectWriter(NodeFactory factory, ObjectWritingOptions options)
+        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
             _objectFile = new MachObjectFile
@@ -673,11 +673,5 @@ namespace ILCompiler.ObjectWriter
         }
 
         private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
-
-        public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
-        {
-            using MachObjectWriter objectWriter = new MachObjectWriter(factory, options);
-            objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
-        }
     }
 }
