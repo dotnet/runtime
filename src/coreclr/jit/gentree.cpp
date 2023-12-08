@@ -18561,28 +18561,28 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         }
 
         case CORINFO_HELP_BOX:
-        {
-            GenTree* typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            if (typeArg->IsIconHandle(GTF_ICON_CLASS_HDL))
-            {
-                objClass    = gtGetHelperArgClassHandle(typeArg);
-                *pIsNonNull = false;
-                *pIsExact   = false;
-            }
-        }
-        break;
-
         case CORINFO_HELP_BOX_NULLABLE:
         {
             GenTree* typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             if (typeArg->IsIconHandle(GTF_ICON_CLASS_HDL))
             {
-                CORINFO_CLASS_HANDLE nullableCls = gtGetHelperArgClassHandle(typeArg);
-                if (nullableCls != NO_CLASS_HANDLE)
+                const bool isNullableHelper = (helper == CORINFO_HELP_BOX_NULLABLE);
+
+                objClass = gtGetHelperArgClassHandle(typeArg);
+                if ((objClass != NO_CLASS_HANDLE) && isNullableHelper)
                 {
-                    objClass    = info.compCompHnd->getTypeForBox(nullableCls);
-                    *pIsNonNull = false;
-                    *pIsExact   = true;
+                    // Nullable<T> is boxed as just T (via CORINFO_HELP_BOX_NULLABLE)
+                    objClass = info.compCompHnd->getTypeForBox(objClass);
+                }
+
+                if (objClass != NO_CLASS_HANDLE)
+                {
+                    // CORINFO_HELP_BOX_NULLABLE may return null
+                    // CORINFO_HELP_BOX always returns non-null
+                    *pIsNonNull = !isNullableHelper;
+
+                    // Since only box value types, we know the type exactly
+                    *pIsExact = true;
                 }
             }
         }
