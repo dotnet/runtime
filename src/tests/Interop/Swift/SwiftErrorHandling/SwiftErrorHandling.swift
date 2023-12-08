@@ -9,9 +9,9 @@ public enum MyError: Error {
 
 var errorMessage: String = ""
 
-public func setMyErrorMessage(bytes: UnsafePointer<UInt8>, length: Int) {
+public func setMyErrorMessage(bytes: UnsafePointer<CChar>, length: Int) {
     let data = Data(bytes: bytes, count: length)
-    errorMessage = String(data: data, encoding: .utf8)!
+    errorMessage = String(validatingUTF8: bytes)!
 }
 
 public func conditionallyThrowError(willThrow: Bool) throws -> Int {
