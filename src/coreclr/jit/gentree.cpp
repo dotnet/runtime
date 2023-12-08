@@ -18580,8 +18580,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
                     // CORINFO_HELP_BOX_NULLABLE may return null
                     // CORINFO_HELP_BOX always returns non-null
                     *pIsNonNull = !isNullableHelper;
-
-                    // Since only box value types, we know the type exactly
                     *pIsExact = true;
                 }
             }
