@@ -59,8 +59,7 @@ namespace System.Net.Mail
                 if (encodedAddresses is null)
                 {
                     //no need to append a comma to the first one because it may be the only one.
-                    encodedAddresses = new();
-                    encodedAddresses.Append(address.Encode(charsConsumed, allowUnicode));
+                    encodedAddresses = new(address.Encode(charsConsumed, allowUnicode));
                 }
                 else
                 {
