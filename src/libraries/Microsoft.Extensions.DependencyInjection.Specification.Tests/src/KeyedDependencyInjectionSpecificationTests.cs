@@ -119,11 +119,14 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             var provider = CreateServiceProvider(serviceCollection);
 
-
             // Return all services registered with a non null key
             var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
             Assert.Equal(4, allServices.Count);
             Assert.Equal(new[] { service1, service2, service3, service4 }, allServices);
+
+            // Check again (caching)
+            var allServices2 = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
+            Assert.Equal(allServices, allServices2);
         }
 
         [Fact]
