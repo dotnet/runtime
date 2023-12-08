@@ -114,7 +114,7 @@ jobs:
         displayName: Enable python venv
 
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
-      - script: $(PipScript) install --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
+      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall
         displayName: Upgrade Pip to latest and install azure-storage-blob Python package
 
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion) --use_latest_jit_change
