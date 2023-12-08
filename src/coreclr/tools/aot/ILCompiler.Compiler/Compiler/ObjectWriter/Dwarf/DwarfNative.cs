@@ -3,7 +3,7 @@
 
 namespace ILCompiler.ObjectWriter
 {
-    public static class DwarfNative
+    internal static class DwarfNative
     {
         public const byte DW_EH_PE_absptr = 0x00;
         public const byte DW_EH_PE_omit = 0xff;

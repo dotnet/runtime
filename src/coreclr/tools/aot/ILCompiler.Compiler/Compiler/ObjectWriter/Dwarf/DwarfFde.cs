@@ -8,7 +8,7 @@ using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
-    public class DwarfFde
+    internal sealed class DwarfFde
     {
         public DwarfCie Cie;
         public string PcStartSymbolName;
@@ -21,6 +21,7 @@ namespace ILCompiler.ObjectWriter
         {
             Cie = cie;
             Instructions = instructions;
+            PersonalitySymbolName = null;
         }
 
         private enum CFI_OPCODE

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
@@ -308,13 +309,30 @@ namespace ILCompiler.ObjectWriter
                 _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(CreateDebugInfoBuilder(), _nodeFactory);
             }
 
+            ProgressReporter progressReporter = default;
+            if (logger.IsVerbose)
+            {
+                int count = 0;
+                foreach (var node in nodes)
+                    if (node is ObjectNode)
+                        count++;
+
+                logger.LogMessage($"Writing {count} object nodes...");
+
+                progressReporter = new ProgressReporter(logger, count);
+            }
+
             foreach (DependencyNode depNode in nodes)
             {
                 ObjectNode node = depNode as ObjectNode;
-                if (node == null || node.ShouldSkipEmittingObjectNode(_nodeFactory))
-                {
+                if (node is null)
                     continue;
-                }
+
+                if (logger.IsVerbose)
+                    progressReporter.LogProgress();
+
+                if (node.ShouldSkipEmittingObjectNode(_nodeFactory))
+                    continue;
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
@@ -389,6 +407,9 @@ namespace ILCompiler.ObjectWriter
 
             if (_options.HasFlag(ObjectWritingOptions.GenerateDebugInfo))
             {
+                if (logger.IsVerbose)
+                    logger.LogMessage($"Emitting debug information");
+
                 foreach (DependencyNode depNode in nodes)
                 {
                     ObjectNode node = depNode as ObjectNode;
@@ -435,6 +456,64 @@ namespace ILCompiler.ObjectWriter
             }
 
             EmitObjectFile(objectFilePath);
+        }
+
+        public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
+            {
+                LlvmObjectWriter.EmitObject(objectFilePath, nodes, factory, options, dumper, logger);
+            }
+            else if (factory.Target.IsOSXLike)
+            {
+                using MachObjectWriter objectWriter = new MachObjectWriter(factory, options);
+                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
+            }
+            else if (factory.Target.OperatingSystem == TargetOS.Windows)
+            {
+                using CoffObjectWriter objectWriter = new CoffObjectWriter(factory, options);
+                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
+            }
+            else
+            {
+                using ElfObjectWriter objectWriter = new ElfObjectWriter(factory, options);
+                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
+            }
+
+            stopwatch.Stop();
+            if (logger.IsVerbose)
+                logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");
+        }
+
+        private struct ProgressReporter
+        {
+            private readonly Logger _logger;
+            private readonly int _increment;
+            private int _current;
+
+            // Will report progress every (100 / 10) = 10%
+            private const int Steps = 10;
+
+            public ProgressReporter(Logger logger, int total)
+            {
+                _logger = logger;
+                _increment = total / Steps;
+                _current = 0;
+            }
+
+            public void LogProgress()
+            {
+                _current++;
+
+                int adjusted = _current + Steps - 1;
+                if ((adjusted % _increment) == 0)
+                {
+                    _logger.LogMessage($"{(adjusted / _increment) * (100 / Steps)}%...");
+                }
+            }
         }
     }
 }

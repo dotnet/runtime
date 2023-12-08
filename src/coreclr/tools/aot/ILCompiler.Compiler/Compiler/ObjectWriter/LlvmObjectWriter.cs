@@ -21,7 +21,7 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// Object writer using src/Native/ObjWriter
     /// </summary>
-    public class LlvmObjectWriter : IDisposable, ITypesDebugInfoWriter
+    internal sealed class LlvmObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
         private readonly ObjectWritingOptions _options;
 
@@ -214,6 +214,7 @@ namespace ILCompiler.ObjectWriter
                                                     byte[] blobSymbolName);
         public void EmitWinFrameInfo(int startOffset, int endOffset, int blobSize, byte[] blobSymbolName)
         {
+            _ = blobSize;
             EmitWinFrameInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, startOffset, endOffset, blobSymbolName);
         }
 
@@ -617,7 +618,7 @@ namespace ILCompiler.ObjectWriter
             return false;
         }
 
-        public void BuildCFIMap(NodeFactory factory, ObjectNode node)
+        public void BuildCFIMap(ObjectNode node)
         {
             _offsetToCfis.Clear();
             _offsetToCfiStart.Clear();
@@ -933,7 +934,7 @@ namespace ILCompiler.ObjectWriter
             Dispose(true);
         }
 
-        public virtual void Dispose(bool bDisposing)
+        public void Dispose(bool bDisposing)
         {
             if (_nativeObjectWriter != IntPtr.Zero)
             {
@@ -1089,7 +1090,7 @@ namespace ILCompiler.ObjectWriter
                     TargetArchitecture tarch = factory.Target.Architecture;
                     if (!factory.Target.IsWindows &&
                         (tarch == TargetArchitecture.X64 || tarch == TargetArchitecture.ARM || tarch == TargetArchitecture.ARM64))
-                        objectWriter.BuildCFIMap(factory, node);
+                        objectWriter.BuildCFIMap(node);
 
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);
@@ -1269,9 +1270,6 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
             }
-
-            if (logger.IsVerbose)
-                logger.LogMessage($"Done writing object file");
         }
 
         [DllImport(NativeObjectWriterFileName)]

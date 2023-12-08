@@ -12,7 +12,7 @@ using Internal.TypeSystem.TypesDebugInfo;
 
 namespace ILCompiler.ObjectWriter
 {
-    public abstract class UnixObjectWriter : ObjectWriter
+    internal abstract class UnixObjectWriter : ObjectWriter
     {
         private sealed record SectionDefinition(string SymbolName, Stream SectionStream);
 
