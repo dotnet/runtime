@@ -291,6 +291,23 @@ namespace System
 
         public static TimeSpan FromDays(double value) => Interval(value, TicksPerDay);
 
+        public static TimeSpan FromDays(int days)
+        {
+            return new TimeSpan((long)days * TicksPerDay);
+        }
+
+        public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            long totalTicks = (long)days * TicksPerDay
+                + (long)hours * TicksPerHour
+                + minutes * TicksPerMinute
+                + seconds * TicksPerSecond
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
+
+            return new TimeSpan(totalTicks);
+        }
+
         public TimeSpan Duration()
         {
             if (_ticks == MinTicks)
@@ -309,6 +326,22 @@ namespace System
         public override int GetHashCode() => _ticks.GetHashCode();
 
         public static TimeSpan FromHours(double value) => Interval(value, TicksPerHour);
+
+        public static TimeSpan FromHours(int hours)
+        {
+            return new TimeSpan((long)hours * TicksPerHour);
+        }
+
+        public static TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            long totalTicks = (long)hours * TicksPerHour
+                + minutes * TicksPerMinute
+                + seconds * TicksPerSecond
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
+
+            return new TimeSpan(totalTicks);
+        }
 
         private static TimeSpan Interval(double value, double scale)
         {
@@ -362,11 +395,45 @@ namespace System
         /// </exception>
         public static TimeSpan FromMicroseconds(double value) => Interval(value, TicksPerMicrosecond); // ISSUE: https://github.com/dotnet/runtime/issues/66815
 
+        public static TimeSpan FromMicroseconds(long microseconds)
+        {
+            return new TimeSpan(microseconds * TicksPerMicrosecond);
+        }
+
         public static TimeSpan FromMinutes(double value) => Interval(value, TicksPerMinute);
+
+        public static TimeSpan FromMinutes(long minutes)
+        {
+            return new TimeSpan(minutes * TicksPerMinute);
+        }
+
+        public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            long totalTicks = minutes * TicksPerMinute
+                + seconds * TicksPerSecond
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
+
+            return new TimeSpan(totalTicks);
+        }
 
         public TimeSpan Negate() => -this;
 
         public static TimeSpan FromSeconds(double value) => Interval(value, TicksPerSecond);
+
+        public static TimeSpan FromSeconds(long seconds)
+        {
+            return new TimeSpan(seconds * TicksPerSecond);
+        }
+
+        public static TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0)
+        {
+            long totalTicks = seconds * TicksPerSecond
+                + milliseconds * TicksPerMillisecond
+                + microseconds * TicksPerMicrosecond;
+
+            return new TimeSpan(totalTicks);
+        }
 
         public TimeSpan Subtract(TimeSpan ts) => this - ts;
 
