@@ -57,7 +57,7 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 
 // clang-format off
 
-enum BBjumpKinds : BYTE
+enum BBKinds : BYTE
 {
     BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally)
     BBJ_EHFAULTRET,  // block ends with 'endfinally' (IL alias for 'endfault') (for fault)
@@ -75,7 +75,7 @@ enum BBjumpKinds : BYTE
 };
 
 #ifdef DEBUG
-const char* const BBjumpKindNames[] = {
+const char* const bbKindNames[] = {
     "BBJ_EHFINALLYRET",
     "BBJ_EHFAULTRET",
     "BBJ_EHFILTERRET",
@@ -522,7 +522,7 @@ private:
     BasicBlock* bbNext; // next BB in ascending PC offset order
     BasicBlock* bbPrev;
 
-    BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
+    BBKinds bbKind; // jump (if any) at the end of this block
 
     /* The following union describes the jump target(s) of this block */
     union {
@@ -537,20 +537,20 @@ private:
 
 public:
     static BasicBlock* New(Compiler* compiler);
-    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    static BasicBlock* New(Compiler* compiler, BBKinds jumpKind, BasicBlock* jumpDest = nullptr);
     static BasicBlock* New(Compiler* compiler, BBswtDesc* jumpSwt);
-    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
+    static BasicBlock* New(Compiler* compiler, BBKinds jumpKind, unsigned jumpOffs);
 
-    BBjumpKinds GetJumpKind() const
+    BBKinds GetKind() const
     {
-        return bbJumpKind;
+        return bbKind;
     }
 
-    void SetJumpKind(BBjumpKinds jumpKind)
+    void SetKind(BBKinds kind)
     {
         // If this block's jump kind requires a target, ensure it is already set
         assert(!HasTarget() || HasInitializedTarget());
-        bbJumpKind = jumpKind;
+        bbKind = kind;
         // If new jump kind requires a target, ensure a target is already set
         assert(!HasTarget() || HasInitializedTarget());
     }
@@ -620,9 +620,9 @@ public:
         return bbJumpOffs;
     }
 
-    void SetKindAndTarget(BBjumpKinds kind, unsigned offs)
+    void SetKindAndTarget(BBKinds kind, unsigned offs)
     {
-        bbJumpKind = kind;
+        bbKind = kind;
         bbJumpOffs = offs;
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
@@ -635,7 +635,7 @@ public:
 
     BasicBlock* GetTarget() const
     {
-        // If bbJumpKind indicates this block has a jump, bbTarget cannot be null
+        // If bbKind indicates this block has a jump, bbTarget cannot be null
         assert(!HasTarget() || HasInitializedTarget());
         return bbTarget;
     }
@@ -643,7 +643,7 @@ public:
     void SetTarget(BasicBlock* target)
     {
         // SetKindAndTarget() nulls target for non-jump kinds,
-        // so don't use SetTarget() to null bbTarget without updating bbJumpKind.
+        // so don't use SetTarget() to null bbTarget without updating bbKind.
         bbTarget = target;
         assert(!HasTarget() || HasInitializedTarget());
     }
@@ -675,12 +675,12 @@ public:
         return (bbFalseTarget == jumpDest);
     }
 
-    void SetKindAndTarget(BBjumpKinds kind, BasicBlock* target = nullptr)
+    void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
     {
-        bbJumpKind = kind;
+        bbKind = kind;
         bbTarget = target;
 
-        // If bbJumpKind indicates this block has a jump, bbTarget cannot be null
+        // If bbKind indicates this block has a jump, bbTarget cannot be null
         assert(!HasTarget() || HasInitializedTarget());
     }
 
@@ -712,7 +712,7 @@ public:
     void SetKindAndTarget(BBswtDesc* swt)
     {
         assert(swt != nullptr);
-        bbJumpKind = BBJ_SWITCH;
+        bbKind = BBJ_SWITCH;
         bbJumpSwt  = swt;
     }
 
@@ -728,11 +728,11 @@ public:
         bbJumpEhf = jumpEhf;
     }
 
-    void SetKindAndTarget(BBjumpKinds kind, BBehfDesc* ehf)
+    void SetKindAndTarget(BBKinds kind, BBehfDesc* ehf)
     {
         assert(kind == BBJ_EHFINALLYRET);
         assert(ehf != nullptr);
-        bbJumpKind = kind;
+        bbKind = kind;
         bbJumpEhf  = ehf;
     }
 
@@ -987,13 +987,13 @@ public:
     // a block corresponding to an exit from the try of a try/finally.
     bool isBBCallAlwaysPairTail() const;
 
-    bool KindIs(BBjumpKinds kind) const
+    bool KindIs(BBKinds kind) const
     {
-        return bbJumpKind == kind;
+        return bbKind == kind;
     }
 
     template <typename... T>
-    bool KindIs(BBjumpKinds kind, T... rest) const
+    bool KindIs(BBKinds kind, T... rest) const
     {
         return KindIs(kind) || KindIs(rest...);
     }
@@ -1032,7 +1032,7 @@ public:
     //
     BBSwitchTargetList SwitchTargets() const
     {
-        assert(bbJumpKind == BBJ_SWITCH);
+        assert(bbKind == BBJ_SWITCH);
         return BBSwitchTargetList(bbJumpSwt);
     }
 
@@ -1042,7 +1042,7 @@ public:
     //
     BBEhfSuccList EHFinallyRetSuccs() const
     {
-        assert(bbJumpKind == BBJ_EHFINALLYRET);
+        assert(bbKind == BBJ_EHFINALLYRET);
         return BBEhfSuccList(bbJumpEhf);
     }
 
@@ -1864,7 +1864,7 @@ inline BBArrayIterator BBEhfSuccList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->bbJumpKind)
+    switch (block->bbKind)
     {
         case BBJ_THROW:
         case BBJ_RETURN:

@@ -3459,7 +3459,7 @@ void Compiler::fgVerifyHandlerTab()
         }
 
         // Check for legal block types
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_EHFINALLYRET:
             {

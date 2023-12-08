@@ -132,7 +132,7 @@ void ProfileSynthesis::AssignLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -393,7 +393,7 @@ void ProfileSynthesis::RepairLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -484,7 +484,7 @@ void ProfileSynthesis::BlendLikelihoods()
     {
         weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:

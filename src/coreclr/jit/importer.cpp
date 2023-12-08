@@ -4484,7 +4484,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     if (encFinallies == 0)
     {
         assert(step == DUMMY_INIT(NULL));
-        block->SetJumpKind(BBJ_ALWAYS); // convert the BBJ_LEAVE to a BBJ_ALWAYS
+        block->SetKind(BBJ_ALWAYS); // convert the BBJ_LEAVE to a BBJ_ALWAYS
 
         if (endCatches)
         {
@@ -4638,7 +4638,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             if (step == nullptr)
             {
                 step = block;
-                step->SetJumpKind(BBJ_EHCATCHRET); // convert the BBJ_LEAVE to BBJ_EHCATCHRET
+                step->SetKind(BBJ_EHCATCHRET); // convert the BBJ_LEAVE to BBJ_EHCATCHRET
                 stepType = ST_Catch;
 
 #ifdef DEBUG
@@ -4958,7 +4958,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
     if (step == nullptr)
     {
-        block->SetJumpKind(BBJ_ALWAYS); // convert the BBJ_LEAVE to a BBJ_ALWAYS
+        block->SetKind(BBJ_ALWAYS); // convert the BBJ_LEAVE to a BBJ_ALWAYS
 
 #ifdef DEBUG
         if (verbose)
@@ -7352,7 +7352,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
                         fgRemoveRefPred(block->GetFalseTarget(), block);
-                        block->SetJumpKind(BBJ_ALWAYS);
+                        block->SetKind(BBJ_ALWAYS);
 
                         // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
@@ -7422,7 +7422,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->GetTarget()->bbNum);
                             fgRemoveRefPred(block->GetFalseTarget(), block);
-                            block->SetJumpKind(BBJ_ALWAYS);
+                            block->SetKind(BBJ_ALWAYS);
                         }
                         else
                         {
@@ -7608,7 +7608,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
                         fgRemoveRefPred(block->GetFalseTarget(), block);
-                        block->SetJumpKind(BBJ_ALWAYS);
+                        block->SetKind(BBJ_ALWAYS);
 
                         // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
@@ -11272,7 +11272,7 @@ SPILLSTACK:
 
         unsigned multRef = impCanReimport ? unsigned(~0) : 0;
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_COND:
 
@@ -11336,7 +11336,7 @@ SPILLSTACK:
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 

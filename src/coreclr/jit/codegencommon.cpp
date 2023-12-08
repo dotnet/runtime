@@ -376,7 +376,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
     for (BasicBlock* const block : compiler->Blocks())
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
             {
@@ -434,7 +434,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
     }

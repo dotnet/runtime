@@ -2232,7 +2232,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         optRedirectBlock(newblk, blockMap);
 
         // Add predecessor edges for the new successors, as well as the fall-through paths.
-        switch (newblk->GetJumpKind())
+        switch (newblk->GetKind())
         {
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:

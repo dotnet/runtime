@@ -2292,7 +2292,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     /* Set the jump targets */
 
-    switch (bNext->GetJumpKind())
+    switch (bNext->GetKind())
     {
         case BBJ_CALLFINALLY:
             // Propagate RETLESS property
@@ -2309,7 +2309,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_COND:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            block->SetKindAndTarget(bNext->GetJumpKind(), bNext->GetTarget());
+            block->SetKindAndTarget(bNext->GetKind(), bNext->GetTarget());
 
             /* Update the predecessor list for 'bNext->bbTarget' */
             fgReplacePred(bNext->GetTarget(), bNext, block);
@@ -2322,7 +2322,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_EHFINALLYRET:
-            block->SetKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpEhf());
+            block->SetKindAndTarget(bNext->GetKind(), bNext->GetJumpEhf());
             fgChangeEhfBlock(bNext, block);
             break;
 
@@ -2330,7 +2330,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_THROW:
         case BBJ_RETURN:
             /* no jumps or fall through blocks to set here */
-            block->SetJumpKind(bNext->GetJumpKind());
+            block->SetKind(bNext->GetKind());
             break;
 
         case BBJ_SWITCH:
@@ -2341,11 +2341,11 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         default:
-            noway_assert(!"Unexpected bbJumpKind");
+            noway_assert(!"Unexpected bbKind");
             break;
     }
 
-    assert(block->KindIs(bNext->GetJumpKind()));
+    assert(block->KindIs(bNext->GetKind()));
 
     if (bNext->KindIs(BBJ_COND, BBJ_ALWAYS) && bNext->GetTarget()->isLoopAlign())
     {
@@ -2573,7 +2573,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
     // Change the BBJ_COND to BBJ_ALWAYS, and adjust the refCount and dupCount.
     --block->GetFalseTarget()->bbRefs;
-    block->SetJumpKind(BBJ_ALWAYS);
+    block->SetKind(BBJ_ALWAYS);
     block->SetFlags(BBF_NONE_QUIRK);
     flow->decrementDupCount();
 
@@ -2812,7 +2812,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
     bool        madeChanges = false;
     BasicBlock* bPrev       = block->Prev();
 
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_COND:
         case BBJ_SWITCH:
@@ -3010,7 +3010,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             break;
 
         default:
-            noway_assert(!"Unexpected bbJumpKind");
+            noway_assert(!"Unexpected bbKind");
             break;
     }
 
@@ -3838,7 +3838,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
     /* Conditional is gone - always jump to the next block */
 
-    block->SetJumpKind(BBJ_ALWAYS);
+    block->SetKind(BBJ_ALWAYS);
 
     /* Update bbRefs and bbNum - Conditional predecessors to the same
         * block are counted twice so we have to remove one of them */
@@ -4483,7 +4483,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
         const char* reason = nullptr;
 
-        switch (bPrev->GetJumpKind())
+        switch (bPrev->GetKind())
         {
             case BBJ_ALWAYS:
 
@@ -6341,7 +6341,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             }
             else if (block->countOfInEdges() == 1)
             {
-                switch (block->GetJumpKind())
+                switch (block->GetKind())
                 {
                     case BBJ_COND:
                     case BBJ_ALWAYS:
@@ -6438,7 +6438,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 {
     unsigned costSz = 0; // estimate of block's code size cost
 
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
@@ -6464,7 +6464,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
             costSz = 3;
             break;
         default:
-            noway_assert(!"Bad bbJumpKind");
+            noway_assert(!"Bad bbKind");
             break;
     }
 

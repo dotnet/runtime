@@ -81,7 +81,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-//  optOptimizeBoolsCondBlock:  Optimize boolean when bbJumpKind of both m_b1 and m_b2 are BBJ_COND
+//  optOptimizeBoolsCondBlock:  Optimize boolean when bbKind of both m_b1 and m_b2 are BBJ_COND
 //
 //  Returns:
 //      true if boolean optimization is done and m_b1 and m_b2 are folded into m_b1, else false.

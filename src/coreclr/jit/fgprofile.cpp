@@ -935,7 +935,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_CALLFINALLY:
             {
@@ -3900,7 +3900,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -4657,7 +4657,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->GetJumpKind())
+            switch (bSrc->GetKind())
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
@@ -4681,7 +4681,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 
                 default:
                     // We should never have an edge that starts from one of these jump kinds
-                    noway_assert(!"Unexpected bbJumpKind");
+                    noway_assert(!"Unexpected bbKind");
                     break;
             }
 

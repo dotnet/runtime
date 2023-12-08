@@ -644,7 +644,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     // and/or compute this switch block's unique succ set if it is not present. Debug output functions should
     // never have an effect on codegen. We also don't want to assume the unique succ set is accurate, so we
     // compute it ourselves here.
-    if (bbJumpKind == BBJ_SWITCH)
+    if (bbKind == BBJ_SWITCH)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
@@ -675,12 +675,12 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     }
 }
 
-// Display a compact representation of the bbJumpKind, that is, where this block branches.
+// Display a compact representation of the bbKind, that is, where this block branches.
 // This is similar to code in Compiler::fgTableDispBasicBlock(), but doesn't have that code's requirements to align
 // things strictly.
 void BasicBlock::dspJumpKind()
 {
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_EHFINALLYRET:
         {
@@ -1098,7 +1098,7 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
 
 bool BasicBlock::bbFallsThrough() const
 {
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_THROW:
         case BBJ_EHFINALLYRET:
@@ -1118,7 +1118,7 @@ bool BasicBlock::bbFallsThrough() const
             return !HasFlag(BBF_RETLESS_CALL);
 
         default:
-            assert(!"Unknown bbJumpKind in bbFallsThrough()");
+            assert(!"Unknown bbKind in bbFallsThrough()");
             return true;
     }
 }
@@ -1134,7 +1134,7 @@ bool BasicBlock::bbFallsThrough() const
 //
 unsigned BasicBlock::NumSucc() const
 {
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
@@ -1195,7 +1195,7 @@ unsigned BasicBlock::NumSucc() const
 BasicBlock* BasicBlock::GetSucc(unsigned i) const
 {
     assert(i < NumSucc()); // Index bounds check.
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1240,7 +1240,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 {
     assert(comp != nullptr);
 
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
@@ -1307,7 +1307,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     assert(comp != nullptr);
 
     assert(i < NumSucc(comp)); // Index bounds check.
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_EHFILTERRET:
             // Handler is the (sole) normal successor of the filter.
@@ -1366,7 +1366,7 @@ void BasicBlock::InitVarSets(Compiler* comp)
 // Returns true if the basic block ends with GT_JMP
 bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
 {
-    if (comp->compJmpOpUsed && (bbJumpKind == BBJ_RETURN) && HasFlag(BBF_HAS_JMP))
+    if (comp->compJmpOpUsed && (bbKind == BBJ_RETURN) && HasFlag(BBF_HAS_JMP))
     {
         GenTree* lastNode = this->lastNode();
         assert(lastNode != nullptr);
@@ -1425,12 +1425,12 @@ bool BasicBlock::endsWithTailCall(Compiler* comp,
         if (fastTailCallsOnly || tailCallsConvertibleToLoopOnly)
         {
             // Only fast tail calls or only tail calls convertible to loops
-            result = HasFlag(BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN);
+            result = HasFlag(BBF_HAS_JMP) && (bbKind == BBJ_RETURN);
         }
         else
         {
             // Fast tail calls, tail calls convertible to loops, and tails calls dispatched via helper
-            result = (bbJumpKind == BBJ_THROW) || (HasFlag(BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN));
+            result = (bbKind == BBJ_THROW) || (HasFlag(BBF_HAS_JMP) && (bbKind == BBJ_RETURN));
         }
 
         if (result)
@@ -1592,14 +1592,14 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
 {
     BasicBlock* block = BasicBlock::New(compiler);
 
     // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
     // yet.
     // The checks will be done any time the jump kind/target is read or written to after initialization.
-    block->bbJumpKind = jumpKind;
+    block->bbKind = jumpKind;
     block->bbTarget = jumpDest;
 
     if (block->KindIs(BBJ_THROW))
@@ -1613,15 +1613,15 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock
 BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* jumpSwt)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-    block->bbJumpKind = BBJ_SWITCH;
+    block->bbKind = BBJ_SWITCH;
     block->bbJumpSwt  = jumpSwt;
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds jumpKind, unsigned jumpOffs)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-    block->bbJumpKind = jumpKind;
+    block->bbKind = jumpKind;
     block->bbJumpOffs = jumpOffs;
     return block;
 }
@@ -1724,7 +1724,7 @@ bool BasicBlock::hasEHBoundaryOut() const
     bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
 
 #if FEATURE_EH_FUNCLETS
-    if (bbJumpKind == BBJ_EHCATCHRET)
+    if (bbKind == BBJ_EHCATCHRET)
     {
         returnVal = true;
     }

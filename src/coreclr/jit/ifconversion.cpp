@@ -740,7 +740,7 @@ bool OptIfConversionDsc::optIfConvert()
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
     assert(m_startBlock->HasInitializedTarget());
-    m_startBlock->SetJumpKind(BBJ_ALWAYS);
+    m_startBlock->SetKind(BBJ_ALWAYS);
 
 #ifdef DEBUG
     if (m_comp->verbose)

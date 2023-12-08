@@ -588,7 +588,7 @@ BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 template <typename TFunc>
 BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 {
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_EHFINALLYRET:
             // This can run before import, in which case we haven't converted
@@ -671,7 +671,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 template <typename TFunc>
 BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 {
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_EHFINALLYRET:
             // This can run before import, in which case we haven't converted

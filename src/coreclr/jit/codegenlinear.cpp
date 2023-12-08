@@ -619,7 +619,7 @@ void CodeGen::genCodeForBBlist()
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
-                switch (block->GetJumpKind())
+                switch (block->GetKind())
                 {
                     case BBJ_ALWAYS:
                         // We might skip generating the jump via a peephole optimization.
@@ -644,7 +644,7 @@ void CodeGen::genCodeForBBlist()
                     // These can't have a call as the last instruction!
 
                     default:
-                        noway_assert(!"Unexpected bbJumpKind");
+                        noway_assert(!"Unexpected bbKind");
                         break;
                 }
             }
@@ -653,7 +653,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_RETURN:
                 genExitCode(block);
@@ -789,7 +789,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 

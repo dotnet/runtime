@@ -370,7 +370,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // If we've converted a BBJ_CALLFINALLY block to a BBJ_THROW block,
     // then mark the subsequent BBJ_ALWAYS block as unreferenced.
     //
-    // Must do this after we update bbJumpKind of block.
+    // Must do this after we update bbKind of block.
     if (isCallAlwaysPair)
     {
         BasicBlock* leaveBlk = block->Next();
@@ -685,7 +685,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
     assert(block != nullptr);
     assert(fgPredsComputed);
 
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
         case BBJ_COND:
@@ -2926,7 +2926,7 @@ void Compiler::fgLinkBasicBlocks()
 
     for (BasicBlock* const curBBdesc : Blocks())
     {
-        switch (curBBdesc->GetJumpKind())
+        switch (curBBdesc->GetKind())
         {
             case BBJ_COND:
             case BBJ_ALWAYS:
@@ -2940,7 +2940,7 @@ void Compiler::fgLinkBasicBlocks()
 
                 // Redundantly use SetKindAndTarget() instead of SetTarget() just this once,
                 // so we don't break the HasInitializedTarget() invariant of SetTarget().
-                curBBdesc->SetKindAndTarget(curBBdesc->GetJumpKind(), jumpDest);
+                curBBdesc->SetKindAndTarget(curBBdesc->GetKind(), jumpDest);
                 fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
                 if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
@@ -3007,7 +3007,7 @@ void Compiler::fgLinkBasicBlocks()
             case BBJ_CALLFINALLY: // BBJ_CALLFINALLY and BBJ_EHCATCHRET don't appear until later
             case BBJ_EHCATCHRET:
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
     }
@@ -3076,7 +3076,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         unsigned        nxtBBoffs;
         OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
-        BBjumpKinds jmpKind = BBJ_COUNT;
+        BBKinds jmpKind = BBJ_COUNT;
 
     DECODE_OPCODE:
 
@@ -3985,7 +3985,7 @@ void Compiler::fgFindBasicBlocks()
                 // BBJ_EHFINALLYRET that were imported to BBJ_EHFAULTRET.
                 if ((hndBegBB->bbCatchTyp == BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    block->SetJumpKind(BBJ_EHFAULTRET);
+                    block->SetKind(BBJ_EHFAULTRET);
                 }
             }
 
@@ -4233,7 +4233,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
             continue;
         }
 
-        switch (blk->GetJumpKind())
+        switch (blk->GetKind())
         {
             case BBJ_ALWAYS: // block does unconditional jump to target
 
@@ -4323,7 +4323,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
             case BBJ_EHCATCHRET:  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
             case BBJ_CALLFINALLY: // block always calls the target finally
             default:
-                noway_assert(!"Unexpected bbJumpKind"); // these blocks don't get created until importing
+                noway_assert(!"Unexpected bbKind"); // these blocks don't get created until importing
                 break;
         }
     }
@@ -4738,7 +4738,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     if (!curr->KindIs(BBJ_SWITCH))
     {
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::New(this, curr->GetJumpKind(), curr->GetTarget());
+        newBlock         = BasicBlock::New(this, curr->GetKind(), curr->GetTarget());
         newBlock->bbRefs = 0;
 
         for (BasicBlock* const succ : curr->Succs(this))
@@ -5012,7 +5012,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
 //
 // Assumptions:
-//    'curr' must have a bbJumpKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
+//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
 //
 // Notes:
 //    The returned block is empty.
@@ -5375,10 +5375,10 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             }
 
             /* change all jumps to the removed block */
-            switch (predBlock->GetJumpKind())
+            switch (predBlock->GetKind())
             {
                 default:
-                    noway_assert(!"Unexpected bbJumpKind in fgRemoveBlock()");
+                    noway_assert(!"Unexpected bbKind in fgRemoveBlock()");
                     break;
 
                 case BBJ_COND:
@@ -5427,7 +5427,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     if (bPrev != nullptr)
     {
-        switch (bPrev->GetJumpKind())
+        switch (bPrev->GetKind())
         {
             case BBJ_CALLFINALLY:
                 // If prev is a BBJ_CALLFINALLY it better be marked as RETLESS
@@ -5474,7 +5474,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
         if (bSrc->bbFallsThrough() && !bSrc->NextIs(bDst))
         {
-            switch (bSrc->GetJumpKind())
+            switch (bSrc->GetKind())
             {
                 case BBJ_CALLFINALLY:
                 case BBJ_COND:
@@ -5536,7 +5536,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     break;
 
                 default:
-                    noway_assert(!"Unexpected bbJumpKind");
+                    noway_assert(!"Unexpected bbKind");
                     break;
             }
         }
@@ -6136,7 +6136,7 @@ bool Compiler::fgMightHaveLoop()
  * Insert a BasicBlock before the given block.
  */
 
-BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
+BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind,
                                     BasicBlock* block,
                                     bool        extendRegion,
                                     BasicBlock* jumpDest /* = nullptr */)
@@ -6178,7 +6178,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBjumpKinds jumpKind,
  * Insert a BasicBlock after the given block.
  */
 
-BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
+BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind,
                                    BasicBlock* block,
                                    bool        extendRegion,
                                    BasicBlock* jumpDest /* = nullptr */)
@@ -6234,7 +6234,7 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind,
 // Notes:
 //    The new block will have BBF_INTERNAL flag and EH region will be extended
 //
-BasicBlock* Compiler::fgNewBBFromTreeAfter(BBjumpKinds jumpKind,
+BasicBlock* Compiler::fgNewBBFromTreeAfter(BBKinds jumpKind,
                                            BasicBlock* block,
                                            GenTree*    tree,
                                            DebugInfo&  debugInfo,
@@ -6314,7 +6314,7 @@ void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
 //
 bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
 {
-    // bCur can't be NULL and must be a fall through bbJumpKind
+    // bCur can't be NULL and must be a fall through bbKind
     noway_assert(bCur != nullptr);
     noway_assert(bCur->bbFallsThrough() || (bCur->KindIs(BBJ_ALWAYS) && bCur->JumpsToNext()));
     noway_assert(bAlt != nullptr);
@@ -6749,7 +6749,7 @@ DONE:
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
+BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind,
                                       unsigned    tryIndex,
                                       unsigned    hndIndex,
                                       BasicBlock* nearBlk,
@@ -6876,7 +6876,7 @@ _FoundAfterBlk:;
 
     JITDUMP("fgNewBBinRegion(jumpKind=%s, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
             "inserting after " FMT_BB "\n",
-            BBjumpKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely),
+            bbKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely),
             dspBool(insertAtEnd), afterBlk->bbNum);
 
     return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion, jumpDest);
@@ -6898,7 +6898,7 @@ _FoundAfterBlk:;
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
+BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind,
                                       BasicBlock* srcBlk,
                                       BasicBlock* jumpDest /* = nullptr */,
                                       bool        runRarely /* = false */,
@@ -6934,7 +6934,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
 {
     return fgNewBBinRegion(jumpKind, 0, 0, nullptr, jumpDest, /* putInFilter */ false, /* runRarely */ false,
                            /* insertAtEnd */ true);
@@ -6960,7 +6960,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
+BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds jumpKind,
                                             BasicBlock* afterBlk,
                                             unsigned    regionIndex,
                                             bool        putInTryRegion,

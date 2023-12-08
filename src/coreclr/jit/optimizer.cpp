@@ -1372,7 +1372,7 @@ void Compiler::optCheckPreds()
                 }
             }
             noway_assert(bb);
-            switch (bb->GetJumpKind())
+            switch (bb->GetKind())
             {
                 case BBJ_COND:
                     if (bb->HasJumpTo(block))
@@ -2356,7 +2356,7 @@ private:
     {
         BasicBlock* exitPoint;
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_COND:
             case BBJ_CALLFINALLY:
@@ -2414,7 +2414,7 @@ private:
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 
@@ -2693,7 +2693,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 
     BasicBlock* newJumpDest = nullptr;
 
-    switch (blk->GetJumpKind())
+    switch (blk->GetKind())
     {
         case BBJ_THROW:
         case BBJ_RETURN:
@@ -2806,7 +2806,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
 {
     // copy the jump destination(s) from "from" to "to".
-    switch (from->GetJumpKind())
+    switch (from->GetKind())
     {
         case BBJ_SWITCH:
             to->SetKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetJumpSwt()));
@@ -2815,12 +2815,12 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
         default:
-            to->SetKindAndTarget(from->GetJumpKind(), from->GetTarget());
+            to->SetKindAndTarget(from->GetKind(), from->GetTarget());
             to->CopyFlags(from, BBF_NONE_QUIRK);
             break;
     }
 
-    assert(to->KindIs(from->GetJumpKind()));
+    assert(to->KindIs(from->GetKind()));
 }
 
 // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
@@ -4405,7 +4405,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 // Now redirect any branches within the newly-cloned iteration.
                 // Don't include `bottom` in the iteration, since we've already changed the
-                // newBlock->bbJumpKind, above.
+                // newBlock->bbKind, above.
                 for (BasicBlock* block = loop.lpTop; block != loop.lpBottom; block = block->Next())
                 {
                     // Jump kind/target should not be set yet
@@ -8276,7 +8276,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             continue;
         }
 
-        switch (predBlock->GetJumpKind())
+        switch (predBlock->GetKind())
         {
             case BBJ_COND:
                 if (predBlock->HasJumpTo(entry))
@@ -8322,7 +8322,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
     }

@@ -222,7 +222,7 @@ private:
         //
         // Return Value:
         //    new basic block.
-        BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind,
+        BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind,
                                               BasicBlock* insertAfter,
                                               BasicBlock* jumpDest = nullptr)
         {

@@ -346,7 +346,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 {
     PREFIX_ASSUME(block != nullptr);
 
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -380,7 +380,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         default:
-            noway_assert(!"Block doesn't have a valid bbJumpKind!!!!");
+            noway_assert(!"Block doesn't have a valid bbKind!!!!");
             break;
     }
 }

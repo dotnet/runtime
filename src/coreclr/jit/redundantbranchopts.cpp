@@ -1523,7 +1523,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         fgRemoveStmt(jti.m_block, lastStmt);
         JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", jti.m_block->bbNum, jti.m_trueTarget->bbNum);
         fgRemoveRefPred(jti.m_falseTarget, jti.m_block);
-        jti.m_block->SetJumpKind(BBJ_ALWAYS);
+        jti.m_block->SetKind(BBJ_ALWAYS);
     }
     else if (falsePredsWillReuseBlock)
     {

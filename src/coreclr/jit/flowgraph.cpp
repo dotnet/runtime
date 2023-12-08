@@ -130,7 +130,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if (BBJ_SWITCH == block->GetJumpKind())
+        else if (BBJ_SWITCH == block->GetKind())
         {
             // We don't want to deal with all the outgoing edges of a switch block.
             //
@@ -278,8 +278,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetTarget());
-        BBjumpKinds   oldJumpKind = top->GetJumpKind();
+        bottom                    = fgNewBBafter(top->GetKind(), poll, true, top->GetTarget());
+        BBKinds   oldJumpKind = top->GetKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
         poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
@@ -2831,7 +2831,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             // It's a jump from outside the handler; add it to the newHead preds list and remove
             // it from the block preds list.
 
-            switch (predBlock->GetJumpKind())
+            switch (predBlock->GetKind())
             {
                 case BBJ_CALLFINALLY:
                     noway_assert(predBlock->HasJumpTo(block));
@@ -3209,7 +3209,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         //
         if (prevToFirstColdBlock->bbFallsThrough())
         {
-            switch (prevToFirstColdBlock->GetJumpKind())
+            switch (prevToFirstColdBlock->GetKind())
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
@@ -3448,7 +3448,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
     //
     assert(!fgRngChkThrowAdded);
 
-    const static BBjumpKinds jumpKinds[] = {
+    const static BBKinds jumpKinds[] = {
         BBJ_ALWAYS, // SCK_NONE
         BBJ_THROW,  // SCK_RNGCHK_FAIL
         BBJ_THROW,  // SCK_DIV_BY_ZERO

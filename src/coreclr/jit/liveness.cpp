@@ -378,7 +378,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             block->bbMemoryLiveIn  = fullMemoryKindSet;
             block->bbMemoryLiveOut = fullMemoryKindSet;
 
-            switch (block->GetJumpKind())
+            switch (block->GetKind())
             {
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFAULTRET:
@@ -886,7 +886,7 @@ void Compiler::fgExtendDbgLifetimes()
     {
         VarSetOps::ClearD(this, initVars);
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
@@ -930,7 +930,7 @@ void Compiler::fgExtendDbgLifetimes()
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 
