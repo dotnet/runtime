@@ -285,8 +285,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
-    BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo,
-                                                  nullcheckBb->GetFalseTarget(), true);
+    BasicBlock* fallbackBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->GetFalseTarget(), true);
 
     assert(fallbackBb->JumpsToNext());
     fallbackBb->SetFlags(BBF_NONE_QUIRK);

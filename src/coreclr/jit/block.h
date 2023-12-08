@@ -699,8 +699,8 @@ public:
     bool FalseTargetIs(const BasicBlock* target) const
     {
         assert(KindIs(BBJ_COND));
-        assert(target != nullptr);
         assert(bbFalseTarget != nullptr);
+        assert(target != nullptr);
         return (bbFalseTarget == target);
     }
 

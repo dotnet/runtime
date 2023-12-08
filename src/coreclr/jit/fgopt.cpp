@@ -5059,7 +5059,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         // candidateBlock and have it fall into bTmp
                         //
                         if ((candidateBlock == nullptr) || !candidateBlock->KindIs(BBJ_COND, BBJ_ALWAYS) ||
-                            (candidateBlock->KindIs(BBJ_ALWAYS) && (!candidateBlock->TargetIs(bTmp) || candidateBlock->JumpsToNext())) || (candidateBlock->KindIs(BBJ_COND) && !candidateBlock->TrueTargetIs(bTmp)))
+                            (candidateBlock->KindIs(BBJ_ALWAYS) &&
+                             (!candidateBlock->TargetIs(bTmp) || candidateBlock->JumpsToNext())) ||
+                            (candidateBlock->KindIs(BBJ_COND) && !candidateBlock->TrueTargetIs(bTmp)))
                         {
                             // otherwise we have a new candidateBlock
                             //

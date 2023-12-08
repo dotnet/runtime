@@ -13263,7 +13263,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-                            
+
                             edge         = fgGetPredForBlock(bUpdated->GetTrueTarget(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);

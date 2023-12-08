@@ -222,9 +222,7 @@ private:
         //
         // Return Value:
         //    new basic block.
-        BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind,
-                                              BasicBlock* insertAfter,
-                                              BasicBlock* jumpDest = nullptr)
+        BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
         {
             BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
             block->SetFlags(BBF_IMPORTED);

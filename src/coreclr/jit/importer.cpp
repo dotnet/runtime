@@ -4665,7 +4665,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     fgRemoveRefPred(step->GetTarget(), step);
                 }
                 step->SetTarget(exitBlock); // the previous step (maybe a call to a nested finally, or a nested catch
-                                              // exit) returns to this block
+                                            // exit) returns to this block
                 fgAddRefPred(exitBlock, step);
 
                 /* The new block will inherit this block's weight */
@@ -4821,7 +4821,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     fgRemoveRefPred(step->GetTarget(), step);
                 }
                 step->SetTarget(callBlock); // the previous call to a finally returns to this call (to the next
-                                              // finally in the chain)
+                                            // finally in the chain)
                 fgAddRefPred(callBlock, step);
 
                 /* The new block will inherit this block's weight */

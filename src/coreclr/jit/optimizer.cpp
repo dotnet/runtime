@@ -497,24 +497,24 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if (!skipUnmarkLoop && // If we want to unmark this loop...
+    if (!skipUnmarkLoop &&                      // If we want to unmark this loop...
         (fgCurBBEpochSize == fgBBNumMax + 1) && // We didn't add new blocks since last renumber...
-        fgDomsComputed && // Given the doms are computed and valid...
-        (fgCurBBEpochSize == fgDomBBcount + 1)) //
+        fgDomsComputed &&                       // Given the doms are computed and valid...
+        (fgCurBBEpochSize == fgDomBBcount + 1))
     {
         // This block must reach conditionally or always
 
-        if (block->KindIs(BBJ_ALWAYS) && // This block always reaches
-            block->GetTarget()->isLoopHead() && // to a loop head...
+        if (block->KindIs(BBJ_ALWAYS) &&                   // This block always reaches
+            block->GetTarget()->isLoopHead() &&            // to a loop head...
             (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
-            fgReachable(block->GetTarget(), block)) // Block's destination (target of back edge) can reach block...
+            fgReachable(block->GetTarget(), block))        // Block's back edge target can reach block...
         {
             optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
         }
-        else if (block->KindIs(BBJ_COND) && // This block conditionally reaches
-                 block->GetTrueTarget()->isLoopHead() && // to a loop head...
+        else if (block->KindIs(BBJ_COND) &&                         // This block conditionally reaches
+                 block->GetTrueTarget()->isLoopHead() &&            // to a loop head...
                  (block->GetTrueTarget()->bbNum <= block->bbNum) && // This is a backedge...
-                 fgReachable(block->GetTrueTarget(), block)) // Block's destination (target of back edge) can reach block...
+                 fgReachable(block->GetTrueTarget(), block))        // Block's back edge target can reach block...
         {
             optUnmarkLoopBlocks(block->GetTrueTarget(), block); // Unscale the blocks in such loop.
         }
@@ -2125,7 +2125,8 @@ private:
 
         if (newMoveAfter->KindIs(BBJ_ALWAYS, BBJ_COND))
         {
-            unsigned int destNum = newMoveAfter->KindIs(BBJ_ALWAYS) ? newMoveAfter->GetTarget()->bbNum : newMoveAfter->GetTrueTarget()->bbNum;
+            unsigned int destNum = newMoveAfter->KindIs(BBJ_ALWAYS) ? newMoveAfter->GetTarget()->bbNum
+                                                                    : newMoveAfter->GetTrueTarget()->bbNum;
             if ((destNum >= top->bbNum) && (destNum <= bottom->bbNum) && !loopBlocks.IsMember(destNum))
             {
                 // Reversing this branch out of block `newMoveAfter` could confuse this algorithm
@@ -2807,7 +2808,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
                         fgAddRefPred(newJumpDest, blk);
                     }
                     blk->GetSwtTarget()->bbsDstTab[i] = newJumpDest;
-                    redirected                      = true;
+                    redirected                        = true;
                 }
                 else if (addPreds)
                 {
