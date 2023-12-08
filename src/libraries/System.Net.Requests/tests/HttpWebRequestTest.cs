@@ -2089,7 +2089,7 @@ namespace System.Net.Tests
                     request.ContinueTimeout = 30000;
                     Stream requestStream = await request.GetRequestStreamAsync();
                     requestStream.Write("aaaa\r\n\r\n"u8);
-                    var _ = request.GetResponseAsync();
+                    await request.GetResponseAsync();
                 },
                 async (server) =>
                 {
@@ -2098,9 +2098,10 @@ namespace System.Net.Tests
                         await client.ReadRequestHeaderAsync();
                         // This should time out, because we're expecting the body itself but we'll get it after 30 sec.
                         await Assert.ThrowsAsync<TimeoutException>(() => client.ReadLineAsync().WaitAsync(TimeSpan.FromMilliseconds(100)));
+                        await client.SendResponseAsync();
                     });
                 }
-            ).WaitAsync(TestHelper.PassingTestTimeout);
+            );
         }
 
         [Theory]
@@ -2117,7 +2118,7 @@ namespace System.Net.Tests
                     request.ContinueTimeout = continueTimeout;
                     Stream requestStream = await request.GetRequestStreamAsync();
                     requestStream.Write("aaaa\r\n\r\n"u8);
-                    var _ = request.GetResponseAsync();
+                    await request.GetResponseAsync();
                 },
                 async (server) =>
                 {
@@ -2127,6 +2128,7 @@ namespace System.Net.Tests
                         // This should not time out, because we're expecting the body itself and we should get it after 1 sec.
                         string data = await client.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
                         Assert.StartsWith("aaaa", data);
+                        await client.SendResponseAsync();
                     });
                 });
         }
@@ -2137,13 +2139,12 @@ namespace System.Net.Tests
         public async Task SendHttpPostRequest_When100ContinueSet_ReceivedByServer(bool expect100Continue)
         {
             await LoopbackServer.CreateClientAndServerAsync(
-                (uri) =>
+                async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = expect100Continue;
-                    var _ = request.GetResponseAsync();
-                    return Task.CompletedTask;
+                    await request.GetResponseAsync();
                 },
                 async (server) =>
                 {
@@ -2159,6 +2160,7 @@ namespace System.Net.Tests
                             {
                                 Assert.DoesNotContain("Expect: 100-continue", headers);
                             }
+                            await client.SendResponseAsync();
                         }
                     );
                 }
