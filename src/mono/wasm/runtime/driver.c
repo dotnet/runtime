@@ -1295,8 +1295,7 @@ mono_wasm_profiler_init_browser (const char *desc)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_init_finalizer_thread (void)
 {
-	// At this time we don't use a dedicated thread for finalization even if threading is enabled.
-	// Finalizers periodically run on the main thread
+	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
 	mono_gc_init_finalizer_thread ();
 #endif
