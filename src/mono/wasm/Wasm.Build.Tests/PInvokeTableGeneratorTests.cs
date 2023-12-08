@@ -750,10 +750,8 @@ namespace Wasm.Build.Tests
                         Console.WriteLine(""l (l)="" + resI);
 
                         var sis = new SingleI64Struct { Value = i64_a };
-                        // FIXME: In the interpreter this performs an _ii invoke incorrectly,
-                        //  and in AOT it also doesn't work. See mini-wasm.c mini_wasm_is_scalar_vtype
-                        // var resSI = indirect64(sis);
-                        // Console.WriteLine(""s (s)="" + resSI.Value);
+                        var resSI = indirect64(sis);
+                        Console.WriteLine(""s (s)="" + resSI.Value);
 
                         var resF = direct(3.14);
                         Console.WriteLine(""f (d)="" + resF);
@@ -821,6 +819,8 @@ namespace Wasm.Build.Tests
             Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
 
             var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 3, host: host, id: id);
+            Assert.Contains("l (l)=-1148435428713435121", runOutput);
+            Assert.Contains("s (s)=-1148435428713435121", runOutput);
             Assert.Contains("f (d)=3.14", runOutput);
             Assert.Contains("f (s)=3.14", runOutput);
             Assert.Contains("s (s)=3.14", runOutput);

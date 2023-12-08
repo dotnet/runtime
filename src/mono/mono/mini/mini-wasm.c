@@ -755,6 +755,9 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 	klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_internal (klass);
 
+	if (m_class_is_simd_type (klass))
+		return FALSE;
+
 	int size = mono_class_value_size (klass, NULL);
 	if (size == 0 || size > 8)
 		return FALSE;
@@ -773,11 +776,6 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 			if (!mini_wasm_is_scalar_vtype (t, etype))
 				return FALSE;
 		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
-			return FALSE;
-		} else if (size == 8 && t->type != MONO_TYPE_R8) {
-			// FIXME: The MONO_TYPE_R8 restriction here means that WASM scalar structs
-			//  containing I8/U8 fields don't work correctly, but removing the restriction
-			//  causes the AOT compiler to crash
 			return FALSE;
 		} else {
 			if (etype)
