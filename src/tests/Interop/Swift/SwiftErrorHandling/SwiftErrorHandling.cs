@@ -19,7 +19,7 @@ public class ErrorHandlingTests
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0SiSb_tKF")]
     public unsafe static extern nint conditionallyThrowError(bool willThrow, SwiftError* error);
 
-    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05getMyB7Message4fromSPys5UInt8VGSgs0B0_p_tF")]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05getMyB7Message4fromSPys4Int8VGSgs0B0_p_tF")]
     public static extern IntPtr GetErrorMessage(IntPtr handle);
 
     [Fact]

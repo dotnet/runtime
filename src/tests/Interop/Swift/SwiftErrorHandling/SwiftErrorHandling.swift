@@ -21,12 +21,12 @@ public func conditionallyThrowError(willThrow: Bool) throws -> Int {
     }
 }
 
-public func getMyErrorMessage(from error: Error) -> UnsafePointer<UInt8>? {
+public func getMyErrorMessage(from error: Error) -> UnsafePointer<CChar>? {
     if let myError = error as? MyError {
         switch myError {
         case .runtimeError(let message):
-            let messageBytes: [UInt8] = Array(message.utf8)
-            let buffer = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: messageBytes.count)
+            let messageBytes = message.utf8CString
+            let buffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: messageBytes.count)
             _ = buffer.initialize(from: messageBytes)
             return UnsafePointer(buffer.baseAddress!)
         }
