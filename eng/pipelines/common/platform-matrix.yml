@@ -388,7 +388,7 @@ jobs:
       targetRid: linux-x64
       platform: linux_x64_xl
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_x64
+      container: linux_x64_xl
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
