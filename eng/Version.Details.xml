@@ -321,17 +321,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>2cf0a1c588d2cbcd2effe431b187a559ea8898e8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.23605.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.23606.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>ba91c026a8968367b5ea44be119affec61c5f38c</Sha>
+      <Sha>b058fd28cbd724817c21efee85bb34effb5d2c14</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.23605.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.23606.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>ba91c026a8968367b5ea44be119affec61c5f38c</Sha>
+      <Sha>b058fd28cbd724817c21efee85bb34effb5d2c14</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.23605.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.23606.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>ba91c026a8968367b5ea44be119affec61c5f38c</Sha>
+      <Sha>b058fd28cbd724817c21efee85bb34effb5d2c14</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.23607.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -353,9 +353,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>b86eff9a62fcd19839f0273d1aa1570b8dec6a48</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.23604.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.23606.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>6e48315f02b51f8fbc7e6a8c7278906542c135d9</Sha>
+      <Sha>eb23332a1329d8f4593f7bd4cf831553c8ac6c64</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.23604.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
