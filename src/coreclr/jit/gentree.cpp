@@ -18582,7 +18582,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
                 {
                     objClass    = info.compCompHnd->getTypeForBox(nullableCls);
                     *pIsNonNull = false;
-                    *pIsExact   = false;
+                    *pIsExact   = true;
                 }
             }
         }
