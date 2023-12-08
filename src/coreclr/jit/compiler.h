@@ -5947,6 +5947,7 @@ public:
 
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
+    PhaseStatus fgCanonicalizeFirstBB();
     bool fgCreateLoopPreHeader(unsigned lnum);
 
     void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);

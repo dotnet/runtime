@@ -7944,6 +7944,33 @@ void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
 }
 
 //------------------------------------------------------------------------------
+// fgCanonicalizeFirstBB: Canonicalize the method entry for loop and dominator
+// purposes.
+//
+// Returns:
+//   Suitable phase status.
+//
+PhaseStatus Compiler::fgCanonicalizeFirstBB()
+{
+    if (fgFirstBB->hasTryIndex())
+    {
+        JITDUMP("Canonicalizing entry because it currently is the beginning of a try region\n");
+    }
+    else if (fgFirstBB->bbPreds != nullptr)
+    {
+        JITDUMP("Canonicalizing entry because it currently has predecessors\n");
+    }
+    else
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    assert(!fgFirstBBisScratch());
+    fgEnsureFirstBBisScratch();
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------------
 // fgCreateLoopPreHeader: Creates a pre-header block for the given loop.
 // A pre-header is a block outside the loop that falls through or branches to the loop
 // entry block. It is the only non-loop predecessor block to the entry block (thus, it
