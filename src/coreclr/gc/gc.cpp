@@ -51872,9 +51872,9 @@ void GCHeap::DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanCo
     GCScan::GcScanDependentHandlesForProfilerAndETW (gen_number, context, fn);
 }
 
-uint64_t GCHeap::GetLOHThreshold()
+size_t GCHeap::GetLOHThreshold()
 {
-    return (uint64_t)loh_size_threshold;
+    return loh_size_threshold;
 }
 
 void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
