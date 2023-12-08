@@ -529,7 +529,7 @@ private:
         unsigned    bbTargetOffs; // PC offset (temporary only)
         BasicBlock* bbTarget; // basic block
         BBswtDesc*  bbSwtTarget;  // switch descriptor
-        BBehfDesc*  bbJumpEhf;  // BBJ_EHFINALLYRET descriptor
+        BBehfDesc*  bbEhfTarget;  // BBJ_EHFINALLYRET descriptor
     };
 
     // Points to the successor of a BBJ_COND block if bbTarget is not taken
@@ -716,24 +716,24 @@ public:
         bbSwtTarget  = swtTarget;
     }
 
-    BBehfDesc* GetJumpEhf() const
+    BBehfDesc* GetEhfTarget() const
     {
         assert(KindIs(BBJ_EHFINALLYRET));
-        return bbJumpEhf;
+        return bbEhfTarget;
     }
 
-    void SetJumpEhf(BBehfDesc* jumpEhf)
+    void SetEhfTarget(BBehfDesc* ehfTarget)
     {
         assert(KindIs(BBJ_EHFINALLYRET));
-        bbJumpEhf = jumpEhf;
+        bbEhfTarget = ehfTarget;
     }
 
-    void SetKindAndTarget(BBKinds kind, BBehfDesc* ehf)
+    void SetKindAndTarget(BBKinds kind, BBehfDesc* ehfTarget)
     {
         assert(kind == BBJ_EHFINALLYRET);
-        assert(ehf != nullptr);
+        assert(ehfTarget != nullptr);
         bbKind = kind;
-        bbJumpEhf  = ehf;
+        bbEhfTarget  = ehfTarget;
     }
 
 private:
@@ -1043,7 +1043,7 @@ public:
     BBEhfSuccList EHFinallyRetSuccs() const
     {
         assert(bbKind == BBJ_EHFINALLYRET);
-        return BBEhfSuccList(bbJumpEhf);
+        return BBEhfSuccList(bbEhfTarget);
     }
 
     BasicBlock* GetUniquePred(Compiler* comp) const;
@@ -1905,15 +1905,15 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             // We don't use the m_succs in-line data; use the existing successor table in the block.
             // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
             // been computed.
-            if (block->GetJumpEhf() == nullptr)
+            if (block->GetEhfTarget() == nullptr)
             {
                 m_begin = nullptr;
                 m_end   = nullptr;
             }
             else
             {
-                m_begin = block->GetJumpEhf()->bbeSuccs;
-                m_end   = block->GetJumpEhf()->bbeSuccs + block->GetJumpEhf()->bbeCount;
+                m_begin = block->GetEhfTarget()->bbeSuccs;
+                m_end   = block->GetEhfTarget()->bbeSuccs + block->GetEhfTarget()->bbeCount;
             }
             break;
 

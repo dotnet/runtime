@@ -687,14 +687,14 @@ void BasicBlock::dspJumpKind()
             printf(" ->");
 
             // Early in compilation, we display the jump kind before the BBJ_EHFINALLYRET successors have been set.
-            if (bbJumpEhf == nullptr)
+            if (bbEhfTarget == nullptr)
             {
                 printf(" ????");
             }
             else
             {
-                const unsigned     jumpCnt = bbJumpEhf->bbeCount;
-                BasicBlock** const jumpTab = bbJumpEhf->bbeSuccs;
+                const unsigned     jumpCnt = bbEhfTarget->bbeCount;
+                BasicBlock** const jumpTab = bbEhfTarget->bbeSuccs;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
@@ -1168,12 +1168,12 @@ unsigned BasicBlock::NumSucc() const
 
             // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
             //
-            if (bbJumpEhf == nullptr)
+            if (bbEhfTarget == nullptr)
             {
                 return 0;
             }
 
-            return bbJumpEhf->bbeCount;
+            return bbEhfTarget->bbeCount;
 
         case BBJ_SWITCH:
             return bbSwtTarget->bbsCount;
@@ -1217,7 +1217,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             }
 
         case BBJ_EHFINALLYRET:
-            return bbJumpEhf->bbeSuccs[i];
+            return bbEhfTarget->bbeSuccs[i];
 
         case BBJ_SWITCH:
             return bbSwtTarget->bbsDstTab[i];
@@ -1257,12 +1257,12 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 
             // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
             //
-            if (bbJumpEhf == nullptr)
+            if (bbEhfTarget == nullptr)
             {
                 return 0;
             }
 
-            return bbJumpEhf->bbeCount;
+            return bbEhfTarget->bbeCount;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1315,9 +1315,9 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             return bbTarget;
 
         case BBJ_EHFINALLYRET:
-            assert(bbJumpEhf != nullptr);
-            assert(i < bbJumpEhf->bbeCount);
-            return bbJumpEhf->bbeSuccs[i];
+            assert(bbEhfTarget != nullptr);
+            assert(i < bbEhfTarget->bbeCount);
+            return bbEhfTarget->bbeSuccs[i];
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:

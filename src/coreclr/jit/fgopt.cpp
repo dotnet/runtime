@@ -2322,7 +2322,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_EHFINALLYRET:
-            block->SetKindAndTarget(bNext->GetKind(), bNext->GetJumpEhf());
+            block->SetKindAndTarget(bNext->GetKind(), bNext->GetEhfTarget());
             fgChangeEhfBlock(bNext, block);
             break;
 

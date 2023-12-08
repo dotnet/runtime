@@ -568,7 +568,7 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     assert(block->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    BBehfDesc* const   ehfDesc   = block->GetJumpEhf();
+    BBehfDesc* const   ehfDesc   = block->GetEhfTarget();
     const unsigned     succCount = ehfDesc->bbeCount;
     BasicBlock** const succTab   = ehfDesc->bbeSuccs;
 
@@ -627,7 +627,7 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
 
     fgRemoveRefPred(succ, block);
 
-    BBehfDesc* const ehfDesc   = block->GetJumpEhf();
+    BBehfDesc* const ehfDesc   = block->GetEhfTarget();
     unsigned         succCount = ehfDesc->bbeCount;
     BasicBlock**     succTab   = ehfDesc->bbeSuccs;
     bool             found     = false;

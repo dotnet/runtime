@@ -593,11 +593,11 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFINALLYRET:
             // This can run before import, in which case we haven't converted
             // LEAVE into callfinally yet, and haven't added return successors.
-            if (bbJumpEhf != nullptr)
+            if (bbEhfTarget != nullptr)
             {
-                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                for (unsigned i = 0; i < bbEhfTarget->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTarget->bbeSuccs[i]));
                 }
             }
 
@@ -676,11 +676,11 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_EHFINALLYRET:
             // This can run before import, in which case we haven't converted
             // LEAVE into callfinally yet, and haven't added return successors.
-            if (bbJumpEhf != nullptr)
+            if (bbEhfTarget != nullptr)
             {
-                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                for (unsigned i = 0; i < bbEhfTarget->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTarget->bbeSuccs[i]));
                 }
             }
 

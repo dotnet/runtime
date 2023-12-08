@@ -2735,7 +2735,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 
         case BBJ_EHFINALLYRET:
         {
-            BBehfDesc*  ehfDesc = blk->GetJumpEhf();
+            BBehfDesc*  ehfDesc = blk->GetEhfTarget();
             BasicBlock* newSucc = nullptr;
             for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
             {
@@ -2812,7 +2812,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetSwtTarget()));
             break;
         case BBJ_EHFINALLYRET:
-            to->SetKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
+            to->SetKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetEhfTarget()));
             break;
         default:
             to->SetKindAndTarget(from->GetKind(), from->GetTarget());
