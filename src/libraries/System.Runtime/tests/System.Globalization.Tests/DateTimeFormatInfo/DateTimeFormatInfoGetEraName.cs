@@ -269,10 +269,10 @@ namespace System.Globalization.Tests
                 yield return new object[] { "en-US", 1, "AD" };
                 yield return new object[] { "es-ES", 0, "d. C." };
                 yield return new object[] { "es-ES", 1, "d. C." };
-                yield return new object[] { "es-419", 0, "d.C." };
-                yield return new object[] { "es-419", 1, "d.C."};
-                yield return new object[] { "es-MX", 0, "d.C." };
-                yield return new object[] { "es-MX", 1, "d.C." };
+                yield return new object[] { "es-419", 0, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
+                yield return new object[] { "es-419", 1, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
+                yield return new object[] { "es-MX", 0, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
+                yield return new object[] { "es-MX", 1, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
                 yield return new object[] { "et-EE", 0, "pKr" };
                 yield return new object[] { "et-EE", 1, "pKr" };
                 yield return new object[] { "fa-IR", 0, "ه.ش" }; // ه‍.ش.
