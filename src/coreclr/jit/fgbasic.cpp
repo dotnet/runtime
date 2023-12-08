@@ -5031,7 +5031,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // an immediately following block of a BBJ_SWITCH (which has
         // no fall-through path). For this case, simply insert a new
         // fall-through block after 'curr'.
-        // TODO: Once bbNormalJumpDest can diverge from bbNext, this will be unnecessary for BBJ_COND
+        // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, this will be unnecessary for BBJ_COND
         newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */, /* jumpDest */ succ);
         newBlock->SetFlags(BBF_NONE_QUIRK);
         assert(newBlock->JumpsToNext());
@@ -6338,7 +6338,7 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     }
 
     // Currently bNext is the fall through for bCur
-    // TODO: Allow bbNormalJumpDest to diverge from bbNext for BBJ_COND
+    // TODO-NoFallThrough: Allow bbNormalJumpDest to diverge from bbNext for BBJ_COND
     assert(!bCur->KindIs(BBJ_COND) || bCur->NextIs(bCur->GetNormalJumpDest()));
     BasicBlock* bNext = bCur->Next();
     noway_assert(bNext != nullptr);

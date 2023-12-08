@@ -3230,7 +3230,8 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // probably need to insert a block to jump to the cold section.
                     //
 
-                    // TODO: Below logic will need additional check once bbNormalJumpDest can diverge from bbNext
+                    // TODO-NoFallThrough: Below logic will need additional check once bbNormalJumpDest can diverge from
+                    // bbNext
                     assert(prevToFirstColdBlock->HasNormalJumpTo(firstColdBlock));
                     if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
                     {

@@ -2855,7 +2855,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     break;
                 }
 
-                // TODO: Once BBJ_COND blocks have pointers to their false branches,
+                // TODO-NoFallThrough: Once BBJ_COND blocks have pointers to their false branches,
                 // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block->bbJumpDest.
                 if (bPrev->bbFallsThrough() && !block->JumpsToNext())
                 {
@@ -5998,7 +5998,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     bDest    = block->GetJumpDest();
                     bNext    = block->GetNormalJumpDest();
 
-                    // TODO: Adjust the above logic once bbNormalJumpDest can diverge from bbNext
+                    // TODO-NoFallThrough: Adjust the above logic once bbNormalJumpDest can diverge from bbNext
                     assert(block->NextIs(bNext));
                 }
             }
@@ -6021,7 +6021,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 bDest = block->GetJumpDest();
                 if (bDest == bNext)
                 {
-                    // TODO: Fix above condition once bbNormalJumpDest can diverge from bbNext
+                    // TODO-NoFallThrough: Fix above condition once bbNormalJumpDest can diverge from bbNext
                     assert(block->HasNormalJumpTo(bNext));
                     if (fgOptimizeBranchToNext(block, bNext, bPrev))
                     {
@@ -6147,7 +6147,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             BasicBlock* const bDestNext = bDest->Next();
 
                             // Once bbNormalJumpDest and bbNext can diverge, this assert will hit
-                            // TODO: Remove fall-through for BBJ_COND below
+                            // TODO-NoFallThrough: Remove fall-through for BBJ_COND below
                             assert(!bDest->KindIs(BBJ_COND) || bDest->HasNormalJumpTo(bDestNext));
 
                             // Move bDest

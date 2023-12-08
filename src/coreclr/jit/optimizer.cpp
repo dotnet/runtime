@@ -4530,7 +4530,8 @@ PhaseStatus Compiler::optUnrollLoops()
                 fgRemoveRefPred(initBlock->GetJumpDest(), initBlock);
                 initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->GetNormalJumpDest());
 
-                // TODO: If bbNormalJumpDest can diverge from bbNext, it may not make sense to set BBF_NONE_QUIRK
+                // TODO-NoFallThrough: If bbNormalJumpDest can diverge from bbNext, it may not make sense to set
+                // BBF_NONE_QUIRK
                 initBlock->SetFlags(BBF_NONE_QUIRK);
             }
             else

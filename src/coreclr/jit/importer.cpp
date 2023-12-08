@@ -7354,7 +7354,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetNormalJumpDest(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
 
-                        // TODO: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to set
+                        // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to
+                        // set
                         // BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
@@ -7426,13 +7427,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            // TODO: Update once bbNormalJumpDest can diverge from bbNext
+                            // TODO-NoFallThrough: Update once bbNormalJumpDest can diverge from bbNext
                             assert(block->NextIs(block->GetNormalJumpDest()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetJumpDest(), block);
                             block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
 
-                            // TODO: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to set
+                            // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense
+                            // to set
                             // BBF_NONE_QUIRK
                             block->SetFlags(BBF_NONE_QUIRK);
                         }
@@ -7610,7 +7612,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetNormalJumpDest(), block);
                         block->SetJumpKind(BBJ_ALWAYS);
 
-                        // TODO: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to set
+                        // TODO-NoFallThrough: Once bbNormalJumpDest can diverge from bbNext, it may not make sense to
+                        // set
                         // BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
                     }

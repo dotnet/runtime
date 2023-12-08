@@ -2958,7 +2958,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         maxBBNum = max(maxBBNum, block->bbNum);
 
         // BBJ_COND's normal (false) jump target is expected to be the next block
-        // TODO: Allow bbNormalJumpDest to diverge from bbNext
+        // TODO-NoFallThrough: Allow bbNormalJumpDest to diverge from bbNext
         if (block->KindIs(BBJ_COND))
         {
             assert(block->NextIs(block->GetNormalJumpDest()));
