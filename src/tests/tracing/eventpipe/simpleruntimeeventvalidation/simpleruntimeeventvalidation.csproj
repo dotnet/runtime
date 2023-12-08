@@ -9,7 +9,7 @@
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsWindows)' == 'true'">
     <ControlFlowGuard>guard</ControlFlowGuard>
   </PropertyGroup>
 
