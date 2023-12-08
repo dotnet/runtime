@@ -135,7 +135,7 @@ static const char* getISO3LanguageByLangCode(const char* langCode)
     return LANGUAGES_3[offset];
 }
 
-const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData)
+const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName)
 {
     @autoreleasepool
     {
@@ -152,6 +152,12 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         {
             ///// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
             case LocaleString_LocalizedDisplayName:
+            {
+                NSString *currUILocaleName = currentUILocaleName == NULL ? NSLocale.preferredLanguages[0] : [NSString stringWithFormat:@"%s", currentUILocaleName];
+                NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
+                value = [currentUILocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
+                break;
+            }
             /// <summary>Display name (language + country usually) in English, eg "German (Germany)" (corresponds to LOCALE_SENGLISHDISPLAYNAME)</summary>
             case LocaleString_EnglishDisplayName:
                 value = [gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
@@ -162,6 +168,12 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 break;
             /// <summary>Language Display Name for a language, eg "German" in UI language (corresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
             case LocaleString_LocalizedLanguageName:
+            {
+                NSString *currUILocaleName = currentUILocaleName == NULL ? NSLocale.preferredLanguages[0] : [NSString stringWithFormat:@"%s", currentUILocaleName];
+                NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
+                value = [currentUILocale localizedStringForLanguageCode:currentLocale.languageCode];
+                break;
+            }
             /// <summary>English name of language, eg "German" (corresponds to LOCALE_SENGLISHLANGUAGENAME)</summary>
             case LocaleString_EnglishLanguageName:
                 value = [gbLocale localizedStringForLanguageCode:currentLocale.languageCode];
