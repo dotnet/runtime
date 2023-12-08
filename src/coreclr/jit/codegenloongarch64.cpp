@@ -6385,14 +6385,9 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    GenTree* const dstNode  = initBlkNode->Addr();
-    GenTree* const zeroNode = initBlkNode->Data();
-
+    GenTree* const dstNode = initBlkNode->Addr();
     genConsumeReg(dstNode);
-    genConsumeReg(zeroNode);
-
-    const regNumber dstReg  = dstNode->GetRegNum();
-    const regNumber zeroReg = zeroNode->GetRegNum();
+    const regNumber dstReg = dstNode->GetRegNum();
 
     if (initBlkNode->IsVolatile())
     {
@@ -6407,7 +6402,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     // Although, we zero the first pointer before the loop (the loop doesn't zero it)
     // it works as a nullcheck, otherwise the first iteration would try to access
     // "null + potentially large offset" and hit AV.
-    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, zeroReg, dstReg, 0);
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, dstReg, 0);
     if (size > TARGET_POINTER_SIZE)
     {
         // Extend liveness of dstReg in case if it gets killed by the store.
@@ -6420,11 +6415,11 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         genDefineTempLabel(loop);
 
         // *(dstReg + offsetReg) = 0
-        GetEmitter()->emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
+        GetEmitter()->emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, REG_R0, dstReg, offsetReg);
         // offsetReg = offsetReg - 8
         GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
         // if (offsetReg != 0) goto loop;
-        GetEmitter()->emitIns_J_cond_la(INS_beq, loop, offsetReg, zeroReg);
+        GetEmitter()->emitIns_J_cond_la(INS_beq, loop, offsetReg, REG_R0);
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
     }

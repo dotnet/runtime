@@ -608,10 +608,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
+        else if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#ifdef TARGET_ARM64
+            // On ARM64 we can just use REG_ZR instead of having to load
+            // the constant into a real register like on ARM32.
+            src->SetContained();
+#endif
+        }
         else
         {
-            blkNode->gtBlkOpKind =
-                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindHelper;
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
         }
     }
     else

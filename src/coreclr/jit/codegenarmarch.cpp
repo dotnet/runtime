@@ -3124,14 +3124,17 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    GenTree* const dstNode  = initBlkNode->Addr();
-    GenTree* const zeroNode = initBlkNode->Data();
-
+    GenTree* const dstNode = initBlkNode->Addr();
     genConsumeReg(dstNode);
-    genConsumeReg(zeroNode);
+    const regNumber dstReg = dstNode->GetRegNum();
 
-    const regNumber dstReg  = dstNode->GetRegNum();
+#ifdef TARGET_ARM64
+    GenTree* const zeroNode = initBlkNode->Data();
+    genConsumeReg(zeroNode);
     const regNumber zeroReg = zeroNode->GetRegNum();
+#else
+    const regNumber zeroReg = REG_ZR;
+#endif
 
     // TODO-ARM64: mark initBlkNode->Data() as contained and use WZR/XZR
 
