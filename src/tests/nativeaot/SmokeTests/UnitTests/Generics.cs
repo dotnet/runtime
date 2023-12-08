@@ -54,6 +54,7 @@ class Generics
         TestRefAny.Run();
         TestNullableCasting.Run();
         TestVariantCasting.Run();
+        TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
@@ -1155,6 +1156,24 @@ class Generics
 
             var foo = (Foo<string>)s_foo;
             if (foo.Value != 42)
+                throw new Exception();
+        }
+    }
+
+    class TestVariantDispatchUnconstructedTypes
+    {
+        interface IFoo { }
+        class Foo : IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IEnumerable<IFoo> GetFoos() => new Foo[5];
+
+        public static void Run()
+        {
+            int j = 0;
+            foreach (var f in GetFoos())
+                j++;
+            if (j != 5)
                 throw new Exception();
         }
     }
