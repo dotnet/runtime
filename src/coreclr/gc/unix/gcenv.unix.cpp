@@ -703,6 +703,9 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
     int st = EINVAL;
+
+#if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+
     int madviseFlags = 0;
 
 #ifdef MADV_DONTDUMP
@@ -711,29 +714,21 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 #endif
 
 #ifdef HAVE_MADV_FREE
-    // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
-    // need the pages in the range. Freeing the pages can be delayed until a memory pressure
-    // occurs.
+    // Tell the kernel that the application doesn't need the pages in the range.
+    // Freeing the pages can be delayed until a memory pressure occurs.
     madviseFlags |= MADV_FREE;
 #endif
 
-    if (madviseFlags != 0)
-    {
-        st = madvise(address, size, madviseFlags);
-    }
+    st = madvise(address, size, madviseFlags);
 
-#if HAVE_POSIX_MADVISE
-    if (st != 0)
-    {
-        // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
+#endif //defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
 
-#ifdef MADV_DONTDUMP
-        // Ensure DONTDUMP is still applied.
-        madvise(address, size, MADV_DONTDUMP);
-#endif
-    }
-#endif
+#if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+    // DONTNEED is the nearest posix equivalent of FREE.
+    // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
+    st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
+
+#endif //defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
 
     return (st == 0);
 }
