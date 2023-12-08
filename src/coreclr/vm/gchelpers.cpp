@@ -706,7 +706,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 #endif
 
-    if (totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
+    if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
     if (pArrayMT->ContainsPointers())
