@@ -497,16 +497,27 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                     // If we want to unmark this loop...
-        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&           // This block reaches conditionally or always
-        block->GetTarget()->isLoopHead() &&            // to a loop head...
-        (fgCurBBEpochSize == fgBBNumMax + 1) &&          // We didn't add new blocks since last renumber...
-        (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
-        fgDomsComputed &&                                // Given the doms are computed and valid...
-        (fgCurBBEpochSize == fgDomBBcount + 1) &&        //
-        fgReachable(block->GetTarget(), block))        // Block's destination (target of back edge) can reach block...
+    if (!skipUnmarkLoop && // If we want to unmark this loop...
+        (fgCurBBEpochSize == fgBBNumMax + 1) && // We didn't add new blocks since last renumber...
+        fgDomsComputed && // Given the doms are computed and valid...
+        (fgCurBBEpochSize == fgDomBBcount + 1)) //
     {
-        optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
+        // This block must reach conditionally or always
+
+        if (block->KindIs(BBJ_ALWAYS) && // This block always reaches
+            block->GetTarget()->isLoopHead() && // to a loop head...
+            (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
+            fgReachable(block->GetTarget(), block)) // Block's destination (target of back edge) can reach block...
+        {
+            optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
+        }
+        else if (block->KindIs(BBJ_COND) && // This block conditionally reaches
+                 block->GetTrueTarget()->isLoopHead() && // to a loop head...
+                 (block->GetTrueTarget()->bbNum <= block->bbNum) && // This is a backedge...
+                 fgReachable(block->GetTrueTarget(), block)) // Block's destination (target of back edge) can reach block...
+        {
+            optUnmarkLoopBlocks(block->GetTrueTarget(), block); // Unscale the blocks in such loop.
+        }
     }
 }
 
@@ -2114,7 +2125,7 @@ private:
 
         if (newMoveAfter->KindIs(BBJ_ALWAYS, BBJ_COND))
         {
-            unsigned int destNum = newMoveAfter->GetTarget()->bbNum;
+            unsigned int destNum = newMoveAfter->KindIs(BBJ_ALWAYS) ? newMoveAfter->GetTarget()->bbNum : newMoveAfter->GetTrueTarget()->bbNum;
             if ((destNum >= top->bbNum) && (destNum <= bottom->bbNum) && !loopBlocks.IsMember(destNum))
             {
                 // Reversing this branch out of block `newMoveAfter` could confuse this algorithm
@@ -2363,7 +2374,7 @@ private:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
                 assert(block->HasInitializedTarget());
-                exitPoint = block->GetTarget();
+                exitPoint = block->KindIs(BBJ_COND) ? block->GetTrueTarget() : block->GetTarget();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
@@ -2833,6 +2844,9 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
         case BBJ_EHFINALLYRET:
             to->SetKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetEhfTarget()));
             break;
+        case BBJ_COND:
+            to->SetKindAndTarget(BBJ_COND, from->GetTrueTarget());
+            break;
         default:
             to->SetKindAndTarget(from->GetKind(), from->GetTarget());
             to->CopyFlags(from, BBF_NONE_QUIRK);
@@ -3222,7 +3236,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
 
     if (h->KindIs(BBJ_COND))
     {
-        BasicBlock* const hj = h->GetTarget();
+        BasicBlock* const hj = h->GetTrueTarget();
         assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
     }
     else
@@ -4546,7 +4560,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 Statement* initBlockBranchStmt = initBlock->lastStmt();
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
-                fgRemoveRefPred(initBlock->GetTarget(), initBlock);
+                fgRemoveRefPred(initBlock->GetTrueTarget(), initBlock);
                 initBlock->SetKindAndTarget(BBJ_ALWAYS, initBlock->GetFalseTarget());
 
                 // TODO-NoFallThrough: If bbFalseTarget can diverge from bbNext, it may not make sense to set
@@ -4801,7 +4815,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // bTest must be a backwards jump to block->bbNext
     // This will be the top of the loop.
     //
-    BasicBlock* const bTop = bTest->GetTarget();
+    BasicBlock* const bTop = bTest->GetTrueTarget();
 
     if (!block->NextIs(bTop))
     {
@@ -4833,7 +4847,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // are done, since it iterates forward in the block list looking for bbTarget.
     //  TODO-CQ: Check if we can also optimize the backwards jump as well.
     //
-    if (!fgIsForwardBranch(block))
+    if (!fgIsForwardBranch(block, block->GetTarget()))
     {
         return false;
     }
@@ -5180,15 +5194,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
         FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->GetFalseTarget(), bNewCond);
-        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->GetTarget(), bNewCond);
+        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->GetTrueTarget(), bNewCond);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
                 bNewCond->GetFalseTarget()->bbNum, blockToNextWeight);
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
-                bNewCond->GetTarget()->bbNum, blockToAfterWeight);
+                bNewCond->GetTrueTarget()->bbNum, blockToAfterWeight);
 
         edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetFalseTarget());
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetTarget());
+        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetTrueTarget());
 
 #ifdef DEBUG
         // If we're checkig profile data, see if profile for the two target blocks is consistent.
@@ -5197,7 +5211,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         {
             const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
             const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetFalseTarget(), checks);
-            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetTarget(), checks);
+            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetTrueTarget(), checks);
 
             if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
             {
@@ -8200,7 +8214,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             BasicBlock* skipLoopBlock;
             if (head->FalseTargetIs(entry))
             {
-                skipLoopBlock = head->GetTarget();
+                skipLoopBlock = head->GetTrueTarget();
             }
             else
             {

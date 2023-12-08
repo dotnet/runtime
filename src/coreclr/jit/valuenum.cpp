@@ -9738,7 +9738,7 @@ public:
         }
 
         bool        isTaken         = normalVN != m_comp->vnStore->VNZeroForType(TYP_INT);
-        BasicBlock* unreachableSucc = isTaken ? predBlock->Next() : predBlock->GetTarget();
+        BasicBlock* unreachableSucc = isTaken ? predBlock->GetFalseTarget() : predBlock->GetTrueTarget();
         return block != unreachableSucc;
     }
 };

@@ -210,7 +210,7 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
-    BasicBlock* const jump = block->GetTarget();
+    BasicBlock* const jump = block->GetTrueTarget();
     BasicBlock* const next = block->GetFalseTarget();
 
     // Watch for degenerate case
@@ -861,7 +861,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                             " to reflect capping; current likelihood is " FMT_WT "\n",
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
-                    BasicBlock* const jump               = exitBlock->GetTarget();
+                    BasicBlock* const jump               = exitBlock->GetTrueTarget();
                     BasicBlock* const next               = exitBlock->GetFalseTarget();
                     FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
                     FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);

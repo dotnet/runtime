@@ -1979,8 +1979,8 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         switch (block->GetKind())
         {
             case BBJ_COND:
-                printf("-> " FMT_BB "%*s ( cond )", block->GetTarget()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s ( cond )", block->GetTrueTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTrueTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_CALLFINALLY:

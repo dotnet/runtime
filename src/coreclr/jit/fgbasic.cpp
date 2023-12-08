@@ -700,7 +700,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 fgAddRefPred(newTarget, block);
             }
             break;
-        
+
         case BBJ_COND:
 
             // Functionally equivalent to above
@@ -710,6 +710,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 fgRemoveRefPred(oldTarget, block);
                 fgAddRefPred(newTarget, block);
             }
+            break;
 
         case BBJ_SWITCH:
         {
@@ -2952,16 +2953,23 @@ void Compiler::fgLinkBasicBlocks()
                 curBBdesc->SetKindAndTarget(curBBdesc->GetKind(), jumpDest);
                 fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
-                if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
-                {
-                    fgMarkBackwardJump(curBBdesc->GetTarget(), curBBdesc);
-                }
-
                 // Can this block fall through into the next block?
                 //
                 if (curBBdesc->KindIs(BBJ_ALWAYS, BBJ_LEAVE))
                 {
+                    if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
+                    {
+                        fgMarkBackwardJump(curBBdesc->GetTarget(), curBBdesc);
+                    }
                     break;
+                }
+
+                // The fall-through block is also reachable
+                assert(curBBdesc->KindIs(BBJ_COND));
+
+                if (curBBdesc->GetTrueTarget()->bbNum <= curBBdesc->bbNum)
+                {
+                    fgMarkBackwardJump(curBBdesc->GetTrueTarget(), curBBdesc);
                 }
 
                 if (curBBdesc->IsLast())
@@ -2969,8 +2977,6 @@ void Compiler::fgLinkBasicBlocks()
                     BADCODE("Fall thru the end of a method");
                 }
 
-                // The fall-through block is also reachable
-                assert(curBBdesc->KindIs(BBJ_COND));
                 curBBdesc->SetFalseTarget(curBBdesc->Next());
                 fgAddRefPred<initializingPreds>(curBBdesc->GetFalseTarget(), curBBdesc, oldEdge);
                 break;
@@ -4254,7 +4260,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
                 fgControlFlowPermitted(blk, blk->GetFalseTarget());
 
-                fgControlFlowPermitted(blk, blk->GetTarget());
+                fgControlFlowPermitted(blk, blk->GetTrueTarget());
 
                 break;
 
@@ -4744,7 +4750,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // For each successor of the original block, set the new block as their predecessor.
     // Note we are using the "rational" version of the successor iterator that does not hide the finallyret arcs.
     // Without these arcs, a block 'b' may not be a member of succs(preds(b))
-    if (!curr->KindIs(BBJ_SWITCH))
+    if (!curr->KindIs(BBJ_SWITCH, BBJ_COND))
     {
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
         newBlock         = BasicBlock::New(this, curr->GetKind(), curr->GetTarget());
@@ -4760,8 +4766,27 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
             }
         }
     }
+    else if (curr->KindIs(BBJ_COND))
+    {
+        // Start the new block with no refs. When we set the preds below, this will get updated correctly.
+        newBlock         = BasicBlock::New(this, BBJ_COND, curr->GetTrueTarget());
+        newBlock->bbRefs = 0;
+
+        // Make newBlock a predecessor to curr's false target
+        JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", curr->GetFalseTarget()->bbNum,
+                curr->bbNum, newBlock->bbNum);
+        fgReplacePred(curr->GetFalseTarget(), curr, newBlock);
+
+        // Make newBlock a predecessor to curr's true target
+        assert(newBlock->TrueTargetIs(curr->GetTrueTarget()));
+        JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", curr->GetTrueTarget()->bbNum,
+                curr->bbNum, newBlock->bbNum);
+        fgReplacePred(curr->GetTrueTarget(), curr, newBlock);
+    }
     else
     {
+        assert(curr->KindIs(BBJ_SWITCH));
+
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
         newBlock         = BasicBlock::New(this, curr->GetSwtTarget());
         newBlock->bbRefs = 0;
@@ -5669,29 +5694,27 @@ bool Compiler::fgRenumberBlocks()
  *   Optionally bSrc can be supplied to indicate that
  *   bJump must be forward with respect to bSrc
  */
-bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc /* = NULL */)
+bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
 {
-    bool result = false;
+    assert((bJump->KindIs(BBJ_ALWAYS) && bJump->TargetIs(bDest)) ||
+           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
 
-    if (bJump->KindIs(BBJ_COND, BBJ_ALWAYS))
+    bool        result = false;
+    BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
+
+    while (true)
     {
-        BasicBlock* bDest = bJump->GetTarget();
-        BasicBlock* bTemp = (bSrc == nullptr) ? bJump : bSrc;
+        bTemp = bTemp->Next();
 
-        while (true)
+        if (bTemp == nullptr)
         {
-            bTemp = bTemp->Next();
+            break;
+        }
 
-            if (bTemp == nullptr)
-            {
-                break;
-            }
-
-            if (bTemp == bDest)
-            {
-                result = true;
-                break;
-            }
+        if (bTemp == bDest)
+        {
+            result = true;
+            break;
         }
     }
 
@@ -6146,7 +6169,7 @@ bool Compiler::fgMightHaveLoop()
  * Insert a BasicBlock before the given block.
  */
 
-BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind,
+BasicBlock* Compiler::fgNewBBbefore(BBKinds     jumpKind,
                                     BasicBlock* block,
                                     bool        extendRegion,
                                     BasicBlock* jumpDest /* = nullptr */)
@@ -6188,7 +6211,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind,
  * Insert a BasicBlock after the given block.
  */
 
-BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind,
+BasicBlock* Compiler::fgNewBBafter(BBKinds     jumpKind,
                                    BasicBlock* block,
                                    bool        extendRegion,
                                    BasicBlock* jumpDest /* = nullptr */)
@@ -6244,7 +6267,7 @@ BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind,
 // Notes:
 //    The new block will have BBF_INTERNAL flag and EH region will be extended
 //
-BasicBlock* Compiler::fgNewBBFromTreeAfter(BBKinds jumpKind,
+BasicBlock* Compiler::fgNewBBFromTreeAfter(BBKinds     jumpKind,
                                            BasicBlock* block,
                                            GenTree*    tree,
                                            DebugInfo&  debugInfo,
@@ -6759,7 +6782,7 @@ DONE:
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind,
+BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
                                       unsigned    tryIndex,
                                       unsigned    hndIndex,
                                       BasicBlock* nearBlk,
@@ -6886,8 +6909,8 @@ _FoundAfterBlk:;
 
     JITDUMP("fgNewBBinRegion(jumpKind=%s, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
             "inserting after " FMT_BB "\n",
-            bbKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely),
-            dspBool(insertAtEnd), afterBlk->bbNum);
+            bbKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely), dspBool(insertAtEnd),
+            afterBlk->bbNum);
 
     return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion, jumpDest);
 }
@@ -6908,7 +6931,7 @@ _FoundAfterBlk:;
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind,
+BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
                                       BasicBlock* srcBlk,
                                       BasicBlock* jumpDest /* = nullptr */,
                                       bool        runRarely /* = false */,
@@ -6970,7 +6993,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest /* 
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds jumpKind,
+BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
                                             BasicBlock* afterBlk,
                                             unsigned    regionIndex,
                                             bool        putInTryRegion,

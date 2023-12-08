@@ -175,7 +175,7 @@ void OptIfConversionDsc::IfConvertFindFlow()
 {
     // First check for flow with no else case. The final block is the destination of the jump.
     m_doElseConversion = false;
-    m_finalBlock       = m_startBlock->GetTarget();
+    m_finalBlock       = m_startBlock->GetTrueTarget();
     assert(m_finalBlock != nullptr);
     if (!IfConvertCheckThenFlow() || m_flowFound)
     {
@@ -388,7 +388,7 @@ void OptIfConversionDsc::IfConvertDump()
     }
     if (m_doElseConversion)
     {
-        for (BasicBlock* dumpBlock = m_startBlock->GetTarget(); dumpBlock != m_finalBlock;
+        for (BasicBlock* dumpBlock = m_startBlock->GetTrueTarget(); dumpBlock != m_finalBlock;
              dumpBlock             = dumpBlock->GetUniqueSucc())
         {
             m_comp->fgDumpBlock(dumpBlock);
@@ -578,7 +578,7 @@ bool OptIfConversionDsc::optIfConvert()
     assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
     if (m_doElseConversion)
     {
-        if (!IfConvertCheckStmts(m_startBlock->GetTarget(), &m_elseOperation))
+        if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
         {
             return false;
         }

@@ -136,7 +136,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 
         if (b1->KindIs(BBJ_COND))
         {
-            return fgReachable(b1->GetFalseTarget(), b2) || fgReachable(b1->GetTarget(), b2);
+            return fgReachable(b1->GetFalseTarget(), b2) || fgReachable(b1->GetTrueTarget(), b2);
         }
         else
         {
@@ -2306,16 +2306,22 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
             FALLTHROUGH;
 
-        case BBJ_COND:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             block->SetKindAndTarget(bNext->GetKind(), bNext->GetTarget());
 
             /* Update the predecessor list for 'bNext->bbTarget' */
             fgReplacePred(bNext->GetTarget(), bNext, block);
+            break;
+
+        case BBJ_COND:
+            block->SetKindAndTarget(BBJ_COND, bNext->GetTrueTarget());
+
+            /* Update the predecessor list for 'bNext->bbTarget' */
+            fgReplacePred(bNext->GetTrueTarget(), bNext, block);
 
             /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbTarget' */
-            if (bNext->KindIs(BBJ_COND) && !bNext->TargetIs(bNext->GetFalseTarget()))
+            if (!bNext->TrueTargetIs(bNext->GetFalseTarget()))
             {
                 fgReplacePred(bNext->GetFalseTarget(), bNext, block);
             }
@@ -2347,7 +2353,15 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     assert(block->KindIs(bNext->GetKind()));
 
-    if (bNext->KindIs(BBJ_COND, BBJ_ALWAYS) && bNext->GetTarget()->isLoopAlign())
+    if (bNext->KindIs(BBJ_ALWAYS) && bNext->GetTarget()->isLoopAlign())
+    {
+        // `bNext` has a backward target to some block which mean bNext is part of a loop.
+        // `block` into which `bNext` is compacted should be updated with its loop number
+        JITDUMP("Updating loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", block->bbNum,
+                block->bbNatLoopNum, bNext->bbNatLoopNum);
+        block->bbNatLoopNum = bNext->bbNatLoopNum;
+    }
+    else if (bNext->KindIs(BBJ_COND) && bNext->GetTrueTarget()->isLoopAlign())
     {
         // `bNext` has a backward target to some block which mean bNext is part of a loop.
         // `block` into which `bNext` is compacted should be updated with its loop number
@@ -3668,10 +3682,10 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
             return false;
         }
 
-        if (target->GetTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
+        if (target->GetTrueTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
         {
             JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->GetTarget()->bbNum);
+                    target->GetTrueTarget()->bbNum);
             return false;
         }
     }
@@ -3706,8 +3720,8 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     // Fix up block's flow
     //
-    block->SetKindAndTarget(BBJ_COND, target->GetTarget());
-    fgAddRefPred(block->GetTarget(), block);
+    block->SetKindAndTarget(BBJ_COND, target->GetTrueTarget());
+    fgAddRefPred(block->GetTrueTarget(), block);
     fgRemoveRefPred(target, block);
 
     // add an unconditional block after this block to jump to the target block's fallthrough block
@@ -3912,7 +3926,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    if (!bJump->NextIs(bDest->GetTarget()))
+    if (!bJump->NextIs(bDest->GetTrueTarget()))
     {
         return false;
     }
@@ -4515,7 +4529,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
             case BBJ_COND:
 
-                if (block->isRunRarely() && bPrev->GetTarget()->isRunRarely())
+                if (block->isRunRarely() && bPrev->GetTrueTarget()->isRunRarely())
                 {
                     reason = "Both sides of a conditional jump are rarely run";
                 }
@@ -4781,10 +4795,16 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         bool        backwardBranch = false;
 
         // Setup bDest
-        if (bPrev->KindIs(BBJ_COND, BBJ_ALWAYS))
+        if (bPrev->KindIs(BBJ_ALWAYS))
         {
             bDest          = bPrev->GetTarget();
-            forwardBranch  = fgIsForwardBranch(bPrev);
+            forwardBranch  = fgIsForwardBranch(bPrev, bDest);
+            backwardBranch = !forwardBranch;
+        }
+        else if (bPrev->KindIs(BBJ_COND))
+        {
+            bDest          = bPrev->GetTrueTarget();
+            forwardBranch  = fgIsForwardBranch(bPrev, bDest);
             backwardBranch = !forwardBranch;
         }
 
@@ -5613,7 +5633,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     BasicBlock* jumpBlk = nullptr;
 
                     if (bEnd->KindIs(BBJ_ALWAYS) && !bEnd->JumpsToNext() &&
-                        (!isRare || bEnd->GetTarget()->isRunRarely()) && fgIsForwardBranch(bEnd, bPrev))
+                        (!isRare || bEnd->GetTarget()->isRunRarely()) &&
+                        fgIsForwardBranch(bEnd, bEnd->GetTarget(), bPrev))
                     {
                         // Set nearBlk to be the block in [startBlk..endBlk]
                         // such that nearBlk->NextIs(bEnd->JumpDest)
@@ -6007,7 +6028,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     assert(block->KindIs(BBJ_COND));
                     change   = true;
                     modified = true;
-                    bDest    = block->GetTarget();
+                    bDest    = block->GetTrueTarget();
                     bNext    = block->GetFalseTarget();
 
                     // TODO-NoFallThrough: Adjust the above logic once bbFalseTarget can diverge from bbNext
@@ -6030,7 +6051,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             }
             else if (block->KindIs(BBJ_COND))
             {
-                bDest = block->GetTarget();
+                bDest = block->GetTrueTarget();
                 if (bDest == bNext)
                 {
                     // TODO-NoFallThrough: Fix above condition once bbFalseTarget can diverge from bbNext
@@ -6073,7 +6094,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     bNext->KindIs(BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
                     !bNext->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
                     bNext->isEmpty() &&          // and it is an empty block
-                    !bNext->TargetIs(bNext) &&  // special case for self jumps
+                    !bNext->TargetIs(bNext) &&   // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
@@ -7044,7 +7065,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     Statement* destFirstStmt;
 
     if (!getSuccCandidate(block->GetFalseTarget(), &nextFirstStmt) ||
-        !getSuccCandidate(block->GetTarget(), &destFirstStmt))
+        !getSuccCandidate(block->GetTrueTarget(), &destFirstStmt))
     {
         return false;
     }
@@ -7074,7 +7095,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
 
     fgUnlinkStmt(block->GetFalseTarget(), nextFirstStmt);
     fgInsertStmtNearEnd(block, nextFirstStmt);
-    fgUnlinkStmt(block->GetTarget(), destFirstStmt);
+    fgUnlinkStmt(block->GetTrueTarget(), destFirstStmt);
     block->CopyFlags(block->GetFalseTarget(), BBF_COPY_PROPAGATE);
 
     return true;

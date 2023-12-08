@@ -756,10 +756,6 @@ void CodeGen::genCodeForBBlist()
 #endif // TARGET_XARCH
             }
 
-                FALLTHROUGH;
-
-            case BBJ_COND:
-
 #if FEATURE_LOOP_ALIGN
                 // This is the last place where we operate on blocks and after this, we operate
                 // on IG. Hence, if we know that the destination of "block" is the first block
@@ -777,6 +773,22 @@ void CodeGen::genCodeForBBlist()
                 if (block->GetTarget()->isLoopAlign())
                 {
                     GetEmitter()->emitSetLoopBackEdge(block->GetTarget());
+
+                    if (!block->IsLast())
+                    {
+                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
+                        block->Next()->SetFlags(BBF_HAS_LABEL);
+                    }
+                }
+#endif // FEATURE_LOOP_ALIGN
+                break;
+
+            case BBJ_COND:
+
+#if FEATURE_LOOP_ALIGN
+                if (block->GetTrueTarget()->isLoopAlign())
+                {
+                    GetEmitter()->emitSetLoopBackEdge(block->GetTrueTarget());
 
                     if (!block->IsLast())
                     {
@@ -2617,7 +2629,7 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
-    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTarget());
+    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
 }
 
 //------------------------------------------------------------------------

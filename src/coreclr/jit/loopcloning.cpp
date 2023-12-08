@@ -864,8 +864,8 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
             newBlk->inheritWeight(insertAfter);
             newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTarget()->bbNum);
-            comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
+            comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
 
             if (insertAfter->bbFallsThrough())
             {
@@ -898,8 +898,8 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         newBlk->inheritWeight(insertAfter);
         newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTarget()->bbNum);
-        comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
+        comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
 
         if (insertAfter->bbFallsThrough())
         {
@@ -2241,7 +2241,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
             case BBJ_COND:
                 fgAddRefPred(newblk->GetFalseTarget(), newblk);
-                fgAddRefPred(newblk->GetTarget(), newblk);
+                fgAddRefPred(newblk->GetTrueTarget(), newblk);
                 break;
 
             case BBJ_SWITCH:
@@ -2971,9 +2971,9 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
     // Check for (4)
     //
     BasicBlock* const hotSuccessor =
-        guard->OperIs(GT_EQ) ? typeTestBlock->GetTarget() : typeTestBlock->GetFalseTarget();
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetTrueTarget() : typeTestBlock->GetFalseTarget();
     BasicBlock* const coldSuccessor =
-        guard->OperIs(GT_EQ) ? typeTestBlock->GetFalseTarget() : typeTestBlock->GetTarget();
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetFalseTarget() : typeTestBlock->GetTrueTarget();
 
     if (!hotSuccessor->hasProfileWeight() || !coldSuccessor->hasProfileWeight())
     {

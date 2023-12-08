@@ -267,19 +267,25 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top                = block;
-        BasicBlock*   topFallThrough     = nullptr;
+        BasicBlock*   top            = block;
+        BasicBlock*   topFallThrough = nullptr;
+        BasicBlock*   topJumpTarget;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
         if (top->KindIs(BBJ_COND))
         {
             topFallThrough     = top->GetFalseTarget();
+            topJumpTarget      = top->GetTrueTarget();
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
+        }
+        else
+        {
+            topJumpTarget = top->GetTarget();
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetKind(), poll, true, top->GetTarget());
-        BBKinds   oldJumpKind = top->GetKind();
+        bottom                    = fgNewBBafter(top->GetKind(), poll, true, topJumpTarget);
+        BBKinds       oldJumpKind = top->GetKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
         poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
@@ -403,12 +409,11 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 // no successors
                 break;
             case BBJ_COND:
-                // replace predecessor in the fall through block.
+                // replace predecessor in true/false successors.
                 noway_assert(!bottom->IsLast());
                 fgReplacePred(bottom->GetFalseTarget(), top, bottom);
-
-                // fall through for the jump target
-                FALLTHROUGH;
+                fgReplacePred(bottom->GetTrueTarget(), top, bottom);
+                break;
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:

@@ -4732,7 +4732,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     BasicBlock* otherDst;
                     if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetTarget();
+                        otherDst = bSrc->GetTrueTarget();
                     }
                     else
                     {

@@ -7420,7 +7420,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (op1->AsIntCon()->gtIconVal)
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
-                                    block->GetTarget()->bbNum);
+                                    block->GetTrueTarget()->bbNum);
                             fgRemoveRefPred(block->GetFalseTarget(), block);
                             block->SetKind(BBJ_ALWAYS);
                         }
@@ -7429,7 +7429,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // TODO-NoFallThrough: Update once bbFalseTarget can diverge from bbNext
                             assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
-                            fgRemoveRefPred(block->GetTarget(), block);
+                            fgRemoveRefPred(block->GetTrueTarget(), block);
                             block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
 
                             // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense
@@ -11296,9 +11296,9 @@ SPILLSTACK:
 
                 /* Try the target of the jump then */
 
-                multRef |= block->GetTarget()->bbRefs;
-                baseTmp  = block->GetTarget()->bbStkTempsIn;
-                tgtBlock = block->GetTarget();
+                multRef |= block->GetTrueTarget()->bbRefs;
+                baseTmp  = block->GetTrueTarget()->bbStkTempsIn;
+                tgtBlock = block->GetTrueTarget();
                 break;
 
             case BBJ_ALWAYS:

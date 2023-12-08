@@ -527,7 +527,7 @@ private:
     /* The following union describes the jump target(s) of this block */
     union {
         unsigned    bbTargetOffs; // PC offset (temporary only)
-        BasicBlock* bbTarget; // basic block
+        BasicBlock* bbTarget;     // basic block
         BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
         BBswtDesc*  bbSwtTarget;  // switch descriptor
         BBehfDesc*  bbEhfTarget;  // BBJ_EHFINALLYRET descriptor
@@ -623,7 +623,7 @@ public:
 
     void SetKindAndTarget(BBKinds kind, unsigned targetOffs)
     {
-        bbKind = kind;
+        bbKind       = kind;
         bbTargetOffs = targetOffs;
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
@@ -666,7 +666,7 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(target != nullptr);
-        bbTrueTarget = target;        
+        bbTrueTarget = target;
     }
 
     bool TrueTargetIs(BasicBlock* target) const
@@ -706,7 +706,7 @@ public:
 
     void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
     {
-        bbKind = kind;
+        bbKind   = kind;
         bbTarget = target;
 
         // If bbKind indicates this block has a jump, bbTarget cannot be null
@@ -743,8 +743,8 @@ public:
     void SetKindAndTarget(BBswtDesc* swtTarget)
     {
         assert(swtTarget != nullptr);
-        bbKind = BBJ_SWITCH;
-        bbSwtTarget  = swtTarget;
+        bbKind      = BBJ_SWITCH;
+        bbSwtTarget = swtTarget;
     }
 
     BBehfDesc* GetEhfTarget() const
@@ -763,8 +763,8 @@ public:
     {
         assert(kind == BBJ_EHFINALLYRET);
         assert(ehfTarget != nullptr);
-        bbKind = kind;
-        bbEhfTarget  = ehfTarget;
+        bbKind      = kind;
+        bbEhfTarget = ehfTarget;
     }
 
 private:
@@ -873,7 +873,7 @@ public:
     unsigned dspPreds();               // Print the predecessors (bbPreds)
     void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
                                        // regions are printed: see NumSucc() for details.
-    void dspKind();                // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
+    void dspKind();                    // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);

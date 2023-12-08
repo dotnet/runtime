@@ -388,10 +388,14 @@ void CodeGen::genMarkLabelsForCodegen()
 
                 FALLTHROUGH;
             }
-            case BBJ_COND:
             case BBJ_EHCATCHRET:
                 JITDUMP("  " FMT_BB " : branch target\n", block->GetTarget()->bbNum);
                 block->GetTarget()->SetFlags(BBF_HAS_LABEL);
+                break;
+
+            case BBJ_COND:
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTrueTarget()->bbNum);
+                block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
                 break;
 
             case BBJ_SWITCH:

@@ -125,7 +125,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     // Check if m_b1 and m_b2 have the same bbTarget
 
-    if (m_b1->TargetIs(m_b2->GetTarget()))
+    if (m_b1->TargetIs(m_b2->GetTrueTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, BX)
@@ -137,7 +137,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
         m_sameTarget = true;
     }
-    else if (m_b2->FalseTargetIs(m_b1->GetTarget()))
+    else if (m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, B3)
@@ -749,9 +749,9 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 
     // We're interested in just two shapes for e.g. "X > 10 && X < 100" range test:
     //
-    BasicBlock* notInRangeBb = m_b1->GetTarget();
+    BasicBlock* notInRangeBb = m_b1->GetTrueTarget();
     BasicBlock* inRangeBb;
-    if (notInRangeBb == m_b2->GetTarget())
+    if (notInRangeBb == m_b2->GetTrueTarget())
     {
         // Shape 1: both conditions jump to NotInRange
         //
@@ -777,7 +777,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         //
         // NotInRange:
         // ...
-        inRangeBb = m_b2->GetTarget();
+        inRangeBb = m_b2->GetTrueTarget();
     }
     else
     {
@@ -901,13 +901,13 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if (m_b1->FalseTargetIs(m_b2) && m_b2->FalseTargetIs(m_b1->GetTarget()))
+    if (m_b1->FalseTargetIs(m_b2) && m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if (m_b1->FalseTargetIs(m_b2) && m_b1->TargetIs(m_b2->GetTarget()))
+    else if (m_b1->FalseTargetIs(m_b2) && m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
         // Found two conditions connected together.
     }
@@ -1007,7 +1007,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->GetTarget(), m_b1);
+    m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
     m_b1->SetKindAndTarget(BBJ_ALWAYS, m_b1->GetFalseTarget());
     m_b1->SetFlags(BBF_NONE_QUIRK);
 
@@ -1261,22 +1261,22 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetTarget(), m_b1);
+        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetTrueTarget(), m_b1);
         FlowEdge* edge2;
 
         if (m_sameTarget)
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->GetTarget(), m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->GetTrueTarget(), m_b2);
         }
         else
         {
             edge2 = m_comp->fgGetPredForBlock(m_b2->GetFalseTarget(), m_b2);
 
-            m_comp->fgRemoveRefPred(m_b1->GetTarget(), m_b1);
+            m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
 
-            m_b1->SetTrueTarget(m_b2->GetTarget());
+            m_b1->SetTrueTarget(m_b2->GetTrueTarget());
 
-            m_comp->fgAddRefPred(m_b2->GetTarget(), m_b1);
+            m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
         }
 
         assert(edge1 != nullptr);
@@ -1286,11 +1286,11 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
         if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
         {
-            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->GetTarget());
+            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->GetTrueTarget());
         }
         else
         {
-            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->GetTarget());
+            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->GetTrueTarget());
         }
     }
 
@@ -1307,7 +1307,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
-        assert(m_b1->TargetIs(m_b2->GetTarget()));
+        assert(m_b1->TrueTargetIs(m_b2->GetTrueTarget()));
         assert(m_b1->FalseTargetIs(m_b2));
         assert(!m_b2->IsLast());
     }
@@ -1319,7 +1319,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
         // Remove  pred 'm_b2' for 'm_b2->bbTarget'
         m_comp->fgReplacePred(m_b2->GetFalseTarget(), m_b2, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->GetTarget(), m_b2);
+        m_comp->fgRemoveRefPred(m_b2->GetTrueTarget(), m_b2);
     }
 
     // Get rid of the second block
@@ -1912,7 +1912,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b2->KindIs(BBJ_COND))
             {
-                if (!b1->TargetIs(b2->GetTarget()) && !b2->FalseTargetIs(b1->GetTarget()))
+                if (!b1->TrueTargetIs(b2->GetTrueTarget()) && !b2->FalseTargetIs(b1->GetTrueTarget()))
                 {
                     continue;
                 }
@@ -1944,7 +1944,7 @@ PhaseStatus Compiler::optOptimizeBools()
             else if (b2->KindIs(BBJ_RETURN))
             {
                 // Set b3 to b1 jump destination
-                BasicBlock* b3 = b1->GetTarget();
+                BasicBlock* b3 = b1->GetTrueTarget();
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 

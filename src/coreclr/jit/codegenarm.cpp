@@ -1321,7 +1321,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_tst, reg, reg, genActualType(op));
-    inst_JMP(EJ_ne, compiler->compCurBB->GetTarget());
+    inst_JMP(EJ_ne, compiler->compCurBB->GetTrueTarget());
 }
 
 //------------------------------------------------------------------------

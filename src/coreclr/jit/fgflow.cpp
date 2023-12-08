@@ -356,7 +356,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->GetTarget(), block);
+            fgRemoveRefPred(block->GetTrueTarget(), block);
             fgRemoveRefPred(block->GetFalseTarget(), block);
             break;
 

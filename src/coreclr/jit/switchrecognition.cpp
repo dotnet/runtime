@@ -95,8 +95,8 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 }
 
                 *isReversed   = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *blockIfTrue  = *isReversed ? block->GetFalseTarget() : block->GetTarget();
-                *blockIfFalse = *isReversed ? block->GetTarget() : block->GetFalseTarget();
+                *blockIfTrue  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
+                *blockIfFalse = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
 
                 if (block->JumpsToNext() || block->TargetIs(block))
                 {
@@ -351,7 +351,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
-    fgHasSwitch                             = true;
+    fgHasSwitch                               = true;
     firstBlock->GetSwtTarget()->bbsCount      = jumpCount + 1;
     firstBlock->GetSwtTarget()->bbsHasDefault = true;
     firstBlock->GetSwtTarget()->bbsDstTab     = jmpTab;

@@ -1207,13 +1207,13 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_COND:
             if (i == 0)
             {
-                return bbNext;
+                return bbFalseTarget;
             }
             else
             {
                 assert(i == 1);
-                assert(bbNext != bbTarget);
-                return bbTarget;
+                assert(bbFalseTarget != bbTrueTarget);
+                return bbTrueTarget;
             }
 
         case BBJ_EHFINALLYRET:
@@ -1328,13 +1328,13 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_COND:
             if (i == 0)
             {
-                return bbNext;
+                return bbFalseTarget;
             }
             else
             {
                 assert(i == 1);
-                assert(bbNext != bbTarget);
-                return bbTarget;
+                assert(bbFalseTarget != bbTrueTarget);
+                return bbTrueTarget;
             }
 
         case BBJ_SWITCH:
@@ -1599,7 +1599,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target
     // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
     // yet.
     // The checks will be done any time the jump kind/target is read or written to after initialization.
-    block->bbKind = kind;
+    block->bbKind   = kind;
     block->bbTarget = target;
 
     if (block->KindIs(BBJ_THROW))
@@ -1612,16 +1612,16 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target
 
 BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* swtTarget)
 {
-    BasicBlock* block = BasicBlock::New(compiler);
-    block->bbKind = BBJ_SWITCH;
-    block->bbSwtTarget  = swtTarget;
+    BasicBlock* block  = BasicBlock::New(compiler);
+    block->bbKind      = BBJ_SWITCH;
+    block->bbSwtTarget = swtTarget;
     return block;
 }
 
 BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, unsigned targetOffs)
 {
-    BasicBlock* block = BasicBlock::New(compiler);
-    block->bbKind = kind;
+    BasicBlock* block   = BasicBlock::New(compiler);
+    block->bbKind       = kind;
     block->bbTargetOffs = targetOffs;
     return block;
 }

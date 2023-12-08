@@ -13159,7 +13159,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             noway_assert(cond->gtOper == GT_CNS_INT);
             noway_assert((block->GetFalseTarget()->countOfInEdges() > 0) &&
-                         (block->GetTarget()->countOfInEdges() > 0));
+                         (block->GetTrueTarget()->countOfInEdges() > 0));
 
             if (condTree != cond)
             {
@@ -13184,7 +13184,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (cond->AsIntCon()->gtIconVal != 0)
             {
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
-                bTaken    = block->GetTarget();
+                bTaken    = block->GetTrueTarget();
                 bNotTaken = block->GetFalseTarget();
                 block->SetKind(BBJ_ALWAYS);
             }
@@ -13193,15 +13193,15 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* Unmark the loop if we are removing a backwards branch */
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
-                if (block->GetTarget()->isLoopHead() && (block->GetTarget()->bbNum <= block->bbNum) &&
-                    fgReachable(block->GetTarget(), block))
+                if (block->GetTrueTarget()->isLoopHead() && (block->GetTrueTarget()->bbNum <= block->bbNum) &&
+                    fgReachable(block->GetTrueTarget(), block))
                 {
-                    optUnmarkLoopBlocks(block->GetTarget(), block);
+                    optUnmarkLoopBlocks(block->GetTrueTarget(), block);
                 }
 
                 /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
                 bTaken    = block->GetFalseTarget();
-                bNotTaken = block->GetTarget();
+                bNotTaken = block->GetTrueTarget();
                 block->SetKindAndTarget(BBJ_ALWAYS, bTaken);
                 block->SetFlags(BBF_NONE_QUIRK);
             }
@@ -13263,15 +13263,18 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-                            FALLTHROUGH;
+                            
+                            edge         = fgGetPredForBlock(bUpdated->GetTrueTarget(), bUpdated);
+                            newMaxWeight = bUpdated->bbWeight;
+                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
+                            break;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->GetTarget(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight,
-                                                 (bUpdated->KindIs(BBJ_COND) ? bUpdated->GetFalseTarget()
-                                                                             : bUpdated->Next()));
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             break;
 
                         default:
@@ -13900,7 +13903,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorde
 
                     if (useCondAssertions)
                     {
-                        if (block == pred->GetTarget())
+                        if (block == pred->GetTrueTarget())
                         {
                             JITDUMP("Using `if true` assertions from pred " FMT_BB "\n", pred->bbNum);
                             assertionsOut = pred->bbAssertionOutIfTrue;

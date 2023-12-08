@@ -675,14 +675,14 @@ private:
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    m_compiler->fgRemoveRefPred(block->GetTarget(), block);
+                    m_compiler->fgRemoveRefPred(block->GetTrueTarget(), block);
                     block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
                     block->SetFlags(BBF_NONE_QUIRK);
                 }
                 else
                 {
+                    m_compiler->fgRemoveRefPred(block->GetFalseTarget(), block);
                     block->SetKind(BBJ_ALWAYS);
-                    m_compiler->fgRemoveRefPred(block->Next(), block);
                 }
             }
         }
