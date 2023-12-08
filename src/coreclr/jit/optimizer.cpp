@@ -2763,9 +2763,9 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_SWITCH:
         {
             bool redirected = false;
-            for (unsigned i = 0; i < blk->GetJumpSwt()->bbsCount; i++)
+            for (unsigned i = 0; i < blk->GetSwtTarget()->bbsCount; i++)
             {
-                BasicBlock* const switchDest = blk->GetJumpSwt()->bbsDstTab[i];
+                BasicBlock* const switchDest = blk->GetSwtTarget()->bbsDstTab[i];
                 if (redirectMap->Lookup(switchDest, &newJumpDest))
                 {
                     if (updatePreds)
@@ -2776,7 +2776,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
                     {
                         fgAddRefPred(newJumpDest, blk);
                     }
-                    blk->GetJumpSwt()->bbsDstTab[i] = newJumpDest;
+                    blk->GetSwtTarget()->bbsDstTab[i] = newJumpDest;
                     redirected                      = true;
                 }
                 else if (addPreds)
@@ -2809,7 +2809,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
     switch (from->GetKind())
     {
         case BBJ_SWITCH:
-            to->SetKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetJumpSwt()));
+            to->SetKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetSwtTarget()));
             break;
         case BBJ_EHFINALLYRET:
             to->SetKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
@@ -8302,9 +8302,9 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             case BBJ_SWITCH:
                 unsigned jumpCnt;
-                jumpCnt = predBlock->GetJumpSwt()->bbsCount;
+                jumpCnt = predBlock->GetSwtTarget()->bbsCount;
                 BasicBlock** jumpTab;
-                jumpTab = predBlock->GetJumpSwt()->bbsDstTab;
+                jumpTab = predBlock->GetSwtTarget()->bbsDstTab;
 
                 do
                 {

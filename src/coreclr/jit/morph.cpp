@@ -13404,8 +13404,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             // Find the actual jump target
             size_t       switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned     jumpCnt   = block->GetJumpSwt()->bbsCount;
-            BasicBlock** jumpTab   = block->GetJumpSwt()->bbsDstTab;
+            unsigned     jumpCnt   = block->GetSwtTarget()->bbsCount;
+            BasicBlock** jumpTab   = block->GetSwtTarget()->bbsDstTab;
             bool         foundVal  = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)

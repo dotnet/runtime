@@ -467,8 +467,8 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
     // For the jump targets values that match oldTarget of our BBJ_SWITCH
     // replace predecessor 'blockSwitch' with 'newTarget'
 
-    unsigned     jumpCnt = blockSwitch->GetJumpSwt()->bbsCount;
-    BasicBlock** jumpTab = blockSwitch->GetJumpSwt()->bbsDstTab;
+    unsigned     jumpCnt = blockSwitch->GetSwtTarget()->bbsCount;
+    BasicBlock** jumpTab = blockSwitch->GetSwtTarget()->bbsDstTab;
 
     unsigned i = 0;
 
@@ -704,8 +704,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 
         case BBJ_SWITCH:
         {
-            unsigned const     jumpCnt = block->GetJumpSwt()->bbsCount;
-            BasicBlock** const jumpTab = block->GetJumpSwt()->bbsDstTab;
+            unsigned const     jumpCnt = block->GetSwtTarget()->bbsCount;
+            BasicBlock** const jumpTab = block->GetSwtTarget()->bbsDstTab;
             bool               changed = false;
 
             for (unsigned i = 0; i < jumpCnt; i++)
@@ -2984,8 +2984,8 @@ void Compiler::fgLinkBasicBlocks()
 
             case BBJ_SWITCH:
             {
-                unsigned     jumpCnt = curBBdesc->GetJumpSwt()->bbsCount;
-                BasicBlock** jumpPtr = curBBdesc->GetJumpSwt()->bbsDstTab;
+                unsigned     jumpCnt = curBBdesc->GetSwtTarget()->bbsCount;
+                BasicBlock** jumpPtr = curBBdesc->GetSwtTarget()->bbsDstTab;
 
                 do
                 {
@@ -4754,7 +4754,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     else
     {
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::New(this, curr->GetJumpSwt());
+        newBlock         = BasicBlock::New(this, curr->GetSwtTarget());
         newBlock->bbRefs = 0;
 
         // In the case of a switch statement there's more complicated logic in order to wire up the predecessor lists

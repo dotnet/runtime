@@ -528,7 +528,7 @@ private:
     union {
         unsigned    bbTargetOffs; // PC offset (temporary only)
         BasicBlock* bbTarget; // basic block
-        BBswtDesc*  bbJumpSwt;  // switch descriptor
+        BBswtDesc*  bbSwtTarget;  // switch descriptor
         BBehfDesc*  bbJumpEhf;  // BBJ_EHFINALLYRET descriptor
     };
 
@@ -702,18 +702,18 @@ public:
         return (bbTarget == bbNext);
     }
 
-    BBswtDesc* GetJumpSwt() const
+    BBswtDesc* GetSwtTarget() const
     {
         assert(KindIs(BBJ_SWITCH));
-        assert(bbJumpSwt != nullptr);
-        return bbJumpSwt;
+        assert(bbSwtTarget != nullptr);
+        return bbSwtTarget;
     }
 
-    void SetKindAndTarget(BBswtDesc* swt)
+    void SetKindAndTarget(BBswtDesc* swtTarget)
     {
-        assert(swt != nullptr);
+        assert(swtTarget != nullptr);
         bbKind = BBJ_SWITCH;
-        bbJumpSwt  = swt;
+        bbSwtTarget  = swtTarget;
     }
 
     BBehfDesc* GetJumpEhf() const
@@ -1033,7 +1033,7 @@ public:
     BBSwitchTargetList SwitchTargets() const
     {
         assert(bbKind == BBJ_SWITCH);
-        return BBSwitchTargetList(bbJumpSwt);
+        return BBSwitchTargetList(bbSwtTarget);
     }
 
     // EHFinallyRetSuccs: convenience method for enabling range-based `for` iteration over BBJ_EHFINALLYRET block
@@ -1919,10 +1919,10 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->bbJumpSwt != nullptr);
-            assert(block->bbJumpSwt->bbsDstTab != nullptr);
-            m_begin = block->bbJumpSwt->bbsDstTab;
-            m_end   = block->bbJumpSwt->bbsDstTab + block->bbJumpSwt->bbsCount;
+            assert(block->bbSwtTarget != nullptr);
+            assert(block->bbSwtTarget->bbsDstTab != nullptr);
+            m_begin = block->bbSwtTarget->bbsDstTab;
+            m_end   = block->bbSwtTarget->bbsDstTab + block->bbSwtTarget->bbsCount;
             break;
 
         default:

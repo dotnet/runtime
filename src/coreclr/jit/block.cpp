@@ -660,7 +660,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
         while (iter.NextElem(&bbNum))
         {
             // Note that we will output switch successors in increasing numerical bbNum order, which is
-            // not related to their order in the bbJumpSwt->bbsDstTab table.
+            // not related to their order in the bbSwtTarget->bbsDstTab table.
             printf("%s" FMT_BB, first ? "" : ",", bbNum);
             first = false;
         }
@@ -753,23 +753,23 @@ void BasicBlock::dspJumpKind()
         {
             printf(" ->");
 
-            const unsigned     jumpCnt = bbJumpSwt->bbsCount;
-            BasicBlock** const jumpTab = bbJumpSwt->bbsDstTab;
+            const unsigned     jumpCnt = bbSwtTarget->bbsCount;
+            BasicBlock** const jumpTab = bbSwtTarget->bbsDstTab;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
                 printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
 
-                const bool isDefault = bbJumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                const bool isDefault = bbSwtTarget->bbsHasDefault && (i == jumpCnt - 1);
                 if (isDefault)
                 {
                     printf("[def]");
                 }
 
-                const bool isDominant = bbJumpSwt->bbsHasDominantCase && (i == bbJumpSwt->bbsDominantCase);
+                const bool isDominant = bbSwtTarget->bbsHasDominantCase && (i == bbSwtTarget->bbsDominantCase);
                 if (isDominant)
                 {
-                    printf("[dom(" FMT_WT ")]", bbJumpSwt->bbsDominantFraction);
+                    printf("[dom(" FMT_WT ")]", bbSwtTarget->bbsDominantFraction);
                 }
             }
 
@@ -1176,7 +1176,7 @@ unsigned BasicBlock::NumSucc() const
             return bbJumpEhf->bbeCount;
 
         case BBJ_SWITCH:
-            return bbJumpSwt->bbsCount;
+            return bbSwtTarget->bbsCount;
 
         default:
             unreached();
@@ -1220,7 +1220,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             return bbJumpEhf->bbeSuccs[i];
 
         case BBJ_SWITCH:
-            return bbJumpSwt->bbsDstTab[i];
+            return bbSwtTarget->bbsDstTab[i];
 
         default:
             unreached();
@@ -1614,7 +1614,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* jumpSwt)
 {
     BasicBlock* block = BasicBlock::New(compiler);
     block->bbKind = BBJ_SWITCH;
-    block->bbJumpSwt  = jumpSwt;
+    block->bbSwtTarget  = jumpSwt;
     return block;
 }
 
