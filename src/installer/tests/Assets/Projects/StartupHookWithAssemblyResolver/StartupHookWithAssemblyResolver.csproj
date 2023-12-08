@@ -7,7 +7,7 @@
   <!-- Copy the preloaded base type to the startup hook's output
        directory to make it easy to find. -->
   <ItemGroup>
-    <ProjectReference Include="../SharedLibrary/SharedLibrary.csproj" />
+    <ProjectReference Include="..\SharedLibrary\SharedLibrary.csproj" />
   </ItemGroup>
 
 </Project>
