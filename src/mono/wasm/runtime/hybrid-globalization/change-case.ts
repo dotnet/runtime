@@ -160,7 +160,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
     }
 }
 
-function isSurrogate(str: string, startIdx: number) : boolean
+export function isSurrogate(str: string, startIdx: number) : boolean
 {
     return SURROGATE_HIGHER_START <= str[startIdx] &&
         str[startIdx] <= SURROGATE_HIGHER_END &&

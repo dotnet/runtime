@@ -8,6 +8,7 @@
  */
 
 import { SegmentationRules } from "./segmentation-rules";
+import { isSurrogate } from "./change-case";
 
 type SegmentationRule = {
     breaks: boolean
@@ -24,13 +25,6 @@ type SegmentationRuleRaw = {
 type SegmentationTypeRaw = {
     variables: Record<string, string>
     rules: Record<string, SegmentationRuleRaw>
-}
-
-function is_surrogate_pair(str: string, index: number): boolean {
-    const high = str.charCodeAt(index - 1);
-    const low = str.charCodeAt(index);
-
-    return 0xD800 <= high && high <= 0xDBFF && 0xDC00 <= low && low <= 0xDFFF;
 }
 
 function replace_variables(variables: Record<string, string>, input: string): string {
@@ -85,7 +79,7 @@ export class GraphemeSegmenter {
         let prev = String.fromCodePoint(str.codePointAt(startIndex)!);
         for (let i = startIndex + 1; i < str.length; i++) {
             // Don't break surrogate pairs
-            if (is_surrogate_pair(str, i)) {
+            if (isSurrogate(str, i)) {
                 continue;
             }
 
