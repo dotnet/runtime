@@ -690,7 +690,7 @@ public:
         return (bbTarget != nullptr);
     }
 
-    bool HasJumpTo(const BasicBlock* jumpDest) const
+    bool TargetIs(const BasicBlock* jumpDest) const
     {
         assert(HasInitializedTarget());
         return (bbTarget == jumpDest);

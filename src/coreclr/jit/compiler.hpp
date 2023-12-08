@@ -537,7 +537,7 @@ static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc fun
             {
                 // For BBJ_CALLFINALLY the user may already have processed one of
                 // the EH successors as a regular successor; skip it if requested.
-                if (!skipJumpDest || !block->HasJumpTo(eh->ebdHndBeg))
+                if (!skipJumpDest || !block->TargetIs(eh->ebdHndBeg))
                 {
                     RETURN_ON_ABORT(func(eh->ebdHndBeg));
                 }

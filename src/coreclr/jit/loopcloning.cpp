@@ -1884,7 +1884,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    if (!oldLoopBottom->HasJumpTo(oldLoopTop))
+    if (!oldLoopBottom->TargetIs(oldLoopTop))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n",
                 loop->GetIndex());
@@ -2058,7 +2058,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 
     assert(preheader->KindIs(BBJ_ALWAYS));
-    assert(preheader->HasJumpTo(loop->GetHeader()));
+    assert(preheader->TargetIs(loop->GetHeader()));
 
     fgReplacePred(loop->GetHeader(), preheader, fastPreheader);
     JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", preheader->bbNum,

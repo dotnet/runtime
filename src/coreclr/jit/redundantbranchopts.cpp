@@ -1454,7 +1454,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     jti.m_block->bbNum, fallThroughIsTruePred ? "true" : "false",
                     fallThroughIsTruePred ? "false" : "true", jti.m_fallThroughPred->bbNum);
 
-            assert(jti.m_fallThroughPred->HasJumpTo(jti.m_block));
+            assert(jti.m_fallThroughPred->TargetIs(jti.m_block));
         }
         else
         {

@@ -2834,7 +2834,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             switch (predBlock->GetKind())
             {
                 case BBJ_CALLFINALLY:
-                    noway_assert(predBlock->HasJumpTo(block));
+                    noway_assert(predBlock->TargetIs(block));
                     predBlock->SetTarget(newHead);
                     fgRemoveRefPred(block, predBlock);
                     fgAddRefPred(newHead, predBlock);

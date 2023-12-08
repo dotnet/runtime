@@ -285,7 +285,7 @@ private:
             compiler->fgAddRefPred(thenBlock, checkBlock);
 
             // thenBlock
-            assert(thenBlock->HasJumpTo(remainderBlock));
+            assert(thenBlock->TargetIs(remainderBlock));
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
             // elseBlock
@@ -1111,7 +1111,7 @@ private:
 
             BasicBlock* const hotBlock = coldBlock->Prev();
 
-            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->HasJumpTo(checkBlock))
+            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->TargetIs(checkBlock))
             {
                 JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
                 return;

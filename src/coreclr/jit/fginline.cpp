@@ -1549,7 +1549,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
-        assert(topBlock->HasJumpTo(bottomBlock));
+        assert(topBlock->TargetIs(bottomBlock));
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
         topBlock->SetTarget(topBlock->Next());
         topBlock->SetFlags(BBF_NONE_QUIRK);

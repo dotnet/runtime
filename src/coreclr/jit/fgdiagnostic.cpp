@@ -2751,14 +2751,14 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     switch (blockPred->GetKind())
     {
         case BBJ_COND:
-            assert(blockPred->FalseTargetIs(block) || blockPred->HasJumpTo(block));
+            assert(blockPred->FalseTargetIs(block) || blockPred->TargetIs(block));
             return true;
 
         case BBJ_ALWAYS:
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            assert(blockPred->HasJumpTo(block));
+            assert(blockPred->TargetIs(block));
             return true;
 
         case BBJ_EHFINALLYRET:
@@ -2827,7 +2827,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
     found = false;
     for (BasicBlock* const bcall : comp->Blocks(firstBlock, lastBlock))
     {
-        if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block))
+        if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->TargetIs(finBeg) && bcall->NextIs(block))
         {
             found = true;
             break;
@@ -2845,7 +2845,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
-            if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block) &&
+            if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->TargetIs(finBeg) && bcall->NextIs(block) &&
                 comp->ehCallFinallyInCorrectRegion(bcall, hndIndex))
             {
                 found = true;
@@ -5010,7 +5010,7 @@ void Compiler::fgDebugCheckLoopTable()
             // The pre-header can only be BBJ_ALWAYS and must enter the loop.
             BasicBlock* e = loop.lpEntry;
             assert(h->KindIs(BBJ_ALWAYS));
-            assert(h->HasJumpTo(e));
+            assert(h->TargetIs(e));
 
             // The entry block has a single non-loop predecessor, and it is the pre-header.
             for (BasicBlock* const predBlock : e->PredBlocks())

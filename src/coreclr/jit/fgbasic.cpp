@@ -694,7 +694,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
 
-            if (block->HasJumpTo(oldTarget))
+            if (block->TargetIs(oldTarget))
             {
                 block->SetTarget(newTarget);
                 fgRemoveRefPred(oldTarget, block);
@@ -5049,7 +5049,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     if (curr->KindIs(BBJ_COND))
     {
         fgReplacePred(succ, curr, newBlock);
-        if (curr->HasJumpTo(succ))
+        if (curr->TargetIs(succ))
         {
             // Now 'curr' jumps to newBlock
             curr->SetTarget(newBlock);
@@ -5291,7 +5291,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         noway_assert(block->KindIs(BBJ_ALWAYS));
 
         /* Do not remove a block that jumps to itself - used for while (true){} */
-        noway_assert(!block->HasJumpTo(block));
+        noway_assert(!block->TargetIs(block));
 #endif // DEBUG
 
         BasicBlock* succBlock = block->GetTarget();
@@ -5383,7 +5383,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
                 case BBJ_COND:
                     /* The links for the direct predecessor case have already been updated above */
-                    if (!predBlock->HasJumpTo(block))
+                    if (!predBlock->TargetIs(block))
                     {
                         break;
                     }
@@ -5392,7 +5392,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if (predBlock->FalseTargetIs(succBlock))
                     {
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbTarget.
-                        noway_assert(predBlock->HasJumpTo(block));
+                        noway_assert(predBlock->TargetIs(block));
                         predBlock->SetTarget(succBlock);
                         fgRemoveConditionalJump(predBlock);
                         break;
@@ -5404,7 +5404,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 case BBJ_CALLFINALLY:
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                    noway_assert(predBlock->HasJumpTo(block));
+                    noway_assert(predBlock->TargetIs(block));
                     predBlock->SetTarget(succBlock);
                     break;
 
@@ -5436,7 +5436,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             case BBJ_COND:
                 /* Check if both sides of the BBJ_COND now jump to the same block */
-                if (bPrev->HasJumpTo(bPrev->GetFalseTarget()))
+                if (bPrev->TargetIs(bPrev->GetFalseTarget()))
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
@@ -6326,7 +6326,7 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     }
 
     // if bAlt doesn't jump to bCur it can't be a better fall through than bCur
-    if (!bAlt->HasJumpTo(bCur))
+    if (!bAlt->TargetIs(bCur))
     {
         return false;
     }

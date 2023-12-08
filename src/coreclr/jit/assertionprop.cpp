@@ -5550,7 +5550,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->KindIs(BBJ_COND) && predBlock->HasJumpTo(block))
+        if (predBlock->KindIs(BBJ_COND) && predBlock->TargetIs(block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 

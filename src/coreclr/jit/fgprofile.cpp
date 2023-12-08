@@ -1677,7 +1677,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 // Ensure this pred always jumps to block
                 //
                 assert(pred->KindIs(BBJ_ALWAYS));
-                assert(pred->HasJumpTo(block));
+                assert(pred->TargetIs(block));
             }
         }
 

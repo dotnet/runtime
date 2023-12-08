@@ -4466,7 +4466,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             assert(finallyNesting <= compHndBBtabCount);
 
             assert(callBlock->KindIs(BBJ_CALLFINALLY));
-            assert(callBlock->HasJumpTo(HBtab->ebdHndBeg));
+            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
             fgAddRefPred(callBlock->GetTarget(), callBlock);
 
             GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
@@ -4856,7 +4856,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif
 
             assert(callBlock->KindIs(BBJ_CALLFINALLY));
-            assert(callBlock->HasJumpTo(HBtab->ebdHndBeg));
+            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
             fgAddRefPred(callBlock->GetTarget(), callBlock);
         }
         else if (HBtab->HasCatchHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&

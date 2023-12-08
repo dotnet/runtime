@@ -742,7 +742,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
             bool initBlockOk = (predBlock == initBlock);
             if (!initBlockOk)
             {
-                if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->HasJumpTo(optLoopTable[loopInd].lpEntry) &&
+                if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->TargetIs(optLoopTable[loopInd].lpEntry) &&
                     (predBlock->countOfInEdges() == 1) && (predBlock->firstStmt() == nullptr) &&
                     !predBlock->IsFirst() && predBlock->Prev()->bbFallsThrough())
                 {
@@ -1137,7 +1137,7 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loop table, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->HasJumpTo(top) && (initBlock->countOfInEdges() == 1) &&
+        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(top) && (initBlock->countOfInEdges() == 1) &&
             !initBlock->IsFirst() && initBlock->Prev()->bbFallsThrough())
         {
             initBlock = initBlock->Prev();
@@ -1375,7 +1375,7 @@ void Compiler::optCheckPreds()
             switch (bb->GetKind())
             {
                 case BBJ_COND:
-                    if (bb->HasJumpTo(block))
+                    if (bb->TargetIs(block))
                     {
                         break;
                     }
@@ -1384,7 +1384,7 @@ void Compiler::optCheckPreds()
                 case BBJ_EHFILTERRET:
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                    noway_assert(bb->HasJumpTo(block));
+                    noway_assert(bb->TargetIs(block));
                     break;
                 default:
                     break;
@@ -2263,7 +2263,7 @@ private:
         {
             // Need to reconnect the flow from `block` to `oldNext`.
 
-            if (block->KindIs(BBJ_COND) && block->HasJumpTo(newNext))
+            if (block->KindIs(BBJ_COND) && block->TargetIs(newNext))
             {
                 // Reverse the jump condition
                 GenTree* test = block->lastNode();
@@ -2290,7 +2290,7 @@ private:
                 noway_assert((newBlock == nullptr) || loopBlocks.CanRepresent(newBlock->bbNum));
             }
         }
-        else if (block->KindIs(BBJ_ALWAYS) && block->HasJumpTo(newNext))
+        else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
         {
             // If block is newNext's only predecessor, move the IR from block to newNext,
             // but keep the now-empty block around.
@@ -2919,7 +2919,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
     // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
     // head block. See FindEntry() for the logic that allows this.
-    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && h->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (h->KindIs(BBJ_ALWAYS) && h->TargetIs(t) && h->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         // Insert new head
 
@@ -3191,7 +3191,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // the right flow out of h.
     //
     assert(!h->KindIs(BBJ_COND) || h->FalseTargetIs(t));
-    assert(h->HasJumpTo(t) || !h->KindIs(BBJ_ALWAYS));
+    assert(h->TargetIs(t) || !h->KindIs(BBJ_ALWAYS));
     assert(h->KindIs(BBJ_ALWAYS, BBJ_COND));
 
     // If the bottom block is in the same "try" region, then we extend the EH
@@ -3352,7 +3352,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
         {
             assert(newT->KindIs(BBJ_ALWAYS));
             if ((optLoopTable[childLoop].lpEntry == origE) && (optLoopTable[childLoop].lpHead == h) &&
-                newT->HasJumpTo(origE))
+                newT->TargetIs(origE))
             {
                 optUpdateLoopHead(childLoop, h, newT);
 
@@ -8279,7 +8279,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         switch (predBlock->GetKind())
         {
             case BBJ_COND:
-                if (predBlock->HasJumpTo(entry))
+                if (predBlock->TargetIs(entry))
                 {
                     predBlock->SetTarget(preHead);
                     noway_assert(!predBlock->FalseTargetIs(preHead));
@@ -8294,7 +8294,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                noway_assert(predBlock->HasJumpTo(entry));
+                noway_assert(predBlock->TargetIs(entry));
                 predBlock->SetTarget(preHead);
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);

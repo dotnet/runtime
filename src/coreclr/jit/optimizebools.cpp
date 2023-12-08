@@ -125,7 +125,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     // Check if m_b1 and m_b2 have the same bbTarget
 
-    if (m_b1->HasJumpTo(m_b2->GetTarget()))
+    if (m_b1->TargetIs(m_b2->GetTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, BX)
@@ -741,7 +741,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (m_b1->HasJumpTo(m_b1) || m_b1->HasJumpTo(m_b2) || m_b2->HasJumpTo(m_b2) || m_b2->HasJumpTo(m_b1))
+    if (m_b1->TargetIs(m_b1) || m_b1->TargetIs(m_b2) || m_b2->TargetIs(m_b2) || m_b2->TargetIs(m_b1))
     {
         // Ignoring weird cases like a condition jumping to itself or when JumpDest == Next
         return false;
@@ -800,7 +800,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     const bool cmp1IsReversed = true;
 
     // cmp2 can be either reversed or not
-    const bool cmp2IsReversed = m_b2->HasJumpTo(notInRangeBb);
+    const bool cmp2IsReversed = m_b2->TargetIs(notInRangeBb);
 
     if (!FoldRangeTests(m_comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
     {
@@ -907,7 +907,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if (m_b1->FalseTargetIs(m_b2) && m_b1->HasJumpTo(m_b2->GetTarget()))
+    else if (m_b1->FalseTargetIs(m_b2) && m_b1->TargetIs(m_b2->GetTarget()))
     {
         // Found two conditions connected together.
     }
@@ -1307,7 +1307,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
-        assert(m_b1->HasJumpTo(m_b2->GetTarget()));
+        assert(m_b1->TargetIs(m_b2->GetTarget()));
         assert(m_b1->FalseTargetIs(m_b2));
         assert(!m_b2->IsLast());
     }
@@ -1912,7 +1912,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b2->KindIs(BBJ_COND))
             {
-                if (!b1->HasJumpTo(b2->GetTarget()) && !b2->FalseTargetIs(b1->GetTarget()))
+                if (!b1->TargetIs(b2->GetTarget()) && !b2->FalseTargetIs(b1->GetTarget()))
                 {
                     continue;
                 }
