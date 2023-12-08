@@ -3128,7 +3128,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     genConsumeReg(dstNode);
     const regNumber dstReg = dstNode->GetRegNum();
 
-#ifdef TARGET_ARM64
+#ifndef TARGET_ARM64
     GenTree* const zeroNode = initBlkNode->Data();
     genConsumeReg(zeroNode);
     const regNumber zeroReg = zeroNode->GetRegNum();
