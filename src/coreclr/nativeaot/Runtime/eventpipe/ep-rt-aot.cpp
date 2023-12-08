@@ -395,14 +395,25 @@ ep_rt_aot_current_process_get_id (void)
     return static_cast<uint32_t>(GetCurrentProcessId ());
 }
 
+#ifdef TARGET_UNIX
+inline uint64_t THREADSilentGetCurrentThreadId()
+{
+    static __thread uint64_t tid;
+    if (!tid)
+        tid = PalGetCurrentOSThreadId();
+    return tid;
+}
+#endif
+
 ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // Current thread is available at this stage since EventPipe is initiating this call.
-    ep_rt_thread_handle_t thread_handle = ThreadStore::GetCurrentThreadIfAvailable();
-    EP_ASSERT (thread_handle != NULL);
-    return thread_handle->GetPalThreadIdForLogging();
+#ifdef TARGET_UNIX
+    return static_cast<ep_rt_thread_id_t>(THREADSilentGetCurrentThreadId());
+#else
+    return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
+#endif
 }
 
 int64_t
