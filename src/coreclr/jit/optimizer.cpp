@@ -2809,13 +2809,13 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
     switch (from->GetJumpKind())
     {
         case BBJ_SWITCH:
-            to->SetSwitchKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetJumpSwt()));
+            to->SetKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetJumpSwt()));
             break;
         case BBJ_EHFINALLYRET:
-            to->SetJumpKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
+            to->SetKindAndTarget(BBJ_EHFINALLYRET, new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
         default:
-            to->SetJumpKindAndTarget(from->GetJumpKind(), from->GetTarget());
+            to->SetKindAndTarget(from->GetJumpKind(), from->GetTarget());
             to->CopyFlags(from, BBF_NONE_QUIRK);
             break;
     }
@@ -4483,7 +4483,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
+                block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
                 block->bbStmtList   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
                 block->SetFlags(BBF_NONE_QUIRK);
@@ -4528,7 +4528,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->GetTarget(), initBlock);
-                initBlock->SetJumpKindAndTarget(BBJ_ALWAYS, initBlock->GetFalseTarget());
+                initBlock->SetKindAndTarget(BBJ_ALWAYS, initBlock->GetFalseTarget());
 
                 // TODO-NoFallThrough: If bbFalseTarget can diverge from bbNext, it may not make sense to set
                 // BBF_NONE_QUIRK
@@ -5002,7 +5002,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Create a new block after `block` to put the copied condition code.
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true, bJoin);
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, bNewCond);
+    block->SetKindAndTarget(BBJ_ALWAYS, bNewCond);
     block->SetFlags(BBF_NONE_QUIRK);
     assert(block->JumpsToNext());
 

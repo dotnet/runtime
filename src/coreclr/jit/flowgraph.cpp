@@ -388,7 +388,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetJumpKindAndTarget(BBJ_COND, bottom);
+        top->SetKindAndTarget(BBJ_COND, bottom);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -1674,7 +1674,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
+    block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
     fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
@@ -2145,7 +2145,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock);
+                    returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.

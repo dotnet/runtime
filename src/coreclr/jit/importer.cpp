@@ -2493,7 +2493,7 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 
 void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg))
 {
-    block->SetJumpKindAndTarget(BBJ_THROW);
+    block->SetKindAndTarget(BBJ_THROW);
     block->SetFlags(BBF_FAILED_VERIFICATION);
     block->RemoveFlags(BBF_IMPORTED);
 
@@ -4388,7 +4388,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 fgRemoveRefPred(callBlock->GetTarget(), callBlock);
 
                 // callBlock will call the finally handler. Convert the BBJ_LEAVE to BBJ_CALLFINALLY
-                callBlock->SetJumpKindAndTarget(BBJ_CALLFINALLY, HBtab->ebdHndBeg);
+                callBlock->SetKindAndTarget(BBJ_CALLFINALLY, HBtab->ebdHndBeg);
 
                 if (endCatches)
                 {
@@ -4709,7 +4709,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
                 fgRemoveRefPred(block->GetTarget(), block);
-                block->SetJumpKindAndTarget(BBJ_ALWAYS, callBlock);
+                block->SetKindAndTarget(BBJ_ALWAYS, callBlock);
                 fgAddRefPred(callBlock, block);
 
                 /* The new block will inherit this block's weight */
@@ -4734,7 +4734,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 fgRemoveRefPred(callBlock->GetTarget(), callBlock);
 
                 // callBlock will call the finally handler. Convert the BBJ_LEAVE to BBJ_CALLFINALLY
-                callBlock->SetJumpKindAndTarget(BBJ_CALLFINALLY, HBtab->ebdHndBeg);
+                callBlock->SetKindAndTarget(BBJ_CALLFINALLY, HBtab->ebdHndBeg);
 
 #ifdef DEBUG
                 if (verbose)
@@ -5069,7 +5069,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     fgInitBBLookup();
 
     fgRemoveRefPred(block->GetTarget(), block);
-    block->SetJumpKindAndTarget(BBJ_LEAVE, fgLookupBB(jmpAddr));
+    block->SetKindAndTarget(BBJ_LEAVE, fgLookupBB(jmpAddr));
     fgAddRefPred(block->GetTarget(), block);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
@@ -6044,7 +6044,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             // Change block to BBJ_THROW so we won't trigger importation of successors.
             //
-            block->SetJumpKindAndTarget(BBJ_THROW);
+            block->SetKindAndTarget(BBJ_THROW);
 
             // If this method has a explicit generic context, the only uses of it may be in
             // the IL for this block. So assume it's used.
@@ -7430,7 +7430,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetTarget(), block);
-                            block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
+                            block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
 
                             // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense
                             // to set BBF_NONE_QUIRK
@@ -7691,7 +7691,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
                             // transform the basic block into a BBJ_ALWAYS
-                            block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
+                            block->SetKindAndTarget(BBJ_ALWAYS, curJump);
                             foundVal = true;
                         }
                         else

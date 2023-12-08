@@ -362,7 +362,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     fgRemoveBlockAsPred(block);
 
     // Update jump kind after the scrub.
-    block->SetJumpKindAndTarget(BBJ_THROW);
+    block->SetKindAndTarget(BBJ_THROW);
 
     // Any block with a throw is rare
     block->bbSetRunRarely();
@@ -2938,9 +2938,9 @@ void Compiler::fgLinkBasicBlocks()
                 assert(!(curBBdesc->IsLast() && jumpsToNext));
                 BasicBlock* const jumpDest = jumpsToNext ? curBBdesc->Next() : fgLookupBB(curBBdesc->GetJumpOffs());
 
-                // Redundantly use SetJumpKindAndTarget() instead of SetTarget() just this once,
+                // Redundantly use SetKindAndTarget() instead of SetTarget() just this once,
                 // so we don't break the HasInitializedTarget() invariant of SetTarget().
-                curBBdesc->SetJumpKindAndTarget(curBBdesc->GetJumpKind(), jumpDest);
+                curBBdesc->SetKindAndTarget(curBBdesc->GetJumpKind(), jumpDest);
                 fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
                 if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
@@ -4194,7 +4194,7 @@ void Compiler::fgFixEntryFlowForOSR()
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS) && fgFirstBB->JumpsToNext());
     fgRemoveRefPred(fgFirstBB->GetTarget(), fgFirstBB);
-    fgFirstBB->SetJumpKindAndTarget(BBJ_ALWAYS, fgOSREntryBB);
+    fgFirstBB->SetKindAndTarget(BBJ_ALWAYS, fgOSREntryBB);
     FlowEdge* const edge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
     edge->setLikelihood(1.0);
 
@@ -4792,7 +4792,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 
     // Default to fallthru, and add the arc for that.
     curr->SetFlags(BBF_NONE_QUIRK);
-    curr->SetJumpKindAndTarget(BBJ_ALWAYS, newBlock);
+    curr->SetKindAndTarget(BBJ_ALWAYS, newBlock);
     fgAddRefPred(newBlock, curr);
     assert(curr->JumpsToNext());
 

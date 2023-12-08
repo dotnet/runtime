@@ -6308,7 +6308,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We call CORINFO_HELP_TAILCALL which does not return, so we will
             // not need epilogue.
-            compCurBB->SetJumpKindAndTarget(BBJ_THROW);
+            compCurBB->SetKindAndTarget(BBJ_THROW);
         }
 
         if (isRootReplaced)
@@ -7446,7 +7446,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of a scratch BB.
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgEntryBB);
+        block->SetKindAndTarget(BBJ_ALWAYS, fgEntryBB);
     }
     else
     {
@@ -7461,7 +7461,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         //
         fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
+        block->SetKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
     }
 
     // Finish hooking things up.
@@ -13202,7 +13202,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
                 bTaken    = block->GetFalseTarget();
                 bNotTaken = block->GetTarget();
-                block->SetJumpKindAndTarget(BBJ_ALWAYS, bTaken);
+                block->SetKindAndTarget(BBJ_ALWAYS, bTaken);
                 block->SetFlags(BBF_NONE_QUIRK);
             }
 
@@ -13419,7 +13419,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
+                    block->SetKindAndTarget(BBJ_ALWAYS, curJump);
                     foundVal = true;
                 }
                 else
@@ -14180,7 +14180,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
+            block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;
         }
@@ -14901,7 +14901,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
+        condBlock->SetKindAndTarget(BBJ_COND, elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->SetFlags(propagateFlagsToAll);
@@ -14926,7 +14926,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
+        condBlock->SetKindAndTarget(BBJ_COND, remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
@@ -14942,7 +14942,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
+        condBlock->SetKindAndTarget(BBJ_COND, remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
 
         elseBlock->inheritWeightPercentage(condBlock, 50);

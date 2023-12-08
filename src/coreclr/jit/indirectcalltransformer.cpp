@@ -280,7 +280,7 @@ private:
 
             // checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
+            checkBlock->SetKindAndTarget(BBJ_COND, elseBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
 
@@ -593,7 +593,7 @@ private:
                 checkFallsThrough          = false;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->SetJumpKindAndTarget(BBJ_COND, checkBlock);
+                prevCheckBlock->SetKindAndTarget(BBJ_COND, checkBlock);
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Calculate the total likelihood for this check as a sum of likelihoods
@@ -1033,7 +1033,7 @@ private:
             // where we know the last check is always true (in case of "exact" GDV)
             if (!checkFallsThrough)
             {
-                checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
+                checkBlock->SetKindAndTarget(BBJ_COND, elseBlock);
                 compiler->fgAddRefPred(elseBlock, checkBlock);
             }
             else
@@ -1156,7 +1156,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->SetJumpKindAndTarget(BBJ_ALWAYS, elseBlock);
+            coldBlock->SetKindAndTarget(BBJ_ALWAYS, elseBlock);
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 

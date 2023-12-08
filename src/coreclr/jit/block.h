@@ -620,10 +620,10 @@ public:
         return bbJumpOffs;
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, unsigned jumpOffs)
+    void SetKindAndTarget(BBjumpKinds kind, unsigned offs)
     {
-        bbJumpKind = jumpKind;
-        bbJumpOffs = jumpOffs;
+        bbJumpKind = kind;
+        bbJumpOffs = offs;
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
@@ -642,7 +642,7 @@ public:
 
     void SetTarget(BasicBlock* target)
     {
-        // SetJumpKindAndTarget() nulls target for non-jump kinds,
+        // SetKindAndTarget() nulls target for non-jump kinds,
         // so don't use SetTarget() to null bbTarget without updating bbJumpKind.
         bbTarget = target;
         assert(!HasTarget() || HasInitializedTarget());
@@ -675,10 +675,10 @@ public:
         return (bbFalseTarget == jumpDest);
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
+    void SetKindAndTarget(BBjumpKinds kind, BasicBlock* target = nullptr)
     {
-        bbJumpKind = jumpKind;
-        bbTarget = jumpDest;
+        bbJumpKind = kind;
+        bbTarget = target;
 
         // If bbJumpKind indicates this block has a jump, bbTarget cannot be null
         assert(!HasTarget() || HasInitializedTarget());
@@ -709,11 +709,11 @@ public:
         return bbJumpSwt;
     }
 
-    void SetSwitchKindAndTarget(BBswtDesc* jumpSwt)
+    void SetKindAndTarget(BBswtDesc* swt)
     {
-        assert(jumpSwt != nullptr);
+        assert(swt != nullptr);
         bbJumpKind = BBJ_SWITCH;
-        bbJumpSwt  = jumpSwt;
+        bbJumpSwt  = swt;
     }
 
     BBehfDesc* GetJumpEhf() const
@@ -728,12 +728,12 @@ public:
         bbJumpEhf = jumpEhf;
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BBehfDesc* jumpEhf)
+    void SetKindAndTarget(BBjumpKinds kind, BBehfDesc* ehf)
     {
-        assert(jumpKind == BBJ_EHFINALLYRET);
-        assert(jumpEhf != nullptr);
-        bbJumpKind = jumpKind;
-        bbJumpEhf  = jumpEhf;
+        assert(kind == BBJ_EHFINALLYRET);
+        assert(ehf != nullptr);
+        bbJumpKind = kind;
+        bbJumpEhf  = ehf;
     }
 
 private:
