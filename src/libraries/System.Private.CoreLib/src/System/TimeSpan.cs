@@ -334,11 +334,6 @@ namespace System
 
         public static TimeSpan FromMilliseconds(double value) => Interval(value, TicksPerMillisecond);
 
-        public static TimeSpan FromMilliseconds(long milliseconds)
-        {
-            return new TimeSpan(milliseconds * TicksPerMillisecond);
-        }
-
         public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0)
         {
             long totalTicks = milliseconds * TicksPerMillisecond

@@ -5621,7 +5621,6 @@ namespace System
         public static System.TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
         public static System.TimeSpan FromSeconds(long seconds) { throw null; }
         public static System.TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0) { throw null; }
-        public static System.TimeSpan FromMilliseconds(long milliseconds) { throw null; }
         public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) { throw null; }
         public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromTicks(long value) { throw null; }
