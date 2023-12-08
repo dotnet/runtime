@@ -7,18 +7,18 @@ using System.Runtime.InteropServices;
 namespace System
 {
     // Note: This type must have the same layout as the CLR's VARARGS type in CLRVarArgs.h.
-    // It also contains an inline SigPointer data structure - must keep those fields in sync.
     [StructLayout(LayoutKind.Sequential)]
     public unsafe ref partial struct ArgIterator
     {
         private IntPtr _argCookie;              // Cookie from the EE.
 
-        // Note: this is an inline native SigPointer data type.
-        private IntPtr _sigPtr;                 // Pointer to remaining signature.
-
-        // Note, this is actually a UInt32, but on 64bit systems SigPointer structure becomes
-        // 8-byte aligned, which requires us to pad it.
-        private IntPtr _sigPtrLenAndPadding_DoNotUse; // Remaining length of the pointer
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SigPointer
+        {
+            internal IntPtr _ptr;
+            internal uint _len;
+        }
+        private SigPointer _sigPtr;             // Pointer to remaining signature.
 
         private IntPtr _argPtr;                 // Pointer to remaining args.
         private int _remainingArgs;             // # of remaining args.
@@ -90,7 +90,7 @@ namespace System
         [CLSCompliant(false)]
         public TypedReference GetNextArg(RuntimeTypeHandle rth)
         {
-            if (_sigPtr != IntPtr.Zero)
+            if (_sigPtr._ptr != IntPtr.Zero)
             {
                 // This is an ordinary ArgIterator capable of determining
                 // types from a signature. Just do a regular GetNextArg.
