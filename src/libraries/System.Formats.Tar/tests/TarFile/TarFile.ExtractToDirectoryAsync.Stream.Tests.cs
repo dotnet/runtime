@@ -348,7 +348,7 @@ namespace System.Formats.Tar.Tests
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             // the folder used to store files needs to have a shorter path on Apple mobile platforms,
             // because the TempDirectory gets created in folder with a path longer than 100 bytes
-            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/CoreSimulator/Devices/tempDir");
+            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/tmp");
 #else
             using TempDirectory root = new TempDirectory();
 #endif
@@ -429,7 +429,7 @@ namespace System.Formats.Tar.Tests
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             // the folder used to store files needs to have a shorter path on Apple mobile platforms,
             // because the TempDirectory gets created in folder with a path longer than 100 bytes
-            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/CoreSimulator/Devices/tempDir");
+            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/tmp");
 #else
             using TempDirectory root = new TempDirectory();
 #endif
@@ -465,7 +465,7 @@ namespace System.Formats.Tar.Tests
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             // the folder used to store files needs to have a shorter path on Apple mobile platforms,
             // because the TempDirectory gets created in folder with a path longer than 100 bytes
-            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/CoreSimulator/Devices/tempDir");
+            using TempDirectory root = new TempDirectory("/Users/helix-runner/Library/Developer/tmp");
 #else
             using TempDirectory root = new TempDirectory();
 #endif
