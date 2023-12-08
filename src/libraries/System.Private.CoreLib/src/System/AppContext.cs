@@ -97,15 +97,15 @@ namespace System
         // AppDomain brings lots of unnecessary dependencies into trimmed apps.
         // The indirection is set up when the callback is installed so that
         // only apps that install a callback have AppDomain in the closure.
-        private static Action? s_invokeProcessExitCallback;
+        private static Action s_invokeProcessExitCallback;
 
-        internal static void AddProcessExitCallback(EventHandler? eventHandler)
+        internal static void AddProcessExitCallback(EventHandler eventHandler)
         {
             s_processExit += eventHandler;
             s_invokeProcessExitCallback ??= () => s_processExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
         }
 
-        internal static void RemoveProcessExitCallback(EventHandler? eventHandler)
+        internal static void RemoveProcessExitCallback(EventHandler eventHandler)
         {
             s_processExit -= eventHandler;
         }
