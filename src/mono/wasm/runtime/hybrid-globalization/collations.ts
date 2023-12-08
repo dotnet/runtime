@@ -10,6 +10,7 @@ import { GraphemeSegmenter } from "./grapheme-segmenter";
 
 const COMPARISON_ERROR = -2;
 const INDEXING_ERROR = -1;
+let graphemeSegmenterCached: GraphemeSegmenter | null;
 
 export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
@@ -117,20 +118,20 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
         const casePicker = (options & 0x1f);
         let result = -1;
 
-        const graphemeBreaker = new GraphemeSegmenter();
+        const graphemeSegmenter = graphemeSegmenterCached || (graphemeSegmenterCached = new GraphemeSegmenter());
         const needleSegments = [];
         let needleIdx = 0;
 
         // Grapheme segmentation of needle string
         while (needleIdx < needle.length) {
-            const needleGrapheme = graphemeBreaker.next_grapheme(needle, needleIdx);
+            const needleGrapheme = graphemeSegmenter.next_grapheme(needle, needleIdx);
             needleSegments.push(needleGrapheme);
             needleIdx += needleGrapheme.length;
         }
 
         let srcIdx = 0;
         while (srcIdx < source.length) {
-            const srcGrapheme = graphemeBreaker.next_grapheme(source, srcIdx);
+            const srcGrapheme = graphemeSegmenter.next_grapheme(source, srcIdx);
             srcIdx += srcGrapheme.length;
 
             if (!check_match_found(srcGrapheme, needleSegments[0], locale, casePicker)) {
@@ -140,7 +141,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
             let j;
             let srcNextIdx = srcIdx;
             for (j = 1; j < needleSegments.length; j++) {
-                const srcGrapheme = graphemeBreaker.next_grapheme(source, srcNextIdx);
+                const srcGrapheme = graphemeSegmenter.next_grapheme(source, srcNextIdx);
 
                 if (!check_match_found(srcGrapheme, needleSegments[j], locale, casePicker)) {
                     break;
