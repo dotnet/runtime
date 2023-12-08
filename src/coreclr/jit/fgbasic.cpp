@@ -2934,9 +2934,9 @@ void Compiler::fgLinkBasicBlocks()
             {
                 // Avoid fgLookupBB overhead for blocks that jump to next block
                 // (curBBdesc cannot be the last block if it jumps to the next block)
-                const bool jumpsToNext = (curBBdesc->GetJumpOffs() == curBBdesc->bbCodeOffsEnd);
+                const bool jumpsToNext = (curBBdesc->GetTargetOffs() == curBBdesc->bbCodeOffsEnd);
                 assert(!(curBBdesc->IsLast() && jumpsToNext));
-                BasicBlock* const jumpDest = jumpsToNext ? curBBdesc->Next() : fgLookupBB(curBBdesc->GetJumpOffs());
+                BasicBlock* const jumpDest = jumpsToNext ? curBBdesc->Next() : fgLookupBB(curBBdesc->GetTargetOffs());
 
                 // Redundantly use SetKindAndTarget() instead of SetTarget() just this once,
                 // so we don't break the HasInitializedTarget() invariant of SetTarget().

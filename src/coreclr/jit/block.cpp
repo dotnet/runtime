@@ -1622,7 +1622,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds jumpKind, unsigned jumpO
 {
     BasicBlock* block = BasicBlock::New(compiler);
     block->bbKind = jumpKind;
-    block->bbJumpOffs = jumpOffs;
+    block->bbTargetOffs = jumpOffs;
     return block;
 }
 

@@ -526,7 +526,7 @@ private:
 
     /* The following union describes the jump target(s) of this block */
     union {
-        unsigned    bbJumpOffs; // PC offset (temporary only)
+        unsigned    bbTargetOffs; // PC offset (temporary only)
         BasicBlock* bbTarget; // basic block
         BBswtDesc*  bbJumpSwt;  // switch descriptor
         BBehfDesc*  bbJumpEhf;  // BBJ_EHFINALLYRET descriptor
@@ -615,15 +615,15 @@ public:
 
     bool CanRemoveJumpToNext(Compiler* compiler);
 
-    unsigned GetJumpOffs() const
+    unsigned GetTargetOffs() const
     {
-        return bbJumpOffs;
+        return bbTargetOffs;
     }
 
-    void SetKindAndTarget(BBKinds kind, unsigned offs)
+    void SetKindAndTarget(BBKinds kind, unsigned targetOffs)
     {
         bbKind = kind;
-        bbJumpOffs = offs;
+        bbTargetOffs = targetOffs;
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
