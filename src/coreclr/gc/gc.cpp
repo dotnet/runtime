@@ -48147,6 +48147,9 @@ HRESULT GCHeap::Initialize()
 
     GCConfig::SetHeapCount(static_cast<int64_t>(nhp));
 
+    loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
+    loh_size_threshold = max (loh_size_threshold, LARGE_OBJECT_SIZE);
+
 #ifdef USE_REGIONS
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
@@ -48216,8 +48219,6 @@ HRESULT GCHeap::Initialize()
 #error "FEATURE_STRUCTALIGN is not supported for USE_REGIONS"
 #endif //FEATURE_STRUCTALIGN
 
-    loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
-    loh_size_threshold = max (loh_size_threshold, LARGE_OBJECT_SIZE);
     loh_size_threshold = min (loh_size_threshold, effective_max_small_object_size);
     GCConfig::SetLOHThreshold(loh_size_threshold);
 
