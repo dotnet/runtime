@@ -1884,7 +1884,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    if (!oldLoopBottom->TargetIs(oldLoopTop))
+    if (!oldLoopBottom->TrueTargetIs(oldLoopTop))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n",
                 loop->GetIndex());

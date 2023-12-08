@@ -1386,7 +1386,7 @@ void Compiler::optCheckPreds()
             switch (bb->GetKind())
             {
                 case BBJ_COND:
-                    if (bb->TargetIs(block))
+                    if (bb->TrueTargetIs(block))
                     {
                         break;
                     }

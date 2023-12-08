@@ -669,7 +669,7 @@ public:
         bbTrueTarget = target;
     }
 
-    bool TrueTargetIs(BasicBlock* target) const
+    bool TrueTargetIs(const BasicBlock* target) const
     {
         assert(KindIs(BBJ_COND));
         assert(HasInitializedTarget());
@@ -696,7 +696,7 @@ public:
         bbFalseTarget = target;
     }
 
-    bool FalseTargetIs(BasicBlock* target) const
+    bool FalseTargetIs(const BasicBlock* target) const
     {
         assert(KindIs(BBJ_COND));
         assert(target != nullptr);

@@ -2751,7 +2751,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     switch (blockPred->GetKind())
     {
         case BBJ_COND:
-            assert(blockPred->FalseTargetIs(block) || blockPred->TargetIs(block));
+            assert(blockPred->FalseTargetIs(block) || blockPred->TrueTargetIs(block));
             return true;
 
         case BBJ_ALWAYS:

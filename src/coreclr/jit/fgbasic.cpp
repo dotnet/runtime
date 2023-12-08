@@ -5426,7 +5426,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if (predBlock->FalseTargetIs(succBlock))
                     {
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbTarget.
-                        noway_assert(predBlock->TargetIs(block));
+                        noway_assert(predBlock->TrueTargetIs(block));
                         predBlock->SetTrueTarget(succBlock);
                         fgRemoveConditionalJump(predBlock);
                         break;
@@ -5471,7 +5471,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             case BBJ_COND:
                 /* Check if both sides of the BBJ_COND now jump to the same block */
-                if (bPrev->TargetIs(bPrev->GetFalseTarget()))
+                if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
@@ -6352,15 +6352,25 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     noway_assert(bCur->bbFallsThrough() || (bCur->KindIs(BBJ_ALWAYS) && bCur->JumpsToNext()));
     noway_assert(bAlt != nullptr);
 
-    // We only handle the cases when bAlt is a BBJ_ALWAYS or a BBJ_COND
-    if (!bAlt->KindIs(BBJ_ALWAYS, BBJ_COND))
+    if (bAlt->KindIs(BBJ_ALWAYS))
     {
-        return false;
+        // If bAlt doesn't jump to bCur, it can't be a better fall through than bCur
+        if (!bAlt->TargetIs(bCur))
+        {
+            return false;
+        }
     }
-
-    // if bAlt doesn't jump to bCur it can't be a better fall through than bCur
-    if (!bAlt->TargetIs(bCur))
+    else if (bAlt->KindIs(BBJ_COND))
     {
+        // If bAlt doesn't potentially jump to bCur, it can't be a better fall through than bCur
+        if (!bAlt->TrueTargetIs(bCur))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        // We only handle the cases when bAlt is a BBJ_ALWAYS or a BBJ_COND
         return false;
     }
 

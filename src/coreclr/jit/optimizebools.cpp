@@ -125,7 +125,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     // Check if m_b1 and m_b2 have the same bbTarget
 
-    if (m_b1->TargetIs(m_b2->GetTrueTarget()))
+    if (m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, BX)
@@ -741,7 +741,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (m_b1->TargetIs(m_b1) || m_b1->TargetIs(m_b2) || m_b2->TargetIs(m_b2) || m_b2->TargetIs(m_b1))
+    if (m_b1->TrueTargetIs(m_b1) || m_b1->TrueTargetIs(m_b2) || m_b2->TrueTargetIs(m_b2) || m_b2->TrueTargetIs(m_b1))
     {
         // Ignoring weird cases like a condition jumping to itself or when JumpDest == Next
         return false;
@@ -800,7 +800,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     const bool cmp1IsReversed = true;
 
     // cmp2 can be either reversed or not
-    const bool cmp2IsReversed = m_b2->TargetIs(notInRangeBb);
+    const bool cmp2IsReversed = m_b2->TrueTargetIs(notInRangeBb);
 
     if (!FoldRangeTests(m_comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
     {

@@ -630,9 +630,9 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbFalseTarget));
 
-            if (bbTarget != bbFalseTarget)
+            if (bbTrueTarget != bbFalseTarget)
             {
-                RETURN_ON_ABORT(func(bbTarget));
+                RETURN_ON_ABORT(func(bbTrueTarget));
             }
 
             return VisitEHSuccs(comp, func);
@@ -696,9 +696,9 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbFalseTarget));
 
-            if (bbTarget != bbFalseTarget)
+            if (bbTrueTarget != bbFalseTarget)
             {
-                RETURN_ON_ABORT(func(bbTarget));
+                RETURN_ON_ABORT(func(bbTrueTarget));
             }
 
             return BasicBlockVisit::Continue;

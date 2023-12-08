@@ -2579,7 +2579,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 //
 void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
-    noway_assert(block->KindIs(BBJ_COND) && block->TargetIs(block->GetFalseTarget()));
+    noway_assert(block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()));
     assert(compRationalIRForm == block->IsLIR());
 
     FlowEdge* flow = fgGetPredForBlock(block->GetFalseTarget(), block);
@@ -3756,7 +3756,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev)
 {
     assert(block->KindIs(BBJ_COND));
-    assert(block->TargetIs(bNext));
+    assert(block->TrueTargetIs(bNext));
     assert(block->FalseTargetIs(bNext));
     assert(block->PrevIs(bPrev));
 
@@ -5059,8 +5059,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         // candidateBlock and have it fall into bTmp
                         //
                         if ((candidateBlock == nullptr) || !candidateBlock->KindIs(BBJ_COND, BBJ_ALWAYS) ||
-                            !candidateBlock->TargetIs(bTmp) ||
-                            (candidateBlock->KindIs(BBJ_ALWAYS) && candidateBlock->JumpsToNext()))
+                            (candidateBlock->KindIs(BBJ_ALWAYS) && (!candidateBlock->TargetIs(bTmp) || candidateBlock->JumpsToNext())) || (candidateBlock->KindIs(BBJ_COND) && !candidateBlock->TrueTargetIs(bTmp)))
                         {
                             // otherwise we have a new candidateBlock
                             //
@@ -6377,6 +6376,19 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 switch (block->GetKind())
                 {
                     case BBJ_COND:
+                        if (block->TrueTargetIs(block))
+                        {
+                            fgRemoveBlock(block, /* unreachable */ true);
+
+                            change   = true;
+                            modified = true;
+
+                            /* we removed the current block - the rest of the optimizations
+                             * won't have a target so continue with the next block */
+
+                            continue;
+                        }
+                        break;
                     case BBJ_ALWAYS:
                         if (block->TargetIs(block))
                         {
@@ -7015,7 +7027,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     // ternaries in C#).
     // The logic below could be generalized to BBJ_SWITCH, but this currently
     // has almost no CQ benefit but does have a TP impact.
-    if (!block->KindIs(BBJ_COND) || block->TargetIs(block->GetFalseTarget()))
+    if (!block->KindIs(BBJ_COND) || block->TrueTargetIs(block->GetFalseTarget()))
     {
         return false;
     }
