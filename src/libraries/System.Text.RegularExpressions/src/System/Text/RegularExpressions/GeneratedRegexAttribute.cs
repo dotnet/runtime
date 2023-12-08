@@ -27,14 +27,14 @@ public sealed class GeneratedRegexAttribute : Attribute
 {
     /// <summary>Initializes a new instance of the <see cref="GeneratedRegexAttribute"/> with the specified pattern.</summary>
     /// <param name="pattern">The regular expression pattern to match.</param>
-    public GeneratedRegexAttribute([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) : this (pattern, RegexOptions.None)
+    public GeneratedRegexAttribute([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) : this(pattern, RegexOptions.None)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="GeneratedRegexAttribute"/> with the specified pattern and options.</summary>
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
-    public GeneratedRegexAttribute([StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options) : this (pattern, options, Timeout.Infinite)
+    public GeneratedRegexAttribute([StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options) : this(pattern, options, Timeout.Infinite)
     {
     }
 

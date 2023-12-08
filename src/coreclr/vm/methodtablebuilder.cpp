@@ -18,7 +18,6 @@
 #include "dllimport.h"
 #include "fieldmarshaler.h"
 #include "encee.h"
-#include "ecmakey.h"
 #include "customattribute.h"
 #include "typestring.h"
 

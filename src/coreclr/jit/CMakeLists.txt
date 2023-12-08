@@ -346,6 +346,7 @@ set( JIT_HEADERS
   namedintrinsiclist.h
   objectalloc.h
   opcode.h
+  optcse.h
   phase.h
   promotion.h
   rangecheck.h

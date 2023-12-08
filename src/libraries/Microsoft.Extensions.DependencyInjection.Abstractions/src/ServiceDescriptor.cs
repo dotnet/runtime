@@ -228,7 +228,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     ThrowKeyedDescriptor();
                 }
-                return (Func<IServiceProvider, object>?) _implementationFactory;
+                return (Func<IServiceProvider, object>?)_implementationFactory;
             }
         }
 
@@ -243,7 +243,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     ThrowNonKeyedDescriptor();
                 }
-                return (Func<IServiceProvider, object?, object>?) _implementationFactory;
+                return (Func<IServiceProvider, object?, object>?)_implementationFactory;
             }
         }
 
