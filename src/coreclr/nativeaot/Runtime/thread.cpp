@@ -348,11 +348,11 @@ bool Thread::EnsureSignalAlternateStack()
 
         // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
         // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
-        int altStackSize = SIGSTKSZ;
+        int altStackSize = SIGSTKSZ + PalOsPageSize();
 #ifdef HAS_ADDRESS_SANITIZER
         // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
         // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
-        altStackSize += SIGSTKSZ * 4;
+        altStackSize += SIGSTKSZ * 4 + PalOsPageSize();
 #endif
         altStackSize = ALIGN_UP(altStackSize, PalOsPageSize());
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
