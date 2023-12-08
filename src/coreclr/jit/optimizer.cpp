@@ -2457,7 +2457,10 @@ void Compiler::optFindNaturalLoops()
 
     LoopSearch search(this);
 
-    for (BasicBlock* head = fgFirstBB; !head->IsLast(); head = head->Next())
+    // TODO-Quirk: Remove
+    BasicBlock* first = fgCanonicalizedFirstBB ? fgFirstBB->Next() : fgFirstBB;
+
+    for (BasicBlock* head = first; !head->IsLast(); head = head->Next())
     {
         BasicBlock* top = head->Next();
 
@@ -7967,6 +7970,8 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
 
     assert(!fgFirstBBisScratch());
     fgEnsureFirstBBisScratch();
+    // TODO-Quirk: Remove
+    fgCanonicalizedFirstBB = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
