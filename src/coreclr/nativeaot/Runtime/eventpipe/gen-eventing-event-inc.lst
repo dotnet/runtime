@@ -15,6 +15,7 @@ BGCOverflow_V1
 BGCPlanEnd
 BGCRevisit
 BGCSweepEnd
+BulkType
 Contention
 ContentionLockCreated
 ContentionStart_V2
@@ -109,3 +110,5 @@ ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
 ThreadPoolWorkingThreadCount
 ThreadRunning
+WaitHandleWaitStart
+WaitHandleWaitStop

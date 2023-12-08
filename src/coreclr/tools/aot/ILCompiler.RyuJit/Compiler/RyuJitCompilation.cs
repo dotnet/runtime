@@ -83,8 +83,8 @@ namespace ILCompiler
         {
             bool canPotentiallyConstruct = _devirtualizationManager == null
                 ? true : _devirtualizationManager.CanConstructType(type);
-            if (canPotentiallyConstruct && ConstructedEETypeNode.CreationAllowed(type))
-                return _nodeFactory.SerializedConstructedRuntimeTypeObject(type);
+            if (canPotentiallyConstruct)
+                return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
 
             return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
         }

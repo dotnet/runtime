@@ -1197,7 +1197,7 @@ namespace System
         }
 
         internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
-            where TChar: unmanaged, IUtfChar<TChar>
+            where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TFloat.NumberBufferLength]);
@@ -1359,17 +1359,6 @@ namespace System
             }
 
             return null;
-        }
-
-        private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
-
-        private static bool IsDigit(uint ch) => (ch - '0') <= 9;
-
-        internal enum ParsingStatus
-        {
-            OK,
-            Failed,
-            Overflow
         }
 
         [DoesNotReturn]

@@ -47,8 +47,14 @@ namespace System.Runtime.InteropServices.Marshalling
         [StructLayout(LayoutKind.Sequential)]
         private struct TypeUnion
         {
+            // The layout of _wReserved1 and _vt fields needs to match Decimal._flags
+#if BIGENDIAN
+            public ushort _wReserved1;
+            public ushort _vt;
+#else
             public ushort _vt;
             public ushort _wReserved1;
+#endif
             public ushort _wReserved2;
             public ushort _wReserved3;
 
@@ -211,7 +217,7 @@ namespace System.Runtime.InteropServices.Marshalling
                         break;
                     case VarEnum.VT_LPSTR:
                     case VarEnum.VT_LPWSTR:
-                    foreach (var str in GetRawDataRef<Vector<IntPtr>>().AsSpan())
+                        foreach (var str in GetRawDataRef<Vector<IntPtr>>().AsSpan())
                         {
                             Marshal.FreeCoTaskMem(str);
                         }

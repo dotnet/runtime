@@ -9,7 +9,7 @@ import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { alloc_stack_frame, get_arg, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
-import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
+import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
 
 export function init_managed_exports(): void {
@@ -55,8 +55,15 @@ export function init_managed_exports(): void {
                 program_args = undefined;
             }
             marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
+
+            // because this is async, we could pre-allocate the promise
+            let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
+
             invoke_method_and_handle_exception(call_entry_point, args);
-            let promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
+
+            // in case the C# side returned synchronously
+            promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
+
             if (promise === null || promise === undefined) {
                 promise = Promise.resolve(0);
             }
@@ -108,14 +115,14 @@ export function init_managed_exports(): void {
             Module.stackRestore(sp);
         }
     };
-    runtimeHelpers.javaScriptExports.complete_task = (holder_gcv_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) => {
+    runtimeHelpers.javaScriptExports.complete_task = (holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) => {
         loaderHelpers.assert_runtime_running();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(5);
             const arg1 = get_arg(args, 2);
             set_arg_type(arg1, MarshalerType.Object);
-            set_gc_handle(arg1, holder_gcv_handle);
+            set_gc_handle(arg1, holder_gc_handle);
             const arg2 = get_arg(args, 3);
             if (error) {
                 marshal_exception_to_cs(arg2, error);

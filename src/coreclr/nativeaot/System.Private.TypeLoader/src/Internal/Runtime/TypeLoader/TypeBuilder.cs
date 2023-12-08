@@ -6,17 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
-    using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
+    using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
 
     internal static class LowLevelListExtensions
@@ -1366,7 +1365,7 @@ namespace Internal.Runtime.TypeLoader
             new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
         }
 
-        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
+        public static void ResolveMultipleCells(GenericDictionaryCell[] cells, out IntPtr[] fixups)
         {
             new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }

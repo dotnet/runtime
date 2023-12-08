@@ -23,6 +23,7 @@ namespace Microsoft.Extensions.Options.Generators
         INamedTypeSymbol IValidatableObjectSymbol,
         INamedTypeSymbol GenericIEnumerableSymbol,
         INamedTypeSymbol TypeSymbol,
+        INamedTypeSymbol TimeSpanSymbol,
         INamedTypeSymbol ValidateObjectMembersAttributeSymbol,
         INamedTypeSymbol ValidateEnumeratedItemsAttributeSymbol);
 }

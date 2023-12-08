@@ -92,13 +92,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
-#ifdef TARGET_ARM64
-        else if (addr->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
-#endif // TARGET_ARM64
     }
 
 #ifdef FEATURE_SIMD

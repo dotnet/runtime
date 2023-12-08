@@ -824,7 +824,7 @@ namespace System.Speech.Synthesis
                 return _elements.Count == 0;
             }
         }
-        public            CultureInfo Culture
+        public CultureInfo Culture
         {
             get
             {
