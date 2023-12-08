@@ -197,7 +197,7 @@ namespace System.Reflection.Emit.Tests
                 eventb.SetRemoveOnMethod(mbRemove);
                 tbEvents.CreateType();*/
                 saveMethod.Invoke(ab, [file.Path]);
-                Console.WriteLine("Assembly saved to " + file.Path);
+
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 CheckAssembly(assemblyFromDisk);
             }
@@ -222,7 +222,7 @@ namespace System.Reflection.Emit.Tests
             {
                 CustomAttributeNamedArgument namedArg = cattr.NamedArguments.First(a => a.MemberName == namedArgument);
                 Assert.Equal(namedArgument, namedArg.MemberName);
-                Assert.Equal(naValue, namedArg.TypedValue.Value);
+                Assert.Equal(naValue, namedArg.TypedValue.Value.ToString());
             }
         }
 
@@ -317,15 +317,14 @@ namespace System.Reflection.Emit.Tests
             CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.U4);
             // ByValArray
             field = type4.GetField("FieldMarshalByvalArray");
-            CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.ByValArray, nameof(MarshalAsAttribute.SizeConst), 16);
+            CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.ByValArray, nameof(MarshalAsAttribute.SizeConst), "16");
             // ByValTStr
             field = type4.GetField("FieldMarshalByvalTStr");
-            CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.ByValTStr, nameof(MarshalAsAttribute.SizeConst), 16);
+            CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.ByValTStr, nameof(MarshalAsAttribute.SizeConst), "16");
             // Custom marshaler
             field = type4.GetField("FieldMarshalCustom");
             CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.CustomMarshaler, nameof(MarshalAsAttribute.MarshalCookie), "Cookie");
-            // TODO: Check 'MarshalTypeRef' case
-            //CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.CustomMarshaler, nameof(MarshalAsAttribute.MarshalTypeRef), typeof(object));
+            CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.CustomMarshaler, nameof(MarshalAsAttribute.MarshalTypeRef), typeof(object).ToString());
 
             field = type4.GetField("FieldCAttr");
             CheckCattr(field.GetCustomAttributesData());

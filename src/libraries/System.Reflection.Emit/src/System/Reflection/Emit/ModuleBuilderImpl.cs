@@ -160,7 +160,7 @@ namespace System.Reflection.Emit
                     _metadataBuilder.AddNestedType(typeHandle, (TypeDefinitionHandle)GetTypeHandle(typeBuilder.DeclaringType));
                 }
 
-                AddInterfaceImplementations(typeBuilder, typeHandle);
+                WriteInterfaceImplementations(typeBuilder, typeHandle);
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
                 WriteProperties(typeBuilder);
                 WriteFields(typeBuilder);
@@ -183,7 +183,7 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "Members are retrieved from internal cache")]
-        private void AddInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
+        private void WriteInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
         {
             if (typeBuilder._interfaces != null)
             {
@@ -585,7 +585,7 @@ namespace System.Reflection.Emit
         private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope) =>
             _metadataBuilder.AddTypeReference(
                 resolutionScope: resolutionScope,
-                @namespace: (type.Namespace == null || type.IsNested) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
+                @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
                 name: _metadataBuilder.GetOrAddString(type.Name));
 
         private MemberReferenceHandle AddMemberReference(string memberName, EntityHandle parent, BlobBuilder signature) =>
