@@ -651,6 +651,11 @@ public:
     BasicBlock* GetNormalJumpDest() const
     {
         assert(KindIs(BBJ_COND));
+
+        // So long as bbNormalJumpDest tracks bbNext in SetNext(), it is possible for bbNormalJumpDest to be null
+        // if this block is unlinked from the block list.
+        // So check bbNext before triggering the assert if bbNormalJumpDest is null.
+        // TODO-NoFallThrough: Remove IsLast() check once bbNormalJumpDest isn't hard-coded to bbNext
         assert((bbNormalJumpDest != nullptr) || IsLast());
         return bbNormalJumpDest;
     }
