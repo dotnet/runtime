@@ -78,10 +78,10 @@ namespace ILCompiler.ObjectWriter
 
         public void Write(ReadOnlySpan<byte> buffer) => _infoSectionWriter.Stream.Write(buffer);
         public void WriteULEB128(ulong value) => _infoSectionWriter.Stream.WriteULEB128(value);
-        public void WriteUInt8(byte value) => _infoSectionWriter.Stream.WriteUInt8(value);
-        public void WriteUInt16(ushort value) => _infoSectionWriter.Stream.WriteUInt16(value);
-        public void WriteUInt32(uint value) => _infoSectionWriter.Stream.WriteUInt32(value);
-        public void WriteUInt64(ulong value) => _infoSectionWriter.Stream.WriteUInt64(value);
+        public void WriteUInt8(byte value) => _infoSectionWriter.Stream.WriteLittleEndian<byte>(value);
+        public void WriteUInt16(ushort value) => _infoSectionWriter.Stream.WriteLittleEndian<ushort>(value);
+        public void WriteUInt32(uint value) => _infoSectionWriter.Stream.WriteLittleEndian<uint>(value);
+        public void WriteUInt64(ulong value) => _infoSectionWriter.Stream.WriteLittleEndian<ulong>(value);
 
         public void WriteAddressSize(ulong value)
         {
@@ -162,7 +162,7 @@ namespace ILCompiler.ObjectWriter
             _ = expressionBuilder;
             _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, startOffset);
             _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, endOffset);
-            _locSectionWriter.Stream.WriteUInt16((ushort)_expressionBufferWriter.WrittenCount);
+            _locSectionWriter.Stream.WriteLittleEndian<ushort>((ushort)_expressionBufferWriter.WrittenCount);
             _locSectionWriter.Stream.Write(_expressionBufferWriter.WrittenSpan);
         }
 

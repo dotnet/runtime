@@ -38,14 +38,14 @@ namespace ILCompiler.ObjectWriter
             if (_column != sequencePoint.ColNumber)
             {
                 _column = sequencePoint.ColNumber;
-                _writer.WriteUInt8(DW_LNS_set_column);
+                _writer.WriteByte(DW_LNS_set_column);
                 _writer.WriteULEB128((uint)_column);
             }
 
             if (_fileNameIndex != fileNameIndex)
             {
                 _fileNameIndex = fileNameIndex;
-                _writer.WriteUInt8(DW_LNS_set_file);
+                _writer.WriteByte(DW_LNS_set_file);
                 _writer.WriteULEB128((uint)_fileNameIndex);
             }
 
@@ -58,7 +58,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (!canEncodeLineInSpecialCode)
                 {
-                    _writer.WriteUInt8(DW_LNS_advance_line);
+                    _writer.WriteByte(DW_LNS_advance_line);
                     _writer.WriteSLEB128(deltaLine);
                     deltaLine = 0;
                 }
@@ -68,7 +68,7 @@ namespace ILCompiler.ObjectWriter
             if (deltaAddress > _maxDeltaAddressPerSpecialCode && deltaAddress <= (2U * _maxDeltaAddressPerSpecialCode))
             {
                 deltaAddress -= _maxDeltaAddressPerSpecialCode;
-                _writer.WriteUInt8(DW_LNS_const_add_pc);
+                _writer.WriteByte(DW_LNS_const_add_pc);
             }
 
             if (deltaAddress > 0 || deltaLine != 0)
@@ -79,20 +79,20 @@ namespace ILCompiler.ObjectWriter
                     DwarfLineProgramTableWriter.OpCodeBase + (ulong)(deltaLine - DwarfLineProgramTableWriter.LineBase);
                 if (opcode > 255)
                 {
-                    _writer.WriteUInt8(DW_LNS_advance_pc);
+                    _writer.WriteByte(DW_LNS_advance_pc);
                     _writer.WriteULEB128((uint)operationAdvance);
                     if (deltaLine != 0)
                     {
-                        _writer.WriteUInt8((byte)(DwarfLineProgramTableWriter.OpCodeBase + deltaLine - DwarfLineProgramTableWriter.LineBase));
+                        _writer.WriteByte((byte)(DwarfLineProgramTableWriter.OpCodeBase + deltaLine - DwarfLineProgramTableWriter.LineBase));
                     }
                     else
                     {
-                        _writer.WriteUInt8(DW_LNS_copy);
+                        _writer.WriteByte(DW_LNS_copy);
                     }
                 }
                 else
                 {
-                    _writer.WriteUInt8((byte)opcode);
+                    _writer.WriteByte((byte)opcode);
                 }
             }
 

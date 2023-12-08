@@ -124,7 +124,7 @@ namespace ILCompiler.ObjectWriter
             byte[] sizeBuffer = new byte[sizeof(uint)];
             infoSectionWriter.Stream.AppendData(sizeBuffer);
             // Version
-            infoSectionWriter.Stream.WriteUInt16((ushort)(_useDwarf5 ? 5u : 4u));
+            infoSectionWriter.Stream.WriteLittleEndian<ushort>((ushort)(_useDwarf5 ? 5u : 4u));
             if (_useDwarf5)
             {
                 // Unit type, Address Size
@@ -227,7 +227,7 @@ namespace ILCompiler.ObjectWriter
             var sizeBuffer = new byte[sizeof(uint)];
             arangeSectionWriter.Stream.AppendData(sizeBuffer);
             // Version
-            arangeSectionWriter.Stream.WriteUInt16(2);
+            arangeSectionWriter.Stream.WriteLittleEndian<ushort>(2);
             // Debug Info Offset
             arangeSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", 0);
             // Address size, Segment selector size
@@ -239,8 +239,8 @@ namespace ILCompiler.ObjectWriter
                 arangeSectionWriter.EmitSymbolReference(_codeRelocType, sectionInfo.SectionSymbolName, 0);
                 switch (_targetPointerSize)
                 {
-                    case 8: arangeSectionWriter.Stream.WriteUInt64(sectionInfo.Size); break;
-                    case 4: arangeSectionWriter.Stream.WriteUInt32((uint)sectionInfo.Size); break;
+                    case 8: arangeSectionWriter.Stream.WriteLittleEndian<ulong>(sectionInfo.Size); break;
+                    case 4: arangeSectionWriter.Stream.WriteLittleEndian<uint>((uint)sectionInfo.Size); break;
                     default: throw new NotSupportedException();
                 }
             }

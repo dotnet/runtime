@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Text;
 
 namespace ILCompiler.ObjectWriter
@@ -176,7 +177,7 @@ namespace ILCompiler.ObjectWriter
             DwarfHelper.WriteSLEB128(_appendBuffer, value);
         }
 
-        public void WriteUInt8(byte value)
+        public override void WriteByte(byte value)
         {
             Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
             Span<byte> buffer = _appendBuffer.GetSpan(1);
@@ -184,28 +185,12 @@ namespace ILCompiler.ObjectWriter
             _appendBuffer.Advance(1);
         }
 
-        public void WriteUInt16(ushort value)
+        public void WriteLittleEndian<T>(T value)
+            where T : IBinaryInteger<T>
         {
             Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
-            Span<byte> buffer = _appendBuffer.GetSpan(sizeof(ushort));
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
-            _appendBuffer.Advance(sizeof(ushort));
-        }
-
-        public void WriteUInt32(uint value)
-        {
-            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
-            Span<byte> buffer = _appendBuffer.GetSpan(sizeof(uint));
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
-            _appendBuffer.Advance(sizeof(uint));
-        }
-
-        public void WriteUInt64(ulong value)
-        {
-            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
-            Span<byte> buffer = _appendBuffer.GetSpan(sizeof(ulong));
-            BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
-            _appendBuffer.Advance(sizeof(ulong));
+            Span<byte> buffer = _appendBuffer.GetSpan(value.GetByteCount());
+            _appendBuffer.Advance(value.WriteLittleEndian(buffer));
         }
 
         public void WriteUtf8String(string value)

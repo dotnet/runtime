@@ -53,21 +53,21 @@ namespace ILCompiler.ObjectWriter
             _sizeBuffer = new byte[sizeof(uint)];
             lineSectionWriter.Stream.AppendData(_sizeBuffer);
             // Version
-            lineSectionWriter.Stream.WriteUInt16(4);
+            lineSectionWriter.Stream.WriteLittleEndian<ushort>(4);
             // Header Length
             var headerSizeBuffer = new byte[sizeof(uint)];
             lineSectionWriter.Stream.AppendData(headerSizeBuffer);
             var headerStart = lineSectionWriter.Stream.Position;
-            lineSectionWriter.Stream.WriteUInt8(minimumInstructionLength);
-            lineSectionWriter.Stream.WriteUInt8(MaximumOperationsPerInstruction);
+            lineSectionWriter.Stream.WriteByte(minimumInstructionLength);
+            lineSectionWriter.Stream.WriteByte(MaximumOperationsPerInstruction);
             // default_is_stmt
-            lineSectionWriter.Stream.WriteUInt8(1);
+            lineSectionWriter.Stream.WriteByte(1);
             // line_base
-            lineSectionWriter.Stream.WriteUInt8(unchecked((byte)LineBase));
+            lineSectionWriter.Stream.WriteByte(unchecked((byte)LineBase));
             // line_range
-            lineSectionWriter.Stream.WriteUInt8(LineRange);
+            lineSectionWriter.Stream.WriteByte(LineRange);
             // opcode_base
-            lineSectionWriter.Stream.WriteUInt8(OpCodeBase);
+            lineSectionWriter.Stream.WriteByte(OpCodeBase);
             // standard_opcode_lengths
             foreach (var opcodeLength in StandardOpCodeLengths)
             {
@@ -88,7 +88,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
             // Terminate directory list (empty string)
-            lineSectionWriter.Stream.WriteUInt8(0);
+            lineSectionWriter.Stream.WriteByte(0);
 
             // File names
             uint fileNameIndex = 1;
@@ -105,7 +105,7 @@ namespace ILCompiler.ObjectWriter
                 fileNameIndex++;
             }
             // Terminate file name list (empty string)
-            lineSectionWriter.Stream.WriteUInt8(0);
+            lineSectionWriter.Stream.WriteByte(0);
 
             // Update header size
             BinaryPrimitives.WriteInt32LittleEndian(headerSizeBuffer, (int)(lineSectionWriter.Stream.Position - headerStart));
