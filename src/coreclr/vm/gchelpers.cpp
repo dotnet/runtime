@@ -1062,7 +1062,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
             flags |= GC_ALLOC_FINALIZE;
 
         DWORD totalSize = pMT->GetBaseSize();
-        if (totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
+        if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= (DWORD)GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
             flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
