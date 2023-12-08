@@ -734,20 +734,22 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 #ifdef DEBUG
     const bool createDotFile = JitConfig.JitDumpFgDot() != 0;
     const bool includeEH     = (JitConfig.JitDumpFgEH() != 0) && !compIsForInlining();
+    const bool includeLoops  = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining();
     // The loop table is not well maintained after the optimization phases, but there is no single point at which
     // it is declared invalid. For now, refuse to add loop information starting at the rationalize phase, to
     // avoid asserts.
-    const bool includeLoops = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining() && (phase < PHASE_RATIONALIZE);
-    const bool constrained  = JitConfig.JitDumpFgConstrained() != 0;
-    const bool useBlockId   = JitConfig.JitDumpFgBlockID() != 0;
+    const bool includeOldLoops =
+        (JitConfig.JitDumpFgOldLoops() != 0) && !compIsForInlining() && (phase < PHASE_RATIONALIZE);
+    const bool constrained       = JitConfig.JitDumpFgConstrained() != 0;
+    const bool useBlockId        = JitConfig.JitDumpFgBlockID() != 0;
     const bool displayBlockFlags = JitConfig.JitDumpFgBlockFlags() != 0;
 #else  // !DEBUG
-    const bool createDotFile     = true;
-    const bool includeEH         = false;
-    const bool includeLoops      = false;
-    const bool constrained       = true;
-    const bool useBlockId        = false;
-    const bool displayBlockFlags = false;
+    const bool             createDotFile     = true;
+    const bool             includeEH         = false;
+    const bool             includeLoops      = false;
+    const bool             constrained       = true;
+    const bool             useBlockId        = false;
+    const bool             displayBlockFlags = false;
 #endif // !DEBUG
 
     FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? "dot" : "fgx");
@@ -1222,7 +1224,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             }
         }
 
-        if (includeEH && (compHndBBtabCount > 0))
+        if ((includeEH && (compHndBBtabCount > 0)) || (includeOldLoops && (optLoopCount > 0)))
         {
             // Generate something like:
             //    subgraph cluster_0 {
@@ -1726,6 +1728,46 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             DBEXEC(verbose, rgnGraph.Dump());
             INDEBUG(rgnGraph.Verify());
             rgnGraph.Output(fgxFile);
+
+            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpTop` to `lpBottom`.
+
+            if (includeOldLoops)
+            {
+#ifdef DEBUG
+                const bool displayLoopFlags = JitConfig.JitDumpFgLoopFlags() != 0;
+#else  // !DEBUG
+                const bool displayLoopFlags  = false;
+#endif // !DEBUG
+
+                char name[30];
+                for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
+                {
+                    const LoopDsc& loop = optLoopTable[loopNum];
+                    if (loop.lpIsRemoved())
+                    {
+                        continue;
+                    }
+
+                    sprintf_s(name, sizeof(name), FMT_LP, loopNum);
+
+                    if (displayLoopFlags)
+                    {
+                        // Display a very few, useful, loop flags
+                        strcat_s(name, sizeof(name), " [");
+                        if (loop.lpFlags & LoopFlags::LPFLG_ITER)
+                        {
+                            strcat_s(name, sizeof(name), "I");
+                        }
+                        if (loop.lpFlags & LoopFlags::LPFLG_HAS_PREHEAD)
+                        {
+                            strcat_s(name, sizeof(name), "P");
+                        }
+                        strcat_s(name, sizeof(name), "]");
+                    }
+
+                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpTop, loop.lpBottom);
+                }
+            }
         }
 
         if (includeLoops && (m_loops != nullptr))
@@ -3230,7 +3272,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt        = false;
+    copiedForGenericsCtxt                    = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
