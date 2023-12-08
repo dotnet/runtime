@@ -114,6 +114,7 @@
 
   <PropertyGroup>
     <PrepareInputsForWasmBuildDependsOn>
+      $(PrepareInputsForWasmBuildDependsOn);
       _SetupToolchain;
       _SetWasmBuildNativeDefaults;
       _SetWasmNativeStripDefault;
@@ -128,6 +129,7 @@
 
     <!-- FIXME: TMP: added _PrepareForWasmBuildNative as it used by emsdk cache as beforeTargets -->
     <_WasmBuildNativeCoreDependsOn>
+      $(_WasmBuildNativeCoreDependsOn);
       _PrepareForWasmBuildNative;
       PrepareForWasmBuildNative;
       _ScanAssembliesDecideLightweightMarshaler;
@@ -138,6 +140,7 @@
     </_WasmBuildNativeCoreDependsOn>
 
     <WasmLinkDotNetDependsOn>
+      $(WasmLinkDotNetDependsOn);
       _CheckToolchainIsExpectedVersion;
       _WasmSelectRuntimeComponentsForLinking;
       _WasmCompileAssemblyBitCodeFilesForAOT;

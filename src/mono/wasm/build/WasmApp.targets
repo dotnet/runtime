@@ -12,7 +12,6 @@
     <PrepareForWasmBuildNativeDependsOn>
       _CheckToolchainIsExpectedVersion;
       _PrepareForBrowserWasmBuildNative;
-      _GenerateManagedToNative;
       $(PrepareForWasmBuildNativeDependsOn)
     </PrepareForWasmBuildNativeDependsOn>
 
