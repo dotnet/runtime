@@ -528,6 +528,7 @@ private:
     union {
         unsigned    bbTargetOffs; // PC offset (temporary only)
         BasicBlock* bbTarget; // basic block
+        BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
         BBswtDesc*  bbSwtTarget;  // switch descriptor
         BBehfDesc*  bbEhfTarget;  // BBJ_EHFINALLYRET descriptor
     };
@@ -583,7 +584,7 @@ public:
         }
 
         // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
-        // For now, if a BBJ_COND's bbTarget is not taken, we expect to fall through,
+        // For now, if a BBJ_COND's bbTrueTarget is not taken, we expect to fall through,
         // so bbFalseTarget must be the next block.
         // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
         bbFalseTarget = next;
@@ -635,6 +636,9 @@ public:
 
     BasicBlock* GetTarget() const
     {
+        // BBJ_COND should use GetTrueTarget
+        assert(!KindIs(BBJ_COND));
+
         // If bbKind indicates this block has a jump, bbTarget cannot be null
         assert(!HasTarget() || HasInitializedTarget());
         return bbTarget;
@@ -642,10 +646,35 @@ public:
 
     void SetTarget(BasicBlock* target)
     {
+        // BBJ_COND should use SetTrueTarget
+        assert(!KindIs(BBJ_COND));
+
         // SetKindAndTarget() nulls target for non-jump kinds,
         // so don't use SetTarget() to null bbTarget without updating bbKind.
         bbTarget = target;
         assert(!HasTarget() || HasInitializedTarget());
+    }
+
+    BasicBlock* GetTrueTarget() const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(HasInitializedTarget());
+        return bbTrueTarget;
+    }
+
+    void SetTrueTarget(BasicBlock* target)
+    {
+        assert(KindIs(BBJ_COND));
+        assert(target != nullptr);
+        bbTrueTarget = target;        
+    }
+
+    bool TrueTargetIs(BasicBlock* target) const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(HasInitializedTarget());
+        assert(target != nullptr);
+        return (bbTrueTarget == target);
     }
 
     BasicBlock* GetFalseTarget() const
@@ -692,6 +721,8 @@ public:
 
     bool TargetIs(const BasicBlock* target) const
     {
+        // BBJ_COND should use TrueTargetIs
+        assert(!KindIs(BBJ_COND));
         assert(HasInitializedTarget());
         return (bbTarget == target);
     }

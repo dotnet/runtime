@@ -688,7 +688,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
     switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
-        case BBJ_COND:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
@@ -701,6 +700,16 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 fgAddRefPred(newTarget, block);
             }
             break;
+        
+        case BBJ_COND:
+
+            // Functionally equivalent to above
+            if (block->TrueTargetIs(oldTarget))
+            {
+                block->SetTrueTarget(newTarget);
+                fgRemoveRefPred(oldTarget, block);
+                fgAddRefPred(newTarget, block);
+            }
 
         case BBJ_SWITCH:
         {
@@ -5049,10 +5058,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     if (curr->KindIs(BBJ_COND))
     {
         fgReplacePred(succ, curr, newBlock);
-        if (curr->TargetIs(succ))
+        if (curr->TrueTargetIs(succ))
         {
             // Now 'curr' jumps to newBlock
-            curr->SetTarget(newBlock);
+            curr->SetTrueTarget(newBlock);
         }
         fgAddRefPred(newBlock, curr);
     }
@@ -5383,7 +5392,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
                 case BBJ_COND:
                     /* The links for the direct predecessor case have already been updated above */
-                    if (!predBlock->TargetIs(block))
+                    if (!predBlock->TrueTargetIs(block))
                     {
                         break;
                     }
@@ -5393,13 +5402,14 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     {
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbTarget.
                         noway_assert(predBlock->TargetIs(block));
-                        predBlock->SetTarget(succBlock);
+                        predBlock->SetTrueTarget(succBlock);
                         fgRemoveConditionalJump(predBlock);
                         break;
                     }
 
-                    /* Fall through for the jump case */
-                    FALLTHROUGH;
+                    noway_assert(predBlock->TrueTargetIs(block));
+                    predBlock->SetTrueTarget(succBlock);
+                    break;
 
                 case BBJ_CALLFINALLY:
                 case BBJ_ALWAYS:

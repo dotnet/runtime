@@ -2787,7 +2787,19 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         }
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
-        block->SetTarget(bDest->GetTarget());
+        switch (block->GetKind())
+        {
+            case BBJ_ALWAYS:
+                block->SetTarget(bDest->GetTarget());
+                break;
+
+            case BBJ_COND:
+                block->SetTrueTarget(bDest->GetTarget());
+                break;
+
+            default:
+                unreached();
+        }
 
         fgAddRefPred(bDest->GetTarget(), block, fgRemoveRefPred(bDest, block));
 
@@ -5760,7 +5772,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             if (bStart2 == nullptr)
             {
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetTarget(bStart);
+                bPrev->SetTrueTarget(bStart);
             }
             else
             {
@@ -5768,7 +5780,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 noway_assert(insertAfterBlk->NextIs(block));
 
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetTarget(block);
+                bPrev->SetTrueTarget(block);
             }
         }
 
@@ -6204,7 +6216,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         }
 
                         // Optimize the Conditional JUMP to go to the new target
-                        block->SetTarget(bNext->GetTarget());
+                        block->SetTrueTarget(bNext->GetTarget());
 
                         fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTarget(), bNext));
 

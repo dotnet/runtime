@@ -811,7 +811,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     if (!cmp2IsReversed)
     {
         // Re-direct firstBlock to jump to inRangeBb
-        m_b1->SetTarget(inRangeBb);
+        m_b1->SetTrueTarget(inRangeBb);
     }
 
     // Remove the 2nd condition block as we no longer need it
@@ -1274,7 +1274,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
             m_comp->fgRemoveRefPred(m_b1->GetTarget(), m_b1);
 
-            m_b1->SetTarget(m_b2->GetTarget());
+            m_b1->SetTrueTarget(m_b2->GetTarget());
 
             m_comp->fgAddRefPred(m_b2->GetTarget(), m_b1);
         }

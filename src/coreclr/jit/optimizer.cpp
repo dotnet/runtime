@@ -2263,7 +2263,7 @@ private:
         {
             // Need to reconnect the flow from `block` to `oldNext`.
 
-            if (block->KindIs(BBJ_COND) && block->TargetIs(newNext))
+            if (block->KindIs(BBJ_COND) && block->TrueTargetIs(newNext))
             {
                 // Reverse the jump condition
                 GenTree* test = block->lastNode();
@@ -2281,7 +2281,7 @@ private:
                 }
 
                 // Redirect the Conditional JUMP to go to `oldNext`
-                block->SetTarget(oldNext);
+                block->SetTrueTarget(oldNext);
             }
             else
             {
@@ -2713,7 +2713,6 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             FALLTHROUGH;
         case BBJ_LEAVE:
         case BBJ_CALLFINALLY:
-        case BBJ_COND:
             // All of these have a single jump destination to update.
             if (redirectMap->Lookup(blk->GetTarget(), &newJumpDest))
             {
@@ -2730,6 +2729,26 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             else if (addPreds)
             {
                 fgAddRefPred(blk->GetTarget(), blk);
+            }
+            break;
+
+        case BBJ_COND:
+            // Update jump taken when condition is true
+            if (redirectMap->Lookup(blk->GetTrueTarget(), &newJumpDest))
+            {
+                if (updatePreds)
+                {
+                    fgRemoveRefPred(blk->GetTrueTarget(), blk);
+                }
+                blk->SetTrueTarget(newJumpDest);
+                if (updatePreds || addPreds)
+                {
+                    fgAddRefPred(newJumpDest, blk);
+                }
+            }
+            else if (addPreds)
+            {
+                fgAddRefPred(blk->GetTrueTarget(), blk);
             }
             break;
 
@@ -3191,7 +3210,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // the right flow out of h.
     //
     assert(!h->KindIs(BBJ_COND) || h->FalseTargetIs(t));
-    assert(h->TargetIs(t) || !h->KindIs(BBJ_ALWAYS));
+    assert(!h->KindIs(BBJ_ALWAYS) || h->TargetIs(t));
     assert(h->KindIs(BBJ_ALWAYS, BBJ_COND));
 
     // If the bottom block is in the same "try" region, then we extend the EH
@@ -8279,9 +8298,9 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         switch (predBlock->GetKind())
         {
             case BBJ_COND:
-                if (predBlock->TargetIs(entry))
+                if (predBlock->TrueTargetIs(entry))
                 {
-                    predBlock->SetTarget(preHead);
+                    predBlock->SetTrueTarget(preHead);
                     noway_assert(!predBlock->FalseTargetIs(preHead));
                 }
                 else

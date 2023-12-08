@@ -2308,6 +2308,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // Now redirect the old preheader to jump to the first new condition that
     // was inserted by the above function.
+    assert(preheader->KindIs(BBJ_ALWAYS));
     preheader->SetTarget(preheader->Next());
     fgAddRefPred(preheader->Next(), preheader);
     preheader->SetFlags(BBF_NONE_QUIRK);

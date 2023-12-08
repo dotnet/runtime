@@ -291,8 +291,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     assert(fallbackBb->JumpsToNext());
     fallbackBb->SetFlags(BBF_NONE_QUIRK);
 
-    // Set nullcheckBb's real jump target
-    nullcheckBb->SetTarget(fallbackBb);
+    // Set nullcheckBb's true jump target
+    nullcheckBb->SetTrueTarget(fallbackBb);
 
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
@@ -780,11 +780,11 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
     BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
 
-    // Set maxThreadStaticBlocksCondBB's real jump target
-    maxThreadStaticBlocksCondBB->SetTarget(fallbackBb);
+    // Set maxThreadStaticBlocksCondBB's true jump target
+    maxThreadStaticBlocksCondBB->SetTrueTarget(fallbackBb);
 
-    // Set threadStaticBlockNullCondBB's real jump target
-    threadStaticBlockNullCondBB->SetTarget(fastPathBb);
+    // Set threadStaticBlockNullCondBB's true jump target
+    threadStaticBlockNullCondBB->SetTrueTarget(fastPathBb);
 
     //
     // Update preds in all new blocks
