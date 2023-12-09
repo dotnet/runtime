@@ -55,8 +55,7 @@ public class ErrorHandlingTests
     
     private static void SetErrorMessageForSwift(string message)
     {
-        char[] buffer = message.ToCharArray();
-        SetErrorMessage(buffer, buffer.Length);
+        SetErrorMessage(message, message.Length);
     }
 
     private unsafe static string GetErrorMessageFromSwift(SwiftError error)
