@@ -6080,6 +6080,7 @@ public:
     static void fgDumpTree(FILE* fgxFile, GenTree* const tree);
     FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type);
     bool fgDumpFlowGraph(Phases phase, PhasePosition pos);
+    void fgDumpFlowGraphLoops(FILE* file);
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
