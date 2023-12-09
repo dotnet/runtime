@@ -370,10 +370,8 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     if (decoder.IsInterruptible())
         return true;
 
-#if !defined(TARGET_ARM64)
     if (decoder.IsSafePoint())
         return true;
-#endif
 
     return false;
 #else
