@@ -182,8 +182,8 @@ namespace ILCompiler.ObjectWriter
                 stringTable.ReserveString(symbol.Name);
             }
 
-            uint stringTableOffset = fileOffset;
-            uint symbolTableOffset = stringTableOffset + ((stringTable.Size + 7u) & ~7u);
+            uint symbolTableOffset = fileOffset;
+            uint stringTableOffset = symbolTableOffset + ((uint)_symbolTable.Count * 16u);
             MachSymbolTableCommandHeader symbolTableHeader = new MachSymbolTableCommandHeader
             {
                 SymbolTableOffset = symbolTableOffset,
@@ -256,12 +256,12 @@ namespace ILCompiler.ObjectWriter
             }
 
             // Write string and symbol table
-            stringTable.Write(outputFileStream);
             outputFileStream.Position = symbolTableOffset;
             foreach (MachSymbol symbol in _symbolTable)
             {
                 symbol.Write(outputFileStream, stringTable);
             }
+            stringTable.Write(outputFileStream);
         }
 
         protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
