@@ -183,6 +183,7 @@ void Compiler::fgInit()
     fgCountInstrumentor          = nullptr;
     fgHistogramInstrumentor      = nullptr;
     fgPredListSortVector         = nullptr;
+    fgCanonicalizedFirstBB       = false;
 }
 
 //------------------------------------------------------------------------

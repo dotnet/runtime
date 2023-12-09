@@ -2458,7 +2458,10 @@ void Compiler::optFindNaturalLoops()
 
     LoopSearch search(this);
 
-    for (BasicBlock* head = fgFirstBB; !head->IsLast(); head = head->Next())
+    // TODO-Quirk: Remove
+    BasicBlock* first = fgCanonicalizedFirstBB ? fgFirstBB->Next() : fgFirstBB;
+
+    for (BasicBlock* head = first; !head->IsLast(); head = head->Next())
     {
         BasicBlock* top = head->Next();
 
@@ -7942,6 +7945,35 @@ void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
 
         newHead->copyEHRegion(top);
     }
+}
+
+//------------------------------------------------------------------------------
+// fgCanonicalizeFirstBB: Canonicalize the method entry for loop and dominator
+// purposes.
+//
+// Returns:
+//   Suitable phase status.
+//
+PhaseStatus Compiler::fgCanonicalizeFirstBB()
+{
+    if (fgFirstBB->hasTryIndex())
+    {
+        JITDUMP("Canonicalizing entry because it currently is the beginning of a try region\n");
+    }
+    else if (fgFirstBB->bbPreds != nullptr)
+    {
+        JITDUMP("Canonicalizing entry because it currently has predecessors\n");
+    }
+    else
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    assert(!fgFirstBBisScratch());
+    fgEnsureFirstBBisScratch();
+    // TODO-Quirk: Remove
+    fgCanonicalizedFirstBB = true;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------------

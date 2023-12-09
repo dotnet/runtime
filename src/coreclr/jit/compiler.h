@@ -5097,11 +5097,13 @@ public:
     bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
+    bool fgCanonicalizedFirstBB; // Quirk: did we end up canonicalizing first BB?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
+
 #ifdef DEBUG
     bool fgReachabilitySetsValid; // Are the bbReach sets valid?
     bool fgEnterBlksSetValid;     // Is the fgEnterBlks set valid?
@@ -5947,6 +5949,8 @@ public:
     void fgUnlinkStmt(BasicBlock* block, Statement* stmt);
 
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
+
+    PhaseStatus fgCanonicalizeFirstBB();
 
     bool fgCreateLoopPreHeader(unsigned lnum);
 
