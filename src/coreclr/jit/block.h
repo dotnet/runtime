@@ -750,7 +750,7 @@ public:
         return bbSwtTarget;
     }
 
-    void SetSwtKindAndTarget(BBswtDesc* swtTarget)
+    void SetSwitch(BBswtDesc* swtTarget)
     {
         assert(swtTarget != nullptr);
         bbKind      = BBJ_SWITCH;
