@@ -21,7 +21,7 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// Object writer using src/Native/ObjWriter
     /// </summary>
-    internal sealed class LlvmObjectWriter : IDisposable, ITypesDebugInfoWriter
+    internal sealed class LegacyObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
         private readonly ObjectWritingOptions _options;
 
@@ -908,7 +908,7 @@ namespace ILCompiler.ObjectWriter
 
         private IntPtr _nativeObjectWriter = IntPtr.Zero;
 
-        public LlvmObjectWriter(string objectFilePath, NodeFactory factory, ObjectWritingOptions options)
+        public LegacyObjectWriter(string objectFilePath, NodeFactory factory, ObjectWritingOptions options)
         {
             var triple = GetLLVMTripleFromTarget(factory.Target);
 
@@ -951,7 +951,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        ~LlvmObjectWriter()
+        ~LegacyObjectWriter()
         {
             Dispose(false);
         }
@@ -1006,7 +1006,7 @@ namespace ILCompiler.ObjectWriter
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
-            LlvmObjectWriter objectWriter = new LlvmObjectWriter(objectFilePath, factory, options);
+            LegacyObjectWriter objectWriter = new LegacyObjectWriter(objectFilePath, factory, options);
             bool succeeded = false;
 
             try

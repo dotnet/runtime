@@ -22,7 +22,7 @@
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
-        
+
     <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
@@ -602,7 +602,7 @@
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewNative.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" />
-    <Compile Include="Compiler\ObjectWriter\LlvmObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriterStream.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
