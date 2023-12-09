@@ -6,66 +6,80 @@ using System.IO;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Framework;
 
-namespace WasmAppBuilder {
-    public sealed class LogAdapter {
-        public bool HasLoggedErrors {
-            get => Helper?.HasLoggedErrors ?? _HasLoggedErrors;
-        }
-        private bool _HasLoggedErrors;
-        private TaskLoggingHelper? Helper;
-        private TextWriter? Output, ErrorOutput;
+#nullable enable
 
-        public LogAdapter (TaskLoggingHelper helper) {
-            Helper = helper;
-            Output = null;
-            ErrorOutput = null;
-        }
+namespace WasmAppBuilder;
 
-        public LogAdapter () {
-            Helper = null;
-            Output = Console.Out;
-            ErrorOutput = Console.Error;
-        }
+public sealed class LogAdapter
+{
+    public bool HasLoggedErrors
+    {
+        get => _helper?.HasLoggedErrors ?? _hasLoggedErrors;
+    }
 
-        private static string AutoFormat (string s, object[] o) {
-            if ((o?.Length ?? 0) > 0)
-                return string.Format(s!, o!);
-            else
-                return s;
-        }
+    private bool _hasLoggedErrors;
+    private TaskLoggingHelper? _helper;
+    private TextWriter? _output, _errorOutput;
 
-        public void LogMessage (string s, params object[] o) {
-            Helper?.LogMessage(s, o);
-            Output?.WriteLine(AutoFormat(s, o));
-        }
+    public LogAdapter(TaskLoggingHelper helper)
+    {
+        _helper = helper;
+        _output = null;
+        _errorOutput = null;
+    }
 
-        public void LogMessage (MessageImportance mi, string s, params object[] o) {
-            Helper?.LogMessage(mi, s, o);
-            Output?.WriteLine(AutoFormat(s, o));
-        }
+    public LogAdapter()
+    {
+        _helper = null;
+        _output = Console.Out;
+        _errorOutput = Console.Error;
+    }
 
-        public void Info (string code, string message, params object[] args) {
-            // We use MessageImportance.High to ensure this appears in build output, since
-            //  warnaserror makes warnings hard to use
-            Helper?.LogMessage(null, code, null, null, 0, 0, 0, 0, MessageImportance.High, message, args);
-            Output?.WriteLine($"info : {code}: {AutoFormat(message, args)}");
-        }
+    private static string AutoFormat(string s, object[] o)
+    {
+        if ((o?.Length ?? 0) > 0)
+            return string.Format(s!, o!);
+        else
+            return s;
+    }
 
-        public void Warning (string code, string message, params object[] args) {
-            Helper?.LogWarning(null, code, null, null, 0, 0, 0, 0, message, args);
-            ErrorOutput?.WriteLine($"warning : {code}: {AutoFormat(message, args)}");
-        }
+    public void LogMessage(string s, params object[] o)
+    {
+        _helper?.LogMessage(s, o);
+        _output?.WriteLine(AutoFormat(s, o));
+    }
 
-        public void Error (string message) {
-            Helper?.LogError(message);
-            ErrorOutput?.WriteLine($"error : {message}");
-            _HasLoggedErrors = true;
-        }
+    public void LogMessage(MessageImportance mi, string s, params object[] o)
+    {
+        _helper?.LogMessage(mi, s, o);
+        _output?.WriteLine(AutoFormat(s, o));
+    }
 
-        public void Error (string code, string message, params object[] args) {
-            Helper?.LogError(null, code, null, null, 0, 0, 0, 0, message, args);
-            ErrorOutput?.WriteLine($"error : {code}: {AutoFormat(message, args)}");
-            _HasLoggedErrors = true;
-        }
+    public void Info(string code, string message, params object[] args)
+    {
+        // We use MessageImportance.High to ensure this appears in build output, since
+        //  warnaserror makes warnings hard to use
+        _helper?.LogMessage(null, code, null, null, 0, 0, 0, 0, MessageImportance.High, message, args);
+        _output?.WriteLine($"info : {code}: {AutoFormat(message, args)}");
+    }
+
+    public void Warning(string code, string message, params object[] args)
+    {
+        _helper?.LogWarning(null, code, null, null, 0, 0, 0, 0, message, args);
+        _errorOutput?.WriteLine($"warning : {code}: {AutoFormat(message, args)}");
+    }
+
+    public void Error(string message)
+    {
+        _helper?.LogError(message);
+        _errorOutput?.WriteLine($"error : {message}");
+        _hasLoggedErrors = true;
+    }
+
+    public void Error(string code, string message, params object[] args)
+    {
+        _helper?.LogError(null, code, null, null, 0, 0, 0, 0, message, args);
+        _errorOutput?.WriteLine($"error : {code}: {AutoFormat(message, args)}");
+        _hasLoggedErrors = true;
     }
 }

@@ -419,7 +419,7 @@ internal sealed class PInvokeTableGenerator
         return value;
     }
 
-    private static readonly Dictionary<Type, bool> BlittableCache = new ();
+    private static readonly Dictionary<Type, bool> _blittableCache = new ();
 
     public static bool IsFunctionPointer(Type type)
     {
@@ -432,13 +432,13 @@ internal sealed class PInvokeTableGenerator
         // We maintain a cache of results in order to only produce log messages the first time
         //  we analyze a given type. Otherwise, each (successful) use of a user-defined type
         //  in a callback or pinvoke would generate duplicate messages.
-        lock (BlittableCache)
-            if (BlittableCache.TryGetValue(type, out bool blittable))
+        lock (_blittableCache)
+            if (_blittableCache.TryGetValue(type, out bool blittable))
                 return blittable;
 
         bool result = IsBlittableUncached(type, log);
-        lock (BlittableCache)
-            BlittableCache[type] = result;
+        lock (_blittableCache)
+            _blittableCache[type] = result;
         return result;
 
         static bool IsBlittableUncached (Type type, LogAdapter log) {
