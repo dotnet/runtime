@@ -929,19 +929,16 @@ regNumber genRegArgNext(regNumber argReg)
 
 /*****************************************************************************
  *
- *  The following table determines the order in which callee-saved registers
- *  are encoded in GC information at call sites (perhaps among other things).
- *  In any case, they establish a mapping from ordinal callee-save reg "indices" to
- *  register numbers and corresponding bitmaps.
+ *  The following table determines the order in which callee registers
+ *  are encoded in GC information at call sites.
  */
 
-const regNumber raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
-const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
+const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALL_GC_REGS_ORDER};
 
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
 {
     regMaskSmall res = 0;
-    for (int i = 0; i < CNT_CALLEE_SAVED; i++)
+    for (int i = 0; i < CNT_CALL_GC_REGS; i++)
     {
         if ((calleeSaveMask & ((regMaskTP)1 << i)) != 0)
         {
