@@ -769,7 +769,7 @@ public:
         bbEhfTarget = ehfTarget;
     }
 
-    void SetEhfKindAndTarget(BBehfDesc* ehfTarget)
+    void SetEhf(BBehfDesc* ehfTarget)
     {
         assert(ehfTarget != nullptr);
         bbKind      = BBJ_EHFINALLYRET;

@@ -2843,7 +2843,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetSwtTarget()));
             break;
         case BBJ_EHFINALLYRET:
-            to->SetEhfKindAndTarget(new (this, CMK_BasicBlock) BBehfDesc(this, from->GetEhfTarget()));
+            to->SetEhf(new (this, CMK_BasicBlock) BBehfDesc(this, from->GetEhfTarget()));
             break;
         case BBJ_COND:
             to->SetCond(from->GetTrueTarget());
