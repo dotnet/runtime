@@ -211,7 +211,8 @@ internal sealed class PInvokeTableGenerator
         _ => PickCTypeNameForUnknownType(t)
     };
 
-    private static string PickCTypeNameForUnknownType (Type t) {
+    private static string PickCTypeNameForUnknownType(Type t)
+    {
         // Pass objects by-reference (their address by-value)
         if (!t.IsValueType)
             return "void *";
@@ -278,15 +279,14 @@ internal sealed class PInvokeTableGenerator
         return
             $$"""
             {{(pinvoke.WasmLinkage ? $"__attribute__((import_module(\"{EscapeLiteral(pinvoke.Module)}\"),import_name(\"{EscapeLiteral(pinvoke.EntryPoint)}\")))" : "")}}
-            {{(pinvoke.WasmLinkage ? "extern " : "")}}{{MapType(method.ReturnType)}} {{CEntryPoint(pinvoke)}} ({{
-                string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))
-            }});
+            {{(pinvoke.WasmLinkage ? "extern " : "")}}{{MapType(method.ReturnType)}} {{CEntryPoint(pinvoke)}} ({{string.Join(", ", method.GetParameters().Select(p => MapType(p.ParameterType)))}});
             """;
     }
 
     private string CEntryPoint(PInvokeCallback export)
     {
-        if (export.EntryPoint is not null) {
+        if (export.EntryPoint is not null)
+        {
             return _fixupSymbolName(export.EntryPoint);
         }
 
@@ -419,7 +419,7 @@ internal sealed class PInvokeTableGenerator
         return value;
     }
 
-    private static readonly Dictionary<Type, bool> _blittableCache = new ();
+    private static readonly Dictionary<Type, bool> _blittableCache = new();
 
     public static bool IsFunctionPointer(Type type)
     {
@@ -441,7 +441,8 @@ internal sealed class PInvokeTableGenerator
             _blittableCache[type] = result;
         return result;
 
-        static bool IsBlittableUncached (Type type, LogAdapter log) {
+        static bool IsBlittableUncached(Type type, LogAdapter log)
+        {
             if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
                 return true;
 
@@ -455,27 +456,32 @@ internal sealed class PInvokeTableGenerator
             if (type.Name == "__NonBlittableTypeForAutomatedTests__")
                 return false;
 
-            if (!type.IsValueType) {
+            if (!type.IsValueType)
+            {
                 log.Info("WASM0060", "Type {0} is not blittable: Not a ValueType", type);
                 return false;
             }
 
             var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-            if (!type.IsLayoutSequential && (fields.Length > 1)) {
+            if (!type.IsLayoutSequential && (fields.Length > 1))
+            {
                 log.Info("WASM0061", "Type {0} is not blittable: LayoutKind is not Sequential", type);
                 return false;
             }
 
-            foreach (var ft in fields) {
-                if (!IsBlittable(ft.FieldType, log)) {
+            foreach (var ft in fields)
+            {
+                if (!IsBlittable(ft.FieldType, log))
+                {
                     log.Info("WASM0062", "Type {0} is not blittable: Field {1} is not blittable", type, ft.Name);
                     return false;
                 }
                 // HACK: Skip literals since they're complicated
                 // Ideally we would block initonly fields too since the callee could mutate them, but
                 //  we rely on being able to pass types like System.Guid which are readonly
-                if (ft.IsLiteral) {
+                if (ft.IsLiteral)
+                {
                     log.Info("WASM0063", "Type {0} is not blittable: Field {1} is literal", type, ft.Name);
                     return false;
                 }
@@ -494,7 +500,7 @@ internal sealed class PInvokeTableGenerator
             {
                 for (int i = 0; i < attributeNames.Length; ++i)
                 {
-                    if (cattr.AttributeType.FullName == attributeNames [i] ||
+                    if (cattr.AttributeType.FullName == attributeNames[i] ||
                         cattr.AttributeType.Name == attributeNames[i])
                     {
                         return true;
