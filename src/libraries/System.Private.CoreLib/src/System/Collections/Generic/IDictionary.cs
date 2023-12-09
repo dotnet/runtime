@@ -54,6 +54,6 @@ namespace System.Collections.Generic
 
         new bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
 
-        bool IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, out TValue value) => TryGetValue(key, out value);
+        bool IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => TryGetValue(key, out value);
     }
 }
