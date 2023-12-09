@@ -1,4 +1,20 @@
 <Project>
+  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <_TestCategoryFilter Condition="'$(TestUsingWorkloads)' == 'true'">&amp;Category!=no-workload</_TestCategoryFilter>
+    <_TestCategoryFilter Condition="'$(TestUsingWorkloads)' != 'true'">&amp;Category=no-workload</_TestCategoryFilter>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;TestCategoryFilter=$(_TestCategoryFilter)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;TestCategoryFilter=$(_TestCategoryFilter)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+  </ItemGroup>
+
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
     <PropertyGroup>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>

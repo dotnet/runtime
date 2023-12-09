@@ -142,13 +142,13 @@
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
-    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+    <_TestCategoryFilter Condition="'$(TestUsingWorkloads)' == 'true'">&amp;Category!=no-workload</_TestCategoryFilter>
+    <_TestCategoryFilter Condition="'$(TestUsingWorkloads)' != 'true'">&amp;Category=no-workload</_TestCategoryFilter>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;TestCategoryFilter=$(_TestCategoryFilter)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;TestCategoryFilter=$(_TestCategoryFilter)&quot;" />
 
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
@@ -247,9 +247,9 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <!-- 
-          These WASM tests are problematic and slow right now, in this section it's about nodejs and chrome. 
-          Below is same section for V8. There is also Xharness timeout override in the test project. 
+        <!--
+          These WASM tests are problematic and slow right now, in this section it's about nodejs and chrome.
+          Below is same section for V8. There is also Xharness timeout override in the test project.
         -->
         <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>

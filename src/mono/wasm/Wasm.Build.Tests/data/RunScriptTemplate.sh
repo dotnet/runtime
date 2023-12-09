@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-# create dummy console app to workaround https://github.com/dotnet/runtime/issues/80619
-(CONSOLE_TEMP_DIR="$(mktemp -d)"; "$DOTNET_ROOT/dotnet" new console -o "$CONSOLE_TEMP_DIR"; rm -rf "$CONSOLE_TEMP_DIR") || true
+RUNNING_ON_CI=$HELIX_WORKITEM_UPLOAD_ROOT
 
-set
+# create dummy console app to workaround https://github.com/dotnet/runtime/issues/80619
+test -z "$DOTNET_ROOT" || (CONSOLE_TEMP_DIR="$(mktemp -d)"; "$DOTNET_ROOT/dotnet" new console -o "$CONSOLE_TEMP_DIR"; rm -rf "$CONSOLE_TEMP_DIR") || true
+
+# dump env only on ci
+test -z $"HELIX_WORKITEM_UPLOAD_ROOT" && set
 echo "------------------------ start -------------------"
 
 [[SetCommands]]
@@ -55,8 +58,8 @@ export TEST_LOG_PATH=${XHARNESS_OUT}/logs
 
 pushd $EXECUTION_DIR
 
-# ========================= BEGIN Test Execution ============================= 
-echo ----- start $(date) ===============  To repro directly: ===================================================== 
+# ========================= BEGIN Test Execution =============================
+echo ----- start $(date) ===============  To repro directly: =====================================================
 echo pushd $EXECUTION_DIR
 # RunCommands defined in eng\testing\tests.wasm.targets
 [[RunCommandsEcho]]

@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RuntimeIdentifierForWorkloadTesting>wasi-wasm</RuntimeIdentifierForWorkloadTesting>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
     <IsTestProject>true</IsTestProject>
-    <BundleXunitRunner>true</BundleXunitRunner>
-    <TestFramework>xunit</TestFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
@@ -66,8 +65,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+      <_TestCategoryFilter Condition="'$(TestUsingWorkloads)' == 'true'">&amp;Category!=no-workload</_TestCategoryFilter>
+      <_TestCategoryFilter Condition="'$(TestUsingWorkloads)' != 'true'">&amp;Category=no-workload</_TestCategoryFilter>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -77,8 +76,8 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;TestCategoryFilter=$(_TestCategoryFilter)&quot;" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;TestCategoryFilter=$(_TestCategoryFilter)&quot;" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
@@ -100,27 +99,33 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
+
+      <TestFilter Condition="'$(XUnitMethodName)' != ''" Include="DisplayName=$(XUnitMethodName)" />
+      <TestFilter Condition="'$(XUnitClassName)' != ''" Include="FullyQualifiedName~$(XUnitClassName)" />
+      <TestFilter Include="Category!=IgnoreForCI" />
+      <!-- this allows use of test attributes from dotnet.xunitextensions -->
+      <TestFilter Include="Category!=failing" />
+      <TestFilter Include="$(ExtraTestFilter)" />
     </ItemGroup>
 
     <PropertyGroup>
-      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
-      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet test $(AssemblyName).dll</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;%24XHARNESS_OUT&quot;</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;%XHARNESS_OUT%&quot;</RunScriptCommand>
+
+      <RunScriptCommand>$(RunScriptCommand) --nologo</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) &quot;-l:trx%3BLogFileName=testResults.trx&quot;</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24HELIX_XUNIT_ARGS</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) %HELIX_XUNIT_ARGS%</RunScriptCommand>
 
-      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) -parallel none</RunScriptCommand>
-      <RunScriptCommand>$(RunScriptCommand) -verbose</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) --logger "console;verbosity=normal"</RunScriptCommand>
 
-      <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
-      <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
-
-      <!-- this allows use of test attributes from dotnet.xunitextensions -->
-      <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>
-
-      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg%</RunScriptCommand>
-      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) --filter &quot;@(TestFilter, '&amp;')%24TestCategoryFilter&quot;</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) --filter &quot;@(TestFilter, '&amp;')%TestCategoryFilter%&quot;</RunScriptCommand>
     </PropertyGroup>
   </Target>
 </Project>

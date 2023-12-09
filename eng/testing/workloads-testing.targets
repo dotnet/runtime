@@ -159,7 +159,7 @@
       <_SdkWithWorkloadToInstall Include="@(WorkloadCombinationsToInstall)" />
       <_SdkWithWorkloadToInstall InstallPath="$(_SdkForWorkloadTestingBasePath)\dotnet-%(Identity)" />
       <!--<_SdkWithWorkloadToInstall StampPath="%(InstallPath)\version-%(Version).stamp" Condition="'%(Version)' != ''" />-->
-      <_SdkWithWorkloadToInstall StampPath="%(InstallPath)\.workload-installed.$(RuntimeIdentifier).stamp" />
+      <_SdkWithWorkloadToInstall StampPath="%(InstallPath)\.workload-installed.$(RuntimeIdentifierForWorkloadTesting).stamp" />
     </ItemGroup>
 
     <Error Text="Cannot find any nupkg files in $(LibrariesShippingPackagesDir), needed for workloads" Condition="@(AvailableNuGetsInArtifacts->Count()) == 0" />

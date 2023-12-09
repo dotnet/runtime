@@ -105,7 +105,7 @@ run-tests-%:
 	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-build-tests:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog /p:Configuration=$(CONFIG) /p:RuntimeIdentifierForWorkloadTesting=browser-wasm $(MSBUILD_ARGS)
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
@@ -154,9 +154,9 @@ submit-tests-helix:
 run-debugger-tests:
 	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
+	$(DOTNET) test $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite /p:TasksConfiguration=$(CONFIG) $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
 	else \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing" $(TEST_ARGS); \
+	$(DOTNET) test $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite /p:TasksConfiguration=$(CONFIG) $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing" $(TEST_ARGS); \
 	fi
 
 build-dbg-proxy:
@@ -165,6 +165,9 @@ build-dbg-testsuite:
 	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
 build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+update-wbt-sdk:
+	$(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:UpdateWorkload /bl:$(LOG_PATH)/Wasm.Build.Tests.UpdateWorkload.binlog $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 patch-deterministic:
 	cd emsdk/upstream/emscripten/ && patch -p1 < ../../../runtime/deterministic.diff

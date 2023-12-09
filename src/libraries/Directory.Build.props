@@ -88,17 +88,19 @@
   <!-- To enable the interpreter for mono desktop, we need to pass an env switch -->
   <PropertyGroup>
     <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
+
+    <RuntimeIdentifierForWorkloadTesting Condition="'$(RuntimeIdentifierForWorkloadTesting)' == '' and '$(TargetOS)' == 'browser'">browser-wasm</RuntimeIdentifierForWorkloadTesting>
+    <RuntimeIdentifierForWorkloadTesting Condition="'$(RuntimeIdentifierForWorkloadTesting)' == '' and '$(TargetOS)' == 'wasi'">wasi-wasm</RuntimeIdentifierForWorkloadTesting>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true' or '$(RuntimeIdentifierForWorkloadTesting)' == 'browser-wasm' or '$(RuntimeIdentifierForWorkloadTesting)' == 'wasi-wasm'">
     <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-none\</SdkWithNoWorkloadForTestingPath>
     <SdkWithNoWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithNoWorkloadForTestingPath)))</SdkWithNoWorkloadForTestingPath>
 
     <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
     <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
 
-    <SdkWithWorkloadForTestingPath Condition="'$(TargetOS)' == 'browser'">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>
-    <SdkWithWorkloadForTestingPath Condition="'$(TargetOS)' == 'wasi'">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>
+    <SdkWithWorkloadForTestingPath Condition="'$(RuntimeIdentifierForWorkloadTesting)' == 'browser-wasm' or '$(RuntimeIdentifierForWorkloadTesting)' == 'wasi-wasm'">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>
     <SdkWithWorkloadForTestingPath Condition="'$(SdkWithWorkloadForTestingPath)' != ''">$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 
     <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
