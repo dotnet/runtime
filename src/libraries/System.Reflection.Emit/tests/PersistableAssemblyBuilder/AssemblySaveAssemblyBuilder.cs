@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class AssemblySaveAssemblyBuilder
     {
         [Fact]

@@ -669,12 +669,14 @@ namespace System.Reflection.Emit
                 CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             ThrowIfNotCreated();
-            ArgumentNullException.ThrowIfNull(types);
             ArgumentNullException.ThrowIfNull(name);
 
-            for (int i = 0; i < types.Length; i++)
+            if (types != null)
             {
-                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
+                for (int i = 0; i < types.Length; i++)
+                {
+                    ArgumentNullException.ThrowIfNull(types[i], nameof(types));
+                }
             }
 
             foreach (MethodBuilderImpl method in _methodDefinitions)

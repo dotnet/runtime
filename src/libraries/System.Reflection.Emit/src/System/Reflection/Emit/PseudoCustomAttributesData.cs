@@ -183,9 +183,13 @@ namespace System.Reflection.Emit
                     {
                         writer.WriteCompressedInteger((int)safeArrayElementSubtype);
 
-                        if (_marshalTypeName is string)
+                        if (_marshalTypeName != null)
                         {
                             writer.WriteSerializedString(_marshalTypeName);
+                        }
+                        else
+                        {
+                            writer.WriteByte(0);
                         }
                     }
                     break;
