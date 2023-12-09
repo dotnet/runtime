@@ -740,7 +740,7 @@ public:
         return bbSwtTarget;
     }
 
-    void SetKindAndTarget(BBswtDesc* swtTarget)
+    void SetSwtKindAndTarget(BBswtDesc* swtTarget)
     {
         assert(swtTarget != nullptr);
         bbKind      = BBJ_SWITCH;
@@ -759,11 +759,10 @@ public:
         bbEhfTarget = ehfTarget;
     }
 
-    void SetKindAndTarget(BBKinds kind, BBehfDesc* ehfTarget)
+    void SetEhfKindAndTarget(BBehfDesc* ehfTarget)
     {
-        assert(kind == BBJ_EHFINALLYRET);
         assert(ehfTarget != nullptr);
-        bbKind      = kind;
+        bbKind      = BBJ_EHFINALLYRET;
         bbEhfTarget = ehfTarget;
     }
 
