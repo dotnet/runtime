@@ -153,6 +153,34 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task CopyToAsyncShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
+                    Assert.Equal(0, copyToDestinationMemoryStream.Position);
+                }
+            }
+        }
+
+        [Fact]
+        public void CopyToShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    streamContent.CopyTo(copyToDestinationMemoryStream, null, default);
+                    Assert.Equal(0, copyToDestinationMemoryStream.Position);
+                }
+            }
+        }
+
+        [Fact]
         public void TryComputeLength_RetrieveContentLength_ComputeLengthShouldBeCalled()
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
@@ -313,6 +341,50 @@ namespace System.Net.Http.Functional.Tests
             Assert.Same(stream, stream2);
             Assert.Equal(0, stream.Position);
             Assert.Equal((byte)'d', stream.ReadByte());
+        }
+
+        [Fact]
+        public async Task ReadAsStreamShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
+                    using (StreamReader streamReader = new StreamReader(copyToDestinationMemoryStream))
+                    {
+                        streamReader.ReadToEnd();
+
+                        using (Stream resultStream = streamContent.ReadAsStream())
+                        {
+                            Assert.Equal(0, resultStream.Position);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ReadAsStreamAsyncShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
+                    using (StreamReader streamReader = new StreamReader(copyToDestinationMemoryStream))
+                    {
+                        streamReader.ReadToEnd();
+
+                        using (Stream resultStream = await streamContent.ReadAsStreamAsync())
+                        {
+                            Assert.Equal(0, resultStream.Position);
+                        }
+                    }
+                }
+            }
         }
 
         [Fact]
