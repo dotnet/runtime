@@ -156,10 +156,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private class SpecificName
 		{
 			[Kept]
-			public static int field;
-
-			public SimpleType()
+			public SpecificName()
 			{ }
+
+			[Kept]
+			public static int field;
 
 			public int otherMember() { }
 		}
@@ -167,6 +168,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class SimpleType
 		{
+			[Kept]
+			public SimpleType ()
+			{ }
+
 			[Kept]
 			public static int field;
 
@@ -177,10 +182,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				set { field = value; }
 			}
-
-			[Kept]
-			public SimpleType ()
-			{ }
 
 			[Kept]
 			public void someMethod () { }
