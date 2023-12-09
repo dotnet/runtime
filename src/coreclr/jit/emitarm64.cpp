@@ -1226,7 +1226,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             elemsize = id->idOpSize();
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+#ifdef DEBUG
+            if (id->idInsFmt() == IF_SVE_IH_3A_A)
+            {
+                assert(id->idInsOpt() == INS_OPTS_SCALABLE_Q);
+            }
+            else
+            {
+                assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            }
+#endif // DEBUG
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
@@ -5342,6 +5351,9 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
         case INS_OPTS_SCALABLE_D_WITH_SCALAR:
             return EA_8BYTE;
 
+        case INS_OPTS_SCALABLE_Q:
+            return EA_16BYTE;
+
         default:
             assert(!"Invalid insOpt for vector register");
             return EA_UNKNOWN;
@@ -9414,9 +9426,15 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
             assert(isValidSimm4(imm));
-            fmt = IF_SVE_IH_3A;
+            if (opt == INS_OPTS_SCALABLE_Q)
+            {
+                fmt = IF_SVE_IH_3A_A;
+            }
+            else
+            {
+                fmt = IF_SVE_IH_3A;
+            }
             break;
-
 
         case INS_sve_ldnf1sw:
         case INS_sve_ldnf1d:
@@ -15436,6 +15454,9 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_SCALABLE_D_WITH_SCALAR:
             str = "d";
             break;
+        case INS_OPTS_SCALABLE_Q:
+            str = "q";
+            break;
 
         default:
             assert(!"Invalid insOpt for vector register");
@@ -17179,7 +17200,7 @@ void emitter::emitDispInsHelp(
             emitDispSveRegList(id->idReg1(), 1, id->idInsOpt(), true); // ttttt
             emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, true);  // ggg
             printf("[");
-            emitDispReg(id->idReg3(), optGetSveElemsize(id->idInsOpt()), imm != 0); // nnnnn
+            emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
             if (imm != 0)
             {
                 emitDispImm(emitGetInsSC(id), true); // iiii
@@ -19677,6 +19698,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_IH_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
                            // immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_9C;
+            break;
+
+        case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_9C;
             break;

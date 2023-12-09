@@ -894,7 +894,7 @@ inline static bool insOptsScalableSimple(insOpts opt)
 {
     // `opt` is any of the standard scalable types.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
-            (opt == INS_OPTS_SCALABLE_D));
+            (opt == INS_OPTS_SCALABLE_D) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
 inline static bool insOptsScalableWords(insOpts opt)
