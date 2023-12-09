@@ -2340,7 +2340,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_SWITCH:
-            block->SetSwitch(bNext->GetSwtTarget());
+            block->SetSwitch(bNext->GetSwitchTarget());
             // We are moving the switch jump from bNext to block.  Examine the jump targets
             // of the BBJ_SWITCH at bNext and replace the predecessor to 'bNext' with ones to 'block'
             fgChangeSwitchBlock(bNext, block);
@@ -3057,8 +3057,8 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_SWITCH));
 
-    unsigned     jmpCnt = block->GetSwtTarget()->bbsCount;
-    BasicBlock** jmpTab = block->GetSwtTarget()->bbsDstTab;
+    unsigned     jmpCnt = block->GetSwitchTarget()->bbsCount;
+    BasicBlock** jmpTab = block->GetSwitchTarget()->bbsDstTab;
     BasicBlock*  bNewDest; // the new jump target for the current switch case
     BasicBlock*  bDest;
     bool         returnvalue = false;
@@ -3160,8 +3160,8 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     // At this point all of the case jump targets have been updated such
     // that none of them go to block that is an empty unconditional block
     //
-    jmpTab = block->GetSwtTarget()->bbsDstTab;
-    jmpCnt = block->GetSwtTarget()->bbsCount;
+    jmpTab = block->GetSwitchTarget()->bbsDstTab;
+    jmpCnt = block->GetSwitchTarget()->bbsCount;
 
     // Now check for two trivial switch jumps.
     //
@@ -3246,7 +3246,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         }
 
         // Change the switch jump into a BBJ_ALWAYS
-        block->SetKindAndTarget(BBJ_ALWAYS, block->GetSwtTarget()->bbsDstTab[0]);
+        block->SetKindAndTarget(BBJ_ALWAYS, block->GetSwitchTarget()->bbsDstTab[0]);
         if (jmpCnt > 1)
         {
             for (unsigned i = 1; i < jmpCnt; ++i)
@@ -3257,7 +3257,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         return true;
     }
-    else if ((block->GetSwtTarget()->bbsCount == 2) && block->NextIs(block->GetSwtTarget()->bbsDstTab[1]))
+    else if ((block->GetSwitchTarget()->bbsCount == 2) && block->NextIs(block->GetSwitchTarget()->bbsDstTab[1]))
     {
         /* Use a BBJ_COND(switchVal==0) for a switch with only one
            significant clause besides the default clause, if the
@@ -3310,7 +3310,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgSetStmtSeq(switchStmt);
         }
 
-        block->SetCond(block->GetSwtTarget()->bbsDstTab[0]);
+        block->SetCond(block->GetSwitchTarget()->bbsDstTab[0]);
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -4234,7 +4234,7 @@ bool Compiler::fgOptimizeSwitchJumps()
             continue;
         }
 
-        if (!block->GetSwtTarget()->bbsHasDominantCase)
+        if (!block->GetSwitchTarget()->bbsHasDominantCase)
         {
             continue;
         }
@@ -4243,14 +4243,14 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         assert(block->hasProfileWeight());
 
-        const unsigned dominantCase = block->GetSwtTarget()->bbsDominantCase;
+        const unsigned dominantCase = block->GetSwitchTarget()->bbsDominantCase;
 
         JITDUMP(FMT_BB " has switch with dominant case %u, considering peeling\n", block->bbNum, dominantCase);
 
         // The dominant case should not be the default case, as we already peel that one.
         //
-        assert(dominantCase < (block->GetSwtTarget()->bbsCount - 1));
-        BasicBlock* const dominantTarget = block->GetSwtTarget()->bbsDstTab[dominantCase];
+        assert(dominantCase < (block->GetSwitchTarget()->bbsCount - 1));
+        BasicBlock* const dominantTarget = block->GetSwitchTarget()->bbsDstTab[dominantCase];
         Statement* const  switchStmt     = block->lastStmt();
         GenTree* const    switchTree     = switchStmt->GetRootNode();
         assert(switchTree->OperIs(GT_SWITCH));
@@ -4301,7 +4301,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update profile data
         //
-        const weight_t fraction              = newBlock->GetSwtTarget()->bbsDominantFraction;
+        const weight_t fraction              = newBlock->GetSwitchTarget()->bbsDominantFraction;
         const weight_t blockToTargetWeight   = block->bbWeight * fraction;
         const weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
 
@@ -4351,7 +4351,7 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         // But it no longer has a dominant case.
         //
-        newBlock->GetSwtTarget()->bbsHasDominantCase = false;
+        newBlock->GetSwitchTarget()->bbsHasDominantCase = false;
 
         if (fgNodeThreading == NodeThreading::AllTrees)
         {

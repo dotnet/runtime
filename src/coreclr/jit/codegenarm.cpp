@@ -655,8 +655,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->GetSwtTarget()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwtTarget()->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetSwitchTarget()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTarget()->bbsDstTab;
     unsigned     jmpTabBase;
 
     jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, false);

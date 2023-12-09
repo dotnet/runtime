@@ -3994,8 +3994,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->GetSwtTarget()->bbsCount;
-    BasicBlock** const jumpTab      = block->GetSwtTarget()->bbsDstTab;
+    const unsigned     caseCount    = block->GetSwitchTarget()->bbsCount;
+    BasicBlock** const jumpTab      = block->GetSwitchTarget()->bbsDstTab;
     unsigned           dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
@@ -4021,7 +4021,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->GetSwtTarget()->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetSwitchTarget()->bbsHasDefault && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4035,9 +4035,9 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetSwtTarget()->bbsHasDominantCase  = true;
-    block->GetSwtTarget()->bbsDominantCase     = dominantCase;
-    block->GetSwtTarget()->bbsDominantFraction = fraction;
+    block->GetSwitchTarget()->bbsHasDominantCase  = true;
+    block->GetSwitchTarget()->bbsDominantCase     = dominantCase;
+    block->GetSwitchTarget()->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
