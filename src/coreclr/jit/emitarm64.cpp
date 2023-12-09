@@ -14640,6 +14640,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
             code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
+            dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
