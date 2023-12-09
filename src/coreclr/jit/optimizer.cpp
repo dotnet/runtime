@@ -2846,7 +2846,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             to->SetEhfKindAndTarget(new (this, CMK_BasicBlock) BBehfDesc(this, from->GetEhfTarget()));
             break;
         case BBJ_COND:
-            to->SetCondKindAndTarget(from->GetTrueTarget());
+            to->SetCond(from->GetTrueTarget());
             break;
         default:
             to->SetKindAndTarget(from->GetKind(), from->GetTarget());

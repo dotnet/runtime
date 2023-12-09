@@ -704,7 +704,7 @@ public:
         return (bbFalseTarget == target);
     }
 
-    void SetCondKindAndTarget(BasicBlock* target)
+    void SetCond(BasicBlock* target)
     {
         assert(target != nullptr);
         bbKind       = BBJ_COND;
@@ -713,7 +713,7 @@ public:
 
     void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
     {
-        // To set BBJ_COND, use SetCondKindAndTarget
+        // To set BBJ_COND, use SetCond
         assert(kind != BBJ_COND);
 
         bbKind   = kind;
