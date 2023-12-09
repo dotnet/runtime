@@ -1759,7 +1759,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     GenTree* const jumpIfEntryStateZero = gtNewOperNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
-                    fromBlock->SetKindAndTarget(BBJ_COND, toBlock);
+                    fromBlock->SetCondKindAndTarget(toBlock);
                     fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
 
@@ -2315,7 +2315,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_COND:
-            block->SetKindAndTarget(BBJ_COND, bNext->GetTrueTarget());
+            block->SetCondKindAndTarget(bNext->GetTrueTarget());
 
             /* Update the predecessor list for 'bNext->bbTarget' */
             fgReplacePred(bNext->GetTrueTarget(), bNext, block);
@@ -3310,7 +3310,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgSetStmtSeq(switchStmt);
         }
 
-        block->SetKindAndTarget(BBJ_COND, block->GetSwtTarget()->bbsDstTab[0]);
+        block->SetCondKindAndTarget(block->GetSwtTarget()->bbsDstTab[0]);
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -3720,7 +3720,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     // Fix up block's flow
     //
-    block->SetKindAndTarget(BBJ_COND, target->GetTrueTarget());
+    block->SetCondKindAndTarget(target->GetTrueTarget());
     fgAddRefPred(block->GetTrueTarget(), block);
     fgRemoveRefPred(target, block);
 
@@ -4132,7 +4132,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
-    bJump->SetKindAndTarget(BBJ_COND, bDestNormalTarget);
+    bJump->SetCondKindAndTarget(bDestNormalTarget);
     bJump->SetFalseTarget(bJump->Next());
 
     /* Update bbRefs and bbPreds */
@@ -4293,7 +4293,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Wire up the new control flow.
         //
-        block->SetKindAndTarget(BBJ_COND, dominantTarget);
+        block->SetCondKindAndTarget(dominantTarget);
         FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
         FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
         assert(blockToNewBlockEdge->getSourceBlock() == block);

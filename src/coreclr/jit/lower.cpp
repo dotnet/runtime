@@ -965,7 +965,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetKindAndTarget(BBJ_COND, jumpTab[jumpCnt - 1]);
+    originalSwitchBB->SetCondKindAndTarget(jumpTab[jumpCnt - 1]);
 
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
@@ -1100,7 +1100,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetKindAndTarget(BBJ_COND, jumpTab[i]);
+                currentBlock->SetCondKindAndTarget(jumpTab[i]);
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1312,7 +1312,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
         bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetKindAndTarget(BBJ_COND, bbCase1);
+        bbSwitch->SetCondKindAndTarget(bbCase1);
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
         comp->fgAddRefPred(bbCase1, bbSwitch);
@@ -1323,7 +1323,7 @@ bool Lowering::TryLowerSwitchToBitTest(
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
         bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetKindAndTarget(BBJ_COND, bbCase0);
+        bbSwitch->SetCondKindAndTarget(bbCase0);
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
         comp->fgAddRefPred(bbCase1, bbSwitch);

@@ -2939,6 +2939,25 @@ void Compiler::fgLinkBasicBlocks()
         switch (curBBdesc->GetKind())
         {
             case BBJ_COND:
+            {
+                BasicBlock* const trueTarget = fgLookupBB(curBBdesc->GetTargetOffs());
+                curBBdesc->SetTrueTarget(trueTarget);
+                curBBdesc->SetFalseTarget(curBBdesc->Next());
+                fgAddRefPred<initializingPreds>(trueTarget, curBBdesc, oldEdge);
+                fgAddRefPred<initializingPreds>(curBBdesc->GetFalseTarget(), curBBdesc, oldEdge);
+
+                if (curBBdesc->GetTrueTarget()->bbNum <= curBBdesc->bbNum)
+                {
+                    fgMarkBackwardJump(curBBdesc->GetTrueTarget(), curBBdesc);
+                }
+
+                if (curBBdesc->IsLast())
+                {
+                    BADCODE("Fall thru the end of a method");
+                }
+
+                break;
+            }
             case BBJ_ALWAYS:
             case BBJ_LEAVE:
             {
@@ -2953,32 +2972,10 @@ void Compiler::fgLinkBasicBlocks()
                 curBBdesc->SetKindAndTarget(curBBdesc->GetKind(), jumpDest);
                 fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
-                // Can this block fall through into the next block?
-                //
-                if (curBBdesc->KindIs(BBJ_ALWAYS, BBJ_LEAVE))
+                if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
                 {
-                    if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
-                    {
-                        fgMarkBackwardJump(curBBdesc->GetTarget(), curBBdesc);
-                    }
-                    break;
+                    fgMarkBackwardJump(curBBdesc->GetTarget(), curBBdesc);
                 }
-
-                // The fall-through block is also reachable
-                assert(curBBdesc->KindIs(BBJ_COND));
-
-                if (curBBdesc->GetTrueTarget()->bbNum <= curBBdesc->bbNum)
-                {
-                    fgMarkBackwardJump(curBBdesc->GetTrueTarget(), curBBdesc);
-                }
-
-                if (curBBdesc->IsLast())
-                {
-                    BADCODE("Fall thru the end of a method");
-                }
-
-                curBBdesc->SetFalseTarget(curBBdesc->Next());
-                fgAddRefPred<initializingPreds>(curBBdesc->GetFalseTarget(), curBBdesc, oldEdge);
                 break;
             }
 

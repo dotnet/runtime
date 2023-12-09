@@ -14904,7 +14904,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetKindAndTarget(BBJ_COND, elseBlock);
+        condBlock->SetCondKindAndTarget(elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->SetFlags(propagateFlagsToAll);
@@ -14929,7 +14929,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetKindAndTarget(BBJ_COND, remainderBlock);
+        condBlock->SetCondKindAndTarget(remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
@@ -14945,7 +14945,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetKindAndTarget(BBJ_COND, remainderBlock);
+        condBlock->SetCondKindAndTarget(remainderBlock);
         fgAddRefPred(remainderBlock, condBlock);
 
         elseBlock->inheritWeightPercentage(condBlock, 50);

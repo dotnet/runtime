@@ -704,8 +704,18 @@ public:
         return (bbFalseTarget == target);
     }
 
+    void SetCondKindAndTarget(BasicBlock* target)
+    {
+        assert(target != nullptr);
+        bbKind       = BBJ_COND;
+        bbTrueTarget = target;
+    }
+
     void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
     {
+        // To set BBJ_COND, use SetCondKindAndTarget
+        assert(kind != BBJ_COND);
+
         bbKind   = kind;
         bbTarget = target;
 
