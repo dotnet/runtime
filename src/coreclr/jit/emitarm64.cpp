@@ -9436,6 +9436,60 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             break;
 
+        case INS_sve_ld1w:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IH_3A_F;
+            break;
+
+        case INS_sve_ld1sw:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IJ_3A;
+            break;
+
+        case INS_sve_ld1sb:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IJ_3A_D;
+            break;
+
+        case INS_sve_ld1b:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IJ_3A_E;
+            break;
+
+        case INS_sve_ld1sh:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IJ_3A_F;
+            break;
+
+        case INS_sve_ld1h:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IJ_3A_G;
+            break;
+
         case INS_sve_ldnf1sw:
         case INS_sve_ldnf1d:
             assert(insOptsScalable(opt));
@@ -19698,12 +19752,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_IH_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
                            // immediate)
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_9C;
-            break;
-
         case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
                              // immediate)
+        case IF_SVE_IH_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IJ_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_E: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_G: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_9C;
             break;
