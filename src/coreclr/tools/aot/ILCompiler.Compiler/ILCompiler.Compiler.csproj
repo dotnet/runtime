@@ -23,8 +23,6 @@
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
         
-    <ProjectReference Include="..\external\Melanzana\Melanzana.MachO\Melanzana.MachO.csproj" />
-
     <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
@@ -608,6 +606,7 @@
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriterStream.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
+    <Compile Include="Compiler\ObjectWriter\MachNative.cs" />
     <Compile Include="Compiler\ObjectWriter\MachObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ElfNative.cs" />
     <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.cs" />
