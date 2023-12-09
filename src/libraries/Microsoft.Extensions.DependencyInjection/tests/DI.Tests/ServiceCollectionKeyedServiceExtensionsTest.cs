@@ -170,6 +170,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     { collection => collection.TryAddKeyedTransient<IFakeService, FakeService>("key-2"), serviceType, "key-2", implementationType, ServiceLifetime.Transient },
                     { collection => collection.TryAddKeyedTransient<IFakeService>("key-3"), serviceType, "key-3", serviceType, ServiceLifetime.Transient },
                     { collection => collection.TryAddKeyedTransient(implementationType, "key-4"), implementationType, "key-4", implementationType, ServiceLifetime.Transient },
+                    { collection => collection.TryAddKeyedTransient(implementationType, 9), implementationType, 9, implementationType, ServiceLifetime.Transient },
 
                     { collection => collection.TryAddKeyedScoped(serviceType, "key-1", implementationType), serviceType, "key-1", implementationType, ServiceLifetime.Scoped },
                     { collection => collection.TryAddKeyedScoped<IFakeService, FakeService>("key-2"), serviceType, "key-2", implementationType, ServiceLifetime.Scoped },
@@ -325,6 +326,40 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(expectedLifetime, d.Lifetime);
         }
 
+        [Fact]
+        public void TryAddEnumerable_DoesNotAddDuplicateWhenKeyIsInt()
+        {
+            // Arrange
+            var collection = new ServiceCollection();
+            var descriptor1 = ServiceDescriptor.KeyedTransient<IFakeService, FakeService>(1);
+            collection.TryAddEnumerable(descriptor1);
+            var descriptor2 = ServiceDescriptor.KeyedTransient<IFakeService, FakeService>(1);
+
+            // Act
+            collection.TryAddEnumerable(descriptor2);
+
+            // Assert
+            var d = Assert.Single(collection);
+            Assert.Same(descriptor1, d);
+        }
+
+        [Fact]
+        public void TryAddEnumerable_DoesNotAddDuplicateWhenKeyIsString()
+        {
+            // Arrange
+            var collection = new ServiceCollection();
+            var descriptor1 = ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("service1");
+            collection.TryAddEnumerable(descriptor1);
+            var descriptor2 = ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("service1");
+
+            // Act
+            collection.TryAddEnumerable(descriptor2);
+
+            // Assert
+            var d = Assert.Single(collection);
+            Assert.Same(descriptor1, d);
+        }
+
         public static TheoryData TryAddEnumerableInvalidImplementationTypeData
         {
             get
@@ -413,6 +448,24 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact]
+        public void Replace_ReplacesFirstServiceWithMatchingServiceTypeWhenKeyIsInt()
+        {
+            // Arrange
+            var collection = new ServiceCollection();
+            var descriptor1 = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Transient);
+            var descriptor2 = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Transient);
+            collection.Add(descriptor1);
+            collection.Add(descriptor2);
+            var descriptor3 = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Singleton);
+
+            // Act
+            collection.Replace(descriptor3);
+
+            // Assert
+            Assert.Equal(new[] { descriptor2, descriptor3 }, collection);
+        }
+
+        [Fact]
         public void RemoveAll_RemovesAllServicesWithMatchingServiceType()
         {
             // Arrange
@@ -436,9 +489,10 @@ namespace Microsoft.Extensions.DependencyInjection
         [Fact]
         public void RemoveAll_RemovesAllMatchingServicesWhenKeyIsEnum()
         {
+            var descriptor = new ServiceDescriptor(typeof(IFakeService), ServiceKeyEnum.First, typeof(FakeService), ServiceLifetime.Transient);
             var collection = new ServiceCollection
             {
-                new ServiceDescriptor(typeof(IFakeService), ServiceKeyEnum.First, typeof(FakeService), ServiceLifetime.Transient),
+                descriptor,
                 new ServiceDescriptor(typeof(IFakeService), ServiceKeyEnum.Second, typeof(FakeService), ServiceLifetime.Transient),
                 new ServiceDescriptor(typeof(IFakeService), ServiceKeyEnum.Second, typeof(FakeService), ServiceLifetime.Transient),
             };
@@ -447,16 +501,16 @@ namespace Microsoft.Extensions.DependencyInjection
             collection.RemoveAllKeyed<IFakeService>(ServiceKeyEnum.Second);
 
             // Assert
-            Assert.Contains(collection, x => ServiceKeyEnum.First.Equals(x.ServiceKey));
-            Assert.DoesNotContain(collection, x => ServiceKeyEnum.Second.Equals(x.ServiceKey));
+            Assert.Equal(new[] { descriptor }, collection);
         }
 
         [Fact]
         public void RemoveAll_RemovesAllMatchingServicesWhenKeyIsInt()
         {
+            var descriptor = new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Transient);
             var collection = new ServiceCollection
             {
-                new ServiceDescriptor(typeof(IFakeService), 1, typeof(FakeService), ServiceLifetime.Transient),
+                descriptor,
                 new ServiceDescriptor(typeof(IFakeService), 2, typeof(FakeService), ServiceLifetime.Transient),
                 new ServiceDescriptor(typeof(IFakeService), 2, typeof(FakeService), ServiceLifetime.Transient),
             };
@@ -465,26 +519,7 @@ namespace Microsoft.Extensions.DependencyInjection
             collection.RemoveAllKeyed<IFakeService>(2);
 
             // Assert
-            Assert.Contains(collection, x => 1.Equals(x.ServiceKey));
-            Assert.DoesNotContain(collection, x => 2.Equals(x.ServiceKey));
-        }
-
-        [Fact]
-        public void RemoveAll_RemovesAllMatchingServicesWhenKeyIsDouble()
-        {
-            var collection = new ServiceCollection
-            {
-                new ServiceDescriptor(typeof(IFakeService), 1.0, typeof(FakeService), ServiceLifetime.Transient),
-                new ServiceDescriptor(typeof(IFakeService), 2.0, typeof(FakeService), ServiceLifetime.Transient),
-                new ServiceDescriptor(typeof(IFakeService), 2.0, typeof(FakeService), ServiceLifetime.Transient),
-            };
-
-            // Act
-            collection.RemoveAllKeyed<IFakeService>(2.0);
-
-            // Assert
-            Assert.Contains(collection, x => 1.0.Equals(x.ServiceKey));
-            Assert.DoesNotContain(collection, x => 2.0.Equals(x.ServiceKey));
+            Assert.Equal(new[] { descriptor }, collection);
         }
 
         public static TheoryData NullServiceKeyData
