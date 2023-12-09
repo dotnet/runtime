@@ -14763,8 +14763,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
-            code |= insEncodeReg_R_9_to_5(id->idReg3());   // ggg
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // nnnnn
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
             code |= insEncodeSimm4_19_to_16(imm);          // iiii
             dst += emitOutput_Instr(dst, code);
             break;
