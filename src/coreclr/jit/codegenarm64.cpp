@@ -5436,7 +5436,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #define ALL_ARM64_EMITTER_UNIT_TESTS
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+#define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
 #if defined(DEBUG)
@@ -10653,6 +10653,16 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_H); /* FRECPX  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fsqrt, EA_SCALABLE, REG_V6, REG_P6, REG_V6,
                               INS_OPTS_SCALABLE_S); /* FSQRT   <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+
+    // IF_SVE_IL_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1d, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
+                                INS_OPTS_SCALABLE_D); // LDNF1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1sw, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
+                                INS_OPTS_SCALABLE_D); // LDNF1SW {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1d, EA_SCALABLE, REG_V0, REG_P1, REG_R2, 5,
+                                INS_OPTS_SCALABLE_D); // LDNF1D  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1sw, EA_SCALABLE, REG_V0, REG_P1, REG_R2, 5,
+                                INS_OPTS_SCALABLE_D); // LDNF1SW {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}] 
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 

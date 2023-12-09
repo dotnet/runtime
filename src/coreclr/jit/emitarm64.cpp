@@ -1193,6 +1193,47 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IH_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IJ_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_E: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_G: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IL_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus immediate)
+        case IF_SVE_IL_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IL_3A_B: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IL_3A_C: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IM_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus
+                             // immediate)
+        case IF_SVE_IO_3A:   // ............iiii ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus
+                             // immediate)
+        case IF_SVE_IQ_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
+                           // immediate)
+        case IF_SVE_IS_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (scalar plus immediate)
+        case IF_SVE_JE_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (quadwords, scalar plus
+                           // immediate)
+        case IF_SVE_JM_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
+                           // immediate)
+        case IF_SVE_JN_3C: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isValidSimm4(emitGetInsSC(id)));    // iiii
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -9367,6 +9408,16 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_DV_3AI;
             break;
 
+        case INS_sve_ldnf1sw:
+        case INS_sve_ldnf1d:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));           
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IL_3A;
+            break;
+
         default:
             unreached();
             break;
@@ -12609,6 +12660,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return 0;
 }
 
+/*****************************************************************************
+ *
+ *  TODO
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm4_19_to_16(ssize_t imm)
+{
+    assert(isValidSimm4(imm));
+    return (code_t)imm << 16;
+}
+
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
 {
     instruction ins    = id->idIns();
@@ -14640,6 +14702,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
             code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
+            dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
@@ -14652,6 +14715,47 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IH_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IJ_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_E: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_G: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IL_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus immediate)
+        case IF_SVE_IL_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IL_3A_B: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IL_3A_C: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IM_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus
+                             // immediate)
+        case IF_SVE_IO_3A:   // ............iiii ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus
+                             // immediate)
+        case IF_SVE_IQ_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
+                           // immediate)
+        case IF_SVE_IS_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (scalar plus immediate)
+        case IF_SVE_JE_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (quadwords, scalar plus
+                           // immediate)
+        case IF_SVE_JM_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
+                           // immediate)
+        case IF_SVE_JN_3C: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // ggg
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // nnnnn
+            code |= insEncodeSimm4_19_to_16(imm);          // iiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -17026,6 +17130,52 @@ void emitter::emitDispInsHelp(
         case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg1(), id->idInsOpt(), false); // ddddd
+            break;
+
+        case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IH_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                             // immediate)
+        case IF_SVE_IJ_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_E: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        case IF_SVE_IJ_3A_G: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
+        // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_IL_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus immediate)
+        case IF_SVE_IL_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IL_3A_B: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IL_3A_C: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
+                             // immediate)
+        case IF_SVE_IM_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus
+                             // immediate)
+        case IF_SVE_IO_3A:   // ............iiii ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus
+                             // immediate)
+        case IF_SVE_IQ_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
+                           // immediate)
+        case IF_SVE_IS_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (scalar plus immediate)
+        case IF_SVE_JE_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (quadwords, scalar plus
+                           // immediate)
+        case IF_SVE_JM_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
+                           // immediate)
+        case IF_SVE_JN_3C: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
+            imm = emitGetInsSC(id);
+            emitDispSveRegList(id->idReg1(), 1, id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, true);  // ggg
+            printf("[");
+            emitDispReg(id->idReg3(), optGetSveElemsize(id->idInsOpt()), imm != 0); // nnnnn
+            if (imm != 0)
+            {
+                emitDispImm(emitGetInsSC(id), true); // iiii
+                printf("mul vl");
+            }
+            printf("]");
             break;
 
         default:
@@ -19513,6 +19663,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_IL_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+            result.insLatency    = PERFSCORE_LATENCY_6C;
             break;
 
         default:

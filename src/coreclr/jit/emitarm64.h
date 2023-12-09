@@ -472,6 +472,8 @@ static code_t insEncodeSveElemsize(insOpts opt);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+static code_t insEncodeSimm4_19_to_16(ssize_t imm);
+
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
 {
@@ -483,6 +485,12 @@ static bool isStackRegister(regNumber reg)
 {
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
+
+// Returns true if 'value' is a legal signed immediate 4 bit encoding (such as for LDNF1SW).
+static bool isValidSimm4(ssize_t value)
+{
+    return (-8 <= value) && (value <= 7);
+};
 
 // Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
 static bool isValidUimm5(ssize_t value)
