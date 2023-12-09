@@ -25358,11 +25358,6 @@ float median_of_3 (float a, float b, float c)
     return b;
 }
 
-float abs (float f)
-{
-    return ((f < 0.0) ? -f : f);
-}
-
 size_t gc_heap::get_num_completed_gcs ()
 {
     size_t num_completed_gcs = settings.gc_index;
@@ -25434,7 +25429,7 @@ int gc_heap::calculate_new_heap_count ()
         for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
         {
             dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
-            float diff = abs ((float)(sample.gc_survived_size - min_survived) / (float)min_survived);
+            float diff = fabsf ((float)(sample.gc_survived_size - min_survived) / (float)min_survived);
             dprintf (6666, ("sample %d abs diff from min is %Id -> %.3f", i, (sample.gc_survived_size - min_survived), diff));
             if (diff >= 0.05)
             {
@@ -25545,42 +25540,52 @@ int gc_heap::calculate_new_heap_count ()
 
     if (median_throughput_cost_percent > 10.0f)
     {
-        // ramp up more aggressively - use as many heaps as it would take to bring
-        // the tcp down to 5% - unless precisely adjusting and we're close to 10%
-        new_n_heaps = (int)(n_heaps * (median_throughput_cost_percent / 5.0));
-        dprintf (6666, ("[CHP0] tcp %.3f -> %d * %.3f = %d", median_throughput_cost_percent, n_heaps, (median_throughput_cost_percent / 5.0), new_n_heaps));
-        new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
-
+        float scale;
         if (precise_count_change_p)
         {
-            // scale 10 -> 0.5, 50 -> 1.  cap at 1.
-            float scale = min(1, (median_throughput_cost_percent + 30) / 80);
-            step_up = (int)(scale * (new_n_heaps - n_heaps));
-            step_up = min(step_up, max(n_max_heaps / 4, 4));
-            new_n_heaps = n_heaps + step_up;
-            dprintf (6666, ("[CHP0] precisely adjusting to 10%% -> %d  heaps (max %d)", new_n_heaps, (n_max_heaps - extra_heaps)));
-            new_n_heaps = max (new_n_heaps, n_heaps + 1);
-            new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
+            // This scale is constructed to match the step_up that the aggressive ('else' branch)
+            // scale would determine times a factor that goes from 0.5 at 10% tcp to 1.0 at 50% tcp.
+            // (step_up would be ((n_heaps * tcp / 5) - n_heaps) * ((tcp + 30) / 80))
+            float limited_tcp = min (50, median_throughput_cost_percent);
+            scale = ((limited_tcp * limited_tcp / 400.0f) + (limited_tcp / 16.0f) + (5.0f / 8));
         }
+        else
+        {
+            // ramp up more aggressively - use as many heaps as it would take to bring
+            // the tcp down to 5%
+            scale = median_throughput_cost_percent / 5.0f;
+        }
+
+        new_n_heaps = (int)(scale * n_heaps);
+        if (precise_count_change_p)
+        {
+            // Absolute limit to growth when being precise
+            new_n_heaps = min (new_n_heaps, n_heaps + max (n_max_heaps / 4, 4));
+        }
+
+        new_n_heaps = max (new_n_heaps, n_heaps + 1);
+        new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
+        dprintf (6666, ("[CHP0%s] tcp %.3f > 10 -> %d * %.3f = %d", precise_count_change_p ? "P" : "",
+            median_throughput_cost_percent, n_heaps, scale, new_n_heaps));
     }
     // if the median tcp is 10% or less, react slower
     else if ((smoothed_median_throughput_cost_percent > 5.0f) || (median_gen2_tcp_percent > 10.0f))
     {
         if (smoothed_median_throughput_cost_percent > 5.0f)
         {
-            dprintf (6666, ("[CHP1] stcp %.3f > 5, %d + %d = %d", smoothed_median_throughput_cost_percent, n_heaps, step_up, (n_heaps + step_up)));
+            if (precise_count_change_p)
+            {
+                step_up = (int)((float)n_heaps * (smoothed_median_throughput_cost_percent - 5.0f) / 10.0f);
+                step_up = max (step_up, 1);
+                step_up = min (step_up, n_max_heaps - extra_heaps - n_heaps);
+            }
+
+            dprintf (6666, ("[CHP1%s] stcp %.3f > 5, %d + %d = %d", precise_count_change_p ? "P" : "",
+                smoothed_median_throughput_cost_percent, n_heaps, step_up, (n_heaps + step_up)));
         }
         else
         {
-            dprintf (6666, ("[CHP2] tcp %.3f > 10, %d + %d = %d", median_gen2_tcp_percent, n_heaps, step_up, (n_heaps + step_up)));
-        }
-
-        if (precise_count_change_p && (smoothed_median_throughput_cost_percent > 5.0f))
-        {
-            step_up = (int)((float)n_heaps * (smoothed_median_throughput_cost_percent - 5.0f) / 10.0f);
-            dprintf (6666, ("[CHP2] precisely adjusting to 5%% -> %d more heaps (max %d)", step_up, (n_max_heaps - extra_heaps - n_heaps)));
-            step_up = max (step_up, 1);
-            step_up = min (step_up, n_max_heaps - extra_heaps - n_heaps);
+            dprintf (6666, ("[CHP2] gen2 tcp %.3f > 10, %d + %d = %d", median_gen2_tcp_percent, n_heaps, step_up, (n_heaps + step_up)));
         }
 
         new_n_heaps += step_up;
