@@ -162,6 +162,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static int field;
 
+			[Kept]
+			public int memberKept {
+				[Kept]
+				get { return field; }
+				[Kept]
+				set { field = value; }
+			}
+
 			public void otherMember() { }
 		}
 
