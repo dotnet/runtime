@@ -38,8 +38,8 @@
     <ItemGroup>
       <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TestCategoryFilter=^&amp;FullyQualifiedName~%(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TestCategoryFilter=&amp;FullyQualifiedName~%(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
