@@ -650,8 +650,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regNumber raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);
