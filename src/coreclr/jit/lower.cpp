@@ -8004,7 +8004,7 @@ static bool CanBeCoalesced(const LoadStoreCoalescingData& data1, const LoadStore
 
         // Check whether the combined indir is still aligned.
         bool isCombinedIndirAtomic = (genTypeSize(data1.targetType) < TARGET_POINTER_SIZE) &&
-                                     (min(data2.offset, data1.offset) % (genTypeSize(data1.targetType) * 2)) == 0;
+                                     (min(data1.offset, data2.offset) % (genTypeSize(data1.targetType) * 2)) == 0;
 
         if (genTypeSize(data1.targetType) == TARGET_POINTER_SIZE)
         {
@@ -8180,8 +8180,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 return;
             }
 
-            // Make sure that we're storing in the same direction as we're loading
-            if ((prevData.offset > currData.offset) != (prevValueData.offset > currValueData.offset))
+            // Make sure the difference between offsets is the same (and direction)
+            if ((prevData.offset - currData.offset) != (prevValueData.offset - currValueData.offset))
             {
                 return;
             }
