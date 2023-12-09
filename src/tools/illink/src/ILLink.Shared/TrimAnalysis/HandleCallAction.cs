@@ -377,8 +377,8 @@ namespace ILLink.Shared.TrimAnalysis
 					if (calledMethod.HasMetadataParametersCount (1)) {
 						// Assume a default value for MemberTypes for methods that don't use MemberTypes as a parameter
 						memberTypes = MemberTypes.All;
-						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
-						bindingFlags = BindingFlags.Public | BindingFlags.Instance;
+						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter (Type.DefaultLookup)
+						bindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
 					} else if (calledMethod.HasMetadataParametersCount (2) && calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags")) {
 						// Assume a default value for MemberTypes for methods that don't use MemberTypes as a parameter
 						memberTypes = MemberTypes.All;
