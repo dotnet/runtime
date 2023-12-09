@@ -310,14 +310,13 @@ namespace System.Linq.Expressions.Tests
         {
             ParameterExpression x = Expression.Parameter(typeof(int), "x");
             ParameterExpression y = Expression.Parameter(typeof(int), "y");
-            ParameterExpression d = Expression.Parameter(typeof(double), "d");
+            ParameterExpression l = Expression.Parameter(typeof(long), "l");
             ParameterExpression s = Expression.Parameter(typeof(string), "s");
 
             Check(".Call $x.ToString()", Expression.Call(x, typeof(int).GetMethod("ToString", Type.EmptyTypes)));
             Check(".Call $s.Substring($x)", Expression.Call(s, typeof(string).GetMethod("Substring", new[] { typeof(int) }), x));
             Check(".Call $s.Substring(\\r\\n    $x,\\r\\n    $y)", Expression.Call(s, typeof(string).GetMethod("Substring", new[] { typeof(int), typeof(int) }), x, y));
-            Check(".Call System.TimeSpan.FromSeconds($d)", Expression.Call(null, typeof(TimeSpan).GetMethod("FromSeconds", new[] { typeof(double) }), d));
-            Check(".Call System.TimeSpan.FromSeconds($y)", Expression.Call(null, typeof(TimeSpan).GetMethod("FromSeconds", new[] { typeof(int) }), d));
+            Check(".Call System.TimeSpan.FromSeconds($l)", Expression.Call(null, typeof(TimeSpan).GetMethod("FromSeconds", new[] { typeof(int) }), l));
         }
 
         [Fact]
