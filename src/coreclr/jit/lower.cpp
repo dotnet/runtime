@@ -8307,7 +8307,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
             // Update offset to be the minimum of the two
             assert((prevData.offset > currData.offset) == (prevValueData.offset > currValueData.offset));
-            destInd->Addr()->AsAddrMode()->SetOffset(min(prevData.offset, currData.offset));
+            destInd->Addr()->AsAddrMode()->SetOffset(min(prevValueData.offset, currValueData.offset));
 
             if (genTypeSize(oldType) == 1)
             {
