@@ -200,9 +200,8 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     if (decoder.IsInterruptible())
         return true;
 
-    // TODO: VS multireg returns
-    //if (decoder.IsSafePoint())
-    //    return true;
+    if (decoder.IsSafePoint())
+        return true;
 
     return false;
 }
