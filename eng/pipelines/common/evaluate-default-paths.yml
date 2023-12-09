@@ -312,6 +312,15 @@ jobs:
       include:
       - ${{ parameters._const_paths._wasm_chrome }}
 
+    - subset: wasm_runtime_mt
+      include:
+      - src/libraries/System.Net.WebSockets.Client/*
+      - src/libraries/System.Runtime.InteropServices.JavaScript/*
+      - src/libraries/System.Runtime.InteropServices/*
+      - src/mono/mono/**/*wasm*
+      - src/mono/mono/mini/interp/jiterpreter*
+      - src/mono/wasm/runtime/*
+
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
