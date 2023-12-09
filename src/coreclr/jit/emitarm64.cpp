@@ -9408,6 +9408,16 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_DV_3AI;
             break;
 
+        case INS_sve_ld1d:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            fmt = IF_SVE_IH_3A;
+            break;
+
+
         case INS_sve_ldnf1sw:
         case INS_sve_ldnf1d:
             assert(insOptsScalable(opt));
@@ -19663,6 +19673,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_IH_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
+                           // immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_9C;
             break;
 
         case IF_SVE_IL_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus immediate)
