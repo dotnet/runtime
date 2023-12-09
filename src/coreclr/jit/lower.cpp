@@ -7972,8 +7972,14 @@ static bool CanBeCoalesced(const LoadStoreCoalescingData& data1, const LoadStore
         return false;
     }
 
+    // Offset is the same - we can just remove the previous store.
+    if (data1.offset == data2.offset)
+    {
+        return true;
+    }
+
     // Otherwise, the difference between two offsets has to match the size of the type or be zero
-    if ((data1.offset != data2.offset) && (abs(data1.offset - data2.offset) != (int)genTypeSize(data1.targetType)))
+    if (abs(data1.offset - data2.offset) != (int)genTypeSize(data1.targetType))
     {
         return false;
     }
@@ -8021,13 +8027,8 @@ static bool CanBeCoalesced(const LoadStoreCoalescingData& data1, const LoadStore
             isCombinedIndirAtomic = true;
 #endif
         }
-
-        if (!isCombinedIndirAtomic)
-        {
-            return false;
-        }
+        return isCombinedIndirAtomic;
     }
-
     return true;
 }
 
@@ -8127,8 +8128,14 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Get coalescing data for the previous STOREIND
         GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetLoadStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData) || !CanBeCoalesced(prevData, currData))
+        if (!GetLoadStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
         {
+            return;
+        }
+
+        if (!CanBeCoalesced(prevData, currData))
+        {
+            CanBeCoalesced(prevData, currData);
             return;
         }
 
