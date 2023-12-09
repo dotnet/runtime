@@ -586,9 +586,15 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         fgAddRefPred(lazyCtorBB, targetSymbCondBB);
         fgAddRefPred(block, lazyCtorBB);
 
+        prevBb->SetJumpDest(targetSymbCondBB);
+        lazyCtorBB->SetJumpDest(block);
+
         // Inherit the weights
         block->inheritWeight(prevBb);
         targetSymbCondBB->inheritWeight(prevBb);
+
+        // lazyCtorBB will just execute first time
+        lazyCtorBB->bbSetRunRarely();
 
         targetSymbCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
         lazyCtorBB->bbNatLoopNum       = prevBb->bbNatLoopNum;
@@ -596,8 +602,11 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         assert(BasicBlock::sameEHRegion(prevBb, targetSymbCondBB));
         assert(BasicBlock::sameEHRegion(prevBb, lazyCtorBB));
 
-        JITDUMP("lazyCtorBB: " FMT_BB "\n", lazyCtorBB->bbNum);
+        // lazyCtorBB is the new prevBb going forward
+        prevBb = lazyCtorBB;
+
         JITDUMP("targetSymbCondBB: " FMT_BB "\n", targetSymbCondBB->bbNum);
+        JITDUMP("lazyCtorBB: " FMT_BB "\n", lazyCtorBB->bbNum);
     }
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -699,14 +708,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             assert(targetSymbCondBB != nullptr);
             assert(lazyCtorBB != nullptr);
 
-            prevBb->SetJumpDest(targetSymbCondBB);
             targetSymbCondBB->SetJumpDest(tlsRootNullCondBB);
-            lazyCtorBB->SetJumpDest(block);
-
             fgAddRefPred(tlsRootNullCondBB, targetSymbCondBB);
-
-            // lazyCtorBB will just execute first time
-            lazyCtorBB->bbSetRunRarely();
         }
         else
         {
@@ -728,8 +731,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
         JITDUMP("tlsRootNullCondBB: " FMT_BB "\n", tlsRootNullCondBB->bbNum);
-        JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
         JITDUMP("fallbackBb: " FMT_BB "\n", fallbackBb->bbNum);
+        JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
 #else
         assert(!"Unsupported scenario\n");
 
