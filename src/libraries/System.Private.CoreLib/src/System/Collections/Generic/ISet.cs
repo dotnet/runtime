@@ -55,6 +55,11 @@ namespace System.Collections.Generic
 
         bool IReadOnlySet<T>.SetEquals(IEnumerable<T> other) => SetEquals(other);
 
+        /// <summary>
+        /// Determines if the set contains a specific item
+        /// </summary>
+        /// <param name="item">The item to check if the set contains.</param>
+        /// <returns><see langword="true" /> if found; otherwise <see langword="false" />.</returns>
         new bool Contains(T item) => ((ICollection<T>)this).Contains(item);
 
         bool IReadOnlySet<T>.Contains(T value) => ((ICollection<T>)this).Contains(value);

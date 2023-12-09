@@ -35,7 +35,7 @@ namespace System.Collections.Tests
             Assert.False(a.MoveNext(), "actual has more elements");
         }
 
-        public static void Equal<T>(ICollection<T> expected, ICollection<T> actual)
+        public static void Equal<T>(IReadOnlyCollection<T> expected, IReadOnlyCollection<T> actual)
         {
             Assert.Equal(expected == null, actual == null);
             if (expected == null)
@@ -80,7 +80,7 @@ namespace System.Collections.Tests
             Assert.Equal(e[null].Count(), a[null].Count());
         }
 
-        public static void EqualUnordered<T>(ICollection<T> expected, ICollection<T> actual)
+        public static void EqualUnordered<T>(IReadOnlyCollection<T> expected, IReadOnlyCollection<T> actual)
         {
             Assert.Equal(expected == null, actual == null);
             if (expected == null)
