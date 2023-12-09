@@ -8052,8 +8052,34 @@ static bool CanBeCoalesced(const LoadStoreCoalescingData& data1, const LoadStore
 //    |  \--*  LCL_VAR   byref  V00
 //    \--*  CNS_INT   long  0x200000001
 //
+//    Another example is when we have a "memory move" pattern:
+//
+//    *  STOREIND  int
+//    +--*  LEA(b+8)  byref
+//    |  \--*  LCL_VAR   ref
+//    \--*  IND       int
+//    \--*  LEA(b+8)  byref
+//        \--*  LCL_VAR   ref
+//
+//    *  STOREIND  int
+//    +--*  LEA(b+12) byref
+//    |  \--*  LCL_VAR   ref
+//    \--*  IND       int
+//    \--*  LEA(b+12) byref
+//        \--*  LCL_VAR   ref
+//
+//    is transformed into:
+//
+//    *  STOREIND  long
+//    +--*  LEA(b+8)  byref
+//    |  \--*  LCL_VAR   ref
+//    \--*  IND       long
+//    \--*  LEA(b+8)  byref
+//        \--*  LCL_VAR   ref
+//
 //   NOTE: Our memory model allows us to do this optimization, see Memory-model.md:
-//     * Adjacent non-volatile writes to the same location can be coalesced. (see Memory-model.md)
+//     * Adjacent non-volatile reads from the same location can be coalesced.
+//     * Adjacent non-volatile writes to the same location can be coalesced.
 //
 // Arguments:
 //    ind - the current STOREIND node
@@ -8199,7 +8225,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // The same offset means that we're storing to the same location of the same width.
         // Just remove the previous store then.
-        if ((prevData.offset == currData.offset) && (currValueData.offset == prevValueData.offset))
+        if (prevData.offset == currData.offset)
         {
             BlockRange().Remove(std::move(prevIndRange));
             continue;
@@ -8286,6 +8312,49 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             //
             default:
                 return;
+        }
+
+        // For the memory move case we need to make sure pointers don't alias, e.g.:
+        //
+        //   *(a + 0) = *(b + 0);
+        //   *(a + 4) = *(b + 4);
+        //
+        // We can't merge this to
+        //
+        //   *(long*)(a + 0) = *(long*)(b + 0);
+        //
+        // if we don't know that a and b don't alias.
+        //
+        if (ind->Data()->OperIs(GT_IND))
+        {
+            if (!currData.baseAddr->TypeIs(TYP_REF) || !currValueData.baseAddr->TypeIs(TYP_REF))
+            {
+                // Non-TYP_REF pointers can alias,
+                // and we unlikely have enough information to prove otherwise.
+                return;
+            }
+
+            if (currData.index != nullptr || currValueData.index != nullptr)
+            {
+                // We only support base + constant offset, unknown index may lead to aliasing.
+                return;
+            }
+
+            // NOTE: for baseAddr and index we only checked curr* because prev* are guaranteed to be the same.
+
+            // Assume the worst case - currData.baseAddr and currValueData.baseAddr are the same GC object:
+            // Let's see if we can prove that they don't alias by checking the offsets.
+            const int storeStart = min(currData.offset, prevData.offset);
+            const int loadStart  = min(currValueData.offset, prevValueData.offset);
+
+            const int smallerOffset = min(storeStart, loadStart);
+            const int largerOffset  = max(storeStart, loadStart);
+
+            if ((smallerOffset != largerOffset) && ((smallerOffset + (int)genTypeSize(newType)) > largerOffset))
+            {
+                // May alias
+                return;
+            }
         }
 
         // We should not be here for stores requiring write barriers.
