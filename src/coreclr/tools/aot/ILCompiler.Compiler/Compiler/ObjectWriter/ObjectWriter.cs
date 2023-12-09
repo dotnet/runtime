@@ -465,7 +465,7 @@ namespace ILCompiler.ObjectWriter
 
             if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
             {
-                LlvmObjectWriter.EmitObject(objectFilePath, nodes, factory, options, dumper, logger);
+                LegacyObjectWriter.EmitObject(objectFilePath, nodes, factory, options, dumper, logger);
             }
             else if (factory.Target.IsOSXLike)
             {
