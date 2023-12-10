@@ -27,7 +27,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Module address-keyed map of per-module method name resolvers.
         /// </summary>
-        static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
+        private static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
 
         /// <summary>
         /// Eager startup initialization of stack trace metadata support creates

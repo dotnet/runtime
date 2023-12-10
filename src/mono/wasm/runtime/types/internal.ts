@@ -190,6 +190,8 @@ export type RuntimeHelpers = {
     memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
+    getMemory(): WebAssembly.Memory,
+    getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
@@ -288,6 +290,9 @@ export type EmscriptenInternals = {
     quit_: Function,
     ExitStatus: ExitStatusError,
     gitHash: string,
+    getMemory(): WebAssembly.Memory,
+    getWasmIndirectFunctionTable(): WebAssembly.Table,
+    updateMemoryViews: () => void,
 };
 export type GlobalObjects = {
     mono: any,
@@ -301,7 +306,6 @@ export type GlobalObjects = {
 export type EmscriptenReplacements = {
     fetch: any,
     require: any,
-    updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;
@@ -339,7 +343,7 @@ export interface JavaScriptExports {
     release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
 
     // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-    complete_task(holder_gcv_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+    complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
 
     // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
     call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
@@ -399,6 +403,7 @@ export enum MarshalerType {
     JSException,
     TaskResolved,
     TaskRejected,
+    TaskPreCreated,
 }
 
 export interface JSMarshalerArguments extends NativePointer {
@@ -458,7 +463,6 @@ export declare interface EmscriptenModuleInternal {
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
     asm: any;
-    getMemory(): WebAssembly.Memory;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;

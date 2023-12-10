@@ -217,7 +217,7 @@ namespace System.Runtime.InteropServices.Marshalling
                         break;
                     case VarEnum.VT_LPSTR:
                     case VarEnum.VT_LPWSTR:
-                    foreach (var str in GetRawDataRef<Vector<IntPtr>>().AsSpan())
+                        foreach (var str in GetRawDataRef<Vector<IntPtr>>().AsSpan())
                         {
                             Marshal.FreeCoTaskMem(str);
                         }

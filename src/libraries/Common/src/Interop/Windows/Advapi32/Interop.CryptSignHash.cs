@@ -24,7 +24,7 @@ internal static partial class Interop
             CRYPT_X931_FORMAT = 0x00000004,  // Not supported
         }
 
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptSignHashW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptSignHashW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSignHash(
             SafeHashHandle hHash,
@@ -34,7 +34,7 @@ internal static partial class Interop
             byte[]? pbSignature,
             ref int pdwSigLen);
 
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptVerifySignature(
             SafeHashHandle hHash,

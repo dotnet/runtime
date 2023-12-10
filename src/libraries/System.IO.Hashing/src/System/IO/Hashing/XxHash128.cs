@@ -403,7 +403,7 @@ namespace System.IO.Hashing
                 HashInternalLoop(accumulators, source, length, secret);
 
                 return new Hash128(
-                    low64:  MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * Prime64_1),
+                    low64: MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * Prime64_1),
                     high64: MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(length * Prime64_2)));
             }
         }
