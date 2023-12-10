@@ -7942,11 +7942,11 @@ static bool GetLoadStoreCoalescingData(Compiler* comp, GenTreeIndir* ind, LoadSt
 }
 
 //------------------------------------------------------------------------
-// GetLoadStoreCoalescingData: perform legality check for store coalescing.
+// GetLoadStoreCoalescingData: perform legality check for load/store coalescing.
 //
 // Arguments:
-//    data1 - the data needed for store coalescing for the first load
-//    data2 - the data needed for store coalescing for the second node
+//    data1 - the data needed for store coalescing for the first load/store
+//    data2 - the data needed for store coalescing for the second load/store
 //
 // Return Value:
 //    true if two stores or two loads can be coalesced, false otherwise.
@@ -7973,6 +7973,7 @@ static bool CanBeCoalesced(const LoadStoreCoalescingData& data1, const LoadStore
     }
 
     // Offset is the same - we can just remove the previous store.
+    // Alignment doesn't matter here.
     if (data1.offset == data2.offset)
     {
         return true;
@@ -8154,14 +8155,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Get coalescing data for the previous STOREIND
         GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetLoadStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
+        if (!GetLoadStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData) || !CanBeCoalesced(prevData, currData))
         {
-            return;
-        }
-
-        if (!CanBeCoalesced(prevData, currData))
-        {
-            CanBeCoalesced(prevData, currData);
             return;
         }
 
