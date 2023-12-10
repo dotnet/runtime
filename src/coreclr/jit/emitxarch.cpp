@@ -16894,6 +16894,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_ARD_RRD:
         case IF_AWR_RRD:
         case IF_ARW_RRD:
+        case IF_ARW_RRW:
         {
             code = insCodeMR(ins);
 
@@ -17158,6 +17159,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SRD_RRD:
         case IF_SWR_RRD:
         case IF_SRW_RRD:
+        case IF_SRW_RRW:
         {
             code = insCodeMR(ins);
 
@@ -17441,6 +17443,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MRD_RRD:
         case IF_MWR_RRD:
         case IF_MRW_RRD:
+        case IF_MRW_RRW:
         {
             code = insCodeMR(ins);
 
