@@ -173,6 +173,8 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetTypeCoreIgnoreCase)
     DllImportEntry(AssemblyNative_GetForwardedType)
     DllImportEntry(AssemblyNative_GetManifestResourceInfo)
+    DllImportEntry(AssemblyNative_GetManifestResourceNames)
+    DllImportEntry(AssemblyNative_GetReferencedAssemblies)
     DllImportEntry(AssemblyNative_GetModules)
     DllImportEntry(AssemblyNative_GetModule)
     DllImportEntry(AssemblyNative_GetExportedTypes)

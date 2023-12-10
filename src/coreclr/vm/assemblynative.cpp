@@ -518,8 +518,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
     }
 
     END_QCALL;
-
-    return;
 }
 
 FCIMPL1(FC_BOOL_RET, AssemblyNative::IsDynamic, AssemblyBaseObject* pAssemblyUNSAFE)
@@ -812,8 +810,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssemb
     }
 
     END_QCALL;
-
-    return;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retTypes)
@@ -1007,37 +1003,33 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
     END_QCALL;
 }
 
-FCIMPL1(Object*, AssemblyNative::GetManifestResourceNames, AssemblyBaseObject * pAssemblyUNSAFE)
+extern "C" void QCALLTYPE AssemblyNative_GetManifestResourceNames(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retResourceNames)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
+    BEGIN_QCALL;
 
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    Assembly * pAsm = pAssembly->GetAssembly();
 
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-    PTRARRAYREF rv = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(rv, refAssembly);
-
-    IMDInternalImport *pImport = pAssembly->GetMDImport();
+    IMDInternalImport *pImport = pAsm->GetMDImport();
 
     HENUMInternalHolder phEnum(pImport);
-    DWORD dwCount;
-
     phEnum.EnumInit(mdtManifestResource, mdTokenNil);
-        dwCount = pImport->EnumGetCount(&phEnum);
+
+    DWORD dwCount = pImport->EnumGetCount(&phEnum);
+
+    GCX_COOP();
 
     PTRARRAYREF ItemArray = (PTRARRAYREF) AllocateObjectArray(dwCount, g_pStringClass);
 
-    mdManifestResource mdResource;
-
     GCPROTECT_BEGIN(ItemArray);
-    for(DWORD i = 0;  i < dwCount; i++) {
-        pImport->EnumNext(&phEnum, &mdResource);
-        LPCSTR pszName = NULL;
 
+    for(DWORD i = 0;  i < dwCount; i++)
+    {
+        mdManifestResource mdResource;
+        pImport->EnumNext(&phEnum, &mdResource);
+
+        LPCSTR pszName = NULL;
         IfFailThrow(pImport->GetManifestResourceProps(
             mdResource,
             &pszName,   // name
@@ -1049,52 +1041,43 @@ FCIMPL1(Object*, AssemblyNative::GetManifestResourceNames, AssemblyBaseObject * 
         ItemArray->SetAt(i, o);
     }
 
-    rv = ItemArray;
+    retResourceNames.Set(ItemArray);
     GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(rv);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * pAssemblyUNSAFE)
+extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retReferencedAssemblies)
 {
-    FCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    Assembly * pAsm = pAssembly->GetAssembly();
+
+    IMDInternalImport *pImport = pAsm->GetMDImport();
+
+    HENUMInternalHolder phEnum(pImport);
+    phEnum.EnumInit(mdtAssemblyRef, mdTokenNil);
+
+    DWORD dwCount = pImport->EnumGetCount(&phEnum);
+
+    MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
+
+    GCX_COOP();
 
     struct {
         PTRARRAYREF ItemArray;
         ASSEMBLYNAMEREF pObj;
-        ASSEMBLYREF refAssembly;
     } gc;
     gc.ItemArray = NULL;
     gc.pObj = NULL;
-    gc.refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
 
-    if (gc.refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    DomainAssembly *pAssembly = gc.refAssembly->GetDomainAssembly();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    IMDInternalImport *pImport = pAssembly->GetAssembly()->GetMDImport();
-
-    MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
-
-    HENUMInternalHolder phEnum(pImport);
-    DWORD dwCount = 0;
-
-    phEnum.EnumInit(mdtAssemblyRef, mdTokenNil);
-
-    dwCount = pImport->EnumGetCount(&phEnum);
-
-    mdAssemblyRef mdAssemblyRef;
+    GCPROTECT_BEGIN(gc);
 
     gc.ItemArray = (PTRARRAYREF) AllocateObjectArray(dwCount, pAsmNameClass);
 
     for(DWORD i = 0; i < dwCount; i++)
     {
+        mdAssemblyRef mdAssemblyRef;
         pImport->EnumNext(&phEnum, &mdAssemblyRef);
 
         AssemblySpec spec;
@@ -1106,11 +1089,11 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
         gc.ItemArray->SetAt(i, (OBJECTREF) gc.pObj);
     }
 
-    HELPER_METHOD_FRAME_END();
+    retReferencedAssemblies.Set(gc.ItemArray);
+    GCPROTECT_END();
 
-    return OBJECTREFToObject(gc.ItemArray);
+    END_QCALL;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retMethod)
 {
@@ -1128,8 +1111,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAs
     }
 
     END_QCALL;
-
-    return;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1168,7 +1149,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlM
     }
 
     END_QCALL;
-    return;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnStack retAssembly)
@@ -1188,8 +1168,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
     }
 
     END_QCALL;
-
-    return;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)

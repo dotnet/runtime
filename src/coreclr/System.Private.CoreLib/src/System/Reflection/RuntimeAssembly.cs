@@ -494,23 +494,29 @@ namespace System.Reflection
         }
 
         // Returns the names of all the resources
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string[] GetManifestResourceNames(RuntimeAssembly assembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceNames")]
+        private static partial void GetManifestResourceNames(QCallAssembly assembly, ObjectHandleOnStack retResourceNames);
 
         // Returns the names of all the resources
         public override string[] GetManifestResourceNames()
         {
-            return GetManifestResourceNames(GetNativeHandle());
+            string[]? resourceNames = null;
+            RuntimeAssembly runtimeAssembly = this;
+            GetManifestResourceNames(new QCallAssembly(ref runtimeAssembly), ObjectHandleOnStack.Create(ref resourceNames));
+            return resourceNames!;
         }
 
         // Returns the names of all the resources
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetReferencedAssemblies")]
+        private static partial void GetReferencedAssemblies(QCallAssembly assembly, ObjectHandleOnStack retReferencedAssemblies);
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies()
         {
-            return GetReferencedAssemblies(GetNativeHandle());
+            AssemblyName[]? referencedAssemblies = null;
+            RuntimeAssembly runtimeAssembly = this;
+            GetReferencedAssemblies(new QCallAssembly(ref runtimeAssembly), ObjectHandleOnStack.Create(ref referencedAssemblies));
+            return referencedAssemblies!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceInfo", StringMarshalling = StringMarshalling.Utf16)]

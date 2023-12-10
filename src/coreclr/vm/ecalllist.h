@@ -271,8 +271,6 @@ FCFuncEnd()
 
 FCFuncStart(gRuntimeAssemblyFuncs)
     FCFuncElement("FCallIsDynamic", AssemblyNative::IsDynamic)
-    FCFuncElement("GetReferencedAssemblies", AssemblyNative::GetReferencedAssemblies)
-    FCFuncElement("GetManifestResourceNames", AssemblyNative::GetManifestResourceNames)
     FCFuncElement("GetManifestModule", AssemblyHandle::GetManifestModule)
     FCFuncElement("GetToken", AssemblyHandle::GetToken)
 FCFuncEnd()
