@@ -397,6 +397,12 @@ bool GcInfoDecoder::IsInterruptible()
     return m_IsInterruptible;
 }
 
+bool GcInfoDecoder::HasInterruptibleRanges()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_NumInterruptibleRanges > 0;
+}
+
 bool GcInfoDecoder::IsSafePoint()
 {
     _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
