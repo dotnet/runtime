@@ -7319,7 +7319,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     instrDesc* id  = emitNewInstrDsp(attr, offs);
-    insFormat  fmt = emitInsModeFormat(ins, IF_MRD_RRD);
+    insFormat  fmt = (ins == INS_xchg) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -8961,7 +8961,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    insFormat fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
     {
         return;
