@@ -1174,34 +1174,14 @@ namespace System.Net
                 {
                     request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
-
-                if (_servicePoint?.Expect100Continue == true)
-                {
-                    request.Headers.ExpectContinue = true;
-                }
-
-                request.Version = ProtocolVersion;
-
-                _sendRequestTask = async ?
-                    client.SendAsync(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token) :
-                    Task.FromResult(client.Send(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token));
-
-                HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
-
-                HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
-
-                int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
-                if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
-                {
-                    throw new WebException(
-                        SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
-                        null,
-                        WebExceptionStatus.ProtocolError,
-                        response);
-                }
-
-                return response;
             }
+
+            if (_servicePoint?.Expect100Continue == true)
+            {
+                request.Headers.ExpectContinue = true;
+            }
+
+            request.Version = ProtocolVersion;
 
             request.Headers.TransferEncodingChunked = SendChunked;
 
@@ -1249,6 +1229,7 @@ namespace System.Net
             {
                 _httpClient?.Dispose();
                 _httpClient = null;
+                _requestStream = null;
             }
 
             return response;
