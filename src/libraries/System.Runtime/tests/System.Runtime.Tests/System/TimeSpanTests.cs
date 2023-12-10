@@ -365,6 +365,30 @@ namespace System.Tests
             Assert.Equal(expected, TimeSpan.FromDays(value));
         }
 
+        public static IEnumerable<object[]> FromDays_Int_TestData()
+        {
+            yield return new object[] { 100, 12, 0, 0, 0, 0, new TimeSpan(100, 12, 0, 0) };
+            yield return new object[] { 100, 12, 1, 1, 1, 1, new TimeSpan(100, 12, 1, 1, 1, 1) };
+            yield return new object[] { 2, 12, 0, 0, 0, 0, new TimeSpan(2, 12, 0, 0) };
+            yield return new object[] { 2, 12, 10, 10, 10, 10, new TimeSpan(2, 12, 10, 10, 10, 10) };
+            yield return new object[] { 1, 0, 0, 0, 0, 0, new TimeSpan(1, 0, 0, 0) };
+            yield return new object[] { 1, 0, 0, 0, 0, 11, new TimeSpan(1, 0, 0, 0, 0, 11) };
+            yield return new object[] { 0, 0, 0, 0, 0, 0, new TimeSpan(0, 0, 0, 0) };
+            yield return new object[] { -1, 0, 0, 0, 0, 0, new TimeSpan(-1, 0, 0, 0) };
+            yield return new object[] { -1, 0, 0, 0, 1, 0, new TimeSpan(-1, 0, 0, 0, 1, 0) };
+            yield return new object[] { -2, 12, 0, 0, 0, 0, new TimeSpan(-2, 12, 0, 0) };
+            yield return new object[] { -2, 12, 0, 11, 0, 0, new TimeSpan(-2, 12, 0, 11, 0, 0) };
+            yield return new object[] { -100, 12, 0, 0, 0, 0, new TimeSpan(-100, 12, 0, 0) };
+            yield return new object[] { -100, 12, 1, 0, 0, 11, new TimeSpan(-100, 12, 1, 0, 0, 11) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromDays_Int_TestData))]
+        public static void FromDaysInt(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds, TimeSpan expected)
+        {
+            Assert.Equal(expected, TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds));
+        }
+
         [Fact]
         public static void FromDays_Invalid()
         {
@@ -395,6 +419,31 @@ namespace System.Tests
         public static void FromHours(double value, TimeSpan expected)
         {
             Assert.Equal(expected, TimeSpan.FromHours(value));
+        }
+
+        public static IEnumerable<object[]> FromHours_Int_TestData()
+        {
+            yield return new object[] { 100, 30, 0, 0, 0, new TimeSpan(4, 4, 30, 0) };
+            yield return new object[] { 2, 30, 0, 0, 0, new TimeSpan(2, 30, 0) };
+            yield return new object[] { 1, 0, 0, 0, 0, new TimeSpan(1, 0, 0) };
+            yield return new object[] { 0, 0, 0, 0, 0, new TimeSpan(0, 0, 0) };
+            yield return new object[] { -1, 0, 0, 0, 0, new TimeSpan(-1, 0, 0) };
+            yield return new object[] { -2, -30, 0, 0, 0, new TimeSpan(0, -2, -30, 0) };
+            yield return new object[] { -100, -30, 0, 0, 0, new TimeSpan(-4, -4, -30, 0) };
+            yield return new object[] { 100, 30, 10, 10, 10, new TimeSpan(4, 4, 30, 10, 10, 10) };
+            yield return new object[] { 2, 30, 0, 10, 0, new TimeSpan(0, 2, 30, 0, 10) };
+            yield return new object[] { 1, 0, 10, 0, 0, new TimeSpan(1, 0, 10) };
+            yield return new object[] { 0, 0, 0, 10, 0, new TimeSpan(0, 0, 0, 0, 10, 0) };
+            yield return new object[] { -1, 0, 10, 10, 10, new TimeSpan(0, -1, 0, 10, 10, 10) };
+            yield return new object[] { -2, -30, 0, -10, 0, new TimeSpan(0, -2, -30, 0, -10, 0) };
+            yield return new object[] { -100, -30, -10, -10, -10, new TimeSpan(-4, -4, -30, -10, -10, -10) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromHours_Int_TestData))]
+        public static void FromHoursInt(int hours, long minutes, long seconds, long milliseconds, long microseconds, TimeSpan expected)
+        {
+            Assert.Equal(expected, TimeSpan.FromHours(hours, minutes, seconds, milliseconds, microseconds));
         }
 
         [Fact]
@@ -429,6 +478,31 @@ namespace System.Tests
             Assert.Equal(expected, TimeSpan.FromMinutes(value));
         }
 
+        public static IEnumerable<object[]> FromMinutes_Int_TestData()
+        {
+            yield return new object[] { 100, 30, 0, 0, new TimeSpan(1, 40, 30) };
+            yield return new object[] { 2, 30, 0, 0, new TimeSpan(0, 2, 30) };
+            yield return new object[] { 1, 0, 0, 0, new TimeSpan(0, 1, 0) };
+            yield return new object[] { 0, 0, 0, 0, new TimeSpan(0, 0, 0) };
+            yield return new object[] { -1, 0, 0, 0, new TimeSpan(0, -1, 0) };
+            yield return new object[] { -2, -30, 0, 0, new TimeSpan(0, -2, -30) };
+            yield return new object[] { -100, -30, 0, 0, new TimeSpan(-1, -40, -30) };
+            yield return new object[] { 100, 30, 10, 10, new TimeSpan(0, 1, 40, 30, 10, 10) };
+            yield return new object[] { 2, 30, 10, 0, new TimeSpan(0, 0, 2, 30, 10, 0) };
+            yield return new object[] { 1, 0, 0, 10, new TimeSpan(0, 0, 1, 0, 0, 10) };
+            yield return new object[] { 0, 0, 0, 10, new TimeSpan(0, 0, 0, 0, 0, 10) };
+            yield return new object[] { -1, 0, 10, 0, new TimeSpan(0, 0, -1, 0, 10) };
+            yield return new object[] { -2, -30, 0, 10, new TimeSpan(0, 0, -2, -30, 0,10) };
+            yield return new object[] { -100, -30, -100, -10, new TimeSpan(0, -1, -40, -30, -100, -10) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromMinutes_Int_TestData))]
+        public static void FromMinutesInt(int minutes, long seconds, long milliseconds, long microseconds, TimeSpan expected)
+        {
+            Assert.Equal(expected, TimeSpan.FromMinutes(minutes, seconds, milliseconds, microseconds));
+        }
+
         [Fact]
         public static void FromMinutes_Invalid()
         {
@@ -460,6 +534,33 @@ namespace System.Tests
         {
             Assert.Equal(expected, TimeSpan.FromSeconds(value));
         }
+
+
+        public static IEnumerable<object[]> FromSeconds_Int_TestData()
+        {
+            yield return new object[] { 100, 500, 0, new TimeSpan(0, 0, 1, 40, 500) };
+            yield return new object[] { 2, 500, 0, new TimeSpan(0, 0, 0, 2, 500) };
+            yield return new object[] { 1, 0, 0, new TimeSpan(0, 0, 0, 1, 0) };
+            yield return new object[] { 0, 0, 0, new TimeSpan(0, 0, 0, 0, 0) };
+            yield return new object[] { -1, 0, 0, new TimeSpan(0, 0, 0, -1, 0) };
+            yield return new object[] { -2, -500, 0, new TimeSpan(0, 0, 0, -2, -500) };
+            yield return new object[] { -100, -500, 0, new TimeSpan(0, 0, -1, -40, -500) };
+            yield return new object[] { 100, 500, 10, new TimeSpan(0, 0, 1, 40, 500, 10) };
+            yield return new object[] { 2, 500, 0, new TimeSpan(0, 0, 0, 2, 500) };
+            yield return new object[] { 1, 0, 10, new TimeSpan(0, 0, 0, 1, 0, 10) };
+            yield return new object[] { 0, 0, 0, new TimeSpan(0, 0, 0, 0, 0) };
+            yield return new object[] { -1, 0, 0, new TimeSpan(0, 0, 0, -1, 0) };
+            yield return new object[] { -2, -500, -10, new TimeSpan(0, 0, 0, -2, -500, -10) };
+            yield return new object[] { -100, -500, -5000, new TimeSpan(0, 0, -1, -40, -500, -5000) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromSeconds_Int_TestData))]
+        public static void FromSecondsInt(int seconds, long milliseconds, long microseconds, TimeSpan expected)
+        {
+            Assert.Equal(expected, TimeSpan.FromSeconds(seconds, milliseconds, microseconds));
+        }
+
 
         [Fact]
         public static void FromSeconds_Invalid()
@@ -493,6 +594,24 @@ namespace System.Tests
             Assert.Equal(expected, TimeSpan.FromMilliseconds(value));
         }
 
+        public static IEnumerable<object[]> FromMilliseconds_Int_TestData_NetCore()
+        {
+            yield return new object[] { 1500, 500, new TimeSpan(15005000) };
+            yield return new object[] { 2, 500, new TimeSpan(25000) };
+            yield return new object[] { 1, 0, new TimeSpan(10000) };
+            yield return new object[] { 0, 0, new TimeSpan(0) };
+            yield return new object[] { -1, 0, new TimeSpan(-10000) };
+            yield return new object[] { -2, -500, new TimeSpan(-25000) };
+            yield return new object[] { -1500, -500, new TimeSpan(-15005000) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromMilliseconds_Int_TestData_NetCore))]
+        public static void FromMilliseconds_Int(long milliseconds, long microseconds, TimeSpan expected)
+        {
+            Assert.Equal(expected, TimeSpan.FromMilliseconds(milliseconds, microseconds));
+        }
+
         public static IEnumerable<object[]> FromMilliseconds_TestData_Desktop()
         {
             yield return new object[] { 1500.5, new TimeSpan(15010000) };
@@ -516,6 +635,25 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.FromMilliseconds(-maxMilliseconds)); // Value < TimeSpan.MinValue
 
             AssertExtensions.Throws<ArgumentException>(null, () => TimeSpan.FromMilliseconds(double.NaN)); // Value is NaN
+        }
+
+        public static IEnumerable<object[]> FromMicroseconds_TestData()
+        {
+            yield return new object[] { 500, new TimeSpan(5000) };
+            yield return new object[] { 5000, new TimeSpan(50000) };
+            yield return new object[] { 50000, new TimeSpan(500000) };
+            yield return new object[] { 1, new TimeSpan(10) };
+            yield return new object[] { 0, new TimeSpan(0) };
+            yield return new object[] { -1, new TimeSpan(-10) };
+            yield return new object[] { -2, new TimeSpan(-20) };
+            yield return new object[] { -50000, new TimeSpan(-500000) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromMicroseconds_TestData))]
+        public static void FromMicroseconds(long microseconds, TimeSpan expected)
+        {
+            Assert.Equal(expected, TimeSpan.FromMicroseconds(microseconds));
         }
 
         public static IEnumerable<object[]> FromTicks_TestData()
