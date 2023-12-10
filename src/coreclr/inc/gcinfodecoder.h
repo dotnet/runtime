@@ -502,6 +502,7 @@ public:
     //------------------------------------------------------------------------
 
     bool IsInterruptible();
+    bool HasInterruptibleRanges();
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     bool IsSafePoint();
