@@ -291,21 +291,39 @@ namespace System
 
         public static TimeSpan FromDays(double value) => Interval(value, TicksPerDay);
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of days.
+        /// </summary>
+        /// <param name="days">A number of days.</param>
+        /// <returns>An object that represents <paramref name="days"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// <paramref name="days"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        /// </exception>
         public static TimeSpan FromDays(int days)
         {
             return new TimeSpan((long)days * TicksPerDay);
         }
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of days.
+        /// </summary>
+        /// <param name="days">A number of days.</param>
+        /// <param name="hours">A number of hours.</param>
+        /// <param name="minutes">A number of minutes.</param>
+        /// <param name="seconds">A number of seconds</param>
+        /// <param name="milliseconds">A number of milliseconds</param>
+        /// <param name="microseconds">A number of microseconds</param>
+        /// <returns>An object that represents <paramref name="days"/>, <paramref name="hours"/>, <paramref name="minutes"/>, <paramref name="seconds"/>, <paramref name="milliseconds"/>, <paramref name="microseconds"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// </exception>
         public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
-            long totalTicks = (long)days * TicksPerDay
-                + (long)hours * TicksPerHour
-                + minutes * TicksPerMinute
-                + seconds * TicksPerSecond
-                + milliseconds * TicksPerMillisecond
-                + microseconds * TicksPerMicrosecond;
-
-            return new TimeSpan(totalTicks);
+            return FromDays(days)
+                + FromHours(hours)
+                + FromMinutes(minutes)
+                + FromSeconds(seconds)
+                + FromMilliseconds(milliseconds)
+                + FromMicroseconds(microseconds);
         }
 
         public TimeSpan Duration()
@@ -327,20 +345,37 @@ namespace System
 
         public static TimeSpan FromHours(double value) => Interval(value, TicksPerHour);
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of microseconds.
+        /// </summary>
+        /// <param name="hours">A number of days.</param>
+        /// <returns>An object that represents <paramref name="hours"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// <paramref name="hours"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        /// </exception>
         public static TimeSpan FromHours(int hours)
         {
             return new TimeSpan((long)hours * TicksPerHour);
         }
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of hours.
+        /// </summary>
+        /// <param name="hours">A number of hours.</param>
+        /// <param name="minutes">A number of minutes.</param>
+        /// <param name="seconds">A number of seconds</param>
+        /// <param name="milliseconds">A number of milliseconds</param>
+        /// <param name="microseconds">A number of microseconds</param>
+        /// <returns>An object that represents <paramref name="hours"/>, <paramref name="minutes"/>, <paramref name="seconds"/>, <paramref name="milliseconds"/>, <paramref name="microseconds"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// </exception>
         public static TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
-            long totalTicks = (long)hours * TicksPerHour
-                + minutes * TicksPerMinute
-                + seconds * TicksPerSecond
-                + milliseconds * TicksPerMillisecond
-                + microseconds * TicksPerMicrosecond;
-
-            return new TimeSpan(totalTicks);
+            return FromHours(hours)
+                + FromMinutes(minutes)
+                + FromSeconds(seconds)
+                + FromMilliseconds(milliseconds)
+                + FromMicroseconds(microseconds);
         }
 
         private static TimeSpan Interval(double value, double scale)
@@ -367,11 +402,19 @@ namespace System
 
         public static TimeSpan FromMilliseconds(double value) => Interval(value, TicksPerMillisecond);
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of milliseconds.
+        /// </summary>
+        /// <param name="milliseconds">A number of milliseconds</param>
+        /// <param name="microseconds">A number of microseconds</param>
+        /// <returns>An object that represents <paramref name="milliseconds"/>, <paramref name="microseconds"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// </exception>
         public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0)
         {
-            long totalTicks = milliseconds * TicksPerMillisecond
-                + microseconds * TicksPerMicrosecond;
-            return new TimeSpan(totalTicks);
+            long totalTicks = milliseconds * TicksPerMillisecond;
+
+            return new TimeSpan(totalTicks) + FromMicroseconds(microseconds);
         }
 
         /// <summary>
@@ -395,6 +438,14 @@ namespace System
         /// </exception>
         public static TimeSpan FromMicroseconds(double value) => Interval(value, TicksPerMicrosecond); // ISSUE: https://github.com/dotnet/runtime/issues/66815
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of microseconds.
+        /// </summary>
+        /// <param name="microseconds">A number of microseconds.</param>
+        /// <returns>An object that represents <paramref name="microseconds"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// <paramref name="microseconds"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        /// </exception>
         public static TimeSpan FromMicroseconds(long microseconds)
         {
             return new TimeSpan(microseconds * TicksPerMicrosecond);
@@ -402,37 +453,68 @@ namespace System
 
         public static TimeSpan FromMinutes(double value) => Interval(value, TicksPerMinute);
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of minutes.
+        /// </summary>
+        /// <param name="minutes">A number of minutes.</param>
+        /// <returns>An object that represents <paramref name="minutes"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// <paramref name="minutes"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        /// </exception>
         public static TimeSpan FromMinutes(long minutes)
         {
             return new TimeSpan(minutes * TicksPerMinute);
         }
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of minutes.
+        /// </summary>
+        /// <param name="minutes">A number of minutes.</param>
+        /// <param name="seconds">A number of seconds</param>
+        /// <param name="milliseconds">A number of milliseconds</param>
+        /// <param name="microseconds">A number of microseconds</param>
+        /// <returns>An object that represents <paramref name="minutes"/>, <paramref name="seconds"/>, <paramref name="milliseconds"/>, <paramref name="microseconds"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// </exception>
         public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
-            long totalTicks = minutes * TicksPerMinute
-                + seconds * TicksPerSecond
-                + milliseconds * TicksPerMillisecond
-                + microseconds * TicksPerMicrosecond;
-
-            return new TimeSpan(totalTicks);
+            return FromMinutes(minutes)
+                + FromSeconds(seconds)
+                + FromMilliseconds(milliseconds)
+                + FromMicroseconds(microseconds);
         }
 
         public TimeSpan Negate() => -this;
 
         public static TimeSpan FromSeconds(double value) => Interval(value, TicksPerSecond);
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of seconds.
+        /// </summary>
+        /// <param name="seconds">A number of seconds.</param>
+        /// <returns>An object that represents <paramref name="seconds"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// <paramref name="seconds"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        /// </exception>
         public static TimeSpan FromSeconds(long seconds)
         {
             return new TimeSpan(seconds * TicksPerSecond);
         }
 
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of seconds.
+        /// </summary>
+        /// <param name="seconds">A number of seconds</param>
+        /// <param name="milliseconds">A number of milliseconds</param>
+        /// <param name="microseconds">A number of microseconds</param>
+        /// <returns>An object that represents <paramref name="seconds"/>, <paramref name="milliseconds"/>, <paramref name="microseconds"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// </exception>
         public static TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0)
         {
-            long totalTicks = seconds * TicksPerSecond
-                + milliseconds * TicksPerMillisecond
-                + microseconds * TicksPerMicrosecond;
-
-            return new TimeSpan(totalTicks);
+            return FromSeconds(seconds)
+                + FromMilliseconds(milliseconds)
+                + FromMicroseconds(microseconds);
         }
 
         public TimeSpan Subtract(TimeSpan ts) => this - ts;
