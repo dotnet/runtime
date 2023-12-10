@@ -41,8 +41,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public static void TypeLoadExceptionMessageContainsMethodNameWhenInternalCallOnlyMethodIsCalled()
         {
-            var ex = Assert.Throws<TypeLoadException>(() => new F1());
-            Assert.Contains("Internal call method 'F2.Foo' with non_NULL RVA.", ex.Message);
+            AssertExtensions.ThrowsContains<TypeLoadException>(() => new F1(), "Internal call method 'F2.Foo' with non_NULL RVA.");
         }
 
         class F1
