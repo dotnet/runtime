@@ -12,6 +12,12 @@ namespace ILCompiler.ObjectWriter
         // File header flags
         public const uint MH_SUBSECTIONS_VIA_SYMBOLS = 0x2000;
 
+        // CPU type/subtype
+        public const uint CPU_TYPE_ARM64 = 0x1000000 | 12;
+        public const uint CPU_TYPE_X86_64 = 0x1000000 | 7;
+        public const uint CPU_SUBTYPE_ARM64_ALL = 0;
+        public const uint CPU_SUBTYPE_X86_64_ALL = 3;
+
         // Load command types
         public const uint LC_SYMTAB = 0x2;
         public const uint LC_DYSYMTAB = 0xb;

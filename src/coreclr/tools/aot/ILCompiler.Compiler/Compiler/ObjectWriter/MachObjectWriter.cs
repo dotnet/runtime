@@ -21,7 +21,8 @@ namespace ILCompiler.ObjectWriter
         private sealed record CompactUnwindCode(string PcStartSymbolName, uint PcLength, uint Code, string LsdaSymbolName = null, string PersonalitySymbolName = null);
 
         private readonly TargetOS _targetOS;
-        private readonly MachCpuType _cpuType;
+        private readonly uint _cpuType;
+        private readonly uint _cpuSubType;
         private readonly List<MachSection> _sections = new();
 
         // Exception handling sections
@@ -41,11 +42,13 @@ namespace ILCompiler.ObjectWriter
             switch (factory.Target.Architecture)
             {
                 case TargetArchitecture.ARM64:
-                    _cpuType = MachCpuType.Arm64;
+                    _cpuType = MachNative.CPU_TYPE_ARM64;
+                    _cpuSubType = MachNative.CPU_SUBTYPE_ARM64_ALL;
                     _compactUnwindDwarfCode = 0x3_00_00_00u;
                     break;
                 case TargetArchitecture.X64:
-                    _cpuType = MachCpuType.X86_64;
+                    _cpuType = MachNative.CPU_TYPE_X86_64;
+                    _cpuSubType = MachNative.CPU_SUBTYPE_X86_64_ALL;
                     _compactUnwindDwarfCode = 0x4_00_00_00u;
                     break;
                 default:
@@ -149,7 +152,7 @@ namespace ILCompiler.ObjectWriter
             MachHeader64 machHeader = new MachHeader64
             {
                 CpuType = _cpuType,
-                CpuSubType = 0,
+                CpuSubType = _cpuSubType,
                 FileType = MachNative.MH_OBJECT,
                 NumberOfCommands = loadCommandsCount,
                 SizeOfCommands = loadCommandsSize,
@@ -210,7 +213,7 @@ namespace ILCompiler.ObjectWriter
                     buildVersion.Platform = MachNative.PLATFORM_MACCATALYST;
                     buildVersion.MinimumPlatformVersion = _cpuType switch
                     {
-                        MachCpuType.X86_64 => 0x0d_05_00u, // 13.5.0
+                        MachNative.CPU_TYPE_X86_64 => 0x0d_05_00u, // 13.5.0
                         _ => 0x0e_02_00u, // 14.2.0
                     };
                     break;
@@ -384,7 +387,7 @@ namespace ILCompiler.ObjectWriter
 
             if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26)
             {
-                Debug.Assert(_cpuType == MachCpuType.Arm64);
+                Debug.Assert(_cpuType == MachNative.CPU_TYPE_ARM64);
                 Debug.Assert(addend == 0);
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_DIR64)
@@ -400,7 +403,7 @@ namespace ILCompiler.ObjectWriter
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
             {
-                if (_cpuType == MachCpuType.Arm64)
+                if (_cpuType == MachNative.CPU_TYPE_ARM64)
                 {
                     // On ARM64 we need to represent PC relative relocations as
                     // subtraction and the PC offset is baked into the addend.
@@ -433,7 +436,7 @@ namespace ILCompiler.ObjectWriter
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_REL32)
             {
-                Debug.Assert(_cpuType != MachCpuType.Arm64);
+                Debug.Assert(_cpuType != MachNative.CPU_TYPE_ARM64);
                 if (addend != 0)
                 {
                     BinaryPrimitives.WriteInt32LittleEndian(
@@ -509,7 +512,7 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            if (_cpuType == MachCpuType.Arm64)
+            if (_cpuType == MachNative.CPU_TYPE_ARM64)
             {
                 EmitRelocationsArm64(sectionIndex, relocationList);
             }
@@ -761,7 +764,7 @@ namespace ILCompiler.ObjectWriter
         {
             uint encoding = _compactUnwindDwarfCode;
 
-            if (_cpuType == MachCpuType.Arm64)
+            if (_cpuType == MachNative.CPU_TYPE_ARM64)
             {
                 if (blob.AsSpan().SequenceEqual(DwarfArm64EmptyFrame))
                 {
@@ -782,18 +785,9 @@ namespace ILCompiler.ObjectWriter
 
         private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
 
-        public enum MachCpuType : uint
-        {
-            X86 = 7,
-            X86_64 = X86 | Architecture64,
-            Arm = 12,
-            Arm64 = Arm | Architecture64,
-            Architecture64 = 0x1000000,
-        }
-
         private struct MachHeader64
         {
-            public MachCpuType CpuType { get; set; }
+            public uint CpuType { get; set; }
             public uint CpuSubType { get; set; }
             public uint FileType { get; set; }
             public uint NumberOfCommands { get; set; }
