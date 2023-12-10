@@ -5351,7 +5351,7 @@ public:
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
 #if FEATURE_LOOP_ALIGN
-    void optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops);
+    void optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop);
     PhaseStatus placeLoopAlignInstructions();
 #endif
 

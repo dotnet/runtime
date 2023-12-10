@@ -5236,17 +5236,42 @@ static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 //------------------------------------------------------------------------
 // optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
 //
-// All innermost loops whose block weight meets a threshold are candidates for alignment.
-// The `top` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
-// (the loop table itself is not changed).
+// Parameters:
+//   loops       - Identified natural loops
+//   blockToLoop - Map from block back to its most-nested containing natural loop
 //
-// Depends on the loop table, and on block weights being set.
+// Remarks:
+//   All innermost loops whose block weight meets a threshold are candidates for alignment.
+//   The `top` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
+//   (the loop table itself is not changed).
 //
-// Sets `loopAlignCandidates` to the number of loop candidates for alignment.
+//   Depends on the loop table, and on block weights being set.
 //
-void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops)
+//   Sets `loopAlignCandidates` to the number of loop candidates for alignment.
+//
+void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop)
 {
     loopAlignCandidates = 0;
+
+    // TODO-Cleanup: We cannot currently renumber blocks after LSRA, so we need
+    // a side map for the lexically top most block here.
+    // Since placeLoopAlignInstructions already does a lexical visit we can
+    // merge it with the identification of candidates to make all of this
+    // cheaper.
+    BasicBlock** topMostBlocks = new (this, CMK_LoopOpt) BasicBlock*[loops->NumLoops()]{};
+    for (BasicBlock* block : Blocks())
+    {
+        FlowGraphNaturalLoop* loop = blockToLoop->GetLoop(block);
+        if (loop == nullptr)
+        {
+            continue;
+        }
+
+        if (topMostBlocks[loop->GetIndex()] == nullptr)
+        {
+            topMostBlocks[loop->GetIndex()] = block;
+        }
+    }
 
     for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
     {
@@ -5265,7 +5290,7 @@ void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops)
             continue;
         }
 
-        BasicBlock* top = loop->GetLexicallyTopMostBlock();
+        BasicBlock* top = topMostBlocks[loop->GetIndex()];
         if (top == fgFirstBB)
         {
             // Adding align instruction in prolog is not supported.
@@ -5399,7 +5424,9 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    optIdentifyLoopsForAlignment(loops);
+    BlockToNaturalLoopMap* blockToLoop = BlockToNaturalLoopMap::Build(loops);
+
+    optIdentifyLoopsForAlignment(loops, blockToLoop);
 
     // Add align only if there were any loops that needed alignment
     if (loopAlignCandidates == 0)
@@ -5414,8 +5441,6 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     weight_t              minBlockSoFar      = BB_MAX_WEIGHT;
     BasicBlock*           bbHavingAlign      = nullptr;
     FlowGraphNaturalLoop* currentAlignedLoop = nullptr;
-
-    BlockToNaturalLoopMap* blockToLoop = BlockToNaturalLoopMap::Build(loops);
 
     int loopsToProcess = loopAlignCandidates;
 
