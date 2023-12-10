@@ -834,7 +834,8 @@ namespace ILCompiler.ObjectWriter
 
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), MachNative.LC_SEGMENT_64);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), (uint)(HeaderSize + NumberOfSections * MachSection.HeaderSize));
-                Debug.Assert(Encoding.UTF8.TryGetBytes(Name, buffer.Slice(8, 16), out _));
+                bool encoded = Encoding.UTF8.TryGetBytes(Name, buffer.Slice(8, 16), out _);
+                Debug.Assert(encoded);
                 BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(24, 8), Address);
                 BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(32, 8), Size);
                 BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(40, 8), FileOffset);
@@ -888,8 +889,10 @@ namespace ILCompiler.ObjectWriter
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
                 buffer.Clear();
-                Debug.Assert(Encoding.UTF8.TryGetBytes(SectionName, buffer.Slice(0, 16), out _));
-                Debug.Assert(Encoding.UTF8.TryGetBytes(SegmentName, buffer.Slice(16, 16), out _));
+                bool encoded = Encoding.UTF8.TryGetBytes(SectionName, buffer.Slice(0, 16), out _);
+                Debug.Assert(encoded);
+                encoded = Encoding.UTF8.TryGetBytes(SegmentName, buffer.Slice(16, 16), out _);
+                Debug.Assert(encoded);
                 BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(32, 8), VirtualAddress);
                 BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(40, 8), Size);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(48, 4), FileOffset);
