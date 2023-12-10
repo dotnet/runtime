@@ -373,8 +373,6 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     }
 
     JITDUMP("\n");
-
-    begBlk->unmarkLoopAlign(this DEBUG_ARG("Removed loop"));
 }
 
 /*****************************************************************************************************
@@ -2624,50 +2622,6 @@ NO_MORE_LOOPS:
 }
 
 //------------------------------------------------------------------------
-// optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
-//
-// All innermost loops whose block weight meets a threshold are candidates for alignment.
-// The `first` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
-// (the loop table itself is not changed).
-//
-// Depends on the loop table, and on block weights being set.
-//
-void Compiler::optIdentifyLoopsForAlignment()
-{
-#if FEATURE_LOOP_ALIGN
-    if (codeGen->ShouldAlignLoops())
-    {
-        for (BasicBlock::loopNumber loopInd = 0; loopInd < optLoopCount; loopInd++)
-        {
-            // An innerloop candidate that might need alignment
-            if (optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP)
-            {
-                BasicBlock* top       = optLoopTable[loopInd].lpTop;
-                weight_t    topWeight = top->getBBWeight(this);
-                if (topWeight >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
-                {
-                    // Sometimes with JitOptRepeat > 1, we might end up finding the loops twice. In such
-                    // cases, make sure to count them just once.
-                    if (!top->isLoopAlign())
-                    {
-                        loopAlignCandidates++;
-                        top->SetFlags(BBF_LOOP_ALIGN);
-                        JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
-                                top->bbNum, top->getBBWeight(this));
-                    }
-                }
-                else
-                {
-                    JITDUMP(";; Skip alignment for " FMT_LP " that starts at " FMT_BB " weight=" FMT_WT ".\n", loopInd,
-                            top->bbNum, topWeight);
-                }
-            }
-        }
-    }
-#endif
-}
-
-//------------------------------------------------------------------------
 // optRedirectBlock: Replace the branch successors of a block based on a block map.
 //
 // Updates the successors of `blk`: if `blk2` is a branch successor of `blk`, and there is a mapping
@@ -4308,13 +4262,6 @@ PhaseStatus Compiler::optUnrollLoops()
 #endif
         }
 
-#if FEATURE_LOOP_ALIGN
-        for (BasicBlock* const block : loop.LoopBlocks())
-        {
-            block->unmarkLoopAlign(this DEBUG_ARG("Unrolled loop"));
-        }
-#endif
-
         // Create the unrolled loop statement list.
         {
             // When unrolling a loop, that loop disappears (and will be removed from the loop table). Each unrolled
@@ -5524,7 +5471,6 @@ void Compiler::optFindLoops()
     {
         optFindNaturalLoops();
         optFindAndScaleGeneralLoopBlocks();
-        optIdentifyLoopsForAlignment(); // Check if any of the loops need alignment
     }
 
     optLoopTableValid = true;
@@ -5553,6 +5499,10 @@ void Compiler::optFindNewLoops()
     m_newToOldLoop = m_loops->NumLoops() == 0 ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
     m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
 
+    // Unnatural loops can quickly become natural if we manage to remove some
+    // edges, so be conservative here.
+    fgMightHaveNaturalLoops = (m_loops->NumLoops() > 0) || m_loops->HaveNonNaturalLoopCycles();
+
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         BasicBlock* head = loop->GetHeader();
@@ -5567,6 +5517,7 @@ void Compiler::optFindNewLoops()
         assert(m_newToOldLoop[loop->GetIndex()] == nullptr);
         m_oldToNewLoop[head->bbNatLoopNum] = loop;
         m_newToOldLoop[loop->GetIndex()]   = dsc;
+        head->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
     }
 }
 
@@ -8683,37 +8634,9 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
     }
 }
 
-// TODO-Quirk: Remove
-static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
-{
-    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
-    {
-        if (comp->m_newToOldLoop[child->GetIndex()] != nullptr)
-            return true;
-
-        if (HasOldChildLoop(comp, child))
-            return true;
-    }
-
-    return false;
-}
-
 // Marks the containsCall information to "loop" and any parent loops.
 void Compiler::AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop)
 {
-
-#if FEATURE_LOOP_ALIGN
-    // If this is the inner most loop, reset the LOOP_ALIGN flag
-    // because a loop having call will not likely to benefit from
-    // alignment
-    if (!HasOldChildLoop(this, loop))
-    {
-        BasicBlock* top = loop->GetLexicallyTopMostBlock();
-
-        top->unmarkLoopAlign(this DEBUG_ARG("Loop with call"));
-    }
-#endif
-
     do
     {
         m_loopSideEffects[loop->GetIndex()].ContainsCall = true;

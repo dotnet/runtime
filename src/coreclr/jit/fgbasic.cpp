@@ -59,11 +59,12 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
-    fgBBNumMax        = 0;
-    fgEdgeCount       = 0;
-    fgDomBBcount      = 0;
-    fgBBVarSetsInited = false;
-    fgReturnCount     = 0;
+    fgMightHaveNaturalLoops = false;
+    fgBBNumMax              = 0;
+    fgEdgeCount             = 0;
+    fgDomBBcount            = 0;
+    fgBBVarSetsInited       = false;
+    fgReturnCount           = 0;
 
     m_dfsTree         = nullptr;
     m_loops           = nullptr;
@@ -5419,9 +5420,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         fgUnlinkBlockForRemoval(block);
         block->SetFlags(BBF_REMOVED);
     }
-
-    // If this was marked for alignment, remove it
-    block->unmarkLoopAlign(this DEBUG_ARG("Removed block"));
 
     if (bPrev != nullptr)
     {

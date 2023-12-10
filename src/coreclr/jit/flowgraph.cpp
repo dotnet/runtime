@@ -3252,12 +3252,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         }
     }
 
-    for (block = firstColdBlock; block != nullptr; block = block->Next())
-    {
-        block->SetFlags(BBF_COLD);
-        block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));
-    }
-
 EXIT:;
 
 #ifdef DEBUG

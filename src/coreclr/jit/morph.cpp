@@ -13326,7 +13326,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                                     loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
 
                             optMarkLoopRemoved(loopNum);
-                            loop.lpTop->unmarkLoopAlign(this DEBUG_ARG("removed loop"));
                         }
                     }
 
@@ -13340,7 +13339,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                                 loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
 
                         optMarkLoopRemoved(loopNum);
-                        loop.lpTop->unmarkLoopAlign(this DEBUG_ARG("removed loop"));
                     }
                 }
             }
