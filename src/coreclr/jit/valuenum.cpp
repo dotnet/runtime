@@ -12301,6 +12301,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     CallArgs* args                    = &call->gtArgs;
     bool      generateUniqueVN        = false;
     bool      useEntryPointAddrAsArg0 = false;
+    bool      useEnclosingTypeAsArg0  = false;
 
     switch (vnf)
     {
@@ -12364,6 +12365,17 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_ReadyToRunStaticBaseNonGC:
         case VNF_ReadyToRunStaticBaseThread:
         case VNF_ReadyToRunStaticBaseThreadNonGC:
+        {
+            if (call->gtInitClsHnd != NO_CLASS_HANDLE)
+            {
+                useEnclosingTypeAsArg0 = true;
+            }
+            else
+            {
+                useEntryPointAddrAsArg0 = true;
+            }
+        }
+        break;
         case VNF_ReadyToRunGenericStaticBase:
         case VNF_ReadyToRunIsInstanceOf:
         case VNF_ReadyToRunCastClass:
@@ -12430,6 +12442,12 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         if (useEntryPointAddrAsArg0)
         {
             ssize_t  addrValue  = (ssize_t)call->gtEntryPoint.addr;
+            ValueNum callAddrVN = vnStore->VNForHandle(addrValue, GTF_ICON_FTN_ADDR);
+            vnp0                = ValueNumPair(callAddrVN, callAddrVN);
+        }
+        else if (useEnclosingTypeAsArg0)
+        {
+            ssize_t  addrValue  = (ssize_t)call->gtInitClsHnd;
             ValueNum callAddrVN = vnStore->VNForHandle(addrValue, GTF_ICON_FTN_ADDR);
             vnp0                = ValueNumPair(callAddrVN, callAddrVN);
         }
