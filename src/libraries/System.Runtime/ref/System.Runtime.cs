@@ -7761,9 +7761,9 @@ namespace System.Collections.Generic
         T Current { get; }
         System.Threading.Tasks.ValueTask<bool> MoveNextAsync();
     }
-    public partial interface ICollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+    public partial interface ICollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyCollection<T>
     {
-        int Count { get; }
+        new int Count { get; }
         bool IsReadOnly { get; }
         void Add(T item);
         void Clear();
@@ -7775,15 +7775,15 @@ namespace System.Collections.Generic
     {
         int Compare(T? x, T? y);
     }
-    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable
+    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>
     {
-        TValue this[TKey key] { get; set; }
-        System.Collections.Generic.ICollection<TKey> Keys { get; }
-        System.Collections.Generic.ICollection<TValue> Values { get; }
+        new TValue this[TKey key] { get; set; }
+        new System.Collections.Generic.ICollection<TKey> Keys { get; }
+        new System.Collections.Generic.ICollection<TValue> Values { get; }
         void Add(TKey key, TValue value);
-        bool ContainsKey(TKey key);
+        new bool ContainsKey(TKey key);
         bool Remove(TKey key);
-        bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
+        new bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
     }
     public partial interface IEnumerable<out T> : System.Collections.IEnumerable
     {
@@ -7798,9 +7798,9 @@ namespace System.Collections.Generic
         bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
     }
-    public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+    public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.IReadOnlyCollection<T>
     {
-        T this[int index] { get; set; }
+        new T this[int index] { get; set; }
         int IndexOf(T item);
         void Insert(int index, T item);
         void RemoveAt(int index);
@@ -7831,17 +7831,18 @@ namespace System.Collections.Generic
         bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
         bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
     }
-    public partial interface ISet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+    public partial interface ISet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.IReadOnlyCollection<T>
     {
         new bool Add(T item);
+        new bool Contains(T item);
         void ExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void IntersectWith(System.Collections.Generic.IEnumerable<T> other);
-        bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
-        bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other);
+        new bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
+        new bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
         void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void UnionWith(System.Collections.Generic.IEnumerable<T> other);
     }
