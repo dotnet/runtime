@@ -33,8 +33,6 @@ namespace System.Net
         private readonly Uri _requestUri = null!;
         private string _originVerb = HttpMethod.Get.Method;
 
-        // We allow getting and setting this (to preserve app-compat). But we don't do anything with it
-        // as the underlying System.Net.Http API doesn't support it.
         private int _continueTimeout = DefaultContinueTimeout;
 
         private bool _allowReadStreamBuffering;
@@ -119,6 +117,8 @@ namespace System.Net
             public readonly RemoteCertificateValidationCallback? ServerCertificateValidationCallback;
             public readonly X509CertificateCollection? ClientCertificates;
             public readonly CookieContainer? CookieContainer;
+            public readonly ServicePoint? ServicePoint;
+            public readonly TimeSpan ContinueTimeout;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
             {
@@ -139,6 +139,8 @@ namespace System.Net
                 ServerCertificateValidationCallback = webRequest.ServerCertificateValidationCallback ?? ServicePointManager.ServerCertificateValidationCallback;
                 ClientCertificates = webRequest._clientCertificates;
                 CookieContainer = webRequest._cookieContainer;
+                ServicePoint = webRequest._servicePoint;
+                ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
             }
 
             public bool Matches(HttpClientParameters requestParameters)
@@ -153,11 +155,13 @@ namespace System.Net
                     && Timeout == requestParameters.Timeout
                     && SslProtocols == requestParameters.SslProtocols
                     && CheckCertificateRevocationList == requestParameters.CheckCertificateRevocationList
+                    && ContinueTimeout == requestParameters.ContinueTimeout
                     && ReferenceEquals(Credentials, requestParameters.Credentials)
                     && ReferenceEquals(Proxy, requestParameters.Proxy)
                     && ReferenceEquals(ServerCertificateValidationCallback, requestParameters.ServerCertificateValidationCallback)
                     && ReferenceEquals(ClientCertificates, requestParameters.ClientCertificates)
-                    && ReferenceEquals(CookieContainer, requestParameters.CookieContainer);
+                    && ReferenceEquals(CookieContainer, requestParameters.CookieContainer)
+                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint);
             }
 
             public bool AreParametersAcceptableForCaching()
@@ -166,7 +170,8 @@ namespace System.Net
                     && ReferenceEquals(Proxy, DefaultWebProxy)
                     && ServerCertificateValidationCallback == null
                     && ClientCertificates == null
-                    && CookieContainer == null;
+                    && CookieContainer == null
+                    && ServicePoint == null;
             }
         }
 
@@ -1169,6 +1174,33 @@ namespace System.Net
                 {
                     request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
+
+                if (_servicePoint?.Expect100Continue == true)
+                {
+                    request.Headers.ExpectContinue = true;
+                }
+
+                request.Version = ProtocolVersion;
+
+                _sendRequestTask = async ?
+                    client.SendAsync(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token) :
+                    Task.FromResult(client.Send(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token));
+
+                HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
+
+                HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
+
+                int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
+                if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
+                {
+                    throw new WebException(
+                        SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
+                        null,
+                        WebExceptionStatus.ProtocolError,
+                        response);
+                }
+
+                return response;
             }
 
             request.Headers.TransferEncodingChunked = SendChunked;
@@ -1610,6 +1642,7 @@ namespace System.Net
                 handler.MaxAutomaticRedirections = parameters.MaximumAutomaticRedirections;
                 handler.MaxResponseHeadersLength = parameters.MaximumResponseHeadersLength;
                 handler.PreAuthenticate = parameters.PreAuthenticate;
+                handler.Expect100ContinueTimeout = parameters.ContinueTimeout;
                 client.Timeout = parameters.Timeout;
 
                 if (parameters.CookieContainer != null)
@@ -1672,6 +1705,21 @@ namespace System.Net
 
                     try
                     {
+                        if (parameters.ServicePoint is { } servicePoint)
+                        {
+                            if (servicePoint.ReceiveBufferSize != -1)
+                            {
+                                socket.ReceiveBufferSize = servicePoint.ReceiveBufferSize;
+                            }
+
+                            if (servicePoint.KeepAlive is { } keepAlive)
+                            {
+                                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
+                            }
+                        }
+
                         socket.NoDelay = true;
 
                         if (parameters.Async)

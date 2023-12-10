@@ -53,11 +53,11 @@ internal sealed class WasiEngineHost
         //                                        runtimeArguments: _args.CommonConfig.RuntimeArguments);
         // runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
-        var args = new List<string>()
+        List<string> args = new() { "run" };
+
+        if (!_args.IsSingleFileBundle)
         {
-            "run",
-            "--dir",
-            "."
+            args.AddRange(["--dir", "."]);
         };
 
         args.AddRange(engineArgs);

@@ -118,7 +118,7 @@ namespace System.Data.Common
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult NextRecordset(
-                [Out]out object RecordsAffected,
+                [Out] out object RecordsAffected,
                 [Out, MarshalAs(UnmanagedType.Interface)] out object ppiRs);
 
             //[ Obsolete("not used", true)] void Supports(/*deleted parameters signature*/);

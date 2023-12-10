@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.Diagnostics.Metrics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95210", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
     public class MetricEventSourceTests
     {
         ITestOutputHelper _output;

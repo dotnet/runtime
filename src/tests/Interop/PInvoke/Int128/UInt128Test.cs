@@ -37,7 +37,10 @@ unsafe partial class Int128Native
 
 unsafe partial class Int128Native
 {
-    private static void TestUInt128()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74209")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69531", TestRuntimes.Mono)]
+    public static void TestUInt128()
     {
         UInt128 value1 = Int128Native.GetUInt128(1, 2);
         Assert.Equal(new UInt128(1, 2), value1);
