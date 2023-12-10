@@ -99,13 +99,13 @@ namespace System.Net.Http
 
         protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
         {
-            PrepareContent();
+            SeekToTheBeginningIfCan();
             return new ReadOnlyStream(_content);
         }
 
         protected override Task<Stream> CreateContentReadStreamAsync()
         {
-            PrepareContent();
+            SeekToTheBeginningIfCan();
             // Wrap the stream with a read-only stream to prevent someone from writing to the stream.
             return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
@@ -134,6 +134,14 @@ namespace System.Net.Http
             }
 
             _contentConsumed = true;
+        }
+
+        private void SeekToTheBeginningIfCan()
+        {
+            if (_content.CanSeek)
+            {
+                _content.Position = _start;
+            }
         }
 
         private sealed class ReadOnlyStream : DelegatingStream
