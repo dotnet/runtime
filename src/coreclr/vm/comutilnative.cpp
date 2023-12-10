@@ -1500,7 +1500,7 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(UINT8,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
+FCIMPL2(FC_UINT8_RET,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
 {
     FCALL_CONTRACT;
 
@@ -1512,7 +1512,7 @@ FCIMPL2(UINT8,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
 }
 FCIMPLEND
 
-FCIMPL2(INT16,COMInterlocked::Exchange16, INT16 *location, INT16 value)
+FCIMPL2(FC_INT16_RET,COMInterlocked::Exchange16, INT16 *location, INT16 value)
 {
     FCALL_CONTRACT;
 
@@ -1548,7 +1548,7 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
 }
 FCIMPLEND
 
-FCIMPL3(UINT8, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand)
+FCIMPL3(FC_UINT8_RET, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand)
 {
     FCALL_CONTRACT;
 
@@ -1560,7 +1560,7 @@ FCIMPL3(UINT8, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, U
 }
 FCIMPLEND
 
-FCIMPL3(INT16, COMInterlocked::CompareExchange16, INT16* location, INT16 value, INT16 comparand)
+FCIMPL3(FC_INT16_RET, COMInterlocked::CompareExchange16, INT16* location, INT16 value, INT16 comparand)
 {
     FCALL_CONTRACT;
 

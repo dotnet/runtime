@@ -789,6 +789,14 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
             }
             break;
 
+        // Special case since idIsReg2Write is false for xchg
+        case INS_xchg:
+            if (id->idReg2() == reg)
+            {
+                return true;
+            }
+            break;
+
         case INS_movsb:
         case INS_movsd:
 #ifdef TARGET_AMD64

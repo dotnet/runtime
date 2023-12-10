@@ -42,62 +42,70 @@ namespace InterlockedTest
             }
 
             long l = -1;
+            Equals(255, Interlocked.Exchange(ref Unsafe.As<long, byte>(ref l), 254));
+            Equals(GetValue<byte>(254), l);
+            Equals(254, ExchangeByte()(ref Unsafe.As<long, byte>(ref l), 253));
+            Equals(GetValue<byte>(253), l);
 
-            Equals(255, Interlocked.Exchange(ref Unsafe.As<long, byte>(ref l), 123));
-            Equals(GetValue<byte>(123), l);
-            Equals(123, ExchangeByte()(ref Unsafe.As<long, byte>(ref l), 124));
-            Equals(GetValue<byte>(124), l);
-            Equals(124, Interlocked.Exchange(ref Unsafe.As<long, sbyte>(ref l), 125));
-            Equals(GetValue<sbyte>(125), l);
-            Equals(125, ExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), 126));
-            Equals(GetValue<sbyte>(126), l);
-
-            Equals(126, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 126, 55));
-            Equals(GetValue<byte>(55), l);
-            Equals(55, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 55, 56));
-            Equals(GetValue<byte>(56), l);
-            Equals(56, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), 56, 57));
-            Equals(GetValue<sbyte>(57), l);
-            Equals(57, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), 57, 58));
-            Equals(GetValue<sbyte>(58), l);
-
-            Equals(58, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 2, 10));
-            Equals(GetValue<byte>(58), l);
-            Equals(58, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 2, 10));
-            Equals(GetValue<byte>(58), l);
-            Equals(58, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), 2, 10));
-            Equals(GetValue<sbyte>(58), l);
-            Equals(58, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), 2, 10));
-            Equals(GetValue<sbyte>(58), l);
+            l = 0;
+            Equals(0, Interlocked.Exchange(ref Unsafe.As<long, sbyte>(ref l), -4));
+            Equals(GetValue<sbyte>(-4), l);
+            Equals(-4, ExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), -5));
+            Equals(GetValue<sbyte>(-5), l);
 
             l = -1;
+            Equals(255, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 254, 255));
+            Equals(GetValue<byte>(254), l);
+            Equals(254, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 253, 254));
+            Equals(GetValue<byte>(253), l);
 
-            Equals(-1, Interlocked.Exchange(ref Unsafe.As<long, short>(ref l), 12345));
-            Equals(GetValue<short>(12345), l);
-            Equals(12345, ExchangeShort()(ref Unsafe.As<long, short>(ref l), 12346));
-            Equals(GetValue<short>(12346), l);
-            Equals(12346, Interlocked.Exchange(ref Unsafe.As<long, ushort>(ref l), 12347));
-            Equals(GetValue<ushort>(12347), l);
-            Equals(12347, ExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 12348));
-            Equals(GetValue<ushort>(12348), l);
+            l = 0;
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), -4, 0));
+            Equals(GetValue<sbyte>(-4), l);
+            Equals(-4, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), -5, -4));
+            Equals(GetValue<sbyte>(-5), l);
 
-            Equals(12348, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), 12348, 1234));
-            Equals(GetValue<short>(1234), l);
-            Equals(55, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), 1234, 1235));
-            Equals(GetValue<short>(1235), l);
-            Equals(56, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 1235, 1236));
-            Equals(GetValue<ushort>(1236), l);
-            Equals(57, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 1236, 1237));
-            Equals(GetValue<ushort>(1237), l);
+            Equals(251, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 2, 10));
+            Equals(GetValue<byte>(251), l);
+            Equals(251, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 2, 10));
+            Equals(GetValue<byte>(251), l);
+            Equals(-5, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), 2, 10));
+            Equals(GetValue<sbyte>(-5), l);
+            Equals(-5, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), 2, 10));
+            Equals(GetValue<sbyte>(-5), l);
 
-            Equals(58, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), 1444, 1555));
-            Equals(GetValue<short>(1237), l);
-            Equals(58, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), 1444, 1555));
-            Equals(GetValue<short>(1237), l);
-            Equals(58, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 1444, 1555));
-            Equals(GetValue<ushort>(1237), l);
-            Equals(58, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 1444, 1555));
-            Equals(GetValue<ushort>(1237), l);
+            l = 0;
+            Equals(0, Interlocked.Exchange(ref Unsafe.As<long, short>(ref l), -2));
+            Equals(GetValue<short>(-2), l);
+            Equals(-2, ExchangeShort()(ref Unsafe.As<long, short>(ref l), -3));
+            Equals(GetValue<short>(-3), l);
+
+            l = -1;
+            Equals(65535, Interlocked.Exchange(ref Unsafe.As<long, ushort>(ref l), 65532));
+            Equals(GetValue<ushort>(65532), l);
+            Equals(65532, ExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 65531));
+            Equals(GetValue<ushort>(65531), l);
+
+            l = 0;
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), -2, 0));
+            Equals(GetValue<short>(-2), l);
+            Equals(-2, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), -3, -2));
+            Equals(GetValue<short>(-3), l);
+
+            l = -1;
+            Equals(65535, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 65532, 65535));
+            Equals(GetValue<ushort>(65532), l);
+            Equals(65532, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 65531, 65532));
+            Equals(GetValue<ushort>(65531), l);
+
+            Equals(-5, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), 1444, 1555));
+            Equals(GetValue<short>(-5), l);
+            Equals(-5, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), 1444, 1555));
+            Equals(GetValue<short>(-5), l);
+            Equals(65531, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 1444, 1555));
+            Equals(GetValue<ushort>(65531), l);
+            Equals(65531, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 1444, 1555));
+            Equals(GetValue<ushort>(65531), l);
 
             l = -1;
 
