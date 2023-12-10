@@ -336,6 +336,8 @@
                                Dependencies="$(_WasmPInvokeHPath);$(_WasmPInvokeTablePath)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)driver.c"
                                Dependencies="@(_DriverCDependencies)" />
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)runtime.c"
+                               Dependencies="@(_DriverCDependencies)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)corebindings.c" />
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
