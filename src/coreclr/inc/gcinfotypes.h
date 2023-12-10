@@ -9,6 +9,10 @@
 #include "gcinfo.h"
 #endif
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif // _MSC_VER
+
 // *****************************************************************************
 // WARNING!!!: These values and code are also used by SOS in the diagnostics
 // repo. Should updated in a backwards and forwards compatible way.
@@ -43,14 +47,25 @@ __forceinline size_t SAFE_SHIFT_RIGHT(size_t x, size_t count)
 
 inline UINT32 CeilOfLog2(size_t x)
 {
+    // we are ok even if bsr is used vs. lzcnt
     _ASSERTE(x > 0);
-    UINT32 result = (x & (x - 1)) ? 1 : 0;
-    while (x != 1)
-    {
-        result++;
-        x >>= 1;
-    }
-    return result;
+
+    x = (x << 1) - 1;
+#ifdef TARGET_64BIT
+#ifdef _MSC_VER
+    UINT32 lzcountCeil = (UINT32)__lzcnt64((unsigned __int64)x);
+#else // _MSC_VER
+    UINT32 lzcountCeil = (UINT32)__builtin_clzl((unsigned long)x);
+#endif // _MSC_VER
+#else // TARGET_64BIT
+#ifdef _MSC_VER
+    UINT32 lzcountCeil = (UINT32)__lzcnt((unsigned int)x);
+#else // _MSC_VER
+    UINT32 lzcountCeil = (UINT32)__builtin_clz((unsigned int)x);
+#endif // _MSC_VER
+#endif
+
+    return BITS_PER_SIZE_T - lzcountCeil;
 }
 
 enum GcSlotFlags
