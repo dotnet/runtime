@@ -789,14 +789,6 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
             }
             break;
 
-        // Special case since idIsReg2Write is false for xchg
-        case INS_xchg:
-            if (id->idReg2() == reg)
-            {
-                return true;
-            }
-            break;
-
         case INS_movsb:
         case INS_movsd:
 #ifdef TARGET_AMD64
@@ -7986,7 +7978,7 @@ void emitter::emitIns_ARX_R(
     }
     else
     {
-        fmt = emitInsModeFormat(ins, IF_ARD_RRD);
+        fmt = (ins == INS_xchg) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
 
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
         assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE));
@@ -8099,7 +8091,7 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     }
     else
     {
-        fmt = emitInsModeFormat(ins, IF_ARD_RRD);
+        fmt = (ins == INS_xchg) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
         assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 

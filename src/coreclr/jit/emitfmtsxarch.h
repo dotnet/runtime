@@ -257,6 +257,7 @@ IF_DEF(ARW_SHF,         IS_AM_RW,                            AMD_CNS)  // r/w   
 IF_DEF(ARD_RRD,         IS_AM_RD|IS_R1_RD,                   AMD)      // read  [adr], read  reg1
 IF_DEF(AWR_RRD,         IS_AM_WR|IS_R1_RD,                   AMD)      // write [adr], read  reg1
 IF_DEF(ARW_RRD,         IS_AM_RW|IS_R1_RD,                   AMD)      // r/w   [adr], read  reg1
+IF_DEF(ARW_RRW,         IS_AM_RW|IS_R1_RW,                   AMD)      // r/w   [adr], r/w   reg1 (for XCHG [adr], reg1)
 
 IF_DEF(ARD_RRD_CNS,     IS_AM_RD|IS_R1_RD,                   AMD_CNS)  // read  [adr], read  reg1, const
 IF_DEF(AWR_RRD_CNS,     IS_AM_WR|IS_R1_RD,                   AMD_CNS)  // write [adr], read  reg1, const
