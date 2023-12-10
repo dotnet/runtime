@@ -298,7 +298,7 @@ extends:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
-                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
+                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing;" /p:BuildNativeAotFrameworkObjects=true'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
