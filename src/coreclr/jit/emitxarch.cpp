@@ -11125,6 +11125,7 @@ void emitter::emitDispIns(
         case IF_ARD_RRD:
         case IF_AWR_RRD:
         case IF_ARW_RRD:
+        case IF_ARW_RRW:
         {
             printf("%s", sstr);
             emitDispAddrMode(id);
@@ -11199,6 +11200,7 @@ void emitter::emitDispIns(
         case IF_SRD_RRD:
         case IF_SWR_RRD:
         case IF_SRW_RRD:
+        case IF_SRW_RRW:
         {
             printf("%s", sstr);
 
@@ -11897,6 +11899,7 @@ void emitter::emitDispIns(
         case IF_MRD_RRD:
         case IF_MWR_RRD:
         case IF_MRW_RRD:
+        case IF_MRW_RRW:
         {
             printf("%s", sstr);
             offs = emitGetInsDsp(id);
@@ -13222,6 +13225,7 @@ DONE:
                 break;
 
             case IF_ARW_RRD:
+            case IF_ARW_RRW:
             case IF_ARW_CNS:
             case IF_ARW_SHF:
                 if (id->idGCref() == GCT_BYREF)
@@ -13710,6 +13714,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SRW_CNS:
             case IF_SRW_RRD:
+            case IF_SRW_RRW:
             // += -= of a byref, no change
 
             case IF_SRW:
@@ -14185,6 +14190,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case IF_MRD_RRD:
             case IF_MWR_RRD:
             case IF_MRW_RRD:
+            case IF_MRW_RRW:
                 break;
 
             case IF_MRD_CNS:
