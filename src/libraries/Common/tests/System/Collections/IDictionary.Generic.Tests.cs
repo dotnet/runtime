@@ -428,7 +428,7 @@ namespace System.Collections.Tests
                 else
                 {
                     Assert.Equal(previousCount, keys.Count);
-                    Assert.Equal(previousCount, readOnlyKeys.Count);
+                    Assert.Equal(previousCount, readOnlyKeys.Count());
                 }
             }
         }
@@ -442,7 +442,7 @@ namespace System.Collections.Tests
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 IReadOnlyDictionary<TKey, TValue> readOnlyDictionary = dictionary;
                 ICollection<TKey> keys = dictionary.Keys;
-                IEnumerator<TKey> readOnlyKeys = readOnlyDictionary.Keys;
+                IEnumerable<TKey> readOnlyKeys = readOnlyDictionary.Keys;
                 IEnumerator<TKey> keysEnum = keys.GetEnumerator();
                 IEnumerator<TKey> readOnlyKeysEnum = readOnlyKeys.GetEnumerator();
                 dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
