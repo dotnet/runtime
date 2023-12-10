@@ -367,7 +367,7 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetMember (String, MemberTypes, BindingFlags)
 			//
 			case IntrinsicId.Type_GetMember: {
-					if (instanceValue.IsEmpty ()) {
+					if (instanceValue.IsEmpty () || argumentValues[0].IsEmpty ()) {
 						returnValue = MultiValueLattice.Top;
 						break;
 					}

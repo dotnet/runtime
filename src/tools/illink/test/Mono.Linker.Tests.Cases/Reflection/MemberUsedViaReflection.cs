@@ -155,7 +155,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		private class SpecificName
 		{
-			[Kept]
 			public SpecificName()
 			{ }
 
@@ -198,7 +197,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class PrefixLookupType
 		{
-			[Kept]
 			public PrefixLookupType ()
 			{ }
 
@@ -258,7 +256,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class BindingFlagsType
 		{
-			[Kept]
 			public BindingFlagsType ()
 			{ }
 
@@ -358,7 +355,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class MemberTypeNamedClass1
 		{
-			[Kept]
 			public MemberTypeNamedClass1()
 			{ }
 
@@ -379,7 +375,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class UnknownBindingFlags
 		{
-			[Kept]
 			public UnknownBindingFlags ()
 			{ }
 
@@ -449,7 +444,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class TestMemberTypes
 		{
-			[Kept]
 			public TestMemberTypes ()
 			{ }
 
@@ -487,7 +481,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class MyType
 		{
-			[Kept]
 			public MyType ()
 			{ }
 
@@ -534,7 +527,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class IfMember
 		{
-			[Kept]
 			public IfMember ()
 			{ }
 
@@ -594,7 +586,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		private class ElseMember
 		{
-			[Kept]
 			public ElseMember ()
 			{ }
 
