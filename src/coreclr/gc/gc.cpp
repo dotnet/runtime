@@ -7214,10 +7214,13 @@ void gc_heap::gc_thread_function ()
             if (!settings.concurrent)
             {
                 uint64_t after_resume_time = GetHighPrecisionTimeStamp ();
-                dprintf (6666, ("sus %I64d, %I64d till gc start, gc %I64d, %I64d till restart start, restart %I64d, total %I64d",
-                    (suspended_end_time - suspended_start_time), (dd_time_clock (dynamic_data_of (0)) - suspended_end_time),
-                    (end_gc_time - dd_time_clock (dynamic_data_of (0))), (before_resume_time - end_gc_time),
-                    (after_resume_time - before_resume_time), (after_resume_time - suspended_start_time)));
+                dprintf (6666, ("suspend %I64d, %I64d till gc start, gc %I64d, %I64d till restart start, restart %I64d, total %I64d",
+                    suspended_end_time - suspended_start_time,
+                    dd_time_clock (dynamic_data_of (0)) - suspended_end_time,
+                    end_gc_time - dd_time_clock (dynamic_data_of (0)),
+                    before_resume_time - end_gc_time,
+                    after_resume_time - before_resume_time,
+                    after_resume_time - suspended_start_time));
             }
 
             process_sync_log_stats();
@@ -22092,8 +22095,8 @@ void gc_heap::update_end_gc_time_per_heap()
             dprintf (6666, ("sample#%d: GC#%Id promoted %Id end %I64d - last gc end %I64d = %I64d, this GC pause %I64d (sus %I64d-%I64d(%I64d) till calling gc %I64d/till gc start %I64d, total pause: %I64d msl wait %I64d",
                 dynamic_heap_count_data.sample_index, VolatileLoadWithoutBarrier (&settings.gc_index), sample.gc_survived_size,
                 end_gc_time, last_suspended_end_time, sample.elapsed_between_gcs, sample.gc_pause_time,
-                suspended_start_time, suspended_end_time, (suspended_end_time - suspended_start_time),
-                (h0_gc_start_time - suspended_end_time), (dd_time_clock (dynamic_data_of (0)) - suspended_end_time), (end_gc_time - suspended_start_time),
+                suspended_start_time, suspended_end_time, suspended_end_time - suspended_start_time,
+                h0_gc_start_time - suspended_end_time, dd_time_clock (dynamic_data_of (0)) - suspended_end_time, end_gc_time - suspended_start_time,
                 sample.msl_wait_time));
 
             GCEventFireHeapCountSample_V1 (
@@ -22103,7 +22106,7 @@ void gc_heap::update_end_gc_time_per_heap()
                 sample.msl_wait_time);
 
             dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
-            (dynamic_heap_count_data.current_samples_count)++;
+            dynamic_heap_count_data.current_samples_count++;
 
             if (settings.condemned_generation == max_generation)
             {
