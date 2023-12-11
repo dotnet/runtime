@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>
+    /// Native constants for the Mach-O file format.
+    /// </summary>
     internal static class MachNative
     {
         public const uint MH_MAGIC_64 = 0xfeedfacf;

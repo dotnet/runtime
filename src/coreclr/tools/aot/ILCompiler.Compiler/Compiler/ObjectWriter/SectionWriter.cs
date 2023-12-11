@@ -9,7 +9,7 @@ using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler.ObjectWriter
 {
-    public struct SectionWriter
+    internal struct SectionWriter
     {
         private readonly ObjectWriter _objectWriter;
         private readonly SectionData _sectionData;

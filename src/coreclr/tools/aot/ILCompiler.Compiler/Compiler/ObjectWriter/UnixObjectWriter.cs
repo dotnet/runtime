@@ -12,6 +12,10 @@ using Internal.TypeSystem.TypesDebugInfo;
 
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>
+    /// Base implementation for ELF and Mach-O object file format writers. Implements
+    /// the common code for DWARF debugging and exception handling information.
+    /// </summary>
     internal abstract class UnixObjectWriter : ObjectWriter
     {
         private sealed record UnixSectionDefinition(string SymbolName, Stream SectionStream);
@@ -115,24 +119,24 @@ namespace ILCompiler.ObjectWriter
                         MethodExceptionHandlingInfoNode ehInfo = nodeWithCodeInfo.EHInfo;
                         ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) as ISymbolNode;
 
-                        flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
-                        flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
+                        flags |= ehInfo is not null ? FrameInfoFlags.HasEHInfo : 0;
+                        flags |= associatedDataNode is not null ? FrameInfoFlags.HasAssociatedData : 0;
 
                         lsdaSectionWriter.WriteByte((byte)flags);
 
-                        if (associatedDataNode != null)
+                        if (associatedDataNode is not null)
                         {
                             string symbolName = GetMangledName(associatedDataNode);
                             lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                         }
 
-                        if (ehInfo != null)
+                        if (ehInfo is not null)
                         {
                             string symbolName = GetMangledName(ehInfo);
                             lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                         }
 
-                        if (nodeWithCodeInfo.GCInfo != null)
+                        if (nodeWithCodeInfo.GCInfo is not null)
                         {
                             lsdaSectionWriter.Write(nodeWithCodeInfo.GCInfo);
                         }

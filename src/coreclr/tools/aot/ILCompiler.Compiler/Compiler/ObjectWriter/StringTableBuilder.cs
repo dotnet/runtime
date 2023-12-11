@@ -42,7 +42,6 @@ namespace ILCompiler.ObjectWriter
 
         private void FlushReservedStrings()
         {
-            // TODO: Use CollectionsMarshal.AsSpan
             string[] reservedStrings = _reservedStrings.ToArray();
 
             // Pre-sort the string based on their matching suffix

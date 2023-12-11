@@ -16,6 +16,42 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>
+    /// Mach-O object file format writer for Apple macOS and iOS-like targets.
+    /// </summary>
+    /// <remarks>
+    /// Old version of the Mach-O file format specification is mirrored at
+    /// https://github.com/aidansteele/osx-abi-macho-file-format-reference.
+    ///
+    /// There are some notable differences when compared to ELF or COFF:
+    /// - The maximum number of sections in object file is limited to 255.
+    /// - Sections are subdivided by their symbols and treated by the
+    ///   linker as subsections (often referred to as atoms by the linker).
+    ///
+    /// The consequences of these design decisions is the COMDAT sections are
+    /// modeled in entirely different way. Dead code elimination works on the
+    /// atom level, so relative relocations within the same section have to be
+    /// preserved.
+    ///
+    /// Debug information uses the standard DWARF format. It is, however, not
+    /// linked into the intermediate executable files. Instead the linker creates
+    /// a map between the final executable and the object files. Debuggers like
+    /// lldb then use this map to read the debug information from the object
+    /// file directly. As a consequence the DWARF information is not generated
+    /// with relocations for the DWARF sections themselves since it's never
+    /// needed.
+    ///
+    /// While Mach-O uses the DWARF exception handling information for unwind
+    /// tables it also supports a compact representation for common prolog types.
+    /// Unofficial reference of the format can be found at
+    /// https://faultlore.com/blah/compact-unwinding/. It's necessary to emit
+    /// at least the stub entries pointing to the DWARF information but due
+    /// to limits in the linked file format it's advisable to use the compact
+    /// encoding whenever possible.
+    ///
+    /// The Apple linker is extremely picky in which relocation types are allowed
+    /// inside the DWARF sections, both for debugging and exception handling.
+    /// </remarks>
     internal sealed class MachObjectWriter : UnixObjectWriter
     {
         private sealed record CompactUnwindCode(string PcStartSymbolName, uint PcLength, uint Code, string LsdaSymbolName = null, string PersonalitySymbolName = null);
