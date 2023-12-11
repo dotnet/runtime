@@ -108,9 +108,6 @@
 #pragma warning(disable:4477)
 #endif //_MSC_VER
 
-#define TRACE_GC
-#define SIMPLE_DPRINTF
-
 inline void FATAL_GC_ERROR()
 {
 #if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
