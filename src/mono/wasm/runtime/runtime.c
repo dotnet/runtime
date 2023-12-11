@@ -54,9 +54,24 @@
 
 #include "runtime.h"
 
+#ifdef DRIVER_GEN
+#include "driver-gen.c"
+#endif
+
 int mono_wasm_enable_gc = 1;
 
+/* Missing from public headers */
 void mono_icall_table_init (void);
+void mono_wasm_enable_debugging (int);
+void mono_ee_interp_init (const char *opts);
+void mono_marshal_ilgen_init (void);
+void mono_method_builder_ilgen_init (void);
+void mono_sgen_mono_ilgen_init (void);
+char *monoeg_g_getenv(const char *variable);
+int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
+int32_t mini_parse_debug_option (const char *option);
+char *mono_method_get_full_name (MonoMethod *method);
+void mono_trace_init (void);
 
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
@@ -74,7 +89,6 @@ mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 #define g_new0(type, size) ((type *) calloc (sizeof (type), (size)))
 
 #if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
-#define NEED_INTERP 1
 #ifndef LINK_ICALLS
 // FIXME: llvm+interp mode needs this to call icalls
 #define NEED_NORMAL_ICALL_TABLES 1
@@ -151,8 +165,8 @@ icall_table_lookup_symbol (void *func)
 
 #endif
 
-void
-mono_wasm_init_icall_table (void)
+static void
+init_icall_table (void)
 {
 #ifdef LINK_ICALLS
 	/* Link in our own linked icall table */
@@ -176,8 +190,8 @@ mono_wasm_init_icall_table (void)
  * execute METHOD from native code.
  * EXTRA_ARG is the argument passed to the interp entry functions in the runtime.
  */
-void*
-mono_wasm_get_native_to_interp (MonoMethod *method, void *extra_arg)
+static void*
+get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
 	void *addr;
 
@@ -203,4 +217,99 @@ mono_wasm_get_native_to_interp (MonoMethod *method, void *extra_arg)
 	addr = wasm_dl_get_native_to_interp (key, extra_arg);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
+}
+
+static void *sysglobal_native_handle;
+
+static void*
+wasm_dl_load (const char *name, int flags, char **err, void *user_data)
+{
+	void* handle = wasm_dl_lookup_pinvoke_table (name);
+	if (handle)
+		return handle;
+
+	if (!strcmp (name, "System.Globalization.Native"))
+		return sysglobal_native_handle;
+
+#if WASM_SUPPORTS_DLOPEN
+	return dlopen(name, flags);
+#endif
+
+	return NULL;
+}
+
+static void*
+wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
+{
+	if (handle == sysglobal_native_handle)
+		assert (0);
+
+#if WASM_SUPPORTS_DLOPEN
+	if (!wasm_dl_is_pinvoke_tables (handle)) {
+		return dlsym (handle, name);
+	}
+#endif
+
+	PinvokeImport *table = (PinvokeImport*)handle;
+	for (int i = 0; table [i].name; ++i) {
+		if (!strcmp (table [i].name, name))
+			return table [i].func;
+	}
+	return NULL;
+}
+
+MonoDomain *
+mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, const char *interp_opts)
+{
+	MonoDomain *domain;
+
+	mini_parse_debug_option ("top-runtime-invoke-unhandled");
+
+	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
+	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
+
+#ifdef GEN_PINVOKE
+	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
+#endif
+
+#ifdef ENABLE_AOT
+	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
+
+	// Defined in driver-gen.c
+	register_aot_modules ();
+#ifdef EE_MODE_LLVMONLY_INTERP
+	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
+#else
+	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
+#endif
+#else
+	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
+
+	/*
+	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
+	 * debug_level == 0 disables debugging and enables interpreter optimizations
+	 * debug_level < 0 enabled debugging and disables debug logging.
+	 *
+	 * Note: when debugging is enabled interpreter optimizations are disabled.
+	 */
+	if (debug_level) {
+		// Disable optimizations which interfere with debugging
+		interp_opts = "-all";
+		mono_wasm_enable_debugging (debug_level);
+	}
+#endif
+
+	init_icall_table ();
+
+	mono_ee_interp_init (interp_opts);
+	mono_marshal_ilgen_init();
+	mono_method_builder_ilgen_init ();
+	mono_sgen_mono_ilgen_init ();
+
+	mono_trace_init ();
+	mono_trace_set_log_handler (log_callback, NULL);
+	domain = mono_jit_init_version ("mono", NULL);
+	mono_thread_set_main (mono_thread_current ());
+
+	return domain;
 }

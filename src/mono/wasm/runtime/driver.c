@@ -36,19 +36,11 @@
 #include "pinvoke.h"
 #include "runtime.h"
 
-#ifdef GEN_PINVOKE
-#include "wasm_m2n_invoke.g.h"
-#endif
 #include "gc-common.h"
 
 void bindings_initialize_internals ();
 
-
 void mono_wasm_enable_debugging (int);
-void mono_ee_interp_init (const char *opts);
-void mono_marshal_ilgen_init (void);
-void mono_method_builder_ilgen_init (void);
-void mono_sgen_mono_ilgen_init (void);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t mini_parse_debug_option (const char *option);
@@ -125,7 +117,6 @@ int
 mono_string_instance_is_interned (MonoString *str_raw);
 
 int mono_regression_test_step (int verbose_level, char *image, char *method_name);
-void mono_trace_init (void);
 
 #define g_new(type, size)  ((type *) malloc (sizeof (type) * (size)))
 #define g_new0(type, size) ((type *) calloc (sizeof (type), (size)))
@@ -167,10 +158,6 @@ mono_wasm_deregister_root (char *addr)
 	mono_gc_deregister_root (addr);
 	MONO_EXIT_GC_UNSAFE;
 }
-
-#ifdef DRIVER_GEN
-#include "driver-gen.c"
-#endif
 
 static void
 bundled_resources_free_func (void *resource, void *free_data)
@@ -245,49 +232,6 @@ mono_wasm_getenv (const char *name)
 	return monoeg_g_getenv (name); // JS must free
 }
 
-static void *sysglobal_native_handle;
-
-static void*
-wasm_dl_load (const char *name, int flags, char **err, void *user_data)
-{
-	void* handle = wasm_dl_lookup_pinvoke_table (name);
-	if (handle)
-		return handle;
-
-	if (!strcmp (name, "System.Globalization.Native"))
-		return sysglobal_native_handle;
-
-#if WASM_SUPPORTS_DLOPEN
-	return dlopen(name, flags);
-#endif
-
-	return NULL;
-}
-
-static void*
-wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
-{
-	if (handle == sysglobal_native_handle)
-		assert (0);
-
-#if WASM_SUPPORTS_DLOPEN
-	if (!wasm_dl_is_pinvoke_tables (handle)) {
-		return dlsym (handle, name);
-	}
-#endif
-
-	PinvokeImport *table = (PinvokeImport*)handle;
-	for (int i = 0; table [i].name; ++i) {
-		if (!strcmp (table [i].name, name))
-			return table [i].func;
-	}
-	return NULL;
-}
-
-#if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
-#define NEED_INTERP 1
-#endif
-
 void mono_wasm_link_icu_shim (void);
 
 void
@@ -311,8 +255,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 
 	// monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
-
-	//monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 
 #ifdef DEBUG
 	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -350,63 +292,13 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	monovm_initialize (2, appctx_keys, appctx_values);
 
-	mini_parse_debug_option ("top-runtime-invoke-unhandled");
-
 #ifndef INVARIANT_TIMEZONE
 	mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
-	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
-	mono_wasm_install_get_native_to_interp_tramp (mono_wasm_get_native_to_interp);
 
-#ifdef GEN_PINVOKE
-	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
-#endif
-
-#ifdef ENABLE_AOT
-	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
-
-	// Defined in driver-gen.c
-	register_aot_modules ();
-#ifdef EE_MODE_LLVMONLY_INTERP
-	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
-#else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
-#endif
-#else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
-
-	/*
-	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
-	 * debug_level == 0 disables debugging and enables interpreter optimizations
-	 * debug_level < 0 enabled debugging and disables debug logging.
-	 *
-	 * Note: when debugging is enabled interpreter optimizations are disabled.
-	 */
-	if (debug_level) {
-		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
-		mono_wasm_enable_debugging (debug_level);
-	}
-
-#endif
-
-	mono_wasm_init_icall_table ();
-
-#ifdef NEED_INTERP
-	mono_ee_interp_init (interp_opts);
-	mono_marshal_ilgen_init();
-	mono_method_builder_ilgen_init ();
-	mono_sgen_mono_ilgen_init ();
-#endif
-
-	mono_trace_init ();
-	mono_trace_set_log_handler (wasm_trace_logger, NULL);
-	root_domain = mono_jit_init_version ("mono", NULL);
+	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
-
-	mono_thread_set_main (mono_thread_current ());
-
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*

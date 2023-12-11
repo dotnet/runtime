@@ -14,7 +14,6 @@
 #include <mono/metadata/debug-helpers.h>
 
 extern int mono_wasm_enable_gc;
-void* mono_wasm_get_native_to_interp (MonoMethod *method, void *extra_arg);
-void mono_wasm_init_icall_table (void);
+MonoDomain *mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, const char *interp_opts);
 
 #endif
