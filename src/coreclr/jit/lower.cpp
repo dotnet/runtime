@@ -846,8 +846,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // jumpCnt is the number of elements in the jump table array.
     // jumpTab is the actual pointer to the jump table array.
     // targetCnt is the number of unique targets in the jump table array.
-    jumpCnt   = originalSwitchBB->GetSwitchTarget()->bbsCount;
-    jumpTab   = originalSwitchBB->GetSwitchTarget()->bbsDstTab;
+    jumpCnt   = originalSwitchBB->GetSwitchTargets()->bbsCount;
+    jumpTab   = originalSwitchBB->GetSwitchTargets()->bbsDstTab;
     targetCnt = originalSwitchBB->NumSucc(comp);
 
 // GT_SWITCH must be a top-level node with no use.
@@ -959,7 +959,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     assert(originalSwitchBB->KindIs(BBJ_ALWAYS));
     assert(originalSwitchBB->NextIs(afterDefaultCondBlock));
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
-    assert(afterDefaultCondBlock->GetSwitchTarget()->bbsHasDefault);
+    assert(afterDefaultCondBlock->GetSwitchTargets()->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
@@ -1168,7 +1168,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
 
             // this block no longer branches to the default block
-            afterDefaultCondBlock->GetSwitchTarget()->removeDefault();
+            afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
         }
 
         comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);

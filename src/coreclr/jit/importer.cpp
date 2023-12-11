@@ -7675,8 +7675,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     // Find the jump target
                     size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned     jumpCnt   = block->GetSwitchTarget()->bbsCount;
-                    BasicBlock** jumpTab   = block->GetSwitchTarget()->bbsDstTab;
+                    unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
+                    BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
                     bool         foundVal  = false;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)

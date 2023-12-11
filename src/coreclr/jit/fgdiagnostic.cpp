@@ -1130,7 +1130,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
-                        if (bSource->GetSwitchTarget()->getDefault() == bTarget)
+                        if (bSource->GetSwitchTargets()->getDefault() == bTarget)
                         {
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
@@ -2072,7 +2072,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             {
                 printf("->");
 
-                const BBswtDesc* const jumpSwt     = block->GetSwitchTarget();
+                const BBswtDesc* const jumpSwt     = block->GetSwitchTargets();
                 const unsigned         jumpCnt     = jumpSwt->bbsCount;
                 BasicBlock** const     jumpTab     = jumpSwt->bbsDstTab;
                 int                    switchWidth = 0;

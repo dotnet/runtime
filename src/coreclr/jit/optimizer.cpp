@@ -2794,9 +2794,9 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_SWITCH:
         {
             bool redirected = false;
-            for (unsigned i = 0; i < blk->GetSwitchTarget()->bbsCount; i++)
+            for (unsigned i = 0; i < blk->GetSwitchTargets()->bbsCount; i++)
             {
-                BasicBlock* const switchDest = blk->GetSwitchTarget()->bbsDstTab[i];
+                BasicBlock* const switchDest = blk->GetSwitchTargets()->bbsDstTab[i];
                 if (redirectMap->Lookup(switchDest, &newJumpDest))
                 {
                     if (updatePreds)
@@ -2807,7 +2807,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
                     {
                         fgAddRefPred(newJumpDest, blk);
                     }
-                    blk->GetSwitchTarget()->bbsDstTab[i] = newJumpDest;
+                    blk->GetSwitchTargets()->bbsDstTab[i] = newJumpDest;
                     redirected                           = true;
                 }
                 else if (addPreds)
@@ -2840,7 +2840,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
     switch (from->GetKind())
     {
         case BBJ_SWITCH:
-            to->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetSwitchTarget()));
+            to->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetSwitchTargets()));
             break;
         case BBJ_EHFINALLYRET:
             to->SetEhf(new (this, CMK_BasicBlock) BBehfDesc(this, from->GetEhfTarget()));
@@ -8336,9 +8336,9 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             case BBJ_SWITCH:
                 unsigned jumpCnt;
-                jumpCnt = predBlock->GetSwitchTarget()->bbsCount;
+                jumpCnt = predBlock->GetSwitchTargets()->bbsCount;
                 BasicBlock** jumpTab;
-                jumpTab = predBlock->GetSwitchTarget()->bbsDstTab;
+                jumpTab = predBlock->GetSwitchTargets()->bbsDstTab;
 
                 do
                 {

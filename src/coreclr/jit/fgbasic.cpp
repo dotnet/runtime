@@ -467,8 +467,8 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
     // For the jump targets values that match oldTarget of our BBJ_SWITCH
     // replace predecessor 'blockSwitch' with 'newTarget'
 
-    unsigned     jumpCnt = blockSwitch->GetSwitchTarget()->bbsCount;
-    BasicBlock** jumpTab = blockSwitch->GetSwitchTarget()->bbsDstTab;
+    unsigned     jumpCnt = blockSwitch->GetSwitchTargets()->bbsCount;
+    BasicBlock** jumpTab = blockSwitch->GetSwitchTargets()->bbsDstTab;
 
     unsigned i = 0;
 
@@ -714,8 +714,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 
         case BBJ_SWITCH:
         {
-            unsigned const     jumpCnt = block->GetSwitchTarget()->bbsCount;
-            BasicBlock** const jumpTab = block->GetSwitchTarget()->bbsDstTab;
+            unsigned const     jumpCnt = block->GetSwitchTargets()->bbsCount;
+            BasicBlock** const jumpTab = block->GetSwitchTargets()->bbsDstTab;
             bool               changed = false;
 
             for (unsigned i = 0; i < jumpCnt; i++)
@@ -2996,8 +2996,8 @@ void Compiler::fgLinkBasicBlocks()
 
             case BBJ_SWITCH:
             {
-                unsigned     jumpCnt = curBBdesc->GetSwitchTarget()->bbsCount;
-                BasicBlock** jumpPtr = curBBdesc->GetSwitchTarget()->bbsDstTab;
+                unsigned     jumpCnt = curBBdesc->GetSwitchTargets()->bbsCount;
+                BasicBlock** jumpPtr = curBBdesc->GetSwitchTargets()->bbsDstTab;
 
                 do
                 {
@@ -4785,7 +4785,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
         assert(curr->KindIs(BBJ_SWITCH));
 
         // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::New(this, curr->GetSwitchTarget());
+        newBlock         = BasicBlock::New(this, curr->GetSwitchTargets());
         newBlock->bbRefs = 0;
 
         // In the case of a switch statement there's more complicated logic in order to wire up the predecessor lists

@@ -352,9 +352,9 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
     fgHasSwitch                                  = true;
-    firstBlock->GetSwitchTarget()->bbsCount      = jumpCount + 1;
-    firstBlock->GetSwitchTarget()->bbsHasDefault = true;
-    firstBlock->GetSwitchTarget()->bbsDstTab     = jmpTab;
+    firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
+    firstBlock->GetSwitchTargets()->bbsHasDefault = true;
+    firstBlock->GetSwitchTargets()->bbsDstTab     = jmpTab;
     firstBlock->SetNext(isReversed ? blockIfTrue : blockIfFalse);
 
     // Splitting doesn't work well with jump-tables currently

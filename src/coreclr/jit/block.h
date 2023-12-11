@@ -743,7 +743,7 @@ public:
         return (bbTarget == bbNext);
     }
 
-    BBswtDesc* GetSwitchTarget() const
+    BBswtDesc* GetSwitchTargets() const
     {
         assert(KindIs(BBJ_SWITCH));
         assert(bbSwtTarget != nullptr);
