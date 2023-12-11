@@ -677,7 +677,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.PredefinedCulturesOnly)
             {
-                if (GlobalizationMode.Invariant || (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName)))
+                if (GlobalizationMode.Invariant || (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName) : !IcuIsEnsurePredefinedLocaleName(cultureName)))
                     return null;
             }
 
@@ -1993,7 +1993,7 @@ namespace System.Globalization
                     else
                     {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                        string? longTimeFormat =  GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
+                        string? longTimeFormat = GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
 #else
                         string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
 #endif

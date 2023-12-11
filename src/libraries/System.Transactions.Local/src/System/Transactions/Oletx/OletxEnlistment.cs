@@ -1193,5 +1193,5 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
     {
         get => base.InternalEnlistment;
         set => base.InternalEnlistment = value;
-     }
+    }
 }

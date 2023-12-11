@@ -54,6 +54,7 @@ namespace System.Collections.Frozen
         private protected int HashCount { get; }
         private protected abstract bool Equals(string? x, string? y);
         private protected abstract int GetHashCode(string s);
+        private protected virtual bool CheckLengthQuick(string key) => true;
         private protected override string[] ItemsCore => _items;
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_items);
         private protected override int CountCore => _hashTable.Count;
@@ -64,20 +65,23 @@ namespace System.Collections.Frozen
             if (item is not null && // this implementation won't be used for null values
                 (uint)(item.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                int hashCode = GetHashCode(item);
-                _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
-
-                while (index <= endIndex)
+                if (CheckLengthQuick(item))
                 {
-                    if (hashCode == _hashTable.HashCodes[index])
-                    {
-                        if (Equals(item, _items[index]))
-                        {
-                            return index;
-                        }
-                    }
+                    int hashCode = GetHashCode(item);
+                    _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
 
-                    index++;
+                    while (index <= endIndex)
+                    {
+                        if (hashCode == _hashTable.HashCodes[index])
+                        {
+                            if (Equals(item, _items[index]))
+                            {
+                                return index;
+                            }
+                        }
+
+                        index++;
+                    }
                 }
             }
 

@@ -3493,11 +3493,16 @@ const emitJumpKind emitReverseJumpKinds[] = {
 //
 /* static */ bool emitter::emitJmpInstHasNoCode(instrDesc* id)
 {
-    bool result = (id->idIns() == INS_jmp) && (id->idCodeSize() == 0);
+    bool result = (id->idIns() == INS_jmp) && ((instrDescJmp*)id)->idjIsRemovableJmpCandidate;
 
-    // A zero size jump instruction can only be the one that is marked
-    // as removable candidate.
-    assert(!result || ((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+// A jump marked for removal must have a code size of 0,
+// except for jumps that must be replaced by nops on AMD64 (these must have a size of 1)
+#ifdef TARGET_AMD64
+    const bool isNopReplacement = ((instrDescJmp*)id)->idjIsAfterCallBeforeEpilog && (id->idCodeSize() == 1);
+    assert(!result || (id->idCodeSize() == 0) || isNopReplacement);
+#else  // !TARGET_AMD64
+    assert(!result || (id->idCodeSize() == 0));
+#endif // !TARGET_AMD64
 
     return result;
 }
@@ -4624,8 +4629,7 @@ emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
 // Arguments:
 //    indir - the memory operand.
 //    id - the instrDesc to fill in.
-//    fmt - the instruction format to use. This must be one of the ARD, AWR, or ARW formats. If necessary (such as for
-//          GT_CLS_VAR_ADDR), this function will map it to the correct format.
+//    fmt - the instruction format to use. This must be one of the ARD, AWR, or ARW formats.
 //    ins - the instruction we are generating. This might affect the instruction format we choose.
 //
 // Assumptions:
@@ -4650,27 +4654,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 
     GenTree* memBase = indir->Base();
 
-    if ((memBase != nullptr) && memBase->isContained() && (memBase->OperGet() == GT_CLS_VAR_ADDR))
-    {
-        CORINFO_FIELD_HANDLE fldHnd = memBase->AsClsVar()->gtClsVarHnd;
-
-        // Static always need relocs
-        if (!jitStaticFldIsGlobAddr(fldHnd))
-        {
-            // "CLS_VAR_ADDR"s (currently only used for data section constants, which
-            // are addressable IP relative) are, by contract, always relocatable.
-            id->idSetIsDspReloc();
-        }
-
-        id->idAddr()->iiaFieldHnd = fldHnd;
-        id->idInsFmt(emitMapFmtForIns(emitMapFmtAtoM(fmt), ins));
-
-#ifdef DEBUG
-        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_STATIC_HDL;
-        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(fldHnd);
-#endif
-    }
-    else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
+    if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
         // Absolute addresses marked as contained should fit within the base of addr mode.
         assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
@@ -4791,12 +4775,6 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
 
     GenTree* addr = mem->Addr();
 
-    if (addr->OperGet() == GT_CLS_VAR_ADDR)
-    {
-        emitIns_R_C(ins, attr, dstReg, addr->AsClsVar()->gtClsVarHnd, 0);
-        return;
-    }
-
     if (addr->OperIs(GT_LCL_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
@@ -4845,41 +4823,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     {
         assert(ins == INS_movbe);
         data = data->gtGetOp1();
-    }
-
-    if (addr->OperGet() == GT_CLS_VAR_ADDR)
-    {
-        if (data->isContainedIntOrIImmed())
-        {
-            emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
-        }
-#if defined(FEATURE_HW_INTRINSICS)
-        else if (data->OperIsHWIntrinsic() && data->isContained())
-        {
-            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
-            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-            size_t              numArgs     = hwintrinsic->GetOperandCount();
-            GenTree*            op1         = hwintrinsic->Op(1);
-
-            if (numArgs == 1)
-            {
-                emitIns_C_R(ins, attr, addr->AsClsVar()->gtClsVarHnd, op1->GetRegNum(), 0);
-            }
-            else
-            {
-                assert(numArgs == 2);
-
-                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
-                emitIns_C_R_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, op1->GetRegNum(), icon);
-            }
-        }
-#endif // FEATURE_HW_INTRINSICS
-        else
-        {
-            assert(!data->isContained());
-            emitIns_C_R(ins, attr, addr->AsClsVar()->gtClsVarHnd, data->GetRegNum(), 0);
-        }
-        return;
     }
 
     if (addr->OperIs(GT_LCL_ADDR))
@@ -5136,54 +5079,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     break;
                 }
 
-                case GT_CLS_VAR_ADDR:
-                {
-                    if (memOp == src)
-                    {
-                        assert(otherOp == dst);
-                        assert(cnsOp == nullptr);
-
-                        if (instrHasImplicitRegPairDest(ins))
-                        {
-                            // src is a class static variable
-                            // dst is implicit - RDX:RAX
-                            emitIns_C(ins, attr, memBase->AsClsVar()->gtClsVarHnd, 0);
-                        }
-                        else
-                        {
-                            // src is a class static variable
-                            // dst is a register
-                            emitIns_R_C(ins, attr, dst->GetRegNum(), memBase->AsClsVar()->gtClsVarHnd, 0);
-                        }
-                    }
-                    else
-                    {
-                        assert(memOp == dst);
-
-                        if (cnsOp != nullptr)
-                        {
-                            assert(cnsOp == src);
-                            assert(otherOp == nullptr);
-                            assert(src->IsCnsIntOrI());
-
-                            // src is an contained immediate
-                            // dst is a class static variable
-                            emitIns_C_I(ins, attr, memBase->AsClsVar()->gtClsVarHnd, 0,
-                                        (int)src->AsIntConCommon()->IconValue());
-                        }
-                        else
-                        {
-                            assert(otherOp == src);
-
-                            // src is a register
-                            // dst is a class static variable
-                            emitIns_C_R(ins, attr, memBase->AsClsVar()->gtClsVarHnd, src->GetRegNum(), 0);
-                        }
-                    }
-
-                    return dst->GetRegNum();
-                }
-
                 default: // Addressing mode [base + index * scale + offset]
                 {
                     instrDesc* id = nullptr;
@@ -5437,16 +5332,12 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperIs(GT_LCL_VAR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT) || addr->IsLclVarAddr());
+    assert(addr->OperIs(GT_LCL_VAR, GT_LEA, GT_CNS_INT) || addr->IsLclVarAddr());
 
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
 
-    ssize_t offset = 0;
-    if (addr->OperGet() != GT_CLS_VAR_ADDR)
-    {
-        offset = storeInd->Offset();
-    }
+    ssize_t offset = storeInd->Offset();
 
     if (src->isContainedIntOrIImmed())
     {
@@ -5532,13 +5423,9 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperIs(GT_LCL_VAR, GT_CLS_VAR_ADDR, GT_LEA, GT_CNS_INT) || addr->IsLclVarAddr());
+    assert(addr->OperIs(GT_LCL_VAR, GT_LEA, GT_CNS_INT) || addr->IsLclVarAddr());
 
-    ssize_t offset = 0;
-    if (addr->OperGet() != GT_CLS_VAR_ADDR)
-    {
-        offset = storeInd->Offset();
-    }
+    ssize_t offset = storeInd->Offset();
 
     if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
@@ -7528,7 +7415,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
 {
     assert(ins == INS_mov);
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescLbl* id = emitNewInstrLbl();
 
@@ -7587,7 +7474,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     assert(ins == INS_lea);
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -9200,12 +9087,17 @@ void emitter::emitIns_J(instruction ins,
                         int         instrCount /* = 0 */,
                         bool        isRemovableJmpCandidate /* = false */)
 {
+#ifdef TARGET_AMD64
+    // Check emitter::emitLastIns before it is updated
+    const bool lastInsIsCall = emitIsLastInsCall();
+#endif // TARGET_AMD64
+
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
 
     if (dst != nullptr)
     {
-        assert(dst->bbFlags & BBF_HAS_LABEL);
+        assert(dst->HasFlag(BBF_HAS_LABEL));
         assert(instrCount == 0);
     }
     else
@@ -9227,9 +9119,23 @@ void emitter::emitIns_J(instruction ins,
     }
 #endif // DEBUG
 
-    emitContainsRemovableJmpCandidates |= isRemovableJmpCandidate;
-    id->idjIsRemovableJmpCandidate = isRemovableJmpCandidate ? 1 : 0;
-    id->idjShort                   = 0;
+    if (isRemovableJmpCandidate)
+    {
+        emitContainsRemovableJmpCandidates = true;
+        id->idjIsRemovableJmpCandidate     = 1;
+#ifdef TARGET_AMD64
+        // If this jump is after a call instruction, we might need to insert a nop after it's removed,
+        // but only if the jump is before an OS epilog.
+        // We'll check for the OS epilog in emitter::emitRemoveJumpToNextInst().
+        id->idjIsAfterCallBeforeEpilog = lastInsIsCall ? 1 : 0;
+#endif // TARGET_AMD64
+    }
+    else
+    {
+        id->idjIsRemovableJmpCandidate = 0;
+    }
+
+    id->idjShort = 0;
     if (dst != nullptr)
     {
         /* Assume the jump will be long */
@@ -16172,6 +16078,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     insFormat     insFmt        = id->idInsFmt();
     unsigned char callInstrSize = 0;
 
+    // Indicates a jump between after a call and before an OS epilog was replaced by a nop on AMD64
+    bool convertedJmpToNop = false;
+
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
 #endif // DEBUG
@@ -16292,22 +16201,50 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 
         case IF_LABEL:
+        {
+            instrDescJmp* jmp = (instrDescJmp*)id;
+            assert(id->idGCref() == GCT_NONE);
+
+            if (!jmp->idjIsRemovableJmpCandidate)
+            {
+                assert(id->idIsBound());
+                dst = emitOutputLJ(ig, dst, id);
+            }
+#ifdef TARGET_AMD64
+            else if (jmp->idjIsAfterCallBeforeEpilog)
+            {
+                // Need to insert a nop if the removed jump was after a call and before an OS epilog
+                // (The code size should already be set to 1 for the nop)
+                assert(id->idCodeSize() == 1);
+                dst = emitOutputNOP(dst, 1);
+
+                // Set convertedJmpToNop in case we need to print this instrDesc as a nop in a disasm
+                convertedJmpToNop = true;
+            }
+#endif // TARGET_AMD64
+            else
+            {
+                // Jump was removed, and no nop was needed, so id should not have any code
+                assert(jmp->idjIsRemovableJmpCandidate);
+                assert(emitJmpInstHasNoCode(id));
+            }
+
+            sz = sizeof(instrDescJmp);
+            break;
+        }
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
         {
             assert(id->idGCref() == GCT_NONE);
             assert(id->idIsBound() || emitJmpInstHasNoCode(id));
+            instrDescJmp* jmp = (instrDescJmp*)id;
+
+            // Jump removal optimization is only for IF_LABEL
+            assert(!jmp->idjIsRemovableJmpCandidate);
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
-            if (id->idCodeSize() != 0)
-            {
-                dst = emitOutputLJ(ig, dst, id);
-            }
-            else
-            {
-                assert(((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
-            }
-            sz = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
+            dst = emitOutputLJ(ig, dst, id);
+            sz  = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
         }
 
@@ -17565,8 +17502,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
     }
 
-    // Make sure we set the instruction descriptor size correctly
+// Make sure we set the instruction descriptor size correctly
+#ifdef TARGET_AMD64
+    // If a jump is replaced by a nop, its instrDesc is temporarily modified so the nop
+    // is displayed correctly in disasms. Check for this discrepancy to avoid triggering this assert.
+    assert(((ins == INS_jmp) && (id->idIns() == INS_nop)) || (sz == emitSizeOfInsDsc(id)));
+#else  // !TARGET_AMD64
     assert(sz == emitSizeOfInsDsc(id));
+#endif // !TARGET_AMD64
 
 #if !FEATURE_FIXED_OUT_ARGS
     bool updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
@@ -17623,14 +17566,47 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(id));
 
 #ifdef DEBUG
-    if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
+    if ((emitComp->opts.disAsm || emitComp->verbose) && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
     {
-        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+#ifdef TARGET_AMD64
+        // convertedJmpToNop indicates this instruction is a removable jump that was replaced by a nop.
+        // The instrDesc still describes a jump, so in order to print the nop in the disasm correctly,
+        // set the instruction and format accordingly (and reset them after to avoid triggering asserts).
+        if (convertedJmpToNop)
+        {
+            id->idIns(INS_nop);
+            id->idInsFmt(IF_NONE);
+
+            emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+
+            id->idIns(ins);
+            id->idInsFmt(insFmt);
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+        }
     }
 #else
-    if (emitComp->opts.disAsm && !emitJmpInstHasNoCode(id))
+    if (emitComp->opts.disAsm && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
     {
-        emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+#ifdef TARGET_AMD64
+        if (convertedJmpToNop)
+        {
+            id->idIns(INS_nop);
+            id->idInsFmt(IF_NONE);
+
+            emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+
+            id->idIns(ins);
+            id->idInsFmt(insFmt);
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+        }
     }
 #endif
 

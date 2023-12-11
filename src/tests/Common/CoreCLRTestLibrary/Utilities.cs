@@ -63,6 +63,7 @@ namespace TestLibrary
         public static bool IsX64 => (RuntimeInformation.ProcessArchitecture == Architecture.X64);
         public static bool IsArm => (RuntimeInformation.ProcessArchitecture == Architecture.Arm);
         public static bool IsArm64 => (RuntimeInformation.ProcessArchitecture == Architecture.Arm64);
+        public static bool IsXArch => IsX86 || IsX64;
 
         public static bool IsWindows => OperatingSystem.IsWindows();
         public static bool IsLinux => OperatingSystem.IsLinux();
@@ -94,7 +95,8 @@ namespace TestLibrary
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
-        public static bool IsNativeAot => IsSingleFile && IsNotMonoRuntime && !IsReflectionEmitSupported;
+        public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
+        public static bool IsNotNativeAot => !IsNativeAot;
 
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;
@@ -438,6 +440,8 @@ namespace TestLibrary
 
             exitCode = ExecuteAndUnloadInternal(assemblyPath, args, unloadingCallback, out alcWeakRef);
 
+            // Run the GC and finalizer a few times to ensure that any complicated
+            // object trees and runtime data structures that may keep the ALC alive are freed.
             for (int i = 0; i < 8 && alcWeakRef.IsAlive; i++)
             {
                 GC.Collect();
@@ -455,6 +459,33 @@ namespace TestLibrary
             }
 
             return exitCode;
+        }
+
+        private static void ExecuteAndUnloadInternal(string assemblyPath, string typeName, string methodName, object[] args, out WeakReference alcWeakRef)
+        {
+            AssemblyLoadContext alc = new AssemblyLoadContext($"[{assemblyPath}]{typeName}.{methodName}", true);
+            alcWeakRef = new WeakReference(alc);
+
+            Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
+            Type testType = asm.GetType(typeName);
+            testType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static).Invoke(null, args);
+            alc.Unload();
+        }
+
+        public static void ExecuteAndUnload(string assemblyPath, string typeName, string methodName, params object[] args)
+        {
+            WeakReference alcWeakRef;
+            ExecuteAndUnloadInternal(assemblyPath, typeName, methodName, args, out alcWeakRef);
+
+            // Run the GC and finalizer a few times to ensure that any complicated
+            // object trees and runtime data structures that may keep the ALC alive are freed.
+            for (int i = 0; i < 8 && alcWeakRef.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.False(alcWeakRef.IsAlive);
         }
     }
 }

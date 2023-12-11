@@ -38,12 +38,6 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
             replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
         }
     }
-
-    // memory
-    const originalUpdateMemoryViews = replacements.updateMemoryViews;
-    runtimeHelpers.updateMemoryViews = replacements.updateMemoryViews = () => {
-        originalUpdateMemoryViews();
-    };
 }
 
 export async function init_polyfills_async(): Promise<void> {

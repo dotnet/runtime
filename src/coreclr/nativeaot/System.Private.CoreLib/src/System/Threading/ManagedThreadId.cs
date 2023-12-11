@@ -214,7 +214,7 @@ namespace System.Threading
             int id;
 
             var priorIdDispenser = Volatile.Read(ref s_idDispenser);
-            for (;;)
+            for (; ; )
             {
                 var updatedIdDispenser = priorIdDispenser.AllocateId(out id);
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
@@ -236,7 +236,7 @@ namespace System.Threading
             }
 
             var priorIdDispenser = Volatile.Read(ref s_idDispenser);
-            for (;;)
+            for (; ; )
             {
                 var updatedIdDispenser = s_idDispenser.RecycleId(id);
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);

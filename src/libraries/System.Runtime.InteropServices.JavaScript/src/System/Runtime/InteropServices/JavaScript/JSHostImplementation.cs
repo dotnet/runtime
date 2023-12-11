@@ -84,6 +84,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static nint AllocJSVHandle()
         {
+#if FEATURE_WASM_THREADS
+            // TODO, when Task is passed to JSImport as parameter, it could be sent from another thread (in the future)
+            // and so we need to use JSVHandleFreeList of the target thread
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
+
             if (JSVHandleFreeList.Count > 0)
             {
                 var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count];
@@ -237,10 +243,30 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // res type is first argument
-        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types)
+        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types, string? functionName, string? moduleName)
         {
             int argsCount = types.Length - 1;
             int size = JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType));
+
+            int functionNameBytes = 0;
+            int functionNameOffset = 0;
+            if (functionName != null)
+            {
+                functionNameOffset = size;
+                size += 4;
+                functionNameBytes = functionName.Length * 2;
+                size += functionNameBytes;
+            }
+            int moduleNameBytes = 0;
+            int moduleNameOffset = 0;
+            if (moduleName != null)
+            {
+                moduleNameOffset = size;
+                size += 4;
+                moduleNameBytes = moduleName.Length * 2;
+                size += moduleNameBytes;
+            }
+
             // this is never unallocated
             IntPtr buffer = Marshal.AllocHGlobal(size);
 
@@ -254,9 +280,44 @@ namespace System.Runtime.InteropServices.JavaScript
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
+#if FEATURE_WASM_THREADS
+            signature.ImportHandle = (int)Interlocked.Increment(ref JSFunctionBinding.nextImportHandle);
+            signature.IsThreadCaptured = false;
+#else
+            signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
+#endif
+
             for (int i = 0; i < argsCount; i++)
             {
-                signature.Sigs[i] = types[i + 1]._signatureType;
+                var type = signature.Sigs[i] = types[i + 1]._signatureType;
+#if FEATURE_WASM_THREADS
+                if (i > 0 && (type.Type == MarshalerType.JSObject || type.Type == MarshalerType.JSException))
+                {
+                    signature.IsThreadCaptured = true;
+                }
+#endif
+            }
+            signature.IsAsync = types[0]._signatureType.Type == MarshalerType.Task;
+
+            signature.Header[0].ImportHandle = signature.ImportHandle;
+            signature.Header[0].FunctionNameLength = functionNameBytes;
+            signature.Header[0].FunctionNameOffset = functionNameOffset;
+            signature.Header[0].ModuleNameLength = moduleNameBytes;
+            signature.Header[0].ModuleNameOffset = moduleNameOffset;
+            if (functionNameBytes != 0)
+            {
+                fixed (void* fn = functionName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + functionNameOffset, fn, (uint)functionNameBytes);
+                }
+            }
+            if (moduleNameBytes != 0)
+            {
+                fixed (void* mn = moduleName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + moduleNameOffset, mn, (uint)moduleNameBytes);
+                }
+
             }
 
             return signature;
@@ -302,30 +363,27 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 #if FEATURE_WASM_THREADS
-        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext, bool isMainThread)
+        public static void InstallWebWorkerInterop(bool isMainThread)
         {
-            Interop.Runtime.InstallWebWorkerInterop(installJSSynchronizationContext);
-            if (installJSSynchronizationContext)
+            Interop.Runtime.InstallWebWorkerInterop();
+            var currentTID = GetNativeThreadId();
+            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            if (ctx == null)
             {
-                var currentThreadId = GetNativeThreadId();
-                var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
-                if (ctx == null)
+                ctx = new JSSynchronizationContext(Thread.CurrentThread, currentTID);
+                ctx.previousSynchronizationContext = SynchronizationContext.Current;
+                JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
+                SynchronizationContext.SetSynchronizationContext(ctx);
+                if (isMainThread)
                 {
-                    ctx = new JSSynchronizationContext(Thread.CurrentThread, currentThreadId);
-                    ctx.previousSynchronizationContext = SynchronizationContext.Current;
-                    JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
-                    SynchronizationContext.SetSynchronizationContext(ctx);
-                    if (isMainThread)
-                    {
-                        JSSynchronizationContext.MainJSSynchronizationContext = ctx;
-                    }
+                    JSSynchronizationContext.MainJSSynchronizationContext = ctx;
                 }
-                else if (ctx.TargetThreadId != currentThreadId)
-                {
-                    Environment.FailFast($"JSSynchronizationContext.Install failed has wrong native thread id {ctx.TargetThreadId} != {currentThreadId}");
-                }
-                ctx.AwaitNewData();
             }
+            else if (ctx.TargetTID != currentTID)
+            {
+                Environment.FailFast($"JSSynchronizationContext.Install has wrong native thread id {ctx.TargetTID} != {currentTID}");
+            }
+            ctx.AwaitNewData();
         }
 
         public static void UninstallWebWorkerInterop()
@@ -364,7 +422,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
+            Interop.Runtime.UninstallWebWorkerInterop();
 
             if (uninstallJSSynchronizationContext)
             {

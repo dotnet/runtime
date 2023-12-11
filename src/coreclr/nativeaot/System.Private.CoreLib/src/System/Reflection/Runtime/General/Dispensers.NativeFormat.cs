@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Assemblies.NativeFormat;
+using System.Reflection.Runtime.CustomAttributes.NativeFormat;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.PropertyInfos;
@@ -30,7 +31,7 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal partial class RuntimeAssemblyInfo
     {
-       static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly? runtimeAssembly)
+        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly? runtimeAssembly)
         {
             if (bindResult.Reader != null)
                 runtimeAssembly = NativeFormatRuntimeAssembly.GetRuntimeAssembly(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes);
@@ -184,8 +185,6 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 
 namespace System.Reflection.Runtime.CustomAttributes
 {
-    using NativeFormat;
-
     //-----------------------------------------------------------------------------------------------------------
     // CustomAttributeData objects returned by various CustomAttributes properties.
     //-----------------------------------------------------------------------------------------------------------
