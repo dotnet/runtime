@@ -6579,10 +6579,6 @@ PhaseStatus Compiler::optHoistLoopCode()
 
     // Consider all the loops, visiting child loops first.
     //
-    // TODO-Quirk: Switch this to postorder over the loops, instead of this
-    // loop tree based thing. It is not the exact same order, but it will still
-    // process child loops before parent loops.
-
     bool             modified = false;
     LoopHoistContext hoistCtxt(this);
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
@@ -6798,7 +6794,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         }
 
         assert(childLoop->EntryEdges().size() == 1);
-        BasicBlock* childPreHead = childLoop->EntryEdges()[0]->getSourceBlock();
+        BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
         {
             if (fgSsaDomTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))

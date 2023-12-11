@@ -1846,6 +1846,11 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*s", m_indent, "");
 
             loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* block) {
+                if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbNewPostorderNum))
+                {
+                    return BasicBlockVisit::Continue;
+                }
+
                 if (block != loop->GetHeader())
                 {
                     FlowGraphNaturalLoop* childLoop = m_loops->GetLoopByHeader(block);
@@ -1858,10 +1863,8 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
                     }
                 }
 
-                if (BitVecOps::TryAddElemD(&m_traits, m_outputBlocks, block->bbPostorderNum))
-                {
-                    fprintf(m_file, FMT_BB ";", block->bbNum);
-                }
+                fprintf(m_file, FMT_BB ";", block->bbNum);
+                BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbNewPostorderNum);
 
                 return BasicBlockVisit::Continue;
             });
