@@ -14435,7 +14435,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_R_4_to_0(id->idReg1()); // ddddd
             code |= insEncodeReg_P_8_to_5(id->idReg2()); // MMMM
-            code |= (id->idOpSize() == EA_8BYTE) ? 0x400 : 0;
+            code |= insEncodeVLSElemsize(id->idOpSize());
             code |= insEncodeSveElemsize(id->idInsOpt()); // xx
             dst += emitOutput_Instr(dst, code);
             break;
