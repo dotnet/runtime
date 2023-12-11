@@ -599,11 +599,11 @@ void CodeGen::genCodeForBBlist()
         noway_assert(genStackLevel == 0);
 
 #ifdef TARGET_AMD64
-        bool emitNop = false;
+        bool emitNopBeforeEHRegion = false;
         // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
         // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
         // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
-        // The document "X64 and ARM ABIs.docx" has more details. The situations:
+        // The document "clr-abi.md" has more details. The situations:
         // 1. If the call instruction is in a different EH region as the instruction that follows it.
         // 2. If the call immediately precedes an OS epilog. (Note that what the JIT or VM consider an epilog might
         //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters
@@ -624,7 +624,7 @@ void CodeGen::genCodeForBBlist()
                     case BBJ_ALWAYS:
                         // We might skip generating the jump via a peephole optimization.
                         // If that happens, make sure a NOP is emitted as the last instruction in the block.
-                        emitNop = true;
+                        emitNopBeforeEHRegion = true;
                         break;
 
                     case BBJ_THROW:
@@ -735,7 +735,7 @@ void CodeGen::genCodeForBBlist()
                 if (block->CanRemoveJumpToNext(compiler))
                 {
 #ifdef TARGET_AMD64
-                    if (emitNop)
+                    if (emitNopBeforeEHRegion)
                     {
                         instGen(INS_nop);
                     }
@@ -749,13 +749,6 @@ void CodeGen::genCodeForBBlist()
                 // Do not remove a jump between hot and cold regions.
                 bool isRemovableJmpCandidate =
                     !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetJumpDest());
-
-#ifdef TARGET_AMD64
-                // AMD64 requires an instruction after a call instruction for unwinding
-                // inside an EH region so if the last instruction generated was a call instruction
-                // do not allow this jump to be marked for possible later removal.
-                isRemovableJmpCandidate = isRemovableJmpCandidate && !GetEmitter()->emitIsLastInsCall();
-#endif // TARGET_AMD64
 
                 inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
 #else

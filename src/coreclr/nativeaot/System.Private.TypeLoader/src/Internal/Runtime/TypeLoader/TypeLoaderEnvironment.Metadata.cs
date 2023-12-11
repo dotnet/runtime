@@ -199,7 +199,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
-            arrayTypeHandle = new RuntimeTypeHandle();
+            arrayTypeHandle = default(RuntimeTypeHandle);
 
             Debug.Assert(isMdArray || rank == -1);
             int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank);

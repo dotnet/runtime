@@ -10557,6 +10557,55 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_sve_uqrshrn, EA_SCALABLE, REG_V15, REG_V12, 1,
                               INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
 
+    // IF_SVE_GD_2A
+    theEmitter->emitIns_R_R(INS_sve_sqxtnb, EA_SCALABLE, REG_V0, REG_V5, INS_OPTS_SCALABLE_B);  // SQXTNB  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtnt, EA_SCALABLE, REG_V3, REG_V7, INS_OPTS_SCALABLE_B);  // SQXTNT  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtunb, EA_SCALABLE, REG_V0, REG_V8, INS_OPTS_SCALABLE_B); // SQXTUNB <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtunt, EA_SCALABLE, REG_V5, REG_V3, INS_OPTS_SCALABLE_B); // SQXTUNT <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_uqxtnb, EA_SCALABLE, REG_V0, REG_V7, INS_OPTS_SCALABLE_B);  // UQXTNB  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_uqxtnt, EA_SCALABLE, REG_V0, REG_V1, INS_OPTS_SCALABLE_B);  // UQXTNT  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtnb, EA_SCALABLE, REG_V0, REG_V0, INS_OPTS_SCALABLE_H);  // SQXTNB  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtnt, EA_SCALABLE, REG_V9, REG_V9, INS_OPTS_SCALABLE_H);  // SQXTNT  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtunb, EA_SCALABLE, REG_V0, REG_V6, INS_OPTS_SCALABLE_H); // SQXTUNB <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtunt, EA_SCALABLE, REG_V0, REG_V4, INS_OPTS_SCALABLE_H); // SQXTUNT <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_uqxtnb, EA_SCALABLE, REG_V6, REG_V2, INS_OPTS_SCALABLE_H);  // UQXTNB  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_uqxtnt, EA_SCALABLE, REG_V0, REG_V1, INS_OPTS_SCALABLE_H);  // UQXTNT  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtnb, EA_SCALABLE, REG_V7, REG_V7, INS_OPTS_SCALABLE_S);  // SQXTNB  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtnt, EA_SCALABLE, REG_V0, REG_V8, INS_OPTS_SCALABLE_S);  // SQXTNT  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtunb, EA_SCALABLE, REG_V0, REG_V9, INS_OPTS_SCALABLE_S); // SQXTUNB <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_sqxtunt, EA_SCALABLE, REG_V0, REG_V4, INS_OPTS_SCALABLE_S); // SQXTUNT <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_uqxtnb, EA_SCALABLE, REG_V3, REG_V9, INS_OPTS_SCALABLE_S);  // UQXTNB  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    theEmitter->emitIns_R_R(INS_sve_uqxtnt, EA_SCALABLE, REG_V0, REG_V3, INS_OPTS_SCALABLE_S);  // UQXTNT  <Zd>.<T>,
+                                                                                                // <Zn>.<Tb>
+    // IF_SVE_GK_2A
+    theEmitter->emitIns_R_R(INS_sve_aesd, EA_SCALABLE, REG_V0, REG_V0, INS_OPTS_SCALABLE_B); // AESD    <Zdn>.B,
+                                                                                             // <Zdn>.B, <Zm>.B
+    theEmitter->emitIns_R_R(INS_sve_aese, EA_SCALABLE, REG_V1, REG_V2, INS_OPTS_SCALABLE_B); // AESE    <Zdn>.B,
+                                                                                             // <Zdn>.B, <Zm>.B
+    theEmitter->emitIns_R_R(INS_sve_sm4e, EA_SCALABLE, REG_V3, REG_V5, INS_OPTS_SCALABLE_S); // SM4E    <Zdn>.S,
+                                                                                             // <Zdn>.S, <Zm>.S
+
+    // IF_SVE_GL_1A
+    theEmitter->emitIns_R(INS_sve_aesimc, EA_SCALABLE, REG_V0); // AESIMC  <Zdn>.B, <Zdn>.B
+    theEmitter->emitIns_R(INS_sve_aesmc, EA_SCALABLE, REG_V5);  // AESMC   <Zdn>.B, <Zdn>.B
+
 // IF_SVE_GS_3A
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_faddqv, EA_8BYTE, REG_V16, REG_P0, REG_V12,

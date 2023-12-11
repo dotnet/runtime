@@ -12,7 +12,7 @@ public class ErrorHandlingTests
 {
     private const string SwiftLib = "libSwiftErrorHandling.dylib";
 
-    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message7message6lengthySPys6UInt16VG_SitF", CharSet = CharSet.Unicode)]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message7message6lengthySPys6UInt16VG_s5Int32VtF", CharSet = CharSet.Unicode)]
     public static extern void SetErrorMessage(string message, int length);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
@@ -35,7 +35,7 @@ public class ErrorHandlingTests
         Assert.True(error.Value != IntPtr.Zero, "A Swift error was expected to be thrown.");
 
         string errorMessage = GetErrorMessageFromSwift(error);
-        Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: {0}, Actual: {1}", expectedErrorMessage, errorMessage));
+        Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: '{0}', Actual: '{1}'", expectedErrorMessage, errorMessage));
     }
 
     [Fact]

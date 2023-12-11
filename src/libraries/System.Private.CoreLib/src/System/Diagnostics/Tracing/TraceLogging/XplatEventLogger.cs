@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tracing
         {
 
             string? eventSourceFilter = eventSourceNameFilter.Value;
-            if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.Contains(eventSourceFilter, StringComparison.OrdinalIgnoreCase)))
             {
                 EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
             }
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Tracing
             }
 
             string? eventFilter = eventSourceEventFilter.Value;
-            if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName!.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName!.Contains(eventFilter, StringComparison.OrdinalIgnoreCase)))
             {
                 LogOnEventWritten(eventData);
             }

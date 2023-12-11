@@ -104,6 +104,9 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
+    // DFS tree is always considered invalid after RBO.
+    fgInvalidateDfsTree();
+
     return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -818,7 +821,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     {
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (m_dfs->Contains(predBlock) && !fgSsaDomTree->Dominates(domBlock, predBlock))
+            if (m_dfsTree->Contains(predBlock) && !fgSsaDomTree->Dominates(domBlock, predBlock))
             {
                 JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
                         predBlock->bbNum);
