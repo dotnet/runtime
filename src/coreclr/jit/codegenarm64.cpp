@@ -5436,16 +5436,16 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #define ALL_ARM64_EMITTER_UNIT_TESTS
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+#define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
 #if defined(DEBUG)
 void CodeGen::genArm64EmitterUnitTests()
 {
-    if (!verbose)
+/*    if (!verbose)
     {
         return;
-    }
+    }*/
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     // Mark the "fake" instructions in the output.
@@ -10534,36 +10534,104 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
 
     // IF_SVE_DM_2A
-    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_R0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // DECP <Xdn>, <Pm>.<T>
-    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // INCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_R0, REG_P0, INS_OPTS_SCALABLE_B); // DECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_R1, REG_P1, INS_OPTS_SCALABLE_H); // DECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_R2, REG_P2, INS_OPTS_SCALABLE_S); // DECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_R3, REG_P3, INS_OPTS_SCALABLE_D); // DECP <Xdn>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R4, REG_P4, INS_OPTS_SCALABLE_B); // INCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R5, REG_P5, INS_OPTS_SCALABLE_H); // INCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R6, REG_P6, INS_OPTS_SCALABLE_S); // INCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_R7, REG_P7, INS_OPTS_SCALABLE_D); // INCP <Xdn>, <Pm>.<T>
 
     // IF_SVE_DN_2A
-    theEmitter->emitIns_R_R(INS_sve_decp, EA_8BYTE, REG_V0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // DECP <Zdn>.<T>, <Pm>.<T>
-    theEmitter->emitIns_R_R(INS_sve_incp, EA_8BYTE, REG_V0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // INCP <Zdn>.<T>, <Pm>.<T>
+    // Note: B is reserved
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_SCALABLE, REG_V0, REG_P0, INS_OPTS_SCALABLE_H); // DECP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_SCALABLE, REG_V1, REG_P1, INS_OPTS_SCALABLE_S); // DECP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_decp, EA_SCALABLE, REG_V2, REG_P2, INS_OPTS_SCALABLE_D); // DECP <Zdn>.<T>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_SCALABLE, REG_V3, REG_P3, INS_OPTS_SCALABLE_H); // INCP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_SCALABLE, REG_V4, REG_P4, INS_OPTS_SCALABLE_S); // INCP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_incp, EA_SCALABLE, REG_V5, REG_P5, INS_OPTS_SCALABLE_D); // INCP <Zdn>.<T>, <Pm>.<T>
 
     // IF_SVE_DO_2A
-    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_R0, REG_P0,
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_4BYTE, REG_R0, REG_P0,
                             INS_OPTS_SCALABLE_B); // SQDECP <Xdn>, <Pm>.<T>, <Wdn>
-    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_R0, REG_P0,
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_4BYTE, REG_R1, REG_P1,
+                            INS_OPTS_SCALABLE_H); // SQDECP <Xdn>, <Pm>.<T>, <Wdn>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_4BYTE, REG_R2, REG_P2,
+                            INS_OPTS_SCALABLE_S); // SQDECP <Xdn>, <Pm>.<T>, <Wdn>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_4BYTE, REG_R3, REG_P3,
+                            INS_OPTS_SCALABLE_D); // SQDECP <Xdn>, <Pm>.<T>, <Wdn>
+
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_R4, REG_P4, INS_OPTS_SCALABLE_B); // SQDECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_R5, REG_P5, INS_OPTS_SCALABLE_H); // SQDECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_R6, REG_P6, INS_OPTS_SCALABLE_S); // SQDECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_R7, REG_P7, INS_OPTS_SCALABLE_D); // SQDECP <Xdn>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_4BYTE, REG_R0, REG_P0,
+                            INS_OPTS_SCALABLE_H); // SQINCP <Xdn>, <Pm>.<T>, <Wdn>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_4BYTE, REG_R1, REG_P1,
+                            INS_OPTS_SCALABLE_S); // SQINCP <Xdn>, <Pm>.<T>, <Wdn>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_4BYTE, REG_R2, REG_P2,
                             INS_OPTS_SCALABLE_B); // SQINCP <Xdn>, <Pm>.<T>, <Wdn>
-    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_R0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // UQDECP <Wdn>, <Pm>.<T>
-    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_R0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // UQINCP <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_4BYTE, REG_R3, REG_P3,
+                            INS_OPTS_SCALABLE_D); // SQINCP <Xdn>, <Pm>.<T>, <Wdn>
+
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_R4, REG_P4, INS_OPTS_SCALABLE_B); // SQINCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_R5, REG_P5, INS_OPTS_SCALABLE_H); // SQINCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_R6, REG_P6, INS_OPTS_SCALABLE_S); // SQINCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_R7, REG_P7, INS_OPTS_SCALABLE_D); // SQINCP <Xdn>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_4BYTE, REG_R0, REG_P0, INS_OPTS_SCALABLE_B); // UQDECP <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_4BYTE, REG_R1, REG_P1, INS_OPTS_SCALABLE_H); // UQDECP <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_4BYTE, REG_R2, REG_P2, INS_OPTS_SCALABLE_S); // UQDECP <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_4BYTE, REG_R3, REG_P3, INS_OPTS_SCALABLE_D); // UQDECP <Wdn>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_R4, REG_P4, INS_OPTS_SCALABLE_B); // UQDECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_R5, REG_P5, INS_OPTS_SCALABLE_H); // UQDECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_R6, REG_P6, INS_OPTS_SCALABLE_S); // UQDECP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_R7, REG_P7, INS_OPTS_SCALABLE_D); // UQDECP <Xdn>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_4BYTE, REG_R0, REG_P0, INS_OPTS_SCALABLE_B); // UQINCP <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_4BYTE, REG_R1, REG_P1, INS_OPTS_SCALABLE_H); // UQINCP <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_4BYTE, REG_R2, REG_P2, INS_OPTS_SCALABLE_S); // UQINCP <Wdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_4BYTE, REG_R3, REG_P3, INS_OPTS_SCALABLE_D); // UQINCP <Wdn>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_R4, REG_P4, INS_OPTS_SCALABLE_B); // UQINCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_R5, REG_P5, INS_OPTS_SCALABLE_H); // UQINCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_R6, REG_P6, INS_OPTS_SCALABLE_S); // UQINCP <Xdn>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_R7, REG_P7, INS_OPTS_SCALABLE_D); // UQINCP <Xdn>, <Pm>.<T>
 
     // IF_SVE_DP_2A
-    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_8BYTE, REG_V0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // SQDECP <Zdn>.<T>, <Pm>.<T>
-    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_8BYTE, REG_V0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // SQINCP <Zdn>.<T>, <Pm>.<T>
-    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_8BYTE, REG_V0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // UQDECP <Zdn>.<T>, <Pm>.<T>
-    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_8BYTE, REG_V0, REG_P0,
-                            INS_OPTS_SCALABLE_B); // UQINCP <Zdn>.<T>, <Pm>.<T>
+    // NOTE: B is reserved
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_SCALABLE, REG_V0, REG_P0,
+                            INS_OPTS_SCALABLE_H); // SQDECP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_SCALABLE, REG_V1, REG_P1,
+                            INS_OPTS_SCALABLE_S); // SQDECP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqdecp, EA_SCALABLE, REG_V2, REG_P2,
+                            INS_OPTS_SCALABLE_D); // SQDECP <Zdn>.<T>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_SCALABLE, REG_V3, REG_P3,
+                            INS_OPTS_SCALABLE_H); // SQINCP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_SCALABLE, REG_V4, REG_P4,
+                            INS_OPTS_SCALABLE_S); // SQINCP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_sqincp, EA_SCALABLE, REG_V5, REG_P5,
+                            INS_OPTS_SCALABLE_D); // SQINCP <Zdn>.<T>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_SCALABLE, REG_V6, REG_P6,
+                            INS_OPTS_SCALABLE_H); // UQDECP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_SCALABLE, REG_V7, REG_P7,
+                            INS_OPTS_SCALABLE_S); // UQDECP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqdecp, EA_SCALABLE, REG_V8, REG_P0,
+                            INS_OPTS_SCALABLE_D); // UQDECP <Zdn>.<T>, <Pm>.<T>
+
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_SCALABLE, REG_V9, REG_P1,
+                            INS_OPTS_SCALABLE_H); // UQINCP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_SCALABLE, REG_V10, REG_P2,
+                            INS_OPTS_SCALABLE_S); // UQINCP <Zdn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R(INS_sve_uqincp, EA_SCALABLE, REG_V11, REG_P3,
+                            INS_OPTS_SCALABLE_D); // UQINCP <Zdn>.<T>, <Pm>.<T>
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 

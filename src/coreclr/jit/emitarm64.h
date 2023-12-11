@@ -55,7 +55,7 @@ void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elem
 void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
-void emitDispArrangement(insOpts opt);
+void emitDispArrangement(insOpts opt, bool addComma = false);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
