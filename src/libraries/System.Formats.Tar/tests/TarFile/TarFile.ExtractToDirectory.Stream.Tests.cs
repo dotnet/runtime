@@ -207,6 +207,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetExactRootDirMatchCases))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "The temporary directory on Apple mobile platforms exceeds the path length limit.")]
         public void ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws(TarEntryFormat format, TarEntryType entryType, string fileName)
         {
             ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal(format, entryType, fileName, inverted: false);
@@ -214,14 +215,12 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "The temporary directory on Apple mobile platforms exceeds the path length limit.")]
         public void ExtractToDirectory_ExactRootDirMatch_Directory_Relative_Throws()
         {
             string entryFolderName = "folder";
             string destinationFolderName = "folderSibling";
-
-            // the folder used to store files needs to have a shorter path on Apple mobile platforms,
-            // because the TempDirectory gets created in folder with a path longer than 100 bytes
-            using TempDirectory root = new TempDirectory("/Users/helix-runner/tmp");
+            using TempDirectory root = new TempDirectory();
 
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
             string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
@@ -242,6 +241,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "The temporary directory on Apple mobile platforms exceeds the path length limit.")]
         public void ExtractToDirectory_ExactRootDirMatch_HardLinks_Throws(TarEntryFormat format)
         {
             ExtractToDirectory_ExactRootDirMatch_Links_Throws(format, TarEntryType.HardLink, inverted: false);
@@ -296,10 +296,7 @@ namespace System.Formats.Tar.Tests
 
             string entryFolderName = inverted ? "folderSibling" : "folder";
             string destinationFolderName = inverted ? "folder" : "folderSibling";
-
-            // the folder used to store files needs to have a shorter path on Apple mobile platforms,
-            // because the TempDirectory gets created in folder with a path longer than 100 bytes
-            using TempDirectory root = new TempDirectory("/Users/helix-runner/tmp");
+            using TempDirectory root = new TempDirectory();
 
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
             string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
@@ -329,10 +326,7 @@ namespace System.Formats.Tar.Tests
 
             string linkTargetFileName = "file.txt";
             string linkFileName = "link";
-
-            // the folder used to store files needs to have a shorter path on Apple mobile platforms,
-            // because the TempDirectory gets created in folder with a path longer than 100 bytes
-            using TempDirectory root = new TempDirectory("/Users/helix-runner/tmp");
+            using TempDirectory root = new TempDirectory();
 
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
             string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
