@@ -64,7 +64,7 @@ namespace System.Reflection.Emit
                 for (int i = 0; i < interfaces.Length; i++)
                 {
                     Type @interface = interfaces[i];
-                    // cannot contain null in the interface list
+                    // cannot contain null in the iface list
                     ArgumentNullException.ThrowIfNull(@interface, nameof(interfaces));
                     _interfaces.Add(@interface);
                 }
@@ -285,9 +285,9 @@ namespace System.Reflection.Emit
         {
             if (_interfaces != null)
             {
-                foreach (Type @interface in _interfaces)
+                foreach (Type iface in _interfaces)
                 {
-                    if (interfaceType.IsAssignableFrom(@interface))
+                    if (interfaceType.IsAssignableFrom(iface))
                     {
                         return true;
                     }
@@ -717,11 +717,10 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(interfaceType);
             ValidateInterfaceType(interfaceType);
 
+            MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             InterfaceMapping im = default;
             im.InterfaceType = interfaceType;
             im.TargetType = this;
-
-            MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             im.InterfaceMethods = new MethodInfo[interfaceMethods.Length];
             im.TargetMethods = new MethodInfo[interfaceMethods.Length];
 
@@ -811,7 +810,7 @@ namespace System.Reflection.Emit
                 "But in this case it acts only on TypeBuilder which is never trimmed (as it's runtime created).")]
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
-            if (IsTypeEqual(this, c))
+            if (AreTypesEqual(this, c))
             {
                 return true;
             }
@@ -833,7 +832,7 @@ namespace System.Reflection.Emit
                 for (int i = 0; i < interfaces.Length; i++)
                 {
                     // IsSubclassOf does not cover the case when they are the same type.
-                    if (IsTypeEqual(interfaces[i], this))
+                    if (AreTypesEqual(interfaces[i], this))
                     {
                         return true;
                     }
@@ -848,18 +847,19 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal static bool IsTypeEqual(Type t1, Type? t2)
+        internal static bool AreTypesEqual(Type t1, Type? t2)
         {
+            if (t1 == t2)
+            {
+                return true;
+            }
+
             if (t1 is TypeBuilderImpl rtb1)
             {
                 if (t2 is TypeBuilderImpl tb && ReferenceEquals(rtb1, tb))
                 {
                     return true;
                 }
-            }
-            else
-            {
-                return t1 == t2;
             }
 
             return false;
@@ -869,7 +869,7 @@ namespace System.Reflection.Emit
         {
             Type? p = this;
 
-            if (IsTypeEqual(p, c))
+            if (AreTypesEqual(p, c))
             {
                 return false;
             }
@@ -878,7 +878,7 @@ namespace System.Reflection.Emit
 
             while (p != null)
             {
-                if (IsTypeEqual(p, c))
+                if (AreTypesEqual(p, c))
                 {
                     return true;
                 }

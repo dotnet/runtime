@@ -687,19 +687,19 @@ namespace System.Reflection.Emit
 
         public override int GetFieldMetadataToken(FieldInfo field)
         {
-            if (field is FieldBuilderImpl fb && fb._handle != default)
+            if (field is FieldBuilderImpl fb)
             {
                 return MetadataTokens.GetToken(fb._handle);
             }
 
-            return 0;
+            return field.MetadataToken;
         }
 
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => throw new NotImplementedException();
 
         public override int GetMethodMetadataToken(MethodInfo method)
         {
-            if (method is MethodBuilderImpl mb && mb._handle != default)
+            if (method is MethodBuilderImpl mb)
             {
                 return MetadataTokens.GetToken(mb._handle);
             }
