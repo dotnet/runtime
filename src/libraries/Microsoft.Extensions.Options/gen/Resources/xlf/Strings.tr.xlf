@@ -4,162 +4,172 @@
     <body>
       <trans-unit id="AlreadyImplementsValidateMethodMessage">
         <source>Type {0} already implements the Validate method.</source>
-        <target state="new">Type {0} already implements the Validate method.</target>
+        <target state="translated">{0} türü Doğrulama yöntemini zaten uyguluyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlreadyImplementsValidateMethodTitle">
         <source>A type already includes an implementation of the 'Validate' method.</source>
-        <target state="new">A type already includes an implementation of the 'Validate' method.</target>
+        <target state="translated">Bir tür zaten 'Validate' yönteminin bir uygulamasını içeriyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantBeStaticClassMessage">
         <source>[OptionsValidator] cannot be applied to static class {0}.</source>
-        <target state="new">[OptionsValidator] cannot be applied to static class {0}.</target>
+        <target state="translated">[OptionsValidator], {0} statik sınıfına uygulanamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantBeStaticClassTitle">
         <source>'OptionsValidatorAttribute' can't be applied to a static class.</source>
-        <target state="new">'OptionsValidatorAttribute' can't be applied to a static class.</target>
+        <target state="translated">'OptionsValidatorAttribute' statik sınıfa uygulanamaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantUseWithGenericTypesMessage">
         <source>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</source>
-        <target state="new">Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</target>
+        <target state="translated">{0} açık genel türündeki alanlarda veya özelliklerde [ValidateObjectMembers] veya [ValidateEnumeratedItems] kullanılamaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantUseWithGenericTypesTitle">
         <source>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</source>
-        <target state="new">Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</target>
+        <target state="translated">Açık genel türleri olan alanlarda veya özelliklerde 'ValidateObjectMembersAttribute' veya 'ValidateEnumeratedItemsAttribute' kullanılamaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">Doğrulama öznitelikleri sabit veya statik üye {0} için geçerli değildir.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">Sabitler, statik alanlar veya özellikler doğrulanamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
-        <target state="new">There is a circular type reference involving type {0} preventing it from being used for static validation.</target>
+        <target state="translated">Statik doğrulama için kullanılmasını engelleyen {0} türü içeren döngüsel bir tür başvurusu var.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesTitle">
         <source>Unsupported circular references in model types.</source>
-        <target state="new">Unsupported circular references in model types.</target>
+        <target state="translated">Model türlerde döngüsel başvurular desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="DoesntImplementIValidateOptionsMessage">
         <source>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</source>
-        <target state="new">Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</target>
+        <target state="translated">{0} türü gerekli IValidateOptions&lt;{1}&gt; arabirimini uygulamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
-        <target state="new">A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</target>
+        <target state="translated">'OptionsValidatorAttribute' ile açıklama eklenmiş bir tür gerekli arabirimi uygulamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
-        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <target state="translated">'{1}' adlı üye üzerindeki '{0}' doğrulama özniteliğine '{2}' doğrulayıcı türünden erişilemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeTitle">
         <source>Validation attribute on the member is inaccessible from the validator type..</source>
-        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
+        <target state="translated">Üye üzerindeki doğrulama özniteliğine doğrulayıcı türünden erişilemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">
         <source>Can't apply validation attributes to private field or property {0}.</source>
-        <target state="new">Can't apply validation attributes to private field or property {0}.</target>
+        <target state="translated">Doğrulama öznitelikleri, {0} özel alanına veya özelliğine uygulanamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleTitle">
         <source>Can't validate private fields or properties.</source>
-        <target state="new">Can't validate private fields or properties.</target>
+        <target state="translated">Özel alanlar veya özellikler doğrulanamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberMessage">
         <source>Type {0} has no fields or properties to validate, referenced from member {1}.</source>
-        <target state="new">Type {0} has no fields or properties to validate, referenced from member {1}.</target>
+        <target state="translated">{0} türünde doğrulanacak alan veya özellik yok, {1} üyesinden başvurulur.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberTitle">
         <source>A member type has no fields or properties to validate.</source>
-        <target state="new">A member type has no fields or properties to validate.</target>
+        <target state="translated">Üye türünde doğrulanacak alan veya özellik yok.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMembersFromValidatorMessage">
         <source>Type {0} has no fields or properties to validate, referenced by type {1}.</source>
-        <target state="new">Type {0} has no fields or properties to validate, referenced by type {1}.</target>
+        <target state="translated">{0} türünde doğrulanacak alan veya özellik yok, {1} türü tarafından başvurulur.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMembersFromValidatorTitle">
         <source>A type has no fields or properties to validate.</source>
-        <target state="new">A type has no fields or properties to validate.</target>
+        <target state="translated">Türde doğrulanacak alan veya özellik yok.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotEnumerableTypeMessage">
         <source>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</source>
-        <target state="new">[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</target>
+        <target state="translated">[ValidateEnumeratedItems], IEnumerable&lt;T&gt; uygulamadığından {0} türündeki üyeler üzerinde kullanılamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotEnumerableTypeTitle">
         <source>Member type is not enumerable.</source>
-        <target state="new">Member type is not enumerable.</target>
+        <target state="translated">Üye türü numaralandırılabilir değil.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullValidatorTypeMessage">
         <source>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</source>
-        <target state="new">Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</target>
+        <target state="translated">[ValidateObjectMembers] veya [ValidateEnumeratedItems] özniteliklerinde null doğrulayıcı türü belirtildi.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullValidatorTypeTitle">
         <source>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</source>
-        <target state="new">Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</target>
+        <target state="translated">'ValidateObjectMembersAttribute' veya 'ValidateEnumeratedItemsAttribute' öznitelikleri için null doğrulayıcı türü belirtildi.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
         <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">Seçenek doğrulaması kaynak oluşturucusu C# {0} sürümünde kullanılamıyor. Lütfen dil sürümü {1} veya üstü bir sürümü kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">C# dil sürümü kaynak oluşturucu tarafından desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
-        <target state="new">Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</target>
+        <target state="translated">{0} türünde doğrulama ek açıklamaları var, ancak {1} üyesi gözden kaçmış olabilecek [ValidateEnumeratedItems] belirtmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationTitle">
         <source>Member potentially missing enumerable validation.</source>
-        <target state="new">Member potentially missing enumerable validation.</target>
+        <target state="translated">Üyede numaralandırılabilir doğrulama eksik olabilir.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingTransitiveValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</source>
-        <target state="new">Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</target>
+        <target state="translated">{0} türünde doğrulama ek açıklamaları var, ancak {1} üyesi gözden kaçmış olabilecek [ValidateObjectMembers] belirtmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
-        <target state="new">Member potentially missing transitive validation.</target>
+        <target state="translated">Üyede geçişli doğrulama eksik olabilir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">Doğrulama özniteliği {0} yalnızca string, dizi veya ICollection türündeki özelliklere uygulanmalıdır. {1} türüyle kullanılması çalışma zamanı hatalarına neden olabilir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">Doğrulama özniteliği yalnızca string, dizi veya ICollection türündeki özelliklere uygulanabilir; diğer türlerle kullanılamaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
         <source>Validator type {0} doesn't have a parameterless constructor.</source>
-        <target state="new">Validator type {0} doesn't have a parameterless constructor.</target>
+        <target state="translated">{0} doğrulayıcı türü parametresiz bir oluşturucuya sahip değil.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorTitle">
         <source>Validators used for transitive or enumerable validation must have a constructor with no parameters.</source>
-        <target state="new">Validators used for transitive or enumerable validation must have a constructor with no parameters.</target>
+        <target state="translated">Geçişli veya numaralandırılabilir doğrulama için kullanılan doğrulayıcıların parametresi olmayan bir oluşturucusu olmalıdır.</target>
         <note />
       </trans-unit>
     </body>

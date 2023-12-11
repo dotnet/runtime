@@ -46,6 +46,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -86,6 +87,12 @@ namespace System
         internal static void ThrowArgumentException_DestinationTooShort()
         {
             throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidTimeSpanStyles()
+        {
+            throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, "styles");
         }
 
         [DoesNotReturn]
@@ -224,15 +231,33 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException_NegateTwosCompNum()
+        {
+            throw new OverflowException(SR.Overflow_NegateTwosCompNum);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException_TimeSpanTooLong()
         {
             throw new OverflowException(SR.Overflow_TimeSpanTooLong);
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException_TimeSpanDuration()
+        {
+            throw new OverflowException(SR.Overflow_Duration);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_Arg_CannotBeNaN()
         {
             throw new ArgumentException(SR.Arg_CannotBeNaN);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_Arg_CannotBeNaN(ExceptionArgument argument)
+        {
+            throw new ArgumentException(SR.Arg_CannotBeNaN, GetArgumentName(argument));
         }
 
         [DoesNotReturn]
@@ -446,9 +471,21 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowDivideByZeroException()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOutOfMemoryException_StringTooLong()
         {
             throw new OutOfMemoryException(SR.OutOfMemory_StringTooLong);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowOutOfMemoryException_LockEnter_WaiterCountOverflow()
+        {
+            throw new OutOfMemoryException(SR.Lock_Enter_WaiterCountOverflow_OutOfMemoryException);
         }
 
         [DoesNotReturn]
@@ -613,6 +650,12 @@ namespace System
             throw new FormatException(SR.Format_IndexOutOfRange);
         }
 
+        [DoesNotReturn]
+        internal static void ThrowSynchronizationLockException_LockExit()
+        {
+            throw new SynchronizationLockException(SR.Lock_Exit_SynchronizationLockException);
+        }
+
         internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
         {
             Type? declaringType = memberInfo.DeclaringType;
@@ -699,6 +742,18 @@ namespace System
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             if (!(default(T) == null) && value == null)
                 ThrowArgumentNullException(argName);
+        }
+
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()
+            where TVector : ISimdVector<TVector, T>
+        {
+            if (!TVector.IsSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
         }
 
         // Throws if 'T' is disallowed in Vector<T> in the Numerics namespace.
@@ -921,8 +976,6 @@ namespace System
                     return "other";
                 case ExceptionArgument.newSize:
                     return "newSize";
-                case ExceptionArgument.lowerBounds:
-                    return "lowerBounds";
                 case ExceptionArgument.lengths:
                     return "lengths";
                 case ExceptionArgument.len:
@@ -937,12 +990,6 @@ namespace System
                     return "index2";
                 case ExceptionArgument.index3:
                     return "index3";
-                case ExceptionArgument.length1:
-                    return "length1";
-                case ExceptionArgument.length2:
-                    return "length2";
-                case ExceptionArgument.length3:
-                    return "length3";
                 case ExceptionArgument.endIndex:
                     return "endIndex";
                 case ExceptionArgument.elementType:
@@ -975,6 +1022,12 @@ namespace System
                     return "overlapped";
                 case ExceptionArgument.minimumBytes:
                     return "minimumBytes";
+                case ExceptionArgument.arrayType:
+                    return "arrayType";
+                case ExceptionArgument.divisor:
+                    return "divisor";
+                case ExceptionArgument.factor:
+                    return "factor";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1153,6 +1206,8 @@ namespace System
                     return SR.Format_UnclosedFormatItem;
                 case ExceptionResource.Format_ExpectedAsciiDigit:
                     return SR.Format_ExpectedAsciiDigit;
+                case ExceptionResource.Argument_HasToBeArrayClass:
+                    return SR.Argument_HasToBeArrayClass;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1237,7 +1292,6 @@ namespace System
         handle,
         other,
         newSize,
-        lowerBounds,
         lengths,
         len,
         keys,
@@ -1245,9 +1299,6 @@ namespace System
         index1,
         index2,
         index3,
-        length1,
-        length2,
-        length3,
         endIndex,
         elementType,
         arrayIndex,
@@ -1264,6 +1315,9 @@ namespace System
         anyOf,
         overlapped,
         minimumBytes,
+        arrayType,
+        divisor,
+        factor,
     }
 
     //
@@ -1349,5 +1403,6 @@ namespace System
         Format_UnexpectedClosingBrace,
         Format_UnclosedFormatItem,
         Format_ExpectedAsciiDigit,
+        Argument_HasToBeArrayClass,
     }
 }

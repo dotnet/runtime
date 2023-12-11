@@ -68,8 +68,7 @@ jobs:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
       - ${{ if eq(parameters.dependsOn[0], '') }}:
-        - ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
-          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
       # SuperPMI collection needs to run mcs.exe on the AzDO machine. Assume that's an x64 machine, and download an x64 product build if needed.
@@ -98,8 +97,8 @@ jobs:
           - template: /eng/pipelines/common/download-artifact-step.yml
             parameters:
               unpackFolder: $(_runtimeX64DownloadPath)
-              artifactFileName: 'CoreCLRProduct___${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
-              artifactName: 'CoreCLRProduct___${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}'
+              artifactFileName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
+              artifactName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}'
               displayName: 'CoreCLR product build (x64)'
 
         - template: /eng/pipelines/common/download-artifact-step.yml
@@ -243,6 +242,7 @@ jobs:
                 - jitosr_stress_random
                 - syntheticpgo
                 - syntheticpgo_blend
+                - jitcrossblocklocalassertionprop
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
           - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml

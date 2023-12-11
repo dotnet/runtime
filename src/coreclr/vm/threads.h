@@ -252,6 +252,9 @@ struct TailCallArgBuffer
 #if (defined(TARGET_ARM64) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "arm64singlestepper.h"
 #endif
+#if (defined(TARGET_RISCV64) && defined(FEATURE_EMULATE_SINGLESTEP))
+#include "riscv64singlestepper.h"
+#endif
 
 #if !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
 // DISABLE_THREADSUSPEND controls whether Thread::SuspendThread will be used at all.
@@ -2566,6 +2569,8 @@ public:
 private:
 #if defined(TARGET_ARM)
     ArmSingleStepper m_singleStepper;
+#elif defined(TARGET_RISCV64)
+    RiscV64SingleStepper m_singleStepper;
 #else
     Arm64SingleStepper m_singleStepper;
 #endif
@@ -2581,7 +2586,7 @@ public:
         m_singleStepper.Enable();
     }
 
-    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode))
+    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode) RISCV64_ARG(uint32_t opcode))
     {
 #if defined(TARGET_ARM)
         m_singleStepper.Bypass((DWORD)ip, opcode1, opcode2);
@@ -2682,7 +2687,7 @@ public:
 private:
     void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
-                                           DWORD millis, WaitMode mode);
+                                           DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait);
     DWORD          DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
                                            DWORD millis, WaitMode mode);
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
@@ -2824,6 +2829,29 @@ public:
 
     typedef StateHolder<Thread::IncPreventAsync, Thread::DecPreventAsync> ThreadPreventAsyncHolder;
 
+    // While executing the new exception handling managed code,
+    // this thread must not be aborted.
+    static void        IncPreventAbort()
+    {
+        WRAPPER_NO_CONTRACT;
+        Thread *pThread = GetThread();
+        InterlockedIncrement((LONG*)&pThread->m_PreventAbort);
+    }
+    static void        DecPreventAbort()
+    {
+        WRAPPER_NO_CONTRACT;
+        Thread *pThread = GetThread();
+#ifdef _DEBUG
+        LONG c =
+#endif // _DEBUG
+        InterlockedDecrement((LONG*)&pThread->m_PreventAbort);
+        _ASSERTE(c >= 0);
+    }
+
+    BOOL IsAbortPrevented()
+    {
+        return m_PreventAbort != 0;
+    }
     // The ThreadStore manages a list of all the threads in the system.  I
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
@@ -3638,6 +3666,8 @@ private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
     int         m_PreventAsync;
+    // Don't allow a thread to be aborted while running the new exception handling managed code
+    int         m_PreventAbort;
 
     static LONG m_DebugWillSyncCount;
 
@@ -4949,6 +4979,7 @@ inline void Thread::DecrementTraceCallCount()
 // state to be correct.  So we carry it around in case we need to restore it.
 struct PendingSync
 {
+    void*           m_Object;
     LONG            m_EnterCount;
     WaitEventLink  *m_WaitEventLink;
 #ifdef _DEBUG

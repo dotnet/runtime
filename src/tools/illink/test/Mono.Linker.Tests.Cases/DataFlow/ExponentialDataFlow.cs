@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -16,12 +18,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ExponentialArrayStates.Test ();
 			ExponentialArrayStatesDataFlow.Test<int> ();
 			ArrayStatesDataFlow.Test<int> ();
+			ExponentialArrayInStateMachine.Test ();
+			ExponentialStateFieldInStateMachine.Test ();
 		}
 
 		class ExponentialArrayStates
 		{
 			public static void Test ()
 			{
+				typeof (TestType).RequiresAll (); // Force data flow analysis
+
 				object[] data = new object[20];
 				if (true) data[0] = new object ();
 				if (true) data[1] = new object ();
@@ -91,8 +97,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			// The way we track arrays causes the analyzer to track exponentially many
 			// ArrayValues in the ValueSet for the pattern in this method, hitting the limit.
-			// When this happens, we replace the ValueSet wit a TopValue, which doesn't
-			// produce a warning in this case.
+			// When this happens, we replace the ValueSet with an unknown value, producing
+			// this warning.
+			[ExpectedWarning ("IL2055", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
@@ -163,5 +170,78 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static bool Condition => Random.Shared.Next (2) == 0;
 		}
+
+		class ExponentialArrayInStateMachine
+		{
+			// Force state machine
+			static async Task RecursiveReassignment ()
+			{
+				typeof (TestType).RequiresAll (); // Force data flow analysis
+
+				object[] args = null;
+				args = new[] { args };
+			}
+
+			public static void Test()
+			{
+				RecursiveReassignment ().Wait ();
+			}
+		}
+
+		class ExponentialStateFieldInStateMachine
+		{
+			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
+			public static async void Test ()
+			{
+				Type t = GetWithPublicFields ();
+
+				// 100
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+
+				// 200
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+
+				// 300
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+				await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync (); await MethodAsync ();
+
+				t.RequiresAll ();
+			}
+		}
+
+		class TestType { }
+
+		static async Task<int> MethodAsync ()
+		{
+			return await Task.FromResult (0);
+		}
+
+		static Type GetWithPublicFields () => null;
 	}
 }

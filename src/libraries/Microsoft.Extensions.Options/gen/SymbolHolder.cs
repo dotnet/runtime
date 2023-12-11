@@ -11,11 +11,19 @@ namespace Microsoft.Extensions.Options.Generators
     internal sealed record class SymbolHolder(
         INamedTypeSymbol OptionsValidatorSymbol,
         INamedTypeSymbol ValidationAttributeSymbol,
+        INamedTypeSymbol MaxLengthAttributeSymbol,
+        INamedTypeSymbol MinLengthAttributeSymbol,
+        INamedTypeSymbol CompareAttributeSymbol,
+        INamedTypeSymbol? LengthAttributeSymbol,
+        INamedTypeSymbol? UnconditionalSuppressMessageAttributeSymbol,
+        INamedTypeSymbol RangeAttributeSymbol,
+        INamedTypeSymbol ICollectionSymbol,
         INamedTypeSymbol DataTypeAttributeSymbol,
         INamedTypeSymbol ValidateOptionsSymbol,
         INamedTypeSymbol IValidatableObjectSymbol,
         INamedTypeSymbol GenericIEnumerableSymbol,
         INamedTypeSymbol TypeSymbol,
+        INamedTypeSymbol TimeSpanSymbol,
         INamedTypeSymbol ValidateObjectMembersAttributeSymbol,
         INamedTypeSymbol ValidateEnumeratedItemsAttributeSymbol);
 }

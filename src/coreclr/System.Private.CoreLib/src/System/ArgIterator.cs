@@ -1,133 +1,153 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
-    // This class will not be marked serializable
     // Note: This type must have the same layout as the CLR's VARARGS type in CLRVarArgs.h.
-    // It also contains an inline SigPointer data structure - must keep those fields in sync.
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct ArgIterator
+    public unsafe ref partial struct ArgIterator
     {
-        private IntPtr ArgCookie;               // Cookie from the EE.
+        private IntPtr _argCookie;              // Cookie from the EE.
 
-        // The SigPointer structure consists of the following members.  (Note: this is an inline native SigPointer data type)
-        private IntPtr sigPtr;                  // Pointer to remaining signature.
-        private IntPtr sigPtrLen;               // Remaining length of the pointer
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SigPointer
+        {
+            internal IntPtr _ptr;
+            internal uint _len;
+        }
+        private SigPointer _sigPtr;             // Pointer to remaining signature.
 
-        // Note, sigPtrLen is actually a DWORD, but on 64bit systems this structure becomes
-        // 8-byte aligned, which requires us to pad it.
+        private IntPtr _argPtr;                 // Pointer to remaining args.
+        private int _remainingArgs;             // # of remaining args.
 
-        private IntPtr ArgPtr;                  // Pointer to remaining args.
-        private int RemainingArgs;           // # of remaining args.
-
-#if (TARGET_WINDOWS && !TARGET_ARM)   // Native Varargs are not supported on Unix (all architectures) and Windows ARM
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern ArgIterator(IntPtr arglist);
+#if TARGET_WINDOWS // Native Varargs are not supported on Unix
+        // ArgIterator is a ref struct. It does not require pinning.
+        // This method null checks the this pointer as a side-effect.
+        private ArgIterator* ThisPtr => (ArgIterator*)Unsafe.AsPointer(ref _argCookie);
 
         // create an arg iterator that points at the first argument that
         // is not statically declared (that is the first ... arg)
         // 'arglist' is the value returned by the ARGLIST instruction
-        public ArgIterator(RuntimeArgumentHandle arglist) : this(arglist.Value)
+        public ArgIterator(RuntimeArgumentHandle arglist)
         {
+            IntPtr cookie = arglist.Value;
+            if (cookie == 0)
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
+            Init(ThisPtr, cookie);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern unsafe ArgIterator(IntPtr arglist, void* ptr);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init")]
+        private static partial void Init(ArgIterator* thisPtr, IntPtr cookie);
 
         // create an arg iterator that points just past 'firstArg'.
         // 'arglist' is the value returned by the ARGLIST instruction
         // This is much like the C va_start macro
 
         [CLSCompliant(false)]
-        public unsafe ArgIterator(RuntimeArgumentHandle arglist, void* ptr) : this(arglist.Value, ptr)
+        public ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
         {
+            IntPtr cookie = arglist.Value;
+            if (cookie == 0)
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
+            Init(ThisPtr, cookie, ptr);
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init2")]
+        private static partial void Init(ArgIterator* thisPtr, IntPtr cookie, void* ptr);
+
+#pragma warning disable CS8500 // Takes a pointer to a managed type
         // Fetch an argument as a typed referece, advance the iterator.
         // Throws an exception if past end of argument list
         [CLSCompliant(false)]
         public TypedReference GetNextArg()
         {
-            TypedReference result = default;
-            // reference to TypedReference is banned, so have to pass result as pointer
-            unsafe
+            if (_argCookie == 0)
             {
-#pragma warning disable CS8500 // Takes a pointer to a managed type
-                FCallGetNextArg(&result);
-#pragma warning restore CS8500
+                // This ArgIterator was created by marshaling from an unmanaged va_list -
+                // can't do this operation
+                ThrowHelper.ThrowNotSupportedException();
             }
+
+            // Make sure there are remaining args.
+            if (_remainingArgs == 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+            }
+
+            TypedReference result = default;
+            GetNextArg(ThisPtr, &result);
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        // reference to TypedReference is banned, so have to pass result as void pointer
-        private extern unsafe void FCallGetNextArg(void* result);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg")]
+        private static partial void GetNextArg(ArgIterator* thisPtr, TypedReference* pResult);
 
         // Alternate version of GetNextArg() intended primarily for IJW code
         // generated by VC's "va_arg()" construct.
         [CLSCompliant(false)]
         public TypedReference GetNextArg(RuntimeTypeHandle rth)
         {
-            if (sigPtr != IntPtr.Zero)
+            if (_sigPtr._ptr != IntPtr.Zero)
             {
                 // This is an ordinary ArgIterator capable of determining
                 // types from a signature. Just do a regular GetNextArg.
                 return GetNextArg();
             }
-            else
-            {
-                // Prevent abuse of this API with a default ArgIterator (it
-                // doesn't require permission to create a zero-inited value
-                // type). Check that ArgPtr isn't zero or this API will allow a
-                // malicious caller to increment the pointer to an arbitrary
-                // location in memory and read the contents.
-                if (ArgPtr == IntPtr.Zero)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, the argument not applicable
-                    throw new ArgumentNullException();
-#pragma warning restore CA2208
 
-                TypedReference result = default;
-                // reference to TypedReference is banned, so have to pass result as pointer
-                unsafe
-                {
-#pragma warning disable CS8500 // Takes a pointer to a managed type
-                    InternalGetNextArg(&result, rth.GetRuntimeType());
-#pragma warning restore CS8500
-                }
-                return result;
+            // Prevent abuse of this API with a default ArgIterator (it
+            // doesn't require permission to create a zero-inited value
+            // type). Check that _argPtr isn't zero or this API will allow a
+            // malicious caller to increment the pointer to an arbitrary
+            // location in memory and read the contents.
+            if (_argPtr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(null);
             }
+
+            if (rth.IsNullHandle())
+            {
+                throw new ArgumentNullException(nameof(rth), SR.Arg_InvalidHandle);
+            }
+
+            TypedReference result = default;
+            GetNextArg(ThisPtr, new QCallTypeHandle(ref rth), &result);
+            return result;
         }
 
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        // reference to TypedReference is banned, so have to pass result as void pointer
-        private extern unsafe void InternalGetNextArg(void* result, RuntimeType rt);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg2")]
+        private static partial void GetNextArg(ArgIterator* thisPtr, QCallTypeHandle rth, TypedReference* pResult);
 
         // This method should invalidate the iterator (va_end). It is not supported yet.
         public void End()
         {
         }
 
-        // How many arguments are left in the list
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern int GetRemainingCount();
+        public int GetRemainingCount()
+        {
+            if (_argCookie == 0)
+            {
+                // This ArgIterator was created by marshaling from an unmanaged va_list -
+                // can't do this operation
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return _remainingArgs;
+        }
 
         // Gets the type of the current arg, does NOT advance the iterator
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern unsafe void* _GetNextArgType();
-
         public unsafe RuntimeTypeHandle GetNextArgType()
         {
-            return new RuntimeTypeHandle(Type.GetTypeFromHandleUnsafe((IntPtr)_GetNextArgType()));
+            return RuntimeTypeHandle.FromIntPtr(GetNextArgType(ThisPtr));
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArgType")]
+        private static partial IntPtr GetNextArgType(ArgIterator* thisPtr);
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ArgCookie);
+            return HashCode.Combine(_argCookie);
         }
 
         // Inherited from object

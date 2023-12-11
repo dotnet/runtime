@@ -9,7 +9,12 @@ namespace Microsoft.Interop
 {
     internal static class ComInterfaceGeneratorHelpers
     {
-        public static MarshallingGeneratorFactoryKey<FactoryKey> CreateGeneratorFactory(StubEnvironment env, MarshalDirection direction)
+        private static readonly IMarshallingGeneratorFactory s_managedToUnmanagedDisabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.DisableRuntimeMarshalling, MarshalDirection.ManagedToUnmanaged);
+        private static readonly IMarshallingGeneratorFactory s_unmanagedToManagedDisabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.DisableRuntimeMarshalling, MarshalDirection.UnmanagedToManaged);
+        private static readonly IMarshallingGeneratorFactory s_managedToUnmanagedEnabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.None, MarshalDirection.ManagedToUnmanaged);
+        private static readonly IMarshallingGeneratorFactory s_unmanagedToManagedEnabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.None, MarshalDirection.UnmanagedToManaged);
+
+        private static IMarshallingGeneratorFactory CreateGeneratorFactory(EnvironmentFlags env, MarshalDirection direction)
         {
             IMarshallingGeneratorFactory generatorFactory;
 
@@ -20,7 +25,7 @@ namespace Microsoft.Interop
 
             // Since the char type can go into the P/Invoke signature here, we can only use it when
             // runtime marshalling is disabled.
-            generatorFactory = new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: env.EnvironmentFlags.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), TypeNames.GeneratedComInterfaceAttribute_ShortName);
+            generatorFactory = new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), TypeNames.GeneratedComInterfaceAttribute_ShortName);
 
             InteropGenerationOptions interopGenerationOptions = new(UseMarshalType: true);
             generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
@@ -31,14 +36,14 @@ namespace Microsoft.Interop
                 // Since the char type in an array will not be part of the P/Invoke signature, we can
                 // use the regular blittable marshaller in all cases.
                 new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true, TypeNames.GeneratedComInterfaceAttribute_ShortName),
-                new AttributedMarshallingModelOptions(env.EnvironmentFlags.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
+                new AttributedMarshallingModelOptions(env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
             // We don't need to include the later generator factories for collection elements
             // as the later generator factories only apply to parameters.
             generatorFactory = new AttributedMarshallingModelGeneratorFactory(
                 generatorFactory,
                 elementFactory,
                 new AttributedMarshallingModelOptions(
-                    env.EnvironmentFlags.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
+                    env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
                     direction == MarshalDirection.ManagedToUnmanaged
                         ? MarshalMode.ManagedToUnmanagedIn
                         : MarshalMode.UnmanagedToManagedOut,
@@ -54,8 +59,19 @@ namespace Microsoft.Interop
             generatorFactory = new ComInterfaceDispatchMarshallerFactory(generatorFactory);
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
+            generatorFactory = new BreakingChangeDetector(generatorFactory);
 
-            return MarshallingGeneratorFactoryKey.Create(new FactoryKey(env.EnvironmentFlags.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling)), generatorFactory);
+            return generatorFactory;
         }
+
+        public static IMarshallingGeneratorFactory GetGeneratorFactory(EnvironmentFlags env, MarshalDirection direction)
+            => (env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), direction) switch
+            {
+                (true, MarshalDirection.ManagedToUnmanaged) => s_managedToUnmanagedDisabledMarshallingGeneratorFactory,
+                (true, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedDisabledMarshallingGeneratorFactory,
+                (false, MarshalDirection.ManagedToUnmanaged) => s_managedToUnmanagedEnabledMarshallingGeneratorFactory,
+                (false, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedEnabledMarshallingGeneratorFactory,
+                _ => throw new UnreachableException(),
+            };
     }
 }

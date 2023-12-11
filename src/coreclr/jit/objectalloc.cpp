@@ -348,8 +348,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
     for (BasicBlock* const block : comp->Blocks())
     {
-        const bool basicBlockHasNewObj       = (block->bbFlags & BBF_HAS_NEWOBJ) == BBF_HAS_NEWOBJ;
-        const bool basicBlockHasBackwardJump = (block->bbFlags & BBF_BACKWARD_JUMP) == BBF_BACKWARD_JUMP;
+        const bool basicBlockHasNewObj       = block->HasFlag(BBF_HAS_NEWOBJ);
+        const bool basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
 #ifndef DEBUG
         if (!basicBlockHasNewObj)
         {
@@ -509,8 +509,8 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, unsafeValueClsCheck);
 
     // Initialize the object memory if necessary.
-    bool             bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-    bool             bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+    bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+    bool             bbIsReturn = block->KindIs(BBJ_RETURN);
     LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {

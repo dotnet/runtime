@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.IO;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
 
             return
                 padding == RSAEncryptionPadding.Pkcs1 ? Encrypt(data, fOAEP: false) :
-                padding == RSAEncryptionPadding.OaepSHA1 ?  Encrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
+                padding == RSAEncryptionPadding.OaepSHA1 ? Encrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
                 throw PaddingModeNotSupported();
         }
 

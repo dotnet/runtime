@@ -1,9 +1,5 @@
 <Project>
 
-  <PropertyGroup>
-    <UseCompilerGeneratedDocXmlFile Condition="'$(UseCompilerGeneratedDocXmlFile)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">true</UseCompilerGeneratedDocXmlFile>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
@@ -11,16 +7,8 @@
     <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
     <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
 
-    <!-- If the intellisense package doesn't provide an XML, use the compiler generated one instead. -->
-    <UseCompilerGeneratedDocXmlFile Condition="'$(IntellisensePackageXmlFilePath)' == '' and '$(GenerateDocumentationFile)' == 'true'">true</UseCompilerGeneratedDocXmlFile>
-
-    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors if
-         - the intellisense package xml file is used or
-         - the assembly is private (i.e. System.Private.Uri) or
-         - the assembly is a PNSE assembly. -->
-    <NoWarn Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' or
-                       '$(IsPrivateAssembly)' == 'true' or
-                       '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);1591</NoWarn>
+    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors when the intellisense package xml file is used. -->
+    <NoWarn Condition="'$(SkipIntellisenseNoWarnCS1591)' != 'true'">$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <!-- Flow these properties to consuming projects for Microsoft.Internal.Runtime.DotNetApiDocs.Transport.proj to only

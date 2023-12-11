@@ -1,24 +1,23 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
+using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed record ParameterSpec : MemberSpec
     {
-        public ParameterSpec(IParameterSymbol parameter) : base(parameter)
+        public ParameterSpec(IParameterSymbol parameter, TypeRef typeRef) : base(parameter, typeRef)
         {
             RefKind = parameter.RefKind;
 
             if (parameter.HasExplicitDefaultValue)
             {
-                string formatted = SymbolDisplay.FormatPrimitive(parameter.ExplicitDefaultValue!, quoteStrings: true, useHexadecimalNumbers: false);
-                if (formatted is not "null")
-                {
-                    DefaultValueExpr = formatted;
-                }
+                DefaultValueExpr = CSharpSyntaxUtilities.FormatLiteral(parameter.ExplicitDefaultValue, TypeRef);
             }
             else
             {

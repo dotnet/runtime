@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
-using System.Net.Quic;
-using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Quic;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -388,6 +388,13 @@ namespace System.Net.Http
 
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
+            {
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
+
+                Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
+            }
             catch (Exception ex)
             {
                 Abort(ex);
@@ -576,6 +583,13 @@ namespace System.Net.Http
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
             {
                 // ignore the exception, we have already closed the connection
+            }
+            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
+            {
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
+
+                Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
             }
             catch (Exception ex)
             {

@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-	ILLink.RoslynAnalyzer.RequiresAssemblyFilesAnalyzer,
+	ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
 	ILLink.CodeFix.RequiresAssemblyFilesCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -46,7 +46,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var test = new VerifyCS.Test {
 				TestCode = source,
 				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
+				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -59,6 +59,70 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			}
 			test.FixedState.ExpectedDiagnostics.AddRange (fixedExpected);
 			return test.RunAsync ();
+		}
+
+		[Fact]
+		public Task NoDynamicallyAccessedMembersWarningsIfOnlySingleFileAnalyzerIsEnabled ()
+		{
+			var TargetParameterWithAnnotations = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			class C
+			{
+				public static void Main()
+				{
+					MethodCallPattern(typeof(int));
+					AssignmentPattern(typeof(int));
+					ReflectionAccessPattern();
+					FieldAccessPattern();
+					GenericRequirement<int>();
+				}
+
+				private static void NeedsPublicMethodsOnParameter(
+					[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type parameter)
+				{
+				}
+
+				private static void MethodCallPattern(Type type)
+				{
+					NeedsPublicMethodsOnParameter(type);
+				}
+
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+				private static Type NeedsPublicMethosOnField;
+
+				private static void AssignmentPattern(Type type)
+				{
+					NeedsPublicMethosOnField = type;
+				}
+
+				private static void ReflectionAccessPattern()
+				{
+					Action<Type> action = NeedsPublicMethodsOnParameter;
+				}
+
+				private static void FieldAccessPattern()
+				{
+					var i = BeforeFieldInit.StaticField;
+				}
+
+				[RequiresUnreferencedCode("BeforeFieldInit")]
+				class BeforeFieldInit {
+					public static int StaticField = 0;
+				}
+
+				private static void GenericRequirement<T>()
+				{
+					new NeedsPublicMethodsOnTypeParameter<T>();
+				}
+
+				class NeedsPublicMethodsOnTypeParameter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+				{
+				}
+			}
+			""";
+			return VerifyRequiresAssemblyFilesAnalyzer (TargetParameterWithAnnotations);
 		}
 
 		[Fact]
@@ -82,7 +146,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFieldsOnEvent,
 				// (11,17): warning IL3002: Using member 'C.E' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 4).WithArguments ("C.E.add", "", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 26).WithArguments ("C.E.add", "", ""));
 		}
 
 		[Fact]
@@ -106,7 +170,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFilesOnProperty,
 				// (11,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 4).WithArguments ("C.P.set", "", ""),
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 12).WithArguments ("C.P.set", "", ""),
 				// (12,35): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
 				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (12, 35, 12, 36).WithArguments ("C.P.get", "", ""));
 		}
@@ -143,7 +207,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFilesOnMethodInsideProperty,
 				// (23,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (23, 3, 23, 4).WithArguments ("C.P.set", "", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (23, 3, 23, 12).WithArguments ("C.P.set", "", ""));
 		}
 
 		[Fact]

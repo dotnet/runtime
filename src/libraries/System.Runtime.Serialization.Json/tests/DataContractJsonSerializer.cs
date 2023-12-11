@@ -2359,7 +2359,7 @@ public static partial class DataContractJsonSerializerTests
         }
         catch (Exception e)
         {
-            Assert.True(false, $"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
+            Assert.Fail($"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
         }
 
 
@@ -2388,7 +2388,7 @@ public static partial class DataContractJsonSerializerTests
         }
         catch (Exception e)
         {
-            Assert.True(false, $"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
+            Assert.Fail($"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
         }
     }
 
@@ -2978,7 +2978,7 @@ public static partial class DataContractJsonSerializerTests
             try
             {
                 jsonReader.Dispose();
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (Exception ex)
             {

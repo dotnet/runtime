@@ -871,7 +871,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
 
             int curCns = pRange->uLimit.cns;
-            int limCns = (limit.IsBinOpArray()) ? limit.cns : 0;
+            int limCns = limit.IsBinOpArray() ? limit.cns : 0;
 
             // Incoming limit doesn't tighten the existing upper limit.
             if (limCns >= curCns)
@@ -935,13 +935,13 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     {
         GenTreePhiArg* arg  = (GenTreePhiArg*)op;
         BasicBlock*    pred = arg->gtPredBB;
-        if (pred->bbFallsThrough() && pred->bbNext == block)
+        if (pred->bbFallsThrough() && pred->NextIs(block))
         {
             assertions = pred->bbAssertionOut;
             JITDUMP("Merge assertions from pred " FMT_BB " edge: ", pred->bbNum);
             Compiler::optDumpAssertionIndices(assertions, "\n");
         }
-        else if (pred->KindIs(BBJ_COND, BBJ_ALWAYS) && (pred->bbJumpDest == block))
+        else if (pred->KindIs(BBJ_COND, BBJ_ALWAYS) && pred->HasJumpTo(block))
         {
             if (m_pCompiler->bbJtrueAssertionOut != nullptr)
             {
@@ -1481,7 +1481,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         }
     }
-    else if (varTypeIsSmallInt(expr->TypeGet()))
+    else if (varTypeIsSmall(expr))
     {
         range = GetRangeFromType(expr->TypeGet());
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));

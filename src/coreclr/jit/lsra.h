@@ -2011,6 +2011,7 @@ private:
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #ifdef TARGET_ARM64
     int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
+    void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2119,6 +2120,7 @@ class Interval : public Referenceable
 public:
     Interval(RegisterType registerType, regMaskTP registerPreferences)
         : registerPreferences(registerPreferences)
+        , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
@@ -2161,6 +2163,9 @@ public:
 
     // Fixed registers for which this Interval has a preference
     regMaskTP registerPreferences;
+
+    // Registers that should be avoided for this interval
+    regMaskTP registerAversion;
 
     // The relatedInterval is:
     //  - for any other interval, it is the interval to which this interval
@@ -2320,6 +2325,14 @@ public:
         assert(registerPreferences != RBM_NONE);
         // It is invalid to update with empty preferences
         assert(preferences != RBM_NONE);
+
+        preferences &= ~registerAversion;
+        if (preferences == RBM_NONE)
+        {
+            // Do not include the preferences if all they contain
+            // are the registers we recorded as want to avoid.
+            return;
+        }
 
         regMaskTP commonPreferences = (registerPreferences & preferences);
         if (commonPreferences != RBM_NONE)

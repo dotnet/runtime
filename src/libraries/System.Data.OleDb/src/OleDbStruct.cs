@@ -574,10 +574,10 @@ namespace System.Data.OleDb
             ODB.IsRunningOnX86 ? (ItagDBPROPINFO)new tagDBPROPINFO_x86() : new tagDBPROPINFO();
 
         internal static ItagDBPROP CreateTagDbProp(int propertyID, bool required, object value) =>
-            ODB.IsRunningOnX86 ? (ItagDBPROP) new tagDBPROP_x86(propertyID, required, value) :
+            ODB.IsRunningOnX86 ? (ItagDBPROP)new tagDBPROP_x86(propertyID, required, value) :
                     new tagDBPROP(propertyID, required, value);
 
         internal static ItagDBPROP CreateTagDbProp() =>
-            ODB.IsRunningOnX86 ? (ItagDBPROP) new tagDBPROP_x86() : new tagDBPROP();
+            ODB.IsRunningOnX86 ? (ItagDBPROP)new tagDBPROP_x86() : new tagDBPROP();
     }
 }

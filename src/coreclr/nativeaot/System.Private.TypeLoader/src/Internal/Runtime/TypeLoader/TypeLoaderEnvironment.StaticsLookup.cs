@@ -7,9 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-using Internal.Runtime.Augments;
-
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -145,7 +144,7 @@ namespace Internal.Runtime.TypeLoader
 
         public IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, uint index)
         {
-            using (LockHolder.Hold(_threadStaticsLock))
+            using (_threadStaticsLock.EnterScope())
             {
                 return _dynamicGenericsThreadStaticDescs[typeManagerHandle.GetIntPtrUNSAFE()][index];
             }
@@ -168,7 +167,7 @@ namespace Internal.Runtime.TypeLoader
 
             IntPtr typeManager = runtimeTypeHandle.GetTypeManager().GetIntPtrUNSAFE();
 
-            _threadStaticsLock.Acquire();
+            _threadStaticsLock.Enter();
             try
             {
                 if (!_dynamicGenericsThreadStaticDescs.TryGetValue(typeManager, out LowLevelDictionary<uint, IntPtr> gcDescs))
@@ -188,7 +187,7 @@ namespace Internal.Runtime.TypeLoader
                     }
                 }
 
-                _threadStaticsLock.Release();
+                _threadStaticsLock.Exit();
             }
         }
         #endregion
@@ -230,7 +229,7 @@ namespace Internal.Runtime.TypeLoader
             NativeHashtable staticsInfoHashtable;
             ExternalReferencesTable externalReferencesLookup;
             if (!GetStaticsInfoHashtable(module, out staticsInfoHashtable, out externalReferencesLookup, out staticsInfoLookup))
-                return new NativeParser();
+                return default(NativeParser);
 
             int lookupHashcode = instantiatedType.GetHashCode();
             var enumerator = staticsInfoHashtable.Lookup(lookupHashcode);
@@ -246,7 +245,7 @@ namespace Internal.Runtime.TypeLoader
                 return entryParser;
             }
 
-            return new NativeParser();
+            return default(NativeParser);
         }
         #endregion
     }

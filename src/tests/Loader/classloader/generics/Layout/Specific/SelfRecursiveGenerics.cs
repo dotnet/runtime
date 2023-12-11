@@ -4,8 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class SelfRecursiveGenerics
+public class SelfRecursiveGenerics
 {
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -13,7 +14,8 @@ class SelfRecursiveGenerics
     {
         Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAutoNonLoadable<int, byte>());
     }
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine(new SelfReferentialStructWithNoFieldsAuto());
         Console.WriteLine(new SelfReferentialStructWithNoFieldsSequential());
@@ -39,8 +41,6 @@ class SelfRecursiveGenerics
         {
             Console.WriteLine("Hit TLE" + tle.ToString());
         }
-
-        return 100;
     }
 
     public class Container<T> {

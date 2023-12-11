@@ -33,6 +33,9 @@
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
+
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
@@ -140,19 +143,6 @@
       <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
       <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
     </PropertyGroup>
-  </Target>
-
-  <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
-          BeforeTargets="_PrepareForReadyToRunCompilation">
-    <PropertyGroup>
-      <Crossgen2ArtifactPath>$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
-      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
-      <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="PublishTestAsSingleFile"

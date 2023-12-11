@@ -19,6 +19,22 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal readonly int MetadataVersionPaddedLength;
 
+        internal const ulong SortedTypeSystemTables =
+            1UL << (int)TableIndex.InterfaceImpl |
+            1UL << (int)TableIndex.Constant |
+            1UL << (int)TableIndex.CustomAttribute |
+            1UL << (int)TableIndex.FieldMarshal |
+            1UL << (int)TableIndex.DeclSecurity |
+            1UL << (int)TableIndex.ClassLayout |
+            1UL << (int)TableIndex.FieldLayout |
+            1UL << (int)TableIndex.MethodSemantics |
+            1UL << (int)TableIndex.MethodImpl |
+            1UL << (int)TableIndex.ImplMap |
+            1UL << (int)TableIndex.FieldRva |
+            1UL << (int)TableIndex.NestedClass |
+            1UL << (int)TableIndex.GenericParam |
+            1UL << (int)TableIndex.GenericParamConstraint;
+
         internal const ulong SortedDebugTables =
             1UL << (int)TableIndex.LocalScope |
             1UL << (int)TableIndex.StateMachineMethod |

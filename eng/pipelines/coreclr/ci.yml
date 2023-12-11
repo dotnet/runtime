@@ -29,6 +29,9 @@ schedules:
       - main
     always: false # run only if there were changes since the last successful scheduled run.
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
@@ -184,4 +187,5 @@ extends:
           jobParameters:
             buildArgs: -s clr.paltests+clr.paltestlist
             nameSuffix: PALTests
-            extraStepsTemplate: /eng/pipelines/coreclr/templates/run-paltests-step.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/run-paltests-step.yml

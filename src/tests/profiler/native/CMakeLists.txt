@@ -48,7 +48,7 @@ add_library(Profiler SHARED ${SOURCES})
 if(WIN32)
 	set(DEPENDENCIES Advapi32.lib oleaut32.lib Ole32.lib)
 else(WIN32)
-    set(DEPENDENCIES pthread dl)
+    set(DEPENDENCIES pthread ${CMAKE_DL_LIBS})
 endif(WIN32)
 
 target_link_libraries(Profiler PUBLIC ${DEPENDENCIES})

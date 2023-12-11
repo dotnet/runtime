@@ -27,13 +27,14 @@
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">true</WasmEnableSIMD>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(MonoWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
-    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
     <EmSdkLLVMAr>$(EMSDK_PATH)\upstream\bin\llvm-ar</EmSdkLLVMAr>
     <EmSdkLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(EmSdkLLVMAr).exe</EmSdkLLVMAr>
   </PropertyGroup>
@@ -278,7 +279,7 @@
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
-      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
+      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=0" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
@@ -365,13 +366,15 @@
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
+
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
 
-      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <!-- -lexports.js has the magical property of disabling minification of export names -->
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1 -lexports.js</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationLinkFlags) -msimd128</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
@@ -391,6 +394,7 @@
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;nosimd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DENABLE_JS_INTEROP_BY_VALUE=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_LEGACY_JS_INTEROP=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
 
@@ -405,6 +409,8 @@
     <ItemGroup>
       <_CmakeEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP=1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP=0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'"/>
+      <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=1" Condition="'$(WasmEnableJsInteropByValue)' != 'false'"/>
+      <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
@@ -423,8 +429,7 @@
 
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
-                       runtime/corebindings.c;
-                       $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
+                       runtime/corebindings.c;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
@@ -546,6 +551,8 @@
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'" />
+      <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
+      <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <_MonoRollupEnvironmentVariable Include="MonoDiagnosticsMock:$(MonoDiagnosticsMock)" />
       <_MonoRollupEnvironmentVariable Include="ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)" />
     </ItemGroup>

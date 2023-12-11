@@ -197,10 +197,8 @@ jobs:
             filesToSign:
             - name: createdump
               path: $(buildProductRootFolderPath)
-              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
             - name: corerun
               path: $(buildProductRootFolderPath)
-              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
         - task: CopyFiles@2
           displayName: 'Copy signed createdump to sharedFramework'
@@ -228,27 +226,6 @@ jobs:
           archiveExtension: $(archiveExtension)
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
-
-    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86')) }}:
-        - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
-          parameters:
-            archType: ${{ parameters.archType }}
-            osGroup: ${{ parameters.osGroup }}
-            osSubgroup: ${{ parameters.osSubgroup }}
-            isOfficialBuild: ${{ parameters.signBinaries }}
-            ${{ if eq(parameters.archType, 'arm') }}:
-              hostArchType: x86
-            ${{ else }}:
-              hostArchType: x64
-
-    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86')) }}:
-        - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
-          parameters:
-            archType: arm
-            osGroup: ${{ parameters.osGroup }}
-            osSubgroup: ${{ parameters.osSubgroup }}
-            isOfficialBuild: ${{ parameters.signBinaries }}
-            hostArchType: x86
 
     - ${{ if and(ne(parameters.testGroup, ''), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.

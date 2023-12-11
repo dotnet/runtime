@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
-using System.Runtime.Serialization;
 using System.IO;
+using System.Runtime.Serialization;
 
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.NonPortable;
@@ -41,7 +41,7 @@ namespace System.Reflection
         internal static uint GetAssemblyCount()
         {
             if (s_assemblyCount == 0)
-                s_assemblyCount = (uint)Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder.GetLoadedAssemblies().Count;
+                s_assemblyCount = (uint)Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder.GetLoadedAssemblies().Count;
             return s_assemblyCount;
         }
 
@@ -62,5 +62,5 @@ namespace System.Reflection
                 return null;
             }
         }
-   }
+    }
 }

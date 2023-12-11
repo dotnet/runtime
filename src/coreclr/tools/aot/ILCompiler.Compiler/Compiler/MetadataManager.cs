@@ -51,13 +51,16 @@ namespace ILCompiler
 
         private readonly List<InterfaceDispatchCellNode> _interfaceDispatchCells = new List<InterfaceDispatchCellNode>();
         private readonly SortedSet<NonGCStaticsNode> _cctorContextsGenerated = new SortedSet<NonGCStaticsNode>(CompilerComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithGCStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithNonGCStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithThreadStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _methodsGenerated = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
-        private readonly SortedSet<EmbeddedObjectNode> _frozenObjects = new SortedSet<EmbeddedObjectNode>(CompilerComparer.Instance);
+        private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
@@ -245,10 +248,22 @@ namespace ILCompiler
                 _reflectableMethods.Add(reflectedMethodNode.Method);
             }
 
-            var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasLazyStaticConstructor)
+            if (obj is NonGCStaticsNode nonGcStaticSectionNode)
             {
-                _cctorContextsGenerated.Add(nonGcStaticSectionNode);
+                if (nonGcStaticSectionNode.HasLazyStaticConstructor)
+                    _cctorContextsGenerated.Add(nonGcStaticSectionNode);
+
+                _typesWithNonGCStaticsGenerated.Add(nonGcStaticSectionNode.Type);
+            }
+
+            if (obj is GCStaticsNode gcStaticsNode)
+            {
+                _typesWithGCStaticsGenerated.Add(gcStaticsNode.Type);
+            }
+
+            if (obj is TypeThreadStaticIndexNode threadStaticsNode)
+            {
+                _typesWithThreadStaticsGenerated.Add(threadStaticsNode.Type);
             }
 
             var gvmEntryNode = obj as TypeGVMEntriesNode;
@@ -291,11 +306,6 @@ namespace ILCompiler
             if (obj is FrozenObjectNode frozenObj)
             {
                 _frozenObjects.Add(frozenObj);
-            }
-
-            if (obj is FrozenStringNode frozenStr)
-            {
-                _frozenObjects.Add(frozenStr);
             }
 
             if (obj is GenericStaticBaseInfoNode genericStaticBaseInfo)
@@ -395,6 +405,12 @@ namespace ILCompiler
                 // dictionary to make sure MakeGenericMethod works even without a type loader template
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Reflection visible dictionary");
+            }
+
+            if (method.Signature.IsStatic && method.IsSynchronized)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Will need to look up owning type from dictionary");
             }
         }
 
@@ -716,6 +732,20 @@ namespace ILCompiler
             return _cctorContextsGenerated;
         }
 
+        internal IEnumerable<MetadataType> GetTypesWithStaticBases()
+        {
+            var allTypes = new SortedSet<MetadataType>(CompilerComparer.Instance);
+            allTypes.UnionWith(_typesWithNonGCStaticsGenerated);
+            allTypes.UnionWith(_typesWithGCStaticsGenerated);
+            allTypes.UnionWith(_typesWithThreadStaticsGenerated);
+            return allTypes;
+        }
+
+        internal bool HasNonGcStaticBase(MetadataType type) => _typesWithNonGCStaticsGenerated.Contains(type);
+        internal bool HasGcStaticBase(MetadataType type) => _typesWithGCStaticsGenerated.Contains(type);
+        internal bool HasThreadStaticBase(MetadataType type) => _typesWithThreadStaticsGenerated.Contains(type);
+        internal bool HasConstructedEEType(TypeDesc type) => _typesWithConstructedEETypesGenerated.Contains(type);
+
         internal IEnumerable<TypeGVMEntriesNode> GetTypeGVMEntries()
         {
             return _typeGVMEntries;
@@ -751,7 +781,7 @@ namespace ILCompiler
             return _typeTemplates;
         }
 
-        public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()
+        public IEnumerable<FrozenObjectNode> GetFrozenObjects()
         {
             return _frozenObjects;
         }

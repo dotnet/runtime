@@ -989,16 +989,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return NULL;
 	}
-
-	int swizzle = 1;
-	int align;
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	swizzle = mono_type_size (type, &align);
-#endif
-
-	int dummy;
-	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
-	return (gpointer)mono_field_get_rva (field_handle, swizzle);
+	return mono_get_span_data_from_field (field_handle, field_type, type, count);
 }
 
 void
@@ -5966,9 +5957,9 @@ check_for_invalid_array_type (MonoType *type, MonoError *error)
 	gboolean allowed = TRUE;
 	char *name;
 
-	if (m_type_is_byref (type))
+	if (MONO_TYPE_IS_VOID (type))
 		allowed = FALSE;
-	else if (type->type == MONO_TYPE_TYPEDBYREF)
+	else if (m_type_is_byref (type))
 		allowed = FALSE;
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -7186,8 +7177,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 //
 // mono_create_icall_signatures depends on this order. Handle with care.
 typedef enum ICallSigType {
-	ICALL_SIG_TYPE_bool     = 0x00,
-	ICALL_SIG_TYPE_boolean  = ICALL_SIG_TYPE_bool,
+	ICALL_SIG_TYPE_boolean  = 0x00,
 	ICALL_SIG_TYPE_double   = 0x01,
 	ICALL_SIG_TYPE_float    = 0x02,
 	ICALL_SIG_TYPE_int      = 0x03,
@@ -7265,7 +7255,7 @@ mono_create_icall_signatures (void)
 	typedef gsize G_MAY_ALIAS gsize_a;
 
 	MonoType * const lookup [ ] = {
-		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_bool
+		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_boolean
 		m_class_get_byval_arg (mono_defaults.double_class),	 // ICALL_SIG_TYPE_double
 		m_class_get_byval_arg (mono_defaults.single_class),  // ICALL_SIG_TYPE_float
 		m_class_get_byval_arg (mono_defaults.int32_class),	 // ICALL_SIG_TYPE_int

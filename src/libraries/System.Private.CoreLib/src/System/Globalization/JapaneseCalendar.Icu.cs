@@ -8,7 +8,7 @@ namespace System.Globalization
 {
     public partial class JapaneseCalendar : Calendar
     {
-        private static readonly string [] s_abbreviatedEnglishEraNames = { "M", "T", "S", "H", "R" };
+        private static readonly string[] s_abbreviatedEnglishEraNames = { "M", "T", "S", "H", "R" };
 
         private static EraInfo[]? IcuGetJapaneseEras()
         {
@@ -20,15 +20,35 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
 
             string[]? eraNames;
+            int latestEra;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                eraNames = Interop.Globalization.GetCalendarInfoNative("ja-JP", CalendarId.JAPAN, CalendarDataType.EraNames).Split("||");
+                if (eraNames.Length == 0)
+                {
+                    return null;
+                }
+                latestEra = Interop.Globalization.GetLatestJapaneseEraNative();
+            }
+            else
+            {
+                if (!CalendarData.EnumCalendarInfo("ja-JP", CalendarId.JAPAN, CalendarDataType.EraNames, out eraNames))
+                {
+                    return null;
+                }
+                latestEra = Interop.Globalization.GetLatestJapaneseEra();
+            }
+#else
             if (!CalendarData.EnumCalendarInfo("ja-JP", CalendarId.JAPAN, CalendarDataType.EraNames, out eraNames))
             {
                 return null;
             }
+            latestEra = Interop.Globalization.GetLatestJapaneseEra();
+#endif
 
             List<EraInfo> eras = new List<EraInfo>();
             int lastMaxYear = GregorianCalendar.MaxYear;
-
-            int latestEra = Interop.Globalization.GetLatestJapaneseEra();
 
             for (int i = latestEra; i >= 0; i--)
             {
@@ -50,11 +70,35 @@ namespace System.Globalization
             }
 
             string[] abbrevEnglishEraNames;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                var abbrevEraNames = Interop.Globalization.GetCalendarInfoNative("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames);
+                if (abbrevEraNames == null)
+                {
+                    // Failed to get English names. fallback to hardcoded data.
+                    abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
+                }
+                else
+                {
+                    abbrevEnglishEraNames = abbrevEraNames.Split("||");
+                }
+            }
+            else
+            {
+                if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames!))
+                {
+                    // Failed to get English names. fallback to hardcoded data.
+                    abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
+                }
+            }
+#else
             if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames!))
             {
                 // Failed to get English names. fallback to hardcoded data.
                 abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
             }
+#endif
 
             // Check if we are getting the English Name at the end of the returned list.
             // ICU usually return long list including all Era names written in Japanese characters except the recent eras which actually we support will be returned in English.
@@ -101,12 +145,15 @@ namespace System.Globalization
             int startYear;
             int startMonth;
             int startDay;
-            bool result = Interop.Globalization.GetJapaneseEraStartDate(
-                era,
-                out startYear,
-                out startMonth,
-                out startDay);
-
+            bool result;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+                result = Interop.Globalization.GetJapaneseEraStartDateNative(era, out startYear, out startMonth, out startDay);
+            else
+                result = Interop.Globalization.GetJapaneseEraStartDate(era, out startYear, out startMonth, out startDay);
+#else
+            result = Interop.Globalization.GetJapaneseEraStartDate(era, out startYear, out startMonth, out startDay);
+#endif
             if (result)
             {
                 dateTime = new DateTime(startYear, startMonth, startDay);

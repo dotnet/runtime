@@ -1048,6 +1048,15 @@ CreateMutexExW(
     IN DWORD dwFlags,
     IN DWORD dwDesiredAccess);
 
+PALIMPORT
+HANDLE
+PALAPI
+PAL_CreateMutexW(
+    IN BOOL bInitialOwner,
+    IN LPCWSTR lpName,
+    IN LPSTR lpSystemCallErrors,
+    IN DWORD dwSystemCallErrorsBufferSize);
+
 // CreateMutexExW: dwFlags
 #define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
 
@@ -1060,6 +1069,14 @@ OpenMutexW(
        IN DWORD dwDesiredAccess,
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName);
+
+PALIMPORT
+HANDLE
+PALAPI
+PAL_OpenMutexW(
+       IN LPCWSTR lpName,
+       IN LPSTR lpSystemCallErrors,
+       IN DWORD dwSystemCallErrorsBufferSize);
 
 #ifdef UNICODE
 #define OpenMutex  OpenMutexW
@@ -2692,16 +2709,6 @@ PALAPI
 PAL_GetTotalCpuCount();
 
 PALIMPORT
-size_t
-PALAPI
-PAL_GetRestrictedPhysicalMemoryLimit();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetPhysicalMemoryUsed(size_t* val);
-
-PALIMPORT
 BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val);
@@ -2793,7 +2800,6 @@ PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCritical
 #define MEM_RESERVE                     0x2000
 #define MEM_DECOMMIT                    0x4000
 #define MEM_RELEASE                     0x8000
-#define MEM_RESET                       0x80000
 #define MEM_FREE                        0x10000
 #define MEM_PRIVATE                     0x20000
 #define MEM_MAPPED                      0x40000

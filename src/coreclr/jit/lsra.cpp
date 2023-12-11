@@ -155,9 +155,7 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 #ifdef FEATURE_HW_INTRINSICS
     else if (tree->OperIs(GT_HWINTRINSIC))
     {
-        assert(regIdx == 1);
-        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
-        tree->AsHWIntrinsic()->SetOtherReg(reg);
+        tree->AsHWIntrinsic()->SetRegNumByIdx(reg, regIdx);
     }
 #endif // FEATURE_HW_INTRINSICS
     else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
@@ -964,7 +962,7 @@ void LinearScan::setBlockSequence()
                     blockInfo[block->bbNum].hasCriticalInEdge = true;
                     hasCriticalEdges                          = true;
                 }
-                else if (predBlock->bbJumpKind == BBJ_SWITCH)
+                else if (predBlock->KindIs(BBJ_SWITCH))
                 {
                     assert(!"Switch with single successor");
                 }
@@ -993,7 +991,7 @@ void LinearScan::setBlockSequence()
         // according to the desired order.  We will handle the EH successors below.
         const unsigned numSuccs                = block->NumSucc(compiler);
         bool           checkForCriticalOutEdge = (numSuccs > 1);
-        if (!checkForCriticalOutEdge && block->bbJumpKind == BBJ_SWITCH)
+        if (!checkForCriticalOutEdge && block->KindIs(BBJ_SWITCH))
         {
             assert(!"Switch with single successor");
         }
@@ -1028,7 +1026,7 @@ void LinearScan::setBlockSequence()
         // For layout order, simply use bbNext
         if (isTraversalLayoutOrder())
         {
-            nextBlock = block->bbNext;
+            nextBlock = block->Next();
             continue;
         }
 
@@ -1483,15 +1481,15 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             varDsc->SetRegNum(newRegNum);
             count++;
 
-            BasicBlock* prevReportedBlock = bb->bbPrev;
-            if (bb->bbPrev != nullptr && bb->bbPrev->isBBCallAlwaysPairTail())
+            BasicBlock* prevReportedBlock = bb->Prev();
+            if (!bb->IsFirst() && bb->Prev()->isBBCallAlwaysPairTail())
             {
                 // For callf+always pair we generate the code for the always
                 // block in genCallFinally and skip it, so we don't report
                 // anything for it (it has only trivial instructions, so that
                 // does not matter much). So whether we need to rehome or not
                 // depends on what we reported at the end of the callf block.
-                prevReportedBlock = bb->bbPrev->bbPrev;
+                prevReportedBlock = bb->Prev()->Prev();
             }
 
             if (prevReportedBlock != nullptr && VarSetOps::IsMember(compiler, prevReportedBlock->bbLiveOut, varIndex))
@@ -1549,7 +1547,7 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         if (block->hasEHBoundaryOut())
         {
             VarSetOps::UnionD(compiler, exceptVars, block->bbLiveOut);
-            if (block->bbJumpKind == BBJ_EHFINALLYRET)
+            if (block->KindIs(BBJ_EHFINALLYRET))
             {
                 // Live on exit from finally.
                 // We track these separately because, in addition to having EH live-out semantics,
@@ -2513,7 +2511,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         // IG08:
         //      ...
         //      ...
-        if (block->bbJumpKind == BBJ_THROW)
+        if (block->KindIs(BBJ_THROW))
         {
             JITDUMP(" - throw block; ");
             return nullptr;
@@ -2544,10 +2542,10 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
             assert(!predBlock->hasEHBoundaryOut());
             if (isBlockVisited(predBlock))
             {
-                if (predBlock->bbJumpKind == BBJ_COND)
+                if (predBlock->KindIs(BBJ_COND))
                 {
                     // Special handling to improve matching on backedges.
-                    BasicBlock* otherBlock = (block == predBlock->bbNext) ? predBlock->bbJumpDest : predBlock->bbNext;
+                    BasicBlock* otherBlock = predBlock->NextIs(block) ? predBlock->GetJumpDest() : predBlock->Next();
                     noway_assert(otherBlock != nullptr);
                     if (isBlockVisited(otherBlock) && !blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                     {
@@ -2854,7 +2852,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
         {
             ssize_t v1 = refPosition->treeNode->AsIntCon()->IconValue();
             ssize_t v2 = otherTreeNode->AsIntCon()->IconValue();
-            if ((v1 == v2) && (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode) || v1 == 0))
+            if ((v1 == v2) && (varTypeIsGC(refPosition->treeNode) == varTypeIsGC(otherTreeNode) || v1 == 0))
             {
 #ifdef TARGET_64BIT
                 // If the constant is negative, only reuse registers of the same type.
@@ -3243,13 +3241,15 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 
     assert(allocatedReg != REG_NA);
 
+    // restore the related interval
+    currentInterval->relatedInterval = savedRelatedInterval;
+
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
 
     // Now restore the old info
-    currentInterval->relatedInterval = savedRelatedInterval;
-    currentInterval->physReg         = oldPhysReg;
-    currentInterval->assignedReg     = oldRegRecord;
-    currentInterval->isActive        = true;
+    currentInterval->physReg     = oldPhysReg;
+    currentInterval->assignedReg = oldRegRecord;
+    currentInterval->isActive    = true;
 
     return allocatedReg;
 }
@@ -6893,7 +6893,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         }
         else
         {
-            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
+            assert(block->KindIs(BBJ_ALWAYS));
             blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdUpperRestore));
         }
     }
@@ -7842,7 +7842,7 @@ void LinearScan::insertSwap(
         }
         else
         {
-            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
+            assert(block->KindIs(BBJ_ALWAYS));
             blockRange.InsertAtEnd(std::move(swapRange));
         }
     }
@@ -7948,8 +7948,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
 #ifdef TARGET_ARM
     if (type == TYP_DOUBLE)
     {
-        // Exclude any doubles for which the odd half isn't in freeRegs.
-        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE);
+        // Exclude any doubles for which the odd half isn't in freeRegs,
+        // and restrict down to just the even part of the even/odd pair.
+        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH) >> 1;
     }
 #endif
 
@@ -8177,7 +8178,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     // Note: Only switches and JCMP/JTEST (for Arm4) have input regs (and so can be fed by copies), so those
     // are the only block-ending branches that need special handling.
     regMaskTP consumedRegs = RBM_NONE;
-    if (block->bbJumpKind == BBJ_SWITCH)
+    if (block->KindIs(BBJ_SWITCH))
     {
         // At this point, Lowering has transformed any non-switch-table blocks into
         // cascading ifs.
@@ -8216,7 +8217,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     // Note: GT_COPY has special handling in codegen and its generation is merged with the
     // node that consumes its result. So both, the input and output regs of GT_COPY must be
     // excluded from the set available for resolution.
-    else if (block->bbJumpKind == BBJ_COND)
+    else if (block->KindIs(BBJ_COND))
     {
         GenTree* lastNode = LIR::AsRange(block).LastNode();
 
@@ -9671,6 +9672,8 @@ void Interval::dump(Compiler* compiler)
     printf(" Preferences=");
     compiler->dumpRegMask(this->registerPreferences);
 
+    printf(" Aversions=");
+    compiler->dumpRegMask(this->registerAversion);
     if (relatedInterval)
     {
         printf(" RelatedInterval ");
@@ -11547,7 +11550,11 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 
     regType     = linearScan->getRegisterType(currentInterval, refPosition);
     candidates  = refPosition->registerAssignment;
-    preferences = currentInterval->registerPreferences;
+    preferences = currentInterval->registerPreferences & ~currentInterval->registerAversion;
+    if (preferences == RBM_NONE)
+    {
+        preferences = linearScan->allRegs(regType) & ~currentInterval->registerAversion;
+    }
 
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.
@@ -11944,17 +11951,33 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
                 continue;
             }
 
-            if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
-                                                   !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+            if (recentRefPosition != nullptr)
             {
-                // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
-                // is not an actual ref. In those cases, we will reload in future (next) refPosition.
-                // For such cases, consider the spill cost of next refposition.
-                // See notes in "spillInterval()".
                 RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+
                 if (reloadRefPosition != nullptr)
                 {
-                    currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+                    if ((recentRefPosition->RegOptional() &&
+                         !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+                    {
+                        // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+                        // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+                        // For such cases, consider the spill cost of next refposition.
+                        // See notes in "spillInterval()".
+                        currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+                    }
+#ifdef TARGET_ARM64
+                    else if (reloadRefPosition->needsConsecutive)
+                    {
+                        // If next refposition is part of consecutive registers and there is already a register
+                        // assigned to it then try not to reassign for currentRefPosition, because with that,
+                        // other registers for the next consecutive register assignment would have to be copied
+                        // to different consecutive registers since this register is busy from this point onwards.
+                        //
+                        // Have it as a candidate, but make its spill cost higher than others.
+                        currentSpillWeight = linearScan->getWeight(reloadRefPosition) * 10;
+                    }
+#endif
                 }
             }
         }
@@ -12452,6 +12475,18 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // and we end up with that candidate is no longer available.
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
         candidates &= ~busyRegs;
+
+#ifdef TARGET_ARM
+        // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
+        // is also available. Thus, for every busyReg that is an odd floating-point register, we need to
+        // remove from candidates the corresponding even floating-point register. For example, if busyRegs
+        // contains `f3`, we need to remove `f2` from the candidates for a double register interval. The
+        // clause below creates a mask to do this.
+        if (currentInterval->registerType == TYP_DOUBLE)
+        {
+            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+        }
+#endif // TARGET_ARM
 
 #ifdef DEBUG
         inUseOrBusyRegsMask |= busyRegs;

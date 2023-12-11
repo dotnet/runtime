@@ -32,18 +32,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Diagnostic diagnostic = Assert.Single(result.Diagnostics);
             Assert.True(diagnostic.Id == "SYSLIB1102");
+            Assert.Contains("C# 12", diagnostic.Descriptor.MessageFormat.ToString(CultureInfo.InvariantCulture));
             Assert.Contains("C# 12", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ValueTypesAreInvalidAsBindInputs()
         {
             string source = """
                 using System;
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
-                
+
                 public class Program
                 {
                 	public static void Main()
@@ -131,14 +132,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using Microsoft.AspNetCore.Builder;
                 using Microsoft.Extensions.Configuration;
                 using Microsoft.Extensions.DependencyInjection;
-                
+
                 public class Program
                 {
                 	public static void Main()
                 	{
                 		ConfigurationBuilder configurationBuilder = new();
                 		IConfiguration config = configurationBuilder.Build();
-                
+
                 		PerformGenericBinderCalls<MyClass>(config);
                 	}
 
@@ -174,6 +175,33 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
                 Assert.NotNull(diagnostic.Location);
             }
+        }
+
+        [Fact]
+        public async Task SucceedWhenGivenConflictingTypeNames()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/93498
+
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                var c = new ConfigurationBuilder().Build();
+                c.Get<Foo.Bar.BType>();
+
+                namespace Microsoft.Foo
+                {
+                    internal class AType {}
+                }
+
+                namespace Foo.Bar
+                {
+                    internal class BType {}
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -225,7 +253,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [ActiveIssue("Work out why we aren't getting all the expected diagnostics.")]
         public async Task IssueDiagnosticsForAllOffendingCallsites()
         {
@@ -236,7 +264,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using Microsoft.AspNetCore.Builder;
                 using Microsoft.Extensions.Configuration;
                 using Microsoft.Extensions.DependencyInjection;
-                
+
                 public class Program
                 {
                 	public static void Main()

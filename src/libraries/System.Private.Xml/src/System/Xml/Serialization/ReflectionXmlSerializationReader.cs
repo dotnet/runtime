@@ -572,8 +572,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Type elementType = collectionType.GetElementType()!;
-                    a = Array.CreateInstance(elementType, collectionMember.Count);
+                    a = Array.CreateInstanceFromArrayType(collectionType, collectionMember.Count);
                 }
 
                 for (int i = 0; i < collectionMember.Count; i++)

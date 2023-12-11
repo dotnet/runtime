@@ -28,19 +28,55 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class AttributesOnMethod
 		{
 			[Kept]
-			[KeptAttributeAttribute (typeof (KeepsPublicConstructorsAttribute))]
-			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-			[KeptAttributeAttribute (typeof (KeepsPublicFieldsAttribute))]
-			[KeptAttributeAttribute (typeof (TypeArrayAttribute))]
-			[KeepsPublicConstructors (Type = typeof (ClassWithKeptPublicConstructor))]
-			[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethods")]
-			[KeepsPublicFields (Type = null, TypeName = null)]
-			[TypeArray (Types = new Type[] { typeof (AttributePropertyDataflow) })]
-			// Trimmer/NativeAot only for now - https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public static void Test () {
-				typeof (AttributesOnMethod).GetMethod ("Test").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
-				typeof (AttributePropertyDataflow).GetMethod ("Test").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+				TestKeepsPublicConstructors ();
+				TestKeepsPublicMethods ();
+				TestKeepsPublicMethodsByName ();
+				TestKeepsPublicFields ();
+				TestTypeArray ();
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicConstructorsAttribute))]
+			[KeepsPublicConstructors (Type = typeof (ClassWithKeptPublicConstructor))]
+			public static void TestKeepsPublicConstructors ()
+			{
+				typeof (AttributesOnMethod).GetMethod (nameof (TestKeepsPublicConstructors)).GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
+			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
+			public static void TestKeepsPublicMethods ()
+			{
+				typeof (AttributesOnMethod).GetMethod (nameof (TestKeepsPublicMethods)).GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+            // Trimmer/NativeAot only for now - https://github.com/dotnet/runtime/issues/95118
+            [ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethodsKeptByName--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethodsKeptByName")]
+			public static void TestKeepsPublicMethodsByName ()
+			{
+				typeof (AttributesOnMethod).GetMethod (nameof (TestKeepsPublicMethodsByName)).GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicFieldsAttribute))]
+			[KeepsPublicFields (Type = null, TypeName = null)]
+			public static void TestKeepsPublicFields ()
+			{
+				typeof (AttributesOnMethod).GetMethod (nameof (TestKeepsPublicFields)).GetCustomAttribute (typeof (KeepsPublicFieldsAttribute));
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (TypeArrayAttribute))]
+			[TypeArray (Types = new Type[] { typeof (AttributePropertyDataflow) })]
+			public static void TestTypeArray ()
+			{
+				typeof (AttributesOnMethod).GetMethod (nameof (TestTypeArray)).GetCustomAttribute (typeof (TypeArrayAttribute));
 			}
 
 			[Kept]
@@ -60,6 +96,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
+				public static void KeptMethod () { }
+				static void Method () { }
+			}
+
+			[Kept]
+			class ClassWithKeptPublicMethodsKeptByName
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicMethodsKeptByName--")]
 				public static void KeptMethod () { }
 				static void Method () { }
 			}

@@ -112,48 +112,36 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
 } // AppDomainNative::GetAssemblies
 FCIMPLEND
 
-FCIMPL1(Object*, AppDomainNative::IsStringInterned, StringObject* pStringUNSAFE)
+extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    STRINGREF       refString   = ObjectToSTRINGREF(pStringUNSAFE);
-    STRINGREF*      prefRetVal  = NULL;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refString);
+    GCX_COOP();
 
-    if (refString == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
+    STRINGREF refString = str.Get();
+    GCPROTECT_BEGIN(refString);
+    STRINGREF* prefRetVal = GetAppDomain()->IsStringInterned(&refString);
+    str.Set((prefRetVal != NULL) ? *prefRetVal : NULL);
+    GCPROTECT_END();
 
-    prefRetVal = GetAppDomain()->IsStringInterned(&refString);
-
-    HELPER_METHOD_FRAME_END();
-
-    if (prefRetVal == NULL)
-        return NULL;
-
-    return OBJECTREFToObject(*prefRetVal);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(Object*, AppDomainNative::GetOrInternString, StringObject* pStringUNSAFE)
+extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    STRINGREF    refRetVal  = NULL;
-    STRINGREF    pString    = (STRINGREF)    pStringUNSAFE;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pString);
+    GCX_COOP();
 
-    if (pString == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
+    STRINGREF refString = str.Get();
+    GCPROTECT_BEGIN(refString);
+    STRINGREF* stringVal = GetAppDomain()->GetOrInternString(&refString);
+    str.Set(*stringVal);
+    GCPROTECT_END();
 
-    STRINGREF* stringVal = GetAppDomain()->GetOrInternString(&pString);
-    if (stringVal != NULL)
-    {
-        refRetVal = *stringVal;
-    }
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    END_QCALL;
 }
-FCIMPLEND

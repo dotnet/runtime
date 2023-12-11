@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -27,18 +27,32 @@ namespace System.Runtime.CompilerServices
 
             (int offset, int length) = range.GetOffsetAndLength(array.Length);
 
-            if (length == 0)
+            T[] dest;
+
+            if (typeof(T[]) == array.GetType())
             {
-                return Array.Empty<T>();
+                // We know the type of the array to be exactly T[].
+
+                if (length == 0)
+                {
+                    return Array.Empty<T>();
+                }
+
+                dest = new T[length];
+            }
+            else
+            {
+                // The array is actually a U[] where U:T. We'll make sure to create
+                // an array of the exact same backing type. The cast to T[] will
+                // never fail.
+
+                dest = Unsafe.As<T[]>(Array.CreateInstanceFromArrayType(array.GetType(), length));
             }
 
-            T[] dest = new T[length];
-
-            // Due to array variance, it's possible that the incoming array is
-            // actually of type U[], where U:T; or that an int[] <-> uint[] or
-            // similar cast has occurred. In any case, since it's always legal
-            // to reinterpret U as T in this scenario (but not necessarily the
-            // other way around), we can use Buffer.Memmove here.
+            // In either case, the newly-allocated array is the exact same type as the
+            // original incoming array. It's safe for us to Buffer.Memmove the contents
+            // from the source array to the destination array, otherwise the contents
+            // wouldn't have been valid for the source array in the first place.
 
             Buffer.Memmove(
                 ref MemoryMarshal.GetArrayDataReference(dest),

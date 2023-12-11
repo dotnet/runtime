@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Threading;
+
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -46,14 +47,7 @@ namespace System.Runtime.CompilerServices
             if (type.IsNull)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            IntPtr pStaticClassConstructionContext = RuntimeAugments.Callbacks.TryGetStaticClassConstructionContext(type);
-            if (pStaticClassConstructionContext == IntPtr.Zero)
-                return;
-
-            unsafe
-            {
-                ClassConstructorRunner.EnsureClassConstructorRun((StaticClassConstructionContext*)pStaticClassConstructionContext);
-            }
+            ReflectionAugments.ReflectionCoreCallbacks.RunClassConstructor(type);
         }
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -61,10 +55,11 @@ namespace System.Runtime.CompilerServices
             if (module.AssociatedModule == null)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            ReflectionAugments.ReflectionCoreCallbacks.RunModuleConstructor(module.AssociatedModule);
+            // Nothing to do for the native AOT. All module cctors execute eagerly.
         }
 
-        public static object GetObjectValue(object? obj)
+        [return: NotNullIfNotNull(nameof(obj))]
+        public static object? GetObjectValue(object? obj)
         {
             if (obj == null)
                 return null;
@@ -352,7 +347,7 @@ namespace System.Runtime.CompilerServices
             if (mt->NumVtableSlots == 0)
             {
                 // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(type);
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(type);
             }
             // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
             Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(new EETypePtr(mt)) != 0);

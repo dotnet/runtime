@@ -27,7 +27,9 @@ namespace Microsoft.Interop
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             SequenceEqualImmutableArray<AttributeSyntax> ForwardedAttributes,
             LibraryImportData LibraryImportData,
-            MarshallingGeneratorFactoryKey<(TargetFrameworkSettings TargetFramework, LibraryImportGeneratorOptions Options)> GeneratorFactoryKey,
+            TargetFrameworkSettings TargetFramework,
+            LibraryImportGeneratorOptions Options,
+            EnvironmentFlags EnvironmentFlags,
             SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
@@ -290,7 +292,7 @@ namespace Microsoft.Interop
             // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,
-                DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
+                LibraryImportGeneratorHelpers.CreateMarshallingInfoParser(environment, targetFramework, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
                 environment,
                 new CodeEmitOptions(SkipInit: targetFramework.TargetFramework == TargetFramework.Net),
                 typeof(LibraryImportGenerator).Assembly);
@@ -307,7 +309,9 @@ namespace Microsoft.Interop
                 locations,
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
                 LibraryImportData.From(libraryImportData),
-                LibraryImportGeneratorHelpers.CreateGeneratorFactory(environment, targetFramework, options),
+                targetFramework,
+                options,
+                environment.EnvironmentFlags,
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray())
                 );
         }
@@ -324,7 +328,7 @@ namespace Microsoft.Interop
 
             bool supportsTargetFramework = !pinvokeStub.LibraryImportData.SetLastError
                 || options.GenerateForwarders
-                || (pinvokeStub.GeneratorFactoryKey.Key.TargetFramework is (TargetFramework.Net, { Major: >= 6 }));
+                || (pinvokeStub.TargetFramework is (TargetFramework.Net, { Major: >= 6 }));
 
             foreach (TypePositionInfo typeInfo in pinvokeStub.SignatureContext.ElementTypeInformation)
             {
@@ -340,8 +344,8 @@ namespace Microsoft.Interop
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 diagnostics,
-                pinvokeStub.GeneratorFactoryKey.GeneratorFactory,
-                new CodeEmitOptions(SkipInit: pinvokeStub.GeneratorFactoryKey.Key.TargetFramework is (TargetFramework.Net, _)));
+                LibraryImportGeneratorHelpers.CreateGeneratorFactory(pinvokeStub.TargetFramework, pinvokeStub.Options, pinvokeStub.EnvironmentFlags),
+                new CodeEmitOptions(SkipInit: pinvokeStub.TargetFramework is (TargetFramework.Net, _)));
 
             // Check if the generator should produce a forwarder stub - regular DllImport.
             // This is done if the signature is blittable or the target framework is not supported.

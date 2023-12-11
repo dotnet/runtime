@@ -26,11 +26,12 @@ parameters:
   helixQueues: ''
   enablePublishTestResults: false
   testResultsFormat: ''
-  extraStepsTemplate: ''
-  extraStepsParameters: {}
+  postBuildSteps: []
   extraVariablesTemplates: []
   isManualCodeQLBuild: false
   preBuildSteps: []
+  enableRichCodeNavigation: false
+  richCodeNavigationLanguage: 'csharp'
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -47,6 +48,9 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
+    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
 
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
@@ -100,21 +104,6 @@ jobs:
           value: /p:BuildDarwinFrameworks=true
         ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: ''
-
-      - name: _monoAotBuildshCommand
-        value: ''
-
-      - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - name: _monoAotBuildshCommand
-          value: 'mono_aot'
-
-      - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-        - name: _monoAotBuildshCommand
-          value: 'mono_fullaot'
-
-      - ${{ if eq(parameters.archType, 'arm64') }}:
-        - name: _monoAotCrossCompileArg
-          value: 'cross'
 
       # Set no native sanitizers by default
       - name: _nativeSanitizersArg
@@ -209,7 +198,28 @@ jobs:
 
     - ${{ if ne(parameters.preBuildSteps,'') }}:
       - ${{ each preBuildStep in parameters.preBuildSteps }}:
-        - ${{ preBuildStep }}
+        - ${{ if ne(preBuildStep.template, '') }}:
+          - template: ${{ preBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              pgoType: ${{ parameters.pgoType }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(preBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in preBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(preBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ preBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ preBuildStep }}
 
     # Build
     - ${{ if eq(parameters.isSourceBuild, false) }}:
@@ -217,10 +227,11 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci $(_archParameter) $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
-        displayName: Build product
-        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-          continueOnError: ${{ parameters.shouldContinueOnError }}
+      - template: /eng/pipelines/common/templates/global-build-step.yml
+        parameters:
+          buildArgs: ${{ parameters.buildArgs }}
+          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
         - task: CodeQL3000Finalize@0
@@ -235,21 +246,29 @@ jobs:
         condition: always()
 
       # If intended to send extra steps after regular build add them here.
-    - ${{ if ne(parameters.extraStepsTemplate, '') }}:
-      - template: ${{ parameters.extraStepsTemplate }}
-        parameters:
-          osGroup: ${{ parameters.osGroup }}
-          osSubgroup: ${{ parameters.osSubgroup }}
-          archType: ${{ parameters.archType }}
-          buildConfig: ${{ parameters.buildConfig }}
-          runtimeFlavor: ${{ parameters.runtimeFlavor }}
-          runtimeVariant: ${{ parameters.runtimeVariant }}
-          helixQueues: ${{ parameters.helixQueues }}
-          targetRid: ${{ parameters.targetRid }}
-          nameSuffix: ${{ parameters.nameSuffix }}
-          platform: ${{ parameters.platform }}
-          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-          ${{ insert }}: ${{ parameters.extraStepsParameters }}
+    - ${{ if ne(parameters.postBuildSteps,'') }}:
+      - ${{ each postBuildStep in parameters.postBuildSteps }}:
+        - ${{ if ne(postBuildStep.template, '') }}:
+          - template: ${{ postBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(postBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in postBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(postBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ postBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ postBuildStep }}
 
       - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log

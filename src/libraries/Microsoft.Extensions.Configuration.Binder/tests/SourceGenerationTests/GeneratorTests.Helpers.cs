@@ -105,12 +105,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ExtensionClassType extType = ExtensionClassType.None,
             ExpectedDiagnostics expectedDiags = ExpectedDiagnostics.None)
         {
+            string environmentSubFolder =
+#if NETCOREAPP
+    "netcoreapp"
+#else
+    "net462"
+#endif
+            ;
             string path = extType is ExtensionClassType.None
-                ? Path.Combine("Baselines", filename)
-                : Path.Combine("Baselines", extType.ToString(), filename);
-            string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(path).ConfigureAwait(false));
+                ? Path.Combine("Baselines", environmentSubFolder, filename)
+                : Path.Combine("Baselines", environmentSubFolder, extType.ToString(), filename);
+            string baseline = LineEndingsHelper.Normalize(File.ReadAllText(path));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
-                                             .Split(Environment.NewLine);
+                                             .Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
             result.ValidateDiagnostics(expectedDiags);
@@ -131,7 +138,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
                 path = Path.Combine($"{repoRootDir}\\src\\libraries\\Microsoft.Extensions.Configuration.Binder\\tests\\SourceGenerationTests\\", path);
 
-                await File.WriteAllTextAsync(path, source).ConfigureAwait(false);
+#if NETCOREAPP
+                await File.WriteAllTextAsync(path, source);
+#else
+                File.WriteAllText(path, source);
+#endif
                 resultEqualsBaseline = true;
             }
 #endif

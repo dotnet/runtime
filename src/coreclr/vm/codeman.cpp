@@ -1511,6 +1511,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Sha256);
     }
 
+    if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
+    {
+        CPUCompileFlags.Set(InstructionSet_Sve);
+    }
+
     // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).
     // DCZID_EL0<3:0> (BS) specifies Log2 of the block size in words.
     //

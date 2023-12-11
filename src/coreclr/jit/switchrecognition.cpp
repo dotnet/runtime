@@ -8,7 +8,7 @@
 
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
-#define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
+#define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
 #define SWITCH_MIN_TESTS 3
 
 //-----------------------------------------------------------------------------
@@ -26,7 +26,7 @@ PhaseStatus Compiler::optSwitchRecognition()
 // a series of ccmp instruction (see ifConvert phase).
 #ifdef TARGET_XARCH
     bool modified = false;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         // block->KindIs(BBJ_COND) check is for better throughput.
         if (block->KindIs(BBJ_COND) && !block->isRunRarely() && optSwitchDetectAndConvert(block))
@@ -68,7 +68,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                              ssize_t*          cns          = nullptr)
 {
     // NOTE: caller is expected to check that a block has multiple statements or not
-    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
+    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && !block->HasFlag(BBF_DONT_REMOVE))
     {
         const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));
@@ -79,9 +79,9 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
             GenTree* op1 = rootNode->gtGetOp1()->gtGetOp1();
             GenTree* op2 = rootNode->gtGetOp1()->gtGetOp2();
 
-            if (!varTypeIsIntegral(op1) || !varTypeIsIntegral(op2))
+            if (!varTypeIsIntOrI(op1) || !varTypeIsIntOrI(op2))
             {
-                // Only integral types are supported
+                // Only TYP_INT and TYP_LONG are supported
                 return false;
             }
 
@@ -95,10 +95,10 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 }
 
                 *isReversed   = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *blockIfTrue  = *isReversed ? block->bbNext : block->bbJumpDest;
-                *blockIfFalse = *isReversed ? block->bbJumpDest : block->bbNext;
+                *blockIfTrue  = *isReversed ? block->Next() : block->GetJumpDest();
+                *blockIfFalse = *isReversed ? block->GetJumpDest() : block->Next();
 
-                if ((block->bbNext == block->bbJumpDest) || (block->bbJumpDest == block))
+                if (block->JumpsToNext() || block->HasJumpTo(block))
                 {
                     // Ignoring weird cases like a condition jumping to itself
                     return false;
@@ -166,7 +166,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
         const BasicBlock* prevBlock = firstBlock;
 
         // Now walk the next blocks and see if they are basically the same type of test
-        for (const BasicBlock* currBb = firstBlock->bbNext; currBb != nullptr; currBb = currBb->bbNext)
+        for (const BasicBlock* currBb = firstBlock->Next(); currBb != nullptr; currBb = currBb->Next())
         {
             GenTree*    currVariableNode = nullptr;
             ssize_t     currCns          = 0;
@@ -253,6 +253,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
 bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest)
 {
     assert(firstBlock->KindIs(BBJ_COND));
+    assert(!varTypeIsSmall(nodeToTest));
 
     if (testsCount < SWITCH_MIN_TESTS)
     {
@@ -309,7 +310,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     const BasicBlock* lastBlock = firstBlock;
     for (int i = 0; i < testsCount - 1; i++)
     {
-        lastBlock = lastBlock->bbNext;
+        lastBlock = lastBlock->Next();
     }
 
     BasicBlock* blockIfTrue  = nullptr;
@@ -319,8 +320,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert(isTest);
 
     // Convert firstBlock to a switch block
-    firstBlock->bbJumpKind    = BBJ_SWITCH;
-    firstBlock->bbJumpDest    = nullptr;
+    firstBlock->SetSwitchKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
@@ -338,11 +338,11 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     gtUpdateStmtSideEffects(firstBlock->lastStmt());
 
     // Unlink and remove the whole chain of conditional blocks
-    BasicBlock* blockToRemove = firstBlock->bbNext;
+    BasicBlock* blockToRemove = firstBlock->Next();
     fgRemoveRefPred(blockToRemove, firstBlock);
-    while (blockToRemove != lastBlock->bbNext)
+    while (!lastBlock->NextIs(blockToRemove))
     {
-        BasicBlock* nextBlock = blockToRemove->bbNext;
+        BasicBlock* nextBlock = blockToRemove->Next();
         fgRemoveBlock(blockToRemove, true);
         blockToRemove = nextBlock;
     }
@@ -351,12 +351,11 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
-    firstBlock->bbJumpSwt                = new (this, CMK_BasicBlock) BBswtDesc;
-    firstBlock->bbJumpSwt->bbsCount      = jumpCount + 1;
-    firstBlock->bbJumpSwt->bbsHasDefault = true;
-    firstBlock->bbJumpSwt->bbsDstTab     = jmpTab;
-    firstBlock->bbNext                   = isReversed ? blockIfTrue : blockIfFalse;
-    fgHasSwitch                          = true;
+    fgHasSwitch                             = true;
+    firstBlock->GetJumpSwt()->bbsCount      = jumpCount + 1;
+    firstBlock->GetJumpSwt()->bbsHasDefault = true;
+    firstBlock->GetJumpSwt()->bbsDstTab     = jmpTab;
+    firstBlock->SetNext(isReversed ? blockIfTrue : blockIfFalse);
 
     // Splitting doesn't work well with jump-tables currently
     opts.compProcedureSplitting = false;

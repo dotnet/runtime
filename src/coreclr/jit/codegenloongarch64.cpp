@@ -884,7 +884,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -1195,7 +1195,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 
@@ -1217,7 +1217,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
+        noway_assert(block->KindIs(BBJ_RETURN));
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */
@@ -1518,16 +1518,18 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
     }
-    GetEmitter()->emitIns_J(INS_bl, block->bbJumpDest);
+    GetEmitter()->emitIns_J(INS_bl, block->GetJumpDest());
 
-    if (block->bbFlags & BBF_RETLESS_CALL)
+    BasicBlock* const nextBlock = block->Next();
+
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_break); // This should never get executed
         }
@@ -1539,8 +1541,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
+        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+
         // Now go to where the finally funclet needs to return to.
-        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-LOONGARCH64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -1550,7 +1554,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+            inst_JMP(EJ_jmp, jumpDest);
         }
 
         GetEmitter()->emitEnableGC();
@@ -1560,17 +1564,17 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // jump target using bbJumpDest - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    if (!block->HasFlag(BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
+        block = nextBlock;
     }
     return block;
 }
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->bbJumpDest, REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -2928,11 +2932,11 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -2945,7 +2949,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -3750,6 +3754,13 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
         GetEmitter()->emitIns_R_R(ins1, dstSize, tmpReg, tmpReg);
         GetEmitter()->emitIns_R_R(ins2, dstSize, treeNode->GetRegNum(), tmpReg);
 
+        if (dstType == TYP_UINT)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_addu16i_d, EA_PTRSIZE, REG_RA, REG_R0, -32768);
+            GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, treeNode->GetRegNum(), REG_RA, (2 << 2));
+            GetEmitter()->emitIns_R_R_I(INS_ori, dstSize, treeNode->GetRegNum(), REG_R0, 0);
+        }
+
         GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 3, 2 << 2); // cc=3
         GetEmitter()->emitIns_R_I(INS_beqz, EA_PTRSIZE, treeNode->GetRegNum(), 2 << 2);
 
@@ -4136,7 +4147,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // A GT_JCMP node is created for an integer-comparison's conditional branch.
 void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     assert(tree->OperIs(GT_JCMP));
     assert(!varTypeIsFloating(tree));
@@ -4323,7 +4334,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(ins != INS_invalid);
     assert(regs != 0);
 
-    emit->emitIns_J(ins, compiler->compCurBB->bbJumpDest, regs); // 5-bits;
+    emit->emitIns_J(ins, compiler->compCurBB->GetJumpDest(), regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
@@ -4899,7 +4910,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_JCC:
         {
-            BasicBlock* tgtBlock = compiler->compCurBB->bbJumpDest;
+            BasicBlock* tgtBlock = compiler->compCurBB->GetJumpDest();
 #if !FEATURE_FIXED_OUT_ARGS
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS
@@ -6476,8 +6487,8 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_READYTORUN
         else if (call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
             regNumber tmpReg = call->GetSingleTempReg();

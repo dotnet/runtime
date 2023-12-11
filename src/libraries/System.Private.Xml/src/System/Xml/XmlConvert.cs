@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Globalization;
-using System.Xml.Schema;
-using System.Diagnostics;
 using System.Collections;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -1660,7 +1660,7 @@ namespace System.Xml
 
         internal static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten)
         {
-            return value.TryFormat(destination, out  charsWritten, default, CultureInfo.InvariantCulture);
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
         internal static bool TryFormat(short value, Span<char> destination, out int charsWritten)

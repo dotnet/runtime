@@ -82,10 +82,21 @@ GC_Initialize(
     assert(clrToGC == nullptr);
 #endif
 
-#ifndef FEATURE_NATIVEAOT // GCConfig and GCToOSInterface are initialized in PalInit
+#ifndef FEATURE_NATIVEAOT
+
+    // For NativeAOT, GCConfig and GCToOSInterface are initialized in PalInit
+
     // Initialize GCConfig before anything else - initialization of our
     // various components may want to query the current configuration.
     GCConfig::Initialize();
+
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+    HRESULT hr = initialize_log_file();
+    if (hr != S_OK)
+    {
+        return hr;
+    }
+#endif //TRACE_GC && SIMPLE_DPRINTF
 
     if (!GCToOSInterface::Initialize())
     {

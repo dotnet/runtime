@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Text;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Text;
 
 #if FEATURE_EVENTSOURCE_XPLAT
 
@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tracing
 {
     internal sealed partial class XplatEventLogger : EventListener
     {
-        public XplatEventLogger() {}
+        public XplatEventLogger() { }
 
         private static readonly Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
         private static readonly Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
@@ -85,7 +85,7 @@ namespace System.Diagnostics.Tracing
 
             if (payloadName.Count != payload.Count)
             {
-               eventDataCount = Math.Min(payloadName.Count, payload.Count);
+                eventDataCount = Math.Min(payloadName.Count, payload.Count);
             }
 
             var sb = new ValueStringBuilder(stackalloc char[256]);
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tracing
         {
 
             string? eventSourceFilter = eventSourceNameFilter.Value;
-            if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.Contains(eventSourceFilter, StringComparison.OrdinalIgnoreCase)))
             {
                 EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
             }
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Tracing
             }
 
             string? eventFilter = eventSourceEventFilter.Value;
-            if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName!.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName!.Contains(eventFilter, StringComparison.OrdinalIgnoreCase)))
             {
                 LogOnEventWritten(eventData);
             }

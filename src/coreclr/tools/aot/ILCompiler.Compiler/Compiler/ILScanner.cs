@@ -257,6 +257,11 @@ namespace ILCompiler
             return new ScannedInlinedThreadStatics(_factory, MarkedNodes);
         }
 
+        public ReadOnlyFieldPolicy GetReadOnlyFieldPolicy()
+        {
+            return new ScannedReadOnlyPolicy(MarkedNodes);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
@@ -821,6 +826,36 @@ namespace ILCompiler
                 // The form we're asking about should be canonical, but may not be normalized
                 Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
                 return !_canonFormsWithCctorChecks.Contains(type.NormalizeInstantiation());
+            }
+        }
+
+        private sealed class ScannedReadOnlyPolicy : ReadOnlyFieldPolicy
+        {
+            private HashSet<FieldDesc> _writtenFields = new();
+
+            public ScannedReadOnlyPolicy(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                foreach (var node in markedNodes)
+                {
+                    if (node is NotReadOnlyFieldNode writtenField)
+                    {
+                        _writtenFields.Add(writtenField.Field);
+                    }
+                }
+            }
+
+            public override bool IsReadOnly(FieldDesc field)
+            {
+                FieldDesc typicalField = field.GetTypicalFieldDefinition();
+                if (field != typicalField)
+                {
+                    DefType owningType = field.OwningType;
+                    var canonOwningType = (InstantiatedType)owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (owningType != canonOwningType)
+                        field = field.Context.GetFieldForInstantiatedType(typicalField, canonOwningType);
+                }
+
+                return !_writtenFields.Contains(field);
             }
         }
     }

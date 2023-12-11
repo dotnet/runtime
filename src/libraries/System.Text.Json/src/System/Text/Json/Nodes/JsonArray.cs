@@ -175,13 +175,7 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void Add<T>(T? value)
         {
-            JsonNode? nodeToAdd = value switch
-            {
-                null => null,
-                JsonNode node => node,
-                _ => JsonValue.Create(value, Options)
-            };
-
+            JsonNode? nodeToAdd = ConvertFromValue(value, Options);
             Add(nodeToAdd);
         }
 
@@ -202,15 +196,26 @@ namespace System.Text.Json.Nodes
             List[index] = value;
         }
 
-        internal override void GetPath(List<string> path, JsonNode? child)
+        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
+            Parent?.GetPath(ref path, this);
+
             if (child != null)
             {
                 int index = List.IndexOf(child);
-                path.Add($"[{index}]");
-            }
+                Debug.Assert(index >= 0);
 
-            Parent?.GetPath(path, this);
+                path.Append('[');
+#if NETCOREAPP
+                Span<char> chars = stackalloc char[JsonConstants.MaximumFormatUInt32Length];
+                bool formatted = ((uint)index).TryFormat(chars, out int charsWritten);
+                Debug.Assert(formatted);
+                path.Append(chars.Slice(0, charsWritten));
+#else
+                path.Append(index.ToString());
+#endif
+                path.Append(']');
+            }
         }
 
         /// <inheritdoc/>

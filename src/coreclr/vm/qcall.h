@@ -159,6 +159,12 @@ public:
     {
         StringObject ** m_ppStringObject;
 
+        STRINGREF Get()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ObjectToSTRINGREF(*m_ppStringObject);
+        }
+
 #ifndef DACCESS_COMPILE
         //
         // Helpers for returning managed string from QCall
@@ -221,7 +227,6 @@ public:
        // Do not add operator overloads to convert this object into a stack reference to a specific object type
        // such as OBJECTREF *. While such things are correct, our debug checking logic is unable to verify that
        // the object reference is actually protected from access and therefore will assert.
-       // See bug 254159 for details.
 
 #endif // !DACCESS_COMPILE
     };

@@ -422,6 +422,15 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsDefType
+        {
+            get
+            {
+                EETypeKind kind = Kind;
+                return kind == EETypeKind.CanonicalEEType || kind == EETypeKind.GenericTypeDefEEType;
+            }
+        }
+
         internal bool IsCanonical
         {
             get
@@ -1411,7 +1420,7 @@ namespace Internal.Runtime
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 cFunctionPointerTypeParameters * sizeof(IntPtr) +
-                (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
+                (fHasGenericInfo ? sizeof(IntPtr) * 2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
                 (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell

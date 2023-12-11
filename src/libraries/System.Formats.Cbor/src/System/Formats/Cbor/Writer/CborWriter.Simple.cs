@@ -7,6 +7,10 @@ namespace System.Formats.Cbor
 {
     public partial class CborWriter
     {
+        // CBOR RFC 8949 says: if NaN is an allowed value, and there is no intent to support NaN payloads or signaling NaNs, the protocol needs to pick a single representation, typically 0xf97e00. If that simple choice is not possible, specific attention will be needed for NaN handling.
+        // In this implementation "that simple choice is not possible" for CTAP2 mode (RequiresPreservingFloatPrecision), in which "representations of any floating-point values are not changed".
+        private const ushort PositiveQNaNBitsHalf = 0x7e00;
+
         // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>Writes a single-precision floating point number (major type 7).</summary>
@@ -130,7 +134,7 @@ namespace System.Formats.Cbor
         private static bool TryConvertDoubleToSingle(double value, out float result)
         {
             result = (float)value;
-            return BitConverter.DoubleToInt64Bits(result) == BitConverter.DoubleToInt64Bits(value);
+            return double.IsNaN(value) || BitConverter.DoubleToInt64Bits(result) == BitConverter.DoubleToInt64Bits(value);
         }
     }
 }

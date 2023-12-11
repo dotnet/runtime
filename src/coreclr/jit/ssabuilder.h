@@ -34,23 +34,6 @@ public:
     void Build();
 
 private:
-    // Ensures that the basic block graph has a root for the dominator graph, by ensuring
-    // that there is a first block that is not in a try region (adding an empty block for that purpose
-    // if necessary).  Eventually should move to Compiler.
-    void SetupBBRoot();
-
-    // Requires "postOrder" to be an array of size "count". Requires "count" to at least
-    // be the size of the flow graph. Sorts the current compiler's flow-graph and places
-    // the blocks in post order (i.e., a node's children first) in the array. Returns the
-    // number of nodes visited while sorting the graph. In other words, valid entries in
-    // the output array.
-    int TopologicalSort(BasicBlock** postOrder, int count);
-
-    // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted
-    // order. Requires count to be the valid entries in the "postOrder" array. Computes
-    // each block's immediate dominator and records it in the BasicBlock in bbIDom.
-    void ComputeImmediateDom(BasicBlock** postOrder, int count);
-
     // Compute flow graph dominance frontiers.
     void ComputeDominanceFrontiers(BasicBlock** postOrder, int count, BlkToBlkVectorMap* mapDF);
 
@@ -67,7 +50,7 @@ private:
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
     // count to be the valid entries in the "postOrder" array. Inserts GT_PHI nodes at the beginning
     // of basic blocks that require them.
-    void InsertPhiFunctions(BasicBlock** postOrder, int count);
+    void InsertPhiFunctions();
 
     // Rename all definitions and uses within the compiled method.
     void RenameVariables();
@@ -80,23 +63,26 @@ private:
     void RenameLclUse(GenTreeLclVarCommon* lclNode, BasicBlock* block);
 
     // Assumes that "block" contains a definition for local var "lclNum", with SSA number "ssaNum".
-    // IF "block" is within one or more try blocks,
-    // and the local variable is live at the start of the corresponding handlers,
+    // IF "block" is within one or more blocks with EH successors,
+    // and the local variable is live at the start of the corresponding successors,
     // add this SSA number "ssaNum" to the argument list of the phi for the variable in the start
     // block of those handlers.
-    void AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigned ssaNum);
+    void AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, unsigned ssaNum);
 
     // Same as above, for memory.
-    void AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* block, unsigned ssaNum);
+    void AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock* block, unsigned ssaNum);
 
     // Add GT_PHI_ARG nodes to the GT_PHI nodes within block's successors.
     void AddPhiArgsToSuccessors(BasicBlock* block);
 
-private:
+    // Similar to Add[Memory]DefToEHSuccessorPhis, but adds initial values to
+    // the handlers of a newly entered block based on one entering block.
+    void AddPhiArgsToNewlyEnteredHandler(BasicBlock* predEnterBlock, BasicBlock* enterBlock, BasicBlock* handlerStart);
+
     Compiler*     m_pCompiler;
     CompAllocator m_allocator;
 
-    // Bit vector used by TopologicalSort and ComputeImmediateDom to track already visited blocks.
+    // Bit vector used by ComputeImmediateDom to track already visited blocks.
     BitVecTraits m_visitedTraits;
     BitVec       m_visited;
 

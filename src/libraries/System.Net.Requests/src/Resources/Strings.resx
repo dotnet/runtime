@@ -195,6 +195,9 @@
   <data name="net_ftp_receivefailure" xml:space="preserve">
     <value>The underlying connection was closed: An unexpected error occurred on a receive</value>
   </data>
+  <data name="net_ftp_no_newlines" xml:space="preserve">
+    <value>CRLF character pair is not allowed in FtpWebRequest inputs.</value>
+  </data>
   <data name="net_webstatus_NameResolutionFailure" xml:space="preserve">
     <value>The remote name could not be resolved</value>
   </data>
@@ -257,5 +260,8 @@
   </data>
   <data name="CacheEntryNotFound" xml:space="preserve">
     <value>The request was aborted: The request cache-only policy does not allow a network request and the response is not found in cache.</value>
+  </data>
+  <data name="net_proxyschemenotsupported" xml:space="preserve">
+    <value>The ServicePointManager does not support proxies with the {0} scheme.</value>
   </data>
 </root>

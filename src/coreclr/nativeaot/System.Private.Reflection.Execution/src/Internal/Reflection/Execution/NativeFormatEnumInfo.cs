@@ -6,12 +6,12 @@ using System.Numerics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime.Augments;
 using Internal.Metadata.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution
 {
-    static class NativeFormatEnumInfo
+    internal static class NativeFormatEnumInfo
     {
         public static void GetEnumValuesAndNames(MetadataReader reader, TypeDefinitionHandle typeDefHandle,
             out object[] unsortedBoxedValues, out string[] unsortedNames, out bool isFlags)

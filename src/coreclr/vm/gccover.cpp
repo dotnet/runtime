@@ -774,8 +774,8 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     {
         instructionIsACallThroughImmediate = TRUE;
     }
-    // jirl
-    else if (((instr >> 26) & 0x3F) == 0x13)
+    // jirl ra, target, offs
+    else if ((((instr >> 26) & 0x3F) == 0x13) && ((instr & 0x1F) == 1))
     {
         instructionIsACallThroughRegister = TRUE;
     }
@@ -1014,7 +1014,7 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
         *nextInstr = instrPtr + 4;
         return PC + imm26;
     }
-    else if ((((*reinterpret_cast<DWORD*>(instrPtr)) >> 26) & 0x3F) == 0x13)
+    else if (((((*reinterpret_cast<DWORD*>(instrPtr)) >> 26) & 0x3F) == 0x13) && (((*reinterpret_cast<DWORD*>(instrPtr)) & 0x1F) == 1))
     {
         // call through register
         *nextInstr = instrPtr + 4;

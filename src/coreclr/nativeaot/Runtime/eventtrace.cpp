@@ -112,6 +112,9 @@ void EtwCallbackCommon(
     case DotNETRuntime:
         ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
         break;
+    case DotNETRuntimePrivate:
+        ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
+        break;
     default:
         _ASSERTE(!"EtwCallbackCommon was called with invalid context");
         return;
@@ -212,9 +215,9 @@ void EtwCallback(
         (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
     {
-        FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
+        FireEtwGCSettings_V1(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
                           GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
-                          GCHeapUtilities::IsServerHeap());
+                          GCHeapUtilities::IsServerHeap(), GetClrInstanceId());
         GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 }
@@ -230,4 +233,16 @@ void EventPipeEtwCallbackDotNETRuntime(
     _Inout_opt_ PVOID CallbackContext)
 {
     EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ true);
+}
+
+void EventPipeEtwCallbackDotNETRuntimePrivate(
+    _In_ GUID * SourceId,
+    _In_ ULONG ControlCode,
+    _In_ unsigned char Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ EventFilterDescriptor* FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
 }

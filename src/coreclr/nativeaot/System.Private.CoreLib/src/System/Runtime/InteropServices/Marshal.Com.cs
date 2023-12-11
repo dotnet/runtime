@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
@@ -121,10 +122,10 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(pDstNativeVariant);
 
-            Variant* data = (Variant*)pDstNativeVariant;
+            ComVariant* data = (ComVariant*)pDstNativeVariant;
             if (obj == null)
             {
-                data->VariantType = VarEnum.VT_EMPTY;
+                *data = default;
                 return;
             }
 
@@ -132,148 +133,148 @@ namespace System.Runtime.InteropServices
             {
                 // Int and String most used types.
                 case int value:
-                    data->AsI4 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case string value:
-                    data->AsBstr = value;
+                    *data = ComVariant.Create(new BStrWrapper(value));
                     break;
 
                 case bool value:
-                    data->AsBool = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case byte value:
-                    data->AsUi1 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case sbyte value:
-                    data->AsI1 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case short value:
-                    data->AsI2 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case ushort value:
-                    data->AsUi2 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case uint value:
-                    data->AsUi4 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case long value:
-                    data->AsI8 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case ulong value:
-                    data->AsUi8 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case float value:
-                    data->AsR4 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case double value:
-                    data->AsR8 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case DateTime value:
-                    data->AsDate = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case decimal value:
-                    data->AsDecimal = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case char value:
-                    data->AsUi2 = value;
+                    *data = ComVariant.Create(value);
                     break;
                 case BStrWrapper value:
-                    data->AsBstr = value.WrappedObject;
+                    *data = ComVariant.Create(value);
                     break;
 #pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper value:
-                    data->AsCy = value.WrappedObject;
+                    *data = ComVariant.Create(value);
                     break;
 #pragma warning restore 0618
                 case UnknownWrapper value:
-                    data->AsUnknown = value.WrappedObject;
+                    *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIUnknownForObject(value.WrappedObject));
                     break;
                 case DispatchWrapper value:
-                    data->AsDispatch = value.WrappedObject;
+                    *data = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, GetIDispatchForObject(value.WrappedObject));
                     break;
                 case ErrorWrapper value:
-                    data->AsError = value.ErrorCode;
+                    *data = ComVariant.Create(value);
                     break;
                 case VariantWrapper value:
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(obj));
                 case DBNull value:
-                    data->SetAsNULL();
+                    *data = ComVariant.Null;
                     break;
                 case Missing value:
-                    data->AsError = DISP_E_PARAMNOTFOUND;
+                    *data = ComVariant.CreateRaw(VarEnum.VT_ERROR, DISP_E_PARAMNOTFOUND);
                     break;
                 case IConvertible value:
                     switch (value.GetTypeCode())
                     {
                         case TypeCode.Empty:
-                            data->VariantType = VarEnum.VT_EMPTY;
+                            *data = default;
                             break;
                         case TypeCode.Object:
-                            data->AsUnknown = value;
+                            *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIUnknownForObject(value));
                             break;
                         case TypeCode.DBNull:
-                            data->SetAsNULL();
+                            *data = ComVariant.Null;
                             break;
                         case TypeCode.Boolean:
-                            data->AsBool = value.ToBoolean(null);
+                            *data = ComVariant.Create(value.ToBoolean(null));
                             break;
                         case TypeCode.Char:
-                            data->AsUi2 = value.ToChar(null);
+                            *data = ComVariant.Create(value.ToChar(null));
                             break;
                         case TypeCode.SByte:
-                            data->AsI1 = value.ToSByte(null);
+                            *data = ComVariant.Create(value.ToSByte(null));
                             break;
                         case TypeCode.Byte:
-                            data->AsUi1 = value.ToByte(null);
+                            *data = ComVariant.Create(value.ToByte(null));
                             break;
                         case TypeCode.Int16:
-                            data->AsI2 = value.ToInt16(null);
+                            *data = ComVariant.Create(value.ToInt16(null));
                             break;
                         case TypeCode.UInt16:
-                            data->AsUi2 = value.ToUInt16(null);
+                            *data = ComVariant.Create(value.ToUInt16(null));
                             break;
                         case TypeCode.Int32:
-                            data->AsI4 = value.ToInt32(null);
+                            *data = ComVariant.Create(value.ToInt32(null));
                             break;
                         case TypeCode.UInt32:
-                            data->AsUi4 = value.ToUInt32(null);
+                            *data = ComVariant.Create(value.ToUInt32(null));
                             break;
                         case TypeCode.Int64:
-                            data->AsI8 = value.ToInt64(null);
+                            *data = ComVariant.Create(value.ToInt64(null));
                             break;
                         case TypeCode.UInt64:
-                            data->AsUi8 = value.ToUInt64(null);
+                            *data = ComVariant.Create(value.ToUInt64(null));
                             break;
                         case TypeCode.Single:
-                            data->AsR4 = value.ToSingle(null);
+                            *data = ComVariant.Create(value.ToSingle(null));
                             break;
                         case TypeCode.Double:
-                            data->AsR8 = value.ToDouble(null);
+                            *data = ComVariant.Create(value.ToDouble(null));
                             break;
                         case TypeCode.Decimal:
-                            data->AsDecimal = value.ToDecimal(null);
+                            *data = ComVariant.Create(value.ToDecimal(null));
                             break;
                         case TypeCode.DateTime:
-                            data->AsDate = value.ToDateTime(null);
+                            *data = ComVariant.Create(value.ToDateTime(null));
                             break;
                         case TypeCode.String:
-                            data->AsBstr = value.ToString();
+                            *data = ComVariant.Create(new BStrWrapper(value.ToString(null)));
                             break;
                         default:
                             throw new NotSupportedException();
                     }
                     break;
                 case CriticalHandle:
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(obj));
                 case SafeHandle:
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(obj));
                 case Array:
                     // SAFEARRAY implementation goes here.
                     throw new NotSupportedException("VT_ARRAY");
                 case ValueType:
                     throw new NotSupportedException("VT_RECORD");
                 default:
-                    data->AsDispatch = obj;
+                    *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIDispatchForObject(obj));
                     break;
             }
         }
@@ -303,38 +304,35 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(pSrcNativeVariant);
 
-            Variant* data = (Variant*)pSrcNativeVariant;
+            ComVariant* data = (ComVariant*)pSrcNativeVariant;
 
-            if (data->IsEmpty)
+            switch (data->VarType)
             {
-                return null;
-            }
-
-            switch (data->VariantType)
-            {
+                case VarEnum.VT_EMPTY:
+                    return null;
                 case VarEnum.VT_NULL:
                     return DBNull.Value;
 
-                case VarEnum.VT_I1: return data->AsI1;
-                case VarEnum.VT_I2: return data->AsI2;
-                case VarEnum.VT_I4: return data->AsI4;
-                case VarEnum.VT_I8: return data->AsI8;
-                case VarEnum.VT_UI1: return data->AsUi1;
-                case VarEnum.VT_UI2: return data->AsUi2;
-                case VarEnum.VT_UI4: return data->AsUi4;
-                case VarEnum.VT_UI8: return data->AsUi8;
-                case VarEnum.VT_INT: return data->AsInt;
-                case VarEnum.VT_UINT: return data->AsUint;
-                case VarEnum.VT_BOOL: return data->AsBool;
-                case VarEnum.VT_ERROR: return data->AsError;
-                case VarEnum.VT_R4: return data->AsR4;
-                case VarEnum.VT_R8: return data->AsR8;
-                case VarEnum.VT_DECIMAL: return data->AsDecimal;
-                case VarEnum.VT_CY: return data->AsCy;
-                case VarEnum.VT_DATE: return data->AsDate;
-                case VarEnum.VT_BSTR: return data->AsBstr;
-                case VarEnum.VT_UNKNOWN: return data->AsUnknown;
-                case VarEnum.VT_DISPATCH: return data->AsDispatch;
+                case VarEnum.VT_I1: return data->As<sbyte>();
+                case VarEnum.VT_I2: return data->As<short>();
+                case VarEnum.VT_I4: return data->As<int>();
+                case VarEnum.VT_I8: return data->As<long>();
+                case VarEnum.VT_UI1: return data->As<byte>();
+                case VarEnum.VT_UI2: return data->As<ushort>();
+                case VarEnum.VT_UI4: return data->As<uint>();
+                case VarEnum.VT_UI8: return data->As<ulong>();
+                case VarEnum.VT_INT: return data->As<int>();
+                case VarEnum.VT_UINT: return data->As<uint>();
+                case VarEnum.VT_BOOL: return data->As<short>() != -1;
+                case VarEnum.VT_ERROR: return data->As<int>();
+                case VarEnum.VT_R4: return data->As<float>();
+                case VarEnum.VT_R8: return data->As<double>();
+                case VarEnum.VT_DECIMAL: return data->As<decimal>();
+                case VarEnum.VT_CY: return decimal.FromOACurrency(data->GetRawDataRef<long>());
+                case VarEnum.VT_DATE: return data->As<DateTime>();
+                case VarEnum.VT_BSTR: return PtrToStringBSTR(data->GetRawDataRef<nint>());
+                case VarEnum.VT_UNKNOWN: return GetObjectForIUnknown(data->GetRawDataRef<nint>());
+                case VarEnum.VT_DISPATCH: return GetObjectForIUnknown(data->GetRawDataRef<nint>());
 
                 default:
                     // Other VARIANT types not supported yet.

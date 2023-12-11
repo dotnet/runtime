@@ -12,8 +12,8 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
-using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 using Debug = System.Diagnostics.Debug;
+using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 
 namespace Internal.StackTraceMetadata
 {
@@ -27,7 +27,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Module address-keyed map of per-module method name resolvers.
         /// </summary>
-        static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
+        private static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
 
         /// <summary>
         /// Eager startup initialization of stack trace metadata support creates
