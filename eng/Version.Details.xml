@@ -12,9 +12,9 @@
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-alpha.1.23605.3">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-alpha.1.23609.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>5806e95419d7009baa86d1f1f0c12a6f8d6164d3</Sha>
+      <Sha>c51e2421795cfa8f1b04832e01411449e1d11f84</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.23604.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -94,19 +94,19 @@
       <Sha>45dd3a73dd5b64b010c4251303b3664bb30df029</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23605.3">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23609.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>5806e95419d7009baa86d1f1f0c12a6f8d6164d3</Sha>
+      <Sha>c51e2421795cfa8f1b04832e01411449e1d11f84</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.23565.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.23608.1">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>b5ceed90b72d1b05975dd95fedd86c2455969adb</Sha>
+      <Sha>9e09ace1897546ac85dab114a6e1a5b6f773db7a</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.23605.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.23608.1">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>77003904b5d315ce3d8aa54a4446a8a46ac4e546</Sha>
+      <Sha>2e66b74da89aabcce9628cfc4b7a2925c54f6841</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -401,9 +401,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23607.4">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23610.1">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>a15e825e3a397bf8291cabce81dc21525f3a6c68</Sha>
+      <Sha>26001f1c39241dc3caf71eb31c805c021c684be7</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

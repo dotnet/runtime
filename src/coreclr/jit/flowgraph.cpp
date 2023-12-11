@@ -130,7 +130,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if (BBJ_SWITCH == block->GetJumpKind())
+        else if (BBJ_SWITCH == block->GetKind())
         {
             // We don't want to deal with all the outgoing edges of a switch block.
             //
@@ -267,21 +267,27 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top                = block;
-        BasicBlock*   topFallThrough     = nullptr;
+        BasicBlock*   top            = block;
+        BasicBlock*   topFallThrough = nullptr;
+        BasicBlock*   topJumpTarget;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
         if (top->KindIs(BBJ_COND))
         {
-            topFallThrough     = top->Next();
+            topFallThrough     = top->GetFalseTarget();
+            topJumpTarget      = top->GetTrueTarget();
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
+        }
+        else
+        {
+            topJumpTarget = top->GetTarget();
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetJumpDest());
-        BBjumpKinds   oldJumpKind = top->GetJumpKind();
+        bottom                    = fgNewBBafter(top->GetKind(), poll, true, topJumpTarget);
+        BBKinds       oldJumpKind = top->GetKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
-        poll->SetJumpDest(bottom);
+        poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
 
         // Update block flags
@@ -388,7 +394,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetJumpKindAndTarget(BBJ_COND, bottom);
+        top->SetCond(bottom);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -403,16 +409,15 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 // no successors
                 break;
             case BBJ_COND:
-                // replace predecessor in the fall through block.
+                // replace predecessor in true/false successors.
                 noway_assert(!bottom->IsLast());
-                fgReplacePred(bottom->Next(), top, bottom);
-
-                // fall through for the jump target
-                FALLTHROUGH;
+                fgReplacePred(bottom->GetFalseTarget(), top, bottom);
+                fgReplacePred(bottom->GetTrueTarget(), top, bottom);
+                break;
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgReplacePred(bottom->GetJumpDest(), top, bottom);
+                fgReplacePred(bottom->GetTarget(), top, bottom);
                 break;
             case BBJ_SWITCH:
                 NO_WAY("SWITCH should be a call rather than an inlined poll.");
@@ -549,30 +554,6 @@ bool Compiler::fgMayExplicitTailCall()
 
     return true;
 }
-
-//------------------------------------------------------------------------
-// fgFindJumpTargets: walk the IL stream, determining jump target offsets
-//
-// Arguments:
-//    codeAddr   - base address of the IL code buffer
-//    codeSize   - number of bytes in the IL code buffer
-//    jumpTarget - [OUT] bit vector for flagging jump targets
-//
-// Notes:
-//    If inlining or prejitting the root, this method also makes
-//    various observations about the method that factor into inline
-//    decisions.
-//
-//    May throw an exception if the IL is malformed.
-//
-//    jumpTarget[N] is set to 1 if IL offset N is a jump target in the method.
-//
-//    Also sets m_addrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 
 //------------------------------------------------------------------------
 // fgImport: read the IL for the method and create jit IR
@@ -1674,14 +1655,14 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
+    block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
     fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Synchronized method - convert block " FMT_BB " to BBJ_ALWAYS [targets " FMT_BB "]\n", block->bbNum,
-               block->GetJumpDest()->bbNum);
+               block->GetTarget()->bbNum);
     }
 #endif
 }
@@ -2145,7 +2126,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock);
+                    returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
@@ -2831,11 +2812,11 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             // It's a jump from outside the handler; add it to the newHead preds list and remove
             // it from the block preds list.
 
-            switch (predBlock->GetJumpKind())
+            switch (predBlock->GetKind())
             {
                 case BBJ_CALLFINALLY:
-                    noway_assert(predBlock->HasJumpTo(block));
-                    predBlock->SetJumpDest(newHead);
+                    noway_assert(predBlock->TargetIs(block));
+                    predBlock->SetTarget(newHead);
                     fgRemoveRefPred(block, predBlock);
                     fgAddRefPred(newHead, predBlock);
                     break;
@@ -3209,7 +3190,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         //
         if (prevToFirstColdBlock->bbFallsThrough())
         {
-            switch (prevToFirstColdBlock->GetJumpKind())
+            switch (prevToFirstColdBlock->GetKind())
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
@@ -3229,6 +3210,10 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // This is a slightly more complicated case, because we will
                     // probably need to insert a block to jump to the cold section.
                     //
+
+                    // TODO-NoFallThrough: Below logic will need additional check once bbFalseTarget can diverge from
+                    // bbNext
+                    assert(prevToFirstColdBlock->FalseTargetIs(firstColdBlock));
                     if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
                     {
                         // We can just use this block as the transitionBlock
@@ -3438,7 +3423,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
     //
     assert(!fgRngChkThrowAdded);
 
-    const static BBjumpKinds jumpKinds[] = {
+    const static BBKinds jumpKinds[] = {
         BBJ_ALWAYS, // SCK_NONE
         BBJ_THROW,  // SCK_RNGCHK_FAIL
         BBJ_THROW,  // SCK_DIV_BY_ZERO
@@ -3526,7 +3511,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 #endif // DEBUG
 
         //  Mark the block as added by the compiler and not removable by future flow
-        // graph optimizations. Note that no bbJumpDest points to these blocks.
+        // graph optimizations. Note that no bbTarget points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 
