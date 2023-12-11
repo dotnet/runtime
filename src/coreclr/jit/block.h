@@ -430,7 +430,7 @@ enum BasicBlockFlags : unsigned __int64
                                                           // and should be treated as if it falls through.
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
-    BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42),
+    BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42), // Block was the header ('entry') of a loop recognized by old loop finding
 
     // The following are sets of flags.
 
@@ -873,8 +873,6 @@ public:
     {
         return HasFlag(BBF_LOOP_ALIGN);
     }
-
-    void unmarkLoopAlign(Compiler* comp DEBUG_ARG(const char* reason));
 
     bool hasAlign() const
     {
