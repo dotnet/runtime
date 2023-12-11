@@ -2168,6 +2168,12 @@ bool Compiler::fgNormalizeEHCase2()
                             newTryStart->bbRefs++;
                         }
 
+                        // Same for OSR's protected entry BB.
+                        if (insertBeforeBlk == fgEntryBB)
+                        {
+                            fgEntryBB = newTryStart;
+                        }
+
                         JITDUMP("'try' begin for EH#%u and EH#%u are same block; inserted new " FMT_BB " before " FMT_BB
                                 " "
                                 "as new 'try' begin for EH#%u.\n",
