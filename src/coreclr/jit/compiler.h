@@ -7097,8 +7097,6 @@ public:
                        BasicBlock*   exit,
                        unsigned char exitCnt);
 
-    PhaseStatus optClearLoopIterInfo();
-
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
     void optPrintLoopInfo(const LoopDsc* loop, bool printVerbose = false);
