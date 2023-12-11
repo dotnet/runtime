@@ -238,7 +238,7 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (var sequencePoint in sequencePoints)
                 {
-                    if (lastFileName == null || lastFileName != sequencePoint.FileName)
+                    if (lastFileName is null || lastFileName != sequencePoint.FileName)
                     {
                         if (codes.Count > 0)
                         {

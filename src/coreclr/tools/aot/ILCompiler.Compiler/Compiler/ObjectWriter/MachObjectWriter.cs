@@ -716,7 +716,7 @@ namespace ILCompiler.ObjectWriter
             void EmitCompactUnwindSymbol(string symbolName)
             {
                 Span<byte> tempBuffer = stackalloc byte[8];
-                if (symbolName != null)
+                if (symbolName is not null)
                 {
                     SymbolDefinition symbol = definedSymbols[symbolName];
                     MachSection section = _sections[symbol.SectionIndex];
@@ -776,7 +776,7 @@ namespace ILCompiler.ObjectWriter
             _compactUnwindCodes.Add(new CompactUnwindCode(
                 PcStartSymbolName: startSymbolName,
                 PcLength: (uint)length,
-                Code: encoding | (encoding != _compactUnwindDwarfCode && lsdaSymbolName != null ? 0x40000000u : 0), // UNWIND_HAS_LSDA
+                Code: encoding | (encoding != _compactUnwindDwarfCode && lsdaSymbolName is not null ? 0x40000000u : 0), // UNWIND_HAS_LSDA
                 LsdaSymbolName: encoding != _compactUnwindDwarfCode ? lsdaSymbolName : null
             ));
 

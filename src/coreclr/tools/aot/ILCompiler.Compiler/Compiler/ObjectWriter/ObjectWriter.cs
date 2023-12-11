@@ -401,7 +401,7 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                if (nodeContents.Relocs != null)
+                if (nodeContents.Relocs is not null)
                 {
                     blocksToRelocate.Add(new BlockToRelocate(
                         sectionWriter.SectionIndex,
@@ -457,7 +457,7 @@ namespace ILCompiler.ObjectWriter
                 foreach (DependencyNode depNode in nodes)
                 {
                     ObjectNode node = depNode as ObjectNode;
-                    if (node == null || node.ShouldSkipEmittingObjectNode(_nodeFactory))
+                    if (node is null || node.ShouldSkipEmittingObjectNode(_nodeFactory))
                     {
                         continue;
                     }
