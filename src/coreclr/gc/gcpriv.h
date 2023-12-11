@@ -4253,7 +4253,7 @@ private:
         uint32_t        sample_index;
         sample          samples[sample_size];
 
-        // Instead of checking the GC index we should just check how many samples we've accumulated.
+        // Used to check how many samples we've accumulated.
         size_t          current_samples_count;
         size_t          processed_samples_count;
 
@@ -4482,11 +4482,9 @@ private:
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
-    // TEMP BEG
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_end_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t h0_gc_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
-    // TEMP END
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;

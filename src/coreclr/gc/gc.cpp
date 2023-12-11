@@ -29797,20 +29797,17 @@ void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject)
 
 size_t gc_heap::get_total_pinned_objects()
 {
-    //TEMP BEG
-    return n_heaps;
-    //TEMP END
-//#ifdef MULTIPLE_HEAPS
-//    size_t total_num_pinned_objects = 0;
-//    for (int i = 0; i < gc_heap::n_heaps; i++)
-//    {
-//        gc_heap* hp = gc_heap::g_heaps[i];
-//        total_num_pinned_objects += hp->num_pinned_objects;
-//    }
-//    return total_num_pinned_objects;
-//#else //MULTIPLE_HEAPS
-//    return num_pinned_objects;
-//#endif //MULTIPLE_HEAPS
+#ifdef MULTIPLE_HEAPS
+    size_t total_num_pinned_objects = 0;
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+        total_num_pinned_objects += hp->num_pinned_objects;
+    }
+    return total_num_pinned_objects;
+#else //MULTIPLE_HEAPS
+    return num_pinned_objects;
+#endif //MULTIPLE_HEAPS
 }
 
 void gc_heap::reinit_pinned_objects()
@@ -49714,7 +49711,7 @@ void gc_heap::do_pre_gc()
     size_t total_allocated_since_last_gc = get_total_allocated_since_last_gc();
 #ifdef BACKGROUND_GC
     //dprintf (1, (ThreadStressLog::gcDetailedStartMsg(),
-    dprintf (6666, ("*GC* %d (gen0: %d)(%d)(alloc: %zd)(%s)(%d)(%d)",
+    dprintf (1, ("*GC* %d (gen0: %d)(%d)(alloc: %zd)(%s)(%d)(%d)",
         VolatileLoad(&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
@@ -50150,7 +50147,7 @@ void gc_heap::do_post_gc()
             str_gc_type, gen_number, total_begin_data_size, total_survived_size, rate));
     }
 
-    dprintf (6666, (ThreadStressLog::gcDetailedEndMsg(),
+    dprintf (1, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad (&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         (size_t)(GetHighPrecisionTimeStamp () / 1000),
