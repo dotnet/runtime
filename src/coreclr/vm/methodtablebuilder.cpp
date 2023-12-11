@@ -9577,18 +9577,11 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
             UINT32 nInterfaceIndex = 0;
             while (parentInterfacesIterator.Next())
             {
-                if (pMT->IsSharedByGenericInstantiations())
-                {   // The type is a canonical instantiation (contains _Canon)
-                    // The interface instantiations of parent can be different (see
-                    // code:#InterfaceMap_CanonicalSupersetOfParent), therefore we cannot compare
-                    // MethodTables
-                    _ASSERTE(parentInterfacesIterator.GetInterfaceInfo()->GetApproxMethodTable(pParentMT->GetLoaderModule())->HasSameTypeDefAs(
-                        bmtExactInterface.pExactMTs[nInterfaceIndex]));
-                }
-                else
-                {   // It is not canonical instantiation, we can compare MethodTables
-                    _ASSERTE(parentInterfacesIterator.GetInterfaceApprox() == bmtExactInterface.pExactMTs[nInterfaceIndex]);
-                }
+                // The interface instantiations of parent can be different (see
+                // code:#InterfaceMap_CanonicalSupersetOfParent, and SpecialMarkerType), therefore we cannot compare
+                // MethodTables exactly
+                _ASSERTE(parentInterfacesIterator.GetInterfaceInfo()->GetApproxMethodTable(pParentMT->GetLoaderModule())->HasSameTypeDefAs(
+                    bmtExactInterface.pExactMTs[nInterfaceIndex]));
                 nInterfaceIndex++;
             }
             _ASSERTE(nInterfaceIndex == bmtExactInterface.nAssigned);
