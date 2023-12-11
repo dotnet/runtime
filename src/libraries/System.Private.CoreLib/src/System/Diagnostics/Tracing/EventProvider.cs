@@ -1379,7 +1379,7 @@ namespace System.Diagnostics.Tracing
             // ETW limited filter data to 1024 bytes but EventPipe doesn't. DiagnosticSourceEventSource
             // can legitimately use large filter data buffers to encode a large set of events and properties
             // that should be gathered so I am bumping the limit from 1K -> 100K.
-            if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
+            if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100 * 1024)
             {
                 data = new byte[filterData->Size];
                 Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);

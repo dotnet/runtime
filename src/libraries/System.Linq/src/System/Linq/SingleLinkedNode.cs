@@ -105,8 +105,8 @@ namespace System.Linq
             int index = 0;
             for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
             {
-               span[index] = node.Item;
-               index++;
+                span[index] = node.Item;
+                index++;
             }
         }
 

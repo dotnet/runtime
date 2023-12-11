@@ -4630,9 +4630,11 @@ void emitter::emitRemoveJumpToNextInst()
         insGroup*     jmpGroup = jmp->idjIG;
         instrDescJmp* nextJmp  = jmp->idjNext;
 
-        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
+        if (jmp->idjIsRemovableJmpCandidate)
         {
 #if DEBUG
+            assert(jmp->idInsFmt() == IF_LABEL);
+            assert(emitIsUncondJump(jmp));
             assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
             assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
                    ((jmpGroup->igNum == previousJumpIgNum) && (jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum)));
@@ -4699,6 +4701,25 @@ void emitter::emitRemoveJumpToNextInst()
                 UNATIVE_OFFSET codeSize = jmp->idCodeSize();
                 jmp->idCodeSize(0);
 
+#ifdef TARGET_AMD64
+                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
+                if (jmp->idjIsAfterCallBeforeEpilog)
+                {
+                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
+                    {
+                        // This jump will become a nop, so set its size now to ensure below calculations are correct
+                        jmp->idCodeSize(1);
+                        codeSize--;
+                    }
+                    else
+                    {
+                        // We don't need a nop if the removed jump isn't before an OS epilog,
+                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
+                        jmp->idjIsAfterCallBeforeEpilog = 0;
+                    }
+                }
+#endif // TARGET_AMD64
+
                 jmpGroup->igSize -= (unsigned short)codeSize;
                 jmpGroup->igFlags |= IGF_UPD_ISZ;
 
@@ -4707,6 +4728,9 @@ void emitter::emitRemoveJumpToNextInst()
             }
             else
             {
+                // The jump was not removed; make sure idjIsRemovableJmpCandidate reflects this
+                jmp->idjIsRemovableJmpCandidate = 0;
+
                 // Update the previousJmp
                 previousJmp = jmp;
 #if DEBUG
@@ -5133,7 +5157,7 @@ AGAIN:
             }
 #endif // DEBUG
 
-            assert(jmp->idAddr()->iiaBBlabel->bbFlags & BBF_HAS_LABEL);
+            assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
             assert(tgtIG);
 
             /* Record the bound target */
@@ -6490,7 +6514,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->bbFlags & BBF_FUNCLET_BEG);
+            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));

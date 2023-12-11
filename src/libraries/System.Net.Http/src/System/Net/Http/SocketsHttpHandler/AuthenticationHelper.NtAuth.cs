@@ -38,9 +38,9 @@ namespace System.Net.Http
                 else
                 {
                     // AppContext switch wasn't used. Check the environment variable.
-                   s_usePortInSpn =
-                       Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
-                       (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                    s_usePortInSpn =
+                        Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
                 }
 
                 return s_usePortInSpn != 0;

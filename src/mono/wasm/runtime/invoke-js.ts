@@ -269,7 +269,7 @@ type BindingClosure = {
     arg_cleanup: (Function | undefined)[]
 }
 
-export function mono_wasm_invoke_bound_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+export function mono_wasm_invoke_js_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
     bound_fn(args);
