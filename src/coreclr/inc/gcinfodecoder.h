@@ -584,7 +584,8 @@ private:
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
     UINT32  m_SafePointIndex;
-    UINT32 FindSafePoint(UINT32 codeOffset);
+    UINT32  NarrowSafePointSearch(size_t savedPos, UINT32 breakOffset, UINT32* searchEnd);
+    UINT32  FindSafePoint(UINT32 codeOffset);
 #endif
     UINT32  m_NumInterruptibleRanges;
 

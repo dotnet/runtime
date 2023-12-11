@@ -394,43 +394,70 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
 
 }
 
+// Repositioning within a bit stream is relatively involved, compared to sequential read,
+// so we prefer linear search unless the number of safepoints is too high.
+// The limit is not very significant as most methods will have just a few safe points.
+// At 32, even if a single point is 16bit encoded (64K method length),
+// the whole run will be under 64 bytes, so likely we will stay in the same cache line.
+#define MAX_LINEAR_SEARCH 32
+
+NOINLINE
+UINT32 GcInfoDecoder::NarrowSafePointSearch(size_t savedPos, UINT32 breakOffset, UINT32* searchEnd)
+{
+    INT32 low = 0;
+    INT32 high = (INT32)m_NumSafePoints;
+
+    const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
+    while (high - low > MAX_LINEAR_SEARCH)
+    {
+        const INT32 mid = (low + high) / 2;
+        _ASSERTE(mid >= 0 && mid < (INT32)m_NumSafePoints);
+        m_Reader.SetCurrentPos(savedPos + (UINT32)mid * numBitsPerOffset);
+        UINT32 midSpOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
+
+        if (breakOffset < midSpOffset)
+            high = mid;
+        else
+            low = mid;
+    }
+
+    m_Reader.SetCurrentPos(savedPos +(UINT32)low * numBitsPerOffset);
+    *searchEnd = high;
+    return low;
+}
+
 UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
 {
-    if(m_NumSafePoints == 0)
-        return 0;
-
-    const size_t savedPos = m_Reader.GetCurrentPos();
-    const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
-    UINT32 result = m_NumSafePoints;
-
+    _ASSERTE(m_NumSafePoints > 0);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Safepoints are encoded with a -1 adjustment
-    // but normalizing them masks off the low order bit
-    // Thus only bother looking if the address is odd
-    if ((breakOffset & 1) != 0)
+    _ASSERTE((breakOffset & 1) != 0);
 #endif
+
+    UINT32 result = m_NumSafePoints;
+    const size_t savedPos = m_Reader.GetCurrentPos();
+    const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
+
+    UINT32 linearSearchStart = 0;
+    UINT32 linearSearchEnd = m_NumSafePoints;
+    if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
     {
-        const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
+        linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
+    }
 
-        INT32 low = 0;
-        INT32 high = (INT32)m_NumSafePoints;
-
-        while(low < high)
+    const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
+    for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+    {
+        UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
+        if(spOffset == normBreakOffset)
         {
-            const INT32 mid = (low+high)/2;
-            _ASSERTE(mid >= 0 && mid < (INT32)m_NumSafePoints);
-            m_Reader.SetCurrentPos(savedPos + (UINT32)mid * numBitsPerOffset);
-            UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-            if(normOffset == normBreakOffset)
-            {
-                result = (UINT32) mid;
-                break;
-            }
+            result = i;
+            break;
+        }
 
-            if(normOffset < normBreakOffset)
-                low = mid+1;
-            else
-                high = mid;
+        if (spOffset > normBreakOffset)
+        {
+            break;
         }
     }
 
