@@ -54,21 +54,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void Write(Stream sectionStream)
+        public void Write(SectionWriter sectionWriter)
         {
-            Span<byte> subsectionHeader = stackalloc byte[sizeof(uint) + sizeof(uint)];
-
-            BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, (uint)DebugSymbolsSubsectionType.FileChecksums);
-            BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader.Slice(4), (uint)_fileTableWriter.Length);
-            sectionStream.Write(subsectionHeader);
-            _fileTableWriter.Position = 0;
-            _fileTableWriter.CopyTo(sectionStream);
-
-            BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, (uint)DebugSymbolsSubsectionType.StringTable);
-            BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader.Slice(4), (uint)_stringTableWriter.Length);
-            sectionStream.Write(subsectionHeader);
-            _stringTableWriter.Position = 0;
-            _stringTableWriter.CopyTo(sectionStream);
+            sectionWriter.WriteLittleEndian<uint>((uint)DebugSymbolsSubsectionType.FileChecksums);
+            sectionWriter.WriteLittleEndian<uint>((uint)_fileTableWriter.Length);
+            sectionWriter.EmitData(_fileTableWriter.GetBuffer().AsMemory(0, (int)_fileTableWriter.Length));
+            sectionWriter.WriteLittleEndian<uint>((uint)DebugSymbolsSubsectionType.StringTable);
+            sectionWriter.WriteLittleEndian<uint>((uint)_stringTableWriter.Length);
+            sectionWriter.EmitData(_stringTableWriter.GetBuffer().AsMemory(0, (int)_stringTableWriter.Length));
         }
     }
 }

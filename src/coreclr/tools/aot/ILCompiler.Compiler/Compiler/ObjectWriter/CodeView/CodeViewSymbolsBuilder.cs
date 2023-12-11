@@ -51,7 +51,7 @@ namespace ILCompiler.ObjectWriter
             // Write CodeView version header
             Span<byte> versionBuffer = stackalloc byte[sizeof(uint)];
             BinaryPrimitives.WriteUInt32LittleEndian(versionBuffer, 4);
-            sectionWriter.Stream.Write(versionBuffer);
+            sectionWriter.Write(versionBuffer);
         }
 
         // Maps an ICorDebugInfo register number to the corresponding CodeView
@@ -310,7 +310,7 @@ namespace ILCompiler.ObjectWriter
                 Span<byte> subsectionHeader = stackalloc byte[sizeof(uint) + sizeof(uint)];
                 BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, (uint)_kind);
                 BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader.Slice(4), _size);
-                _sectionWriter.Stream.Write(subsectionHeader);
+                _sectionWriter.Write(subsectionHeader);
 
                 foreach (var (offset, relocType, symbolName) in _relocations)
                 {
@@ -324,7 +324,7 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (byte[] data in _data)
                 {
-                    _sectionWriter.Stream.Write(data);
+                    _sectionWriter.Write(data);
                 }
 
                 _sectionWriter.EmitAlignment(4);
