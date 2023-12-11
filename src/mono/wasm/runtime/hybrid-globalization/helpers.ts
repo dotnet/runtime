@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+const SURROGATE_HIGHER_START = "\uD800";
+const SURROGATE_HIGHER_END = "\uDBFF";
+const SURROGATE_LOWER_START = "\uDC00";
+const SURROGATE_LOWER_END = "\uDFFF";
+
 export const OUTER_SEPARATOR = "##";
 export const INNER_SEPARATOR = "||";
 
@@ -24,4 +29,13 @@ export function normalizeLocale(locale: string | null)
     {
         throw new Error(`Get culture info failed for culture = ${locale} with error: ${ex}`);
     }
+}
+
+export function isSurrogate(str: string, startIdx: number) : boolean
+{
+    return SURROGATE_HIGHER_START <= str[startIdx] &&
+        str[startIdx] <= SURROGATE_HIGHER_END &&
+        startIdx+1 < str.length &&
+        SURROGATE_LOWER_START <= str[startIdx+1] &&
+        str[startIdx+1] <= SURROGATE_LOWER_END;
 }

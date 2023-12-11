@@ -8,7 +8,7 @@
  */
 
 import { SegmentationRules } from "./segmentation-rules";
-import { isSurrogate } from "./change-case";
+import { isSurrogate } from "./helpers";
 
 type SegmentationRule = {
     breaks: boolean
