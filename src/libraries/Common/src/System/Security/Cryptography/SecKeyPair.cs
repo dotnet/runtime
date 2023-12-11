@@ -24,9 +24,13 @@ namespace System.Security.Cryptography
             PrivateKey = null;
             PublicKey?.Dispose();
             PublicKey = null!;
-            OwningCertificate?.Dispose();
-            OwningCertificate = null;
 
+            if (OwningCertificate is not null)
+            {
+                // We don't dispose here. Callers that supply a certificate to the key pair are expected to pass
+                // an existing certificate with that has been incremented.
+                OwningCertificate.DangerousRelease();
+            }
         }
 
         internal static SecKeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
