@@ -153,7 +153,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             ///// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
             case LocaleString_LocalizedDisplayName:
             {
-                NSString *currUILocaleName = currentUILocaleName == NULL ? NSLocale.preferredLanguages[0] : [NSString stringWithFormat:@"%s", currentUILocaleName];
+                NSString *currUILocaleName = [NSString stringWithFormat:@"%s", currentUILocaleName == NULL ? GlobalizationNative_GetDefaultLocaleNameNative() : currentUILocaleName];
                 NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
                 value = [currentUILocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
                 break;
@@ -169,7 +169,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             /// <summary>Language Display Name for a language, eg "German" in UI language (corresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
             case LocaleString_LocalizedLanguageName:
             {
-                NSString *currUILocaleName = currentUILocaleName == NULL ? NSLocale.preferredLanguages[0] : [NSString stringWithFormat:@"%s", currentUILocaleName];
+                NSString *currUILocaleName = [NSString stringWithFormat:@"%s", currentUILocaleName == NULL ? GlobalizationNative_GetDefaultLocaleNameNative() : currentUILocaleName];
                 NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
                 value = [currentUILocale localizedStringForLanguageCode:currentLocale.languageCode];
                 break;
@@ -793,24 +793,31 @@ const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
 {
     @autoreleasepool
     {
-        NSLocale *currentLocale = [NSLocale currentLocale];
-        NSString *localeName = @"";
-
-        if (!currentLocale)
+        if (NSLocale.preferredLanguages.count > 0)
         {
-            return strdup([localeName UTF8String]);
-        }
-
-        if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
-        {
-            localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+            return strdup([NSLocale.preferredLanguages[0] UTF8String]);
         }
         else
         {
-            localeName = currentLocale.localeIdentifier;
-        }
+            NSLocale *currentLocale = [NSLocale currentLocale];
+            NSString *localeName = @"";
 
-        return strdup([localeName UTF8String]);
+            if (!currentLocale)
+            {
+                return strdup([localeName UTF8String]);
+            }
+
+            if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
+            {
+                localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+            }
+            else
+            {
+                localeName = currentLocale.localeIdentifier;
+            }
+
+            return strdup([localeName UTF8String]);
+        }
     }
 }
 
