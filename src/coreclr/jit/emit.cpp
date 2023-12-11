@@ -5987,7 +5987,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
-    // We don't rely on (block->GetJumpDest()->bbNum <= block->bbNum) because the basic
+    // We don't rely on (block->GetTarget()->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {

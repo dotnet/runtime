@@ -5054,13 +5054,13 @@ public:
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
 
-    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
+    BasicBlock* fgNewBBFromTreeAfter(BBKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
+    BasicBlock* fgNewBBinRegion(BBKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
                                 BasicBlock* nearBlk,
@@ -5069,15 +5069,15 @@ public:
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
+    BasicBlock* fgNewBBinRegion(BBKinds jumpKind,
                                 BasicBlock* srcBlk,
                                 BasicBlock* jumpDest    = nullptr,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBinRegionWorker(BBjumpKinds jumpKind,
+    BasicBlock* fgNewBBinRegionWorker(BBKinds jumpKind,
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
                                       bool        putInTryRegion,
@@ -6042,7 +6042,7 @@ public:
 
     PhaseStatus fgDetermineFirstColdBlock();
 
-    bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
+    bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
     bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
     PhaseStatus fgUpdateFlowGraphPhase();
@@ -7195,7 +7195,7 @@ protected:
     // Adds "elemType" to the set of modified array element types of "loop" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemType);
 
-    // Requires that "from" and "to" have the same "bbJumpKind" (perhaps because "to" is a clone
+    // Requires that "from" and "to" have the same "bbKind" (perhaps because "to" is a clone
     // of "from".)  Copies the jump destination from "from" to "to".
     void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
 
