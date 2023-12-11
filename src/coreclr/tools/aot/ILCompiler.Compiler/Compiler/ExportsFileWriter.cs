@@ -37,57 +37,25 @@ namespace ILCompiler
                 {
                     streamWriter.WriteLine("EXPORTS");
                     foreach (string symbol in _exportSymbols)
-                    {
                         streamWriter.WriteLine($"   {symbol.Replace(',', ' ')}");
-                    }
                     foreach (var method in _methods)
-                    {
                         streamWriter.WriteLine($"   {method.GetUnmanagedCallersOnlyExportName()}");
-                    }
                 }
-                else if (_context.Target.IsOSXLike)
+                else if(_context.Target.IsOSXLike)
                 {
                     foreach (string symbol in _exportSymbols)
-                    {
-                        string export;
-                        int comma = symbol.IndexOf(',');
-                        if (comma > 0)
-                        {
-                            export = symbol.Remove(comma);
-                        }
-                        else
-                        {
-                            export = symbol;
-                        }
-                        streamWriter.WriteLine($"_{export}");
-                    }
+                        streamWriter.WriteLine($"_{symbol}");
                     foreach (var method in _methods)
-                    {
                         streamWriter.WriteLine($"_{method.GetUnmanagedCallersOnlyExportName()}");
-                    }
                 }
                 else
                 {
                     streamWriter.WriteLine("V1.0 {");
                     streamWriter.WriteLine("    global: _init; _fini;");
                     foreach (string symbol in _exportSymbols)
-                    {
-                        string export;
-                        int comma = symbol.IndexOf(',');
-                        if (comma > 0)
-                        {
-                            export = symbol.Remove(comma);
-                        }
-                        else
-                        {
-                            export = symbol;
-                        }
-                        streamWriter.WriteLine($"        {export};");
-                    }
+                        streamWriter.WriteLine($"        {symbol};");
                     foreach (var method in _methods)
-                    {
                         streamWriter.WriteLine($"        {method.GetUnmanagedCallersOnlyExportName()};");
-                    }
                     streamWriter.WriteLine("    local: *;");
                     streamWriter.WriteLine("};");
                 }
