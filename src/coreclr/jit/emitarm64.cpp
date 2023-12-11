@@ -1151,7 +1151,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
-        case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
+        case IF_SVE_GA_2A:                          // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             assert(isVectorRegister(id->idReg1())); // nnnn
             assert(isVectorRegister(id->idReg2())); // ddddd
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
