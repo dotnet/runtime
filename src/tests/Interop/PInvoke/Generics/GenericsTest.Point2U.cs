@@ -35,34 +35,35 @@ unsafe partial class GenericsNative
     public static extern Point2<uint> AddPoint2Us(in Point2<uint> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestPoint2U()
+    [Fact]
+    public static void TestPoint2U()
     {
         GenericsNative.Point2<uint> value = GenericsNative.GetPoint2U(1u, 2u);
-        Assert.Equal(value.e00, 1u);
-        Assert.Equal(value.e01, 2u);
+        Assert.Equal(1u, value.e00);
+        Assert.Equal(2u, value.e01);
 
         GenericsNative.Point2<uint> value2;
         GenericsNative.GetPoint2UOut(1u, 2u, &value2);
-        Assert.Equal(value2.e00, 1u);
-        Assert.Equal(value2.e01, 2u);
+        Assert.Equal(1u, value2.e00);
+        Assert.Equal(2u, value2.e01);
 
         GenericsNative.GetPoint2UOut(1u, 2u, out GenericsNative.Point2<uint> value3);
-        Assert.Equal(value3.e00, 1u);
-        Assert.Equal(value3.e01, 2u);
+        Assert.Equal(1u, value3.e00);
+        Assert.Equal(2u, value3.e01);
 
         GenericsNative.Point2<uint>* value4 = GenericsNative.GetPoint2UPtr(1u, 2u);
-        Assert.Equal(value4->e00, 1u);
-        Assert.Equal(value4->e01, 2u);
+        Assert.Equal(1u, value4->e00);
+        Assert.Equal(2u, value4->e01);
 
         ref readonly GenericsNative.Point2<uint> value5 = ref GenericsNative.GetPoint2URef(1u, 2u);
-        Assert.Equal(value5.e00, 1u);
-        Assert.Equal(value5.e01, 2u);
+        Assert.Equal(1u, value5.e00);
+        Assert.Equal(2u, value5.e01);
 
         GenericsNative.Point2<uint> result = GenericsNative.AddPoint2U(value, value);
-        Assert.Equal(result.e00, 2u);
-        Assert.Equal(result.e01, 4u);
+        Assert.Equal(2u, result.e00);
+        Assert.Equal(4u, result.e01);
 
         GenericsNative.Point2<uint>[] values = new GenericsNative.Point2<uint>[] {
             value,
@@ -75,16 +76,16 @@ unsafe partial class GenericsTest
         fixed (GenericsNative.Point2<uint>* pValues = &values[0])
         {
             GenericsNative.Point2<uint> result2 = GenericsNative.AddPoint2Us(pValues, values.Length);
-            Assert.Equal(result2.e00, 5u);
-            Assert.Equal(result2.e01, 10u);
+            Assert.Equal(5u, result2.e00);
+            Assert.Equal(10u, result2.e01);
         }
 
         GenericsNative.Point2<uint> result3 = GenericsNative.AddPoint2Us(values, values.Length);
-        Assert.Equal(result3.e00, 5u);
-        Assert.Equal(result3.e01, 10u);
+        Assert.Equal(5u, result3.e00);
+        Assert.Equal(10u, result3.e01);
 
         GenericsNative.Point2<uint> result4 = GenericsNative.AddPoint2Us(in values[0], values.Length);
-        Assert.Equal(result4.e00, 5u);
-        Assert.Equal(result4.e01, 10u);
+        Assert.Equal(5u, result4.e00);
+        Assert.Equal(10u, result4.e01);
     }
 }

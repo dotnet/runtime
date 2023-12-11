@@ -62,7 +62,7 @@ namespace Internal.Runtime.TypeLoader
                 if (_nativeFormatStrings.TryGetValue(str, out result))
                     return result;
 
-                NativePrimitiveEncoder stringEncoder = new NativePrimitiveEncoder();
+                NativePrimitiveEncoder stringEncoder = default;
                 stringEncoder.Init();
                 byte[] utf8Bytes = Encoding.UTF8.GetBytes(str);
                 stringEncoder.WriteUnsigned(checked((uint)utf8Bytes.Length));
@@ -161,7 +161,7 @@ namespace Internal.Runtime.TypeLoader
                 if (_genericArgs != null)
                 {
                     if (_genericArgs.Length != other._genericArgs.Length)
-                       return false;
+                        return false;
 
                     for (int i = 0; i < _genericArgs.Length; i++)
                         if (!_genericArgs[i].Equals(other._genericArgs[i]))
@@ -315,7 +315,7 @@ namespace Internal.Runtime.TypeLoader
 
                     // Special flag in the handle value to indicate it was dynamically allocated, and doesn't point into the InvokeMap blob
                     runtimeMethodHandleValue++;
-                    runtimeMethodHandle = * (RuntimeMethodHandle*)&runtimeMethodHandleValue;
+                    runtimeMethodHandle = *(RuntimeMethodHandle*)&runtimeMethodHandleValue;
 
                     _runtimeMethodHandles.Add(key, runtimeMethodHandle);
                 }

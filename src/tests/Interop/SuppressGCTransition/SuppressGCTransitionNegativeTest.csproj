@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CMakeProjectReference -->
+    <!-- This test validates that the process crashes. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>

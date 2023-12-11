@@ -109,10 +109,12 @@ namespace System.Collections.Frozen
 
                 // Calculate the minimum and maximum lengths of the strings in the set. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
+                ulong lengthFilter = 0;
                 foreach (string s in entries)
                 {
                     if (s.Length < minLength) minLength = s.Length;
                     if (s.Length > maxLength) maxLength = s.Length;
+                    lengthFilter |= (1UL << (s.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
@@ -163,12 +165,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenSet = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter)
+                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                     else
                     {
-                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                 }
 

@@ -150,9 +150,7 @@ namespace HostActivation.Tests
         [Fact]
         public void EnvironmentVariable_DotNetInfo_ListEnvironment()
         {
-            var dotnet = new DotNetCli(TestContext.BuiltDotNet);
-
-            var command = dotnet.Exec("--info")
+            var command = TestContext.BuiltDotNet.Exec("--info")
                 .CaptureStdOut();
 
             var envVars = new (string Architecture, string Path)[] {
@@ -285,7 +283,7 @@ namespace HostActivation.Tests
         {
             using (var testArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "listOtherArchs"))))
             {
-                var dotnet = new DotNetBuilder(testArtifact.Location, TestContext.BuiltDotNet, "exe").Build();
+                var dotnet = new DotNetBuilder(testArtifact.Location, TestContext.BuiltDotNet.BinPath, "exe").Build();
                 using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
                 {
                     var installLocations = new (string, string)[] {

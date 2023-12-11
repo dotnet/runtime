@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             NugetPackages = TestContext.GetTestContextVariable("NUGET_PACKAGES");
 
-            BuiltDotnet = builtDotnet ?? TestContext.BuiltDotNet;
+            BuiltDotnet = builtDotnet ?? TestContext.BuiltDotNet.BinPath;
         }
 
         private static string GetRepoRootDirectory()

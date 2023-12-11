@@ -29,11 +29,10 @@ using System.Threading;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 
+using ReflectionPointer = System.Reflection.Pointer;
+
 namespace Internal.Runtime.Augments
 {
-    using BinderBundle = System.Reflection.BinderBundle;
-    using Pointer = System.Reflection.Pointer;
-
     public static class RuntimeAugments
     {
         /// <summary>
@@ -208,7 +207,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return Pointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
+            return ReflectionPointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
         }
 
         public static unsafe void StoreValueTypeField(ref byte address, object fieldValue, RuntimeTypeHandle fieldType)
@@ -231,7 +230,7 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            return Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
+            return ReflectionPointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
         }
 
         public static unsafe void StoreReferenceTypeField(IntPtr address, object fieldValue)
@@ -296,7 +295,7 @@ namespace Internal.Runtime.Augments
             Debug.Assert(fieldTypeHandle.ToEETypePtr().IsPointer);
 
             IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
-            return Pointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
+            return ReflectionPointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
         }
 
         public static unsafe object GetThreadStaticBase(IntPtr cookie)
