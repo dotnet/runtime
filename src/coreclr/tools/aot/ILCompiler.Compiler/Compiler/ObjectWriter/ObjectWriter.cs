@@ -288,7 +288,9 @@ namespace ILCompiler.ObjectWriter
             return typeIndex;
         }
 
-        private protected abstract void EmitSectionsAndLayout();
+        private protected virtual void EmitSectionsAndLayout()
+        {
+        }
 
         private protected abstract void EmitObjectFile(string objectFilePath);
 

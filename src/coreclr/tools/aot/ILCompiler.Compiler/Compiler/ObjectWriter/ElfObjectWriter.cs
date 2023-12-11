@@ -13,6 +13,21 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>
+    /// ELF object file format writer for Linux/Unix targets.
+    /// </summary>
+    /// <remarks>
+    /// ELF object format is described by the official specification hosted
+    /// at https://refspecs.linuxfoundation.org/elf/elf.pdf. Different
+    /// architectures specify the details in the ABI specification.
+    ///
+    /// Like COFF there are several quirks related to large number of sections
+    /// (> 65279). Some of the fields in the ELF file header are moved to the
+    /// first (NULL) section header. The symbol table that is normally a single
+    /// section in the file is extended with a second .symtab_shndx section
+    /// to accomodate the section indexes that don't fit within the regular
+    /// section number field.
+    /// </remarks>
     internal sealed class ElfObjectWriter : UnixObjectWriter
     {
         private readonly ushort _machine;
@@ -249,6 +264,9 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitRelocationsX86(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
+            // TODO: We are emitting .rela sections on x86 which is technically wrong. We should be
+            // using .rel sections with the addend embedded in the data. Since x86 is not an officially
+            // supported platform this is left for future enhancement.
             if (relocationList.Count > 0)
             {
                 Span<byte> relocationEntry = stackalloc byte[12];
@@ -349,10 +367,6 @@ namespace ILCompiler.ObjectWriter
                     relocationStream.Write(relocationEntry);
                 }
             }
-        }
-
-        private protected override void EmitSectionsAndLayout()
-        {
         }
 
         private protected override void EmitObjectFile(string objectFilePath)

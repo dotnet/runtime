@@ -16,8 +16,9 @@ namespace ILCompiler.ObjectWriter
     /// Optimized append-only structure for writing sections.
     /// </summary>
     /// <remarks>
-    /// Implements a stream of chained buffers. It supports appending existing
-    /// read-only buffers without copying.
+    /// The section data are kept in memory as a list of buffers. It supports
+    /// appending existing read-only buffers without copying (such as buffer
+    /// from ObjectNode.ObjectData).
     /// </remarks>
     internal sealed class SectionData
     {
@@ -68,6 +69,9 @@ namespace ILCompiler.ObjectWriter
 
         public long Length => _length + _appendBuffer.WrittenCount;
 
+        /// <summary>
+        /// Gets a read-only stream accessing the section data.
+        /// </summary>
         public Stream GetReadStream() => new ReadStream(this);
 
         private sealed class ReadStream : Stream

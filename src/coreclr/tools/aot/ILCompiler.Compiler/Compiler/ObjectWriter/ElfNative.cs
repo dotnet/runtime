@@ -2,21 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>
+    /// Native constants for the ELF file format.
+    /// </summary>
     internal static class ElfNative
     {
+        // ELF version
         public const byte EV_CURRENT = 1;
 
+        // File type
         public const ushort ET_REL = 1;
 
+        // File bitness
         public const byte ELFCLASS32 = 1;
         public const byte ELFCLASS64 = 2;
 
+        // File endianness
         public const byte ELFDATA2LSB = 1;
 
+        // Architecture
         public const ushort EM_386 = 3;
         public const ushort EM_X86_64 = 62;
         public const ushort EM_AARCH64 = 183;
 
+        // Section header type
         public const uint SHT_NULL = 0;
         public const uint SHT_PROGBITS = 1;
         public const uint SHT_SYMTAB = 2;
@@ -36,6 +45,7 @@ namespace ILCompiler.ObjectWriter
         public const uint SHT_SYMTAB_SHNDX = 18;
         public const uint SHT_IA_64_UNWIND = 1879048193;
 
+        // Section header flags
         public const uint SHF_WRITE = 1;
         public const uint SHF_ALLOC = 2;
         public const uint SHF_EXECINSTR = 4;
@@ -48,10 +58,12 @@ namespace ILCompiler.ObjectWriter
         public const uint SHF_TLS = 1024;
         public const uint SHF_COMPRESSED = 2048;
 
+        // Section header special index numbers
         public const uint SHN_UNDEF = 0;
         public const uint SHN_LORESERVE = 65280;
         public const uint SHN_XINDEX = 65535;
 
+        // Symbol type
         public const byte STT_NOTYPE = 0;
         public const byte STT_OBJECT = 1;
         public const byte STT_FUNC = 2;
@@ -60,15 +72,18 @@ namespace ILCompiler.ObjectWriter
         public const byte STT_COMMON = 5;
         public const byte STT_TLS = 6;
 
+        // Symbol visibility
         public const byte STV_DEFAULT = 0;
         public const byte STV_INTERNAL = 1;
         public const byte STV_HIDDEN = 2;
         public const byte STV_PROTECTED = 3;
 
+        // Symbol binding
         public const byte STB_LOCAL = 0;
         public const byte STB_GLOBAL = 1;
         public const byte STB_WEAK = 2;
 
+        // Relocations (x86)
         public const uint R_386_NONE = 0;
         public const uint R_386_32 = 1;
         public const uint R_386_PC32 = 2;
@@ -111,6 +126,7 @@ namespace ILCompiler.ObjectWriter
         public const uint R_386_TLS_DESC = 41;
         public const uint R_386_IRELATIVE = 42;
 
+        // Relocations (x64)
         public const uint R_X86_64_NONE = 0;
         public const uint R_X86_64_64 = 1;
         public const uint R_X86_64_PC32 = 2;
@@ -151,6 +167,7 @@ namespace ILCompiler.ObjectWriter
         public const uint R_X86_64_IRELATIVE = 37;
         public const uint R_X86_64_RELATIVE64 = 38;
 
+        // Relocations (arm64)
         public const uint R_AARCH64_NONE = 0;
         public const uint R_AARCH64_P32_ABS32 = 1;
         public const uint R_AARCH64_P32_COPY = 180;
