@@ -40,10 +40,8 @@
 
 void bindings_initialize_internals ();
 
-void mono_wasm_enable_debugging (int);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
-int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
 #ifndef INVARIANT_TIMEZONE
@@ -299,95 +297,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
-}
-
-EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_assembly_load (const char *name)
-{
-	assert (name);
-	MonoImageOpenStatus status;
-	MonoAssemblyName* aname = mono_assembly_name_new (name);
-
-	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
-	mono_assembly_name_free (aname);
-
-	return res;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_get_corlib (void)
-{
-	MonoAssembly* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_image_get_assembly (mono_get_corlib());
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoClass*
-mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
-{
-	assert (assembly);
-	MonoClass *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_runtime_run_module_cctor (MonoAssembly *assembly)
-{
-	assert (assembly);
-	MonoError error;
-	MONO_ENTER_GC_UNSAFE;
-	MonoImage *image = mono_assembly_get_image (assembly);
-    if (!mono_runtime_run_module_cctor(image, &error)) {
-        //g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
-    }
-	MONO_EXIT_GC_UNSAFE;
-}
-
-
-EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
-{
-	assert (klass);
-	MonoMethod* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_get_method_from_name (klass, name, arguments);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
-{
-	PPVOLATILE(MonoObject) out_exc = _out_exc;
-	PVOLATILE(MonoObject) temp_exc = NULL;
-	if (out_exc)
-		*out_exc = NULL;
-	else
-		out_exc = &temp_exc;
-
-	MONO_ENTER_GC_UNSAFE;
-	if (out_result) {
-		*out_result = NULL;
-		PVOLATILE(MonoObject) invoke_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
-		store_volatile(out_result, invoke_result);
-	} else {
-		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
-	}
-
-	if (*out_exc && out_result) {
-		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile(out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
-		if (exc2)
-			store_volatile(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
-	}
-	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE int

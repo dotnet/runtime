@@ -58,6 +58,10 @@
 #include "driver-gen.c"
 #endif
 
+#ifdef HOST_WASI
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
 int mono_wasm_enable_gc = 1;
 
 /* Missing from public headers */
@@ -312,4 +316,92 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 	mono_thread_set_main (mono_thread_current ());
 
 	return domain;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoAssembly*
+mono_wasm_assembly_load (const char *name)
+{
+	assert (name);
+	MonoImageOpenStatus status;
+	MonoAssemblyName* aname = mono_assembly_name_new (name);
+
+	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
+	mono_assembly_name_free (aname);
+
+	return res;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoAssembly*
+mono_wasm_get_corlib (void)
+{
+	MonoAssembly* result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_image_get_assembly (mono_get_corlib());
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoClass*
+mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
+{
+	assert (assembly);
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_runtime_run_module_cctor (MonoAssembly *assembly)
+{
+	assert (assembly);
+	MonoError error;
+	MONO_ENTER_GC_UNSAFE;
+	MonoImage *image = mono_assembly_get_image (assembly);
+    if (!mono_runtime_run_module_cctor(image, &error)) {
+        //g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
+    }
+	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoMethod*
+mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
+{
+	assert (klass);
+	MonoMethod* result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_method_from_name (klass, name, arguments);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
+{
+	PPVOLATILE(MonoObject) out_exc = _out_exc;
+	PVOLATILE(MonoObject) temp_exc = NULL;
+	if (out_exc)
+		*out_exc = NULL;
+	else
+		out_exc = &temp_exc;
+
+	MONO_ENTER_GC_UNSAFE;
+	if (out_result) {
+		*out_result = NULL;
+		PVOLATILE(MonoObject) invoke_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
+		store_volatile(out_result, invoke_result);
+	} else {
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
+	}
+
+	if (*out_exc && out_result) {
+		PVOLATILE(MonoObject) exc2 = NULL;
+		store_volatile(out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
+		if (exc2)
+			store_volatile(out_result, (MonoObject*)mono_string_new (mono_get_root_domain (), "Exception Double Fault"));
+	}
+	MONO_EXIT_GC_UNSAFE;
 }

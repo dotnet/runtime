@@ -42,17 +42,13 @@
 #endif
 #endif
 
-void mono_wasm_enable_debugging (int);
-
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
-void mono_aot_register_module (void **aot_info);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
-int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 #ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
@@ -77,8 +73,6 @@ void load_icu_data (void);
 int
 mono_string_instance_is_interned (MonoString *str_raw);
 
-void mono_trace_init (void);
-
 #define g_new(type, size)  ((type *) malloc (sizeof (type) * (size)))
 #define g_new0(type, size) ((type *) calloc (sizeof (type), (size)))
 
@@ -98,7 +92,6 @@ wasi_trace_logger (const char *log_domain, const char *log_level, const char *me
 		// (*(int*)(void*)-1)++;
 		exit(1);
 	}
-
 }
 
 typedef uint32_t target_mword;
@@ -220,7 +213,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 static void
-load_runtimeconfig()
+load_runtimeconfig (void)
 {
 #ifdef WASM_SINGLE_FILE
 	mono_register_runtimeconfig_bin ();
@@ -302,80 +295,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasi_trace_logger, interp_opts);
-}
-
-MonoAssembly*
-mono_wasm_assembly_load (const char *name)
-{
-	assert (name);
-	MonoImageOpenStatus status;
-	MonoAssemblyName* aname = mono_assembly_name_new (name);
-
-	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
-	mono_assembly_name_free (aname);
-
-	return res;
-}
-
-MonoAssembly*
-mono_wasm_get_corlib (const char *namespace, const char *name)
-{
-	MonoAssembly* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_image_get_assembly (mono_get_corlib());
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-MonoClass*
-mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
-{
-	assert (assembly);
-	MonoClass *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-MonoMethod*
-mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
-{
-	assert (klass);
-	MonoMethod* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_get_method_from_name (klass, name, arguments);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-
-void
-mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
-{
-	PPVOLATILE(MonoObject) out_exc = _out_exc;
-	PVOLATILE(MonoObject) temp_exc = NULL;
-	if (out_exc)
-		*out_exc = NULL;
-	else
-		out_exc = &temp_exc;
-
-	MONO_ENTER_GC_UNSAFE;
-	if (out_result) {
-		*out_result = NULL;
-		PVOLATILE(MonoObject) invoke_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
-		store_volatile(out_result, invoke_result);
-	} else {
-		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
-	}
-
-	if (*out_exc && out_result) {
-		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile(out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
-		if (exc2)
-			store_volatile(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
-	}
-	MONO_EXIT_GC_UNSAFE;
 }
 
 MonoMethod*
