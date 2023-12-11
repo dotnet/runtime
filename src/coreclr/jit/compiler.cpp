@@ -4988,6 +4988,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
+            // Dominator and reachability sets are no longer valid.
+            // The loop table is no longer valid.
+            fgDomsComputed            = false;
+            optLoopTableValid         = false;
+            optLoopsRequirePreHeaders = false;
+            optLoopTable              = nullptr;
+
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
@@ -5010,13 +5017,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             RecomputeLoopInfo();
         }
     }
-
-    // Dominator and reachability sets are no longer valid.
-    // The loop table is no longer valid.
-    fgDomsComputed            = false;
-    optLoopTableValid         = false;
-    optLoopsRequirePreHeaders = false;
-    optLoopTable              = nullptr;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);

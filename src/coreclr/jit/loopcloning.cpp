@@ -2208,6 +2208,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         return BasicBlockVisit::Continue;
     });
 
+    BasicBlock* newHeader = nullptr;
+    bool result = blockMap->Lookup(loop->GetHeader(), &newHeader);
+    assert(result);
+    newHeader->SetFlags(BBF_CLONED_LOOP_HEADER);
+
     // Perform the static optimizations on the fast path.
     optPerformStaticOptimizations(loop, context DEBUGARG(true));
 

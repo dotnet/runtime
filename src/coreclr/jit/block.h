@@ -430,6 +430,7 @@ enum BasicBlockFlags : unsigned __int64
                                                           // and should be treated as if it falls through.
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
+    BBF_CLONED_LOOP_HEADER             = MAKE_BBFLAG(43),
 
     // The following are sets of flags.
 
@@ -440,7 +441,7 @@ enum BasicBlockFlags : unsigned __int64
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_PREHEADER,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_PREHEADER | BBF_OLD_LOOP_HEADER_QUIRK,
 
     // Flags a block should not have had before it is split.
 

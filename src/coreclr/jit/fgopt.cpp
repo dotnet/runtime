@@ -1925,7 +1925,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     }
 
     // Don't compact away any loop entry blocks that we added in optCanonicalizeLoops
-    if (optLoopTableValid && optIsLoopEntry(block))
+    if (block->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
     {
         return false;
     }

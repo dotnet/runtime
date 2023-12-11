@@ -5553,6 +5553,9 @@ void Compiler::optFindNewLoops()
     m_newToOldLoop = m_loops->NumLoops() == 0 ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
     m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
 
+    for (BasicBlock* block : Blocks())
+        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         BasicBlock* head = loop->GetHeader();
@@ -5567,6 +5570,7 @@ void Compiler::optFindNewLoops()
         assert(m_newToOldLoop[loop->GetIndex()] == nullptr);
         m_oldToNewLoop[head->bbNatLoopNum] = loop;
         m_newToOldLoop[loop->GetIndex()]   = dsc;
+        head->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
     }
 }
 
