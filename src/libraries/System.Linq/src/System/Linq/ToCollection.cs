@@ -253,27 +253,5 @@ namespace System.Linq
             set.CopyTo(result);
             return result;
         }
-
-        private static List<TSource> HashSetToList<TSource>(HashSet<TSource> set)
-        {
-            int count = set.Count;
-
-            var result = new List<TSource>(count);
-            if (count > 0)
-            {
-                Span<TSource> span = SetCountAndGetSpan(result, count);
-
-                int index = 0;
-                foreach (TSource item in set)
-                {
-                    span[index] = item;
-                    ++index;
-                }
-
-                Debug.Assert(index == span.Length, "All list elements were not initialized.");
-            }
-
-            return result;
-        }
     }
 }

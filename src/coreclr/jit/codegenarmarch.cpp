@@ -521,17 +521,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM
-
-        case GT_CLS_VAR_ADDR:
-            emit->emitIns_R_C(INS_lea, EA_PTRSIZE, targetReg, treeNode->AsClsVar()->gtClsVarHnd, 0);
-            genProduceReg(treeNode);
-            break;
-
         case GT_LONG:
             assert(treeNode->isUsedFromReg());
             genConsumeRegs(treeNode);
             break;
-
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
@@ -5435,7 +5428,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 

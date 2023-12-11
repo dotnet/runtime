@@ -591,9 +591,14 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
     switch (bbJumpKind)
     {
         case BBJ_EHFINALLYRET:
-            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+            // This can run before import, in which case we haven't converted
+            // LEAVE into callfinally yet, and haven't added return successors.
+            if (bbJumpEhf != nullptr)
             {
-                RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                {
+                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                }
             }
 
             return VisitEHSuccs(comp, func);
@@ -621,10 +626,6 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             }
 
             return BasicBlockVisit::Continue;
-
-        case BBJ_NONE:
-            RETURN_ON_ABORT(func(bbNext));
-            return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
@@ -673,9 +674,14 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
     switch (bbJumpKind)
     {
         case BBJ_EHFINALLYRET:
-            for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+            // This can run before import, in which case we haven't converted
+            // LEAVE into callfinally yet, and haven't added return successors.
+            if (bbJumpEhf != nullptr)
             {
-                RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                {
+                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                }
             }
 
             return BasicBlockVisit::Continue;
@@ -686,9 +692,6 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
             return func(bbJumpDest);
-
-        case BBJ_NONE:
-            return func(bbNext);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbNext));
@@ -799,7 +802,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     assert(fgFuncletsCreated);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
     unsigned int funcIdx = eh->ebdFuncIndex;
@@ -1239,7 +1242,7 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) ==
            0); // Can't use this to construct any types that extend unary/binary operator.
-    assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
+    assert(op1 != nullptr || oper == GT_RETFILT || (oper == GT_RETURN && type == TYP_VOID));
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
@@ -1515,7 +1518,7 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
     gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_IDX_LEN;
+        block->SetFlags(BBF_HAS_IDX_LEN);
     }
     optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
@@ -1539,7 +1542,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, uns
     gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+        block->SetFlags(BBF_HAS_MD_IDX_LEN);
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrLen;
@@ -1565,7 +1568,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     arrOp->SetIndirExceptionFlags(this);
     if (block != nullptr)
     {
-        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+        block->SetFlags(BBF_HAS_MD_IDX_LEN);
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -1586,7 +1589,7 @@ inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
     assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
-    basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
+    basicBlock->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
     return nullCheck;
 }
@@ -1599,7 +1602,7 @@ inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
 
 inline GenTree* Compiler::gtNewNothingNode()
 {
-    return new (this, GT_NOP) GenTreeOp(GT_NOP, TYP_VOID);
+    return new (this, GT_NOP) GenTree(GT_NOP, TYP_VOID);
 }
 /*****************************************************************************/
 
@@ -1617,10 +1620,7 @@ inline bool GenTree::IsNothingNode() const
 inline void GenTree::gtBashToNOP()
 {
     ChangeOper(GT_NOP);
-
-    gtType        = TYP_VOID;
-    AsOp()->gtOp1 = AsOp()->gtOp2 = nullptr;
-
+    gtType = TYP_VOID;
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
 
@@ -3020,7 +3020,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (!(block->bbFlags & BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
+    if (!block->HasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
     {
         return false;
     }
@@ -3290,7 +3290,7 @@ __forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 #ifdef TARGET_ARM
         if (type == TYP_DOUBLE)
         {
-            assert((result & RBM_DBL_REGS) != 0);
+            assert((result & RBM_ALLDOUBLE) != 0);
             result |= (result << 1);
         }
 #endif
@@ -3622,26 +3622,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 
         optAssertionReset(newAssertionCount);
     }
-}
-
-inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
-{
-    if (lpFieldsModified == nullptr)
-    {
-        lpFieldsModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
-    }
-    lpFieldsModified->Set(fldHnd, fieldKind, FieldHandleSet::Overwrite);
-}
-
-inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
-{
-    if (lpArrayElemTypesModified == nullptr)
-    {
-        lpArrayElemTypesModified =
-            new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::ClassHandleSet(comp->getAllocatorLoopHoist());
-    }
-    lpArrayElemTypesModified->Set(structHnd, true, ClassHandleSet::Overwrite);
 }
 
 inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
@@ -4407,16 +4387,15 @@ void GenTree::VisitOperands(TVisitor visitor)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_NOP:
             return;
 
         // Unary operators with an optional operand
-        case GT_NOP:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4934,6 +4913,203 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     }
 
     return whyNot == nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgRunDfs: Run DFS over the flow graph.
+//
+// Type parameters:
+//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
+//
+// Parameters:
+//   visitPreorder  - Functor to visit block in its preorder
+//   visitPostorder - Functor to visit block in its postorder
+//
+// Returns:
+//   Number of blocks visited.
+//
+template <typename VisitPreorder, typename VisitPostorder>
+unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder)
+{
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    unsigned preOrderIndex  = 0;
+    unsigned postOrderIndex = 0;
+
+    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
+
+    auto dfsFrom = [&](BasicBlock* firstBB) {
+
+        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
+        blocks.Emplace(this, firstBB);
+        visitPreorder(firstBB, preOrderIndex++);
+
+        while (!blocks.Empty())
+        {
+            BasicBlock* block = blocks.TopRef().Block();
+            BasicBlock* succ  = blocks.TopRef().NextSuccessor();
+
+            if (succ != nullptr)
+            {
+                if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+                {
+                    blocks.Emplace(this, succ);
+                    visitPreorder(succ, preOrderIndex++);
+                }
+            }
+            else
+            {
+                blocks.Pop();
+                visitPostorder(block, postOrderIndex++);
+            }
+        }
+
+    };
+
+    dfsFrom(fgFirstBB);
+
+    if ((fgEntryBB != nullptr) && !BitVecOps::IsMember(&traits, visited, fgEntryBB->bbNum))
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
+        dfsFrom(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        dfsFrom(genReturnBB);
+    }
+
+    assert(preOrderIndex == postOrderIndex);
+    return preOrderIndex;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder: Visit all of the
+// loop's blocks in reverse post order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func)
+{
+    BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
+    bool result = BitVecOps::VisitBits(&traits, m_blocks, [=](unsigned index) {
+        // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
+        // loop block rpo index = head block rpoIndex + index
+        // loop block po index = PostOrderCount - 1 - loop block rpo index
+        //                     = headPreOrderIndex - index
+        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+    });
+
+    return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocksPostOrder: Visit all of the loop's
+// blocks in post order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
+{
+    BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
+    bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
+        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+    });
+
+    return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocks: Visit all of the loop's blocks.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
+{
+    return VisitLoopBlocksReversePostOrder(func);
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitLoopBlocksLexical: Visit the loop's blocks in
+// lexical order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
+{
+    BasicBlock* top    = m_header;
+    BasicBlock* bottom = m_header;
+    VisitLoopBlocks([&](BasicBlock* block) {
+        if (block->bbNum < top->bbNum)
+            top = block;
+        if (block->bbNum > bottom->bbNum)
+            bottom = block;
+        return BasicBlockVisit::Continue;
+    });
+
+    BasicBlock* block = top;
+    while (true)
+    {
+        if (ContainsBlock(block) && (func(block) == BasicBlockVisit::Abort))
+            return BasicBlockVisit::Abort;
+
+        if (block == bottom)
+            return BasicBlockVisit::Continue;
+
+        block = block->Next();
+    }
 }
 
 /*****************************************************************************/

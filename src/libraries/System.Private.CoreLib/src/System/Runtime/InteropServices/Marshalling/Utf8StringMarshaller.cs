@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
             int exactByteCount = checked(Encoding.UTF8.GetByteCount(managed) + 1); // + 1 for null terminator
             byte* mem = (byte*)Marshal.AllocCoTaskMem(exactByteCount);
-            Span<byte> buffer = new (mem, exactByteCount);
+            Span<byte> buffer = new(mem, exactByteCount);
 
             int byteCount = Encoding.UTF8.GetBytes(managed, buffer);
             buffer[byteCount] = 0; // null-terminate

@@ -1,0 +1,2 @@
+Wasi.Build.Tests.InvariantTests
+Wasi.Build.Tests.WasiTemplateTests

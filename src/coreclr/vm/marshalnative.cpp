@@ -91,190 +91,74 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld)
+extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(ptr, NULL_OK));
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    OBJECTREF pObj = (OBJECTREF) pObjUNSAFE;
+    BOOL ret = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_1(pObj);
+    BEGIN_QCALL;
 
-    if (ptr == NULL)
-        COMPlusThrowArgumentNull(W("ptr"));
-    if (pObj == NULL)
-        COMPlusThrowArgumentNull(W("structure"));
-
-    // Code path will accept both regular layout objects and boxed value classes
-    // with layout.
-
-    MethodTable *pMT = pObj->GetMethodTable();
-
-    if (pMT->HasInstantiation())
-        COMPlusThrowArgumentException(W("structure"), W("Argument_NeedNonGenericObject"));
-
-    if (pMT->IsBlittable())
-    {
-        memcpyNoGCRefs(ptr, pObj->GetData(), pMT->GetNativeSize());
-    }
-    else if (pMT->HasLayout())
-    {
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
-
-        if (structMarshalStub == NULL)
-        {
-            GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        if (fDeleteOld)
-        {
-            MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Cleanup);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Marshal);
-    }
-    else
-    {
-        COMPlusThrowArgumentException(W("structure"), W("Argument_MustHaveLayoutOrBeBlittable"));
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(ptr, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF  pObj = ObjectToOBJECTREF(pObjIn);
-
-    HELPER_METHOD_FRAME_BEGIN_1(pObj);
-
-    if (ptr == NULL)
-        COMPlusThrowArgumentNull(W("ptr"));
-    if (pObj == NULL)
-        COMPlusThrowArgumentNull(W("structure"));
-
-    // Code path will accept regular layout objects.
-    MethodTable *pMT = pObj->GetMethodTable();
-
-    // Validate that the object passed in is not a value class.
-    if (!allowValueClasses && pMT->IsValueType())
-    {
-        COMPlusThrowArgumentException(W("structure"), W("Argument_StructMustNotBeValueClass"));
-    }
-    else if (pMT->IsBlittable())
-    {
-        memcpyNoGCRefs(pObj->GetData(), ptr, pMT->GetNativeSize());
-    }
-    else if (pMT->HasLayout())
-    {
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
-
-        if (structMarshalStub == NULL)
-        {
-            GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        MarshalStructViaILStub(structMarshalStub, pObj->GetData(), ptr, StructMarshalStubs::MarshalOperation::Unmarshal);
-    }
-    else
-    {
-        COMPlusThrowArgumentException(W("structure"), W("Argument_MustHaveLayoutOrBeBlittable"));
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-
-FCIMPL2(VOID, MarshalNative::DestroyStructure, LPVOID ptr, ReflectClassBaseObject* refClassUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(ptr, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refClass);
-
-    if (ptr == NULL)
-        COMPlusThrowArgumentNull(W("ptr"));
-    if (refClass == NULL)
-        COMPlusThrowArgumentNull(W("structureType"));
-    if (refClass->GetMethodTable() != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("structureType"), W("Argument_MustBeRuntimeType"));
-
-    TypeHandle th = refClass->GetType();
-
-    if (th.HasInstantiation())
-        COMPlusThrowArgumentException(W("structureType"), W("Argument_NeedNonGenericType"));
+    TypeHandle th = TypeHandle::FromPtr(enregisteredTypeHandle);
 
     if (th.IsBlittable())
     {
-        // ok to call with blittable structure, but no work to do in this case.
+        *pStructMarshalStub = NULL;
+        *pSize = th.GetMethodTable()->GetNativeSize();
+        ret = TRUE;
     }
     else if (th.HasLayout())
     {
         MethodTable* pMT = th.GetMethodTable();
+        MethodDesc* structMarshalStub = NULL;
+
         EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
+        if (pEEMarshalingData != NULL)
+        {
+            GCX_COOP();
+            structMarshalStub = pEEMarshalingData->LookupStructILStubSpeculative(pMT);
+        }
 
         if (structMarshalStub == NULL)
         {
-            GCX_PREEMP();
             structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
         }
 
-        MarshalStructViaILStub(structMarshalStub, nullptr, ptr, StructMarshalStubs::MarshalOperation::Cleanup);
+        *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();
+        *pSize = 0;
+        ret = TRUE;
     }
     else
     {
-        COMPlusThrowArgumentException(W("structureType"), W("Argument_MustHaveLayoutOrBeBlittable"));
+        *pStructMarshalStub = NULL;
+        *pSize = 0;
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
+
+    return ret;
 }
-FCIMPLEND
 
 /************************************************************************
  * PInvoke.SizeOf(Class)
  */
-FCIMPL2(UINT32, MarshalNative::SizeOfClass, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL throwIfNotMarshalable)
+extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refClassUNSAFE));
+        QCALL_CHECK;
     }
     CONTRACTL_END;
 
-    UINT32 rv = 0;
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF)refClassUNSAFE;
+    INT32 rv = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClass);
+    BEGIN_QCALL;
 
     // refClass is validated to be non-NULL RuntimeType by callers
-    TypeHandle th = refClass->GetType();
+    TypeHandle th = t.AsTypeHandle();
 
     if (throwIfNotMarshalable && (!th.IsBlittable() || th.IsArray()))
     {
-        GCX_PREEMP();
         // Determine if the type is marshalable
         if (!IsStructMarshalable(th))
         {
@@ -287,10 +171,10 @@ FCIMPL2(UINT32, MarshalNative::SizeOfClass, ReflectClassBaseObject* refClassUNSA
 
     // The type is marshalable or we don't care so return its size.
     rv = th.GetMethodTable()->GetNativeSize();
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
     return rv;
 }
-FCIMPLEND
 
 
 /************************************************************************
@@ -355,49 +239,38 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL2(Object*, MarshalNative::GetDelegateForFunctionPointerInternal, LPVOID FPtr, ReflectClassBaseObject* refTypeUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(refTypeUNSAFE != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    OBJECTREF refDelegate = NULL;
+    BEGIN_QCALL;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF) refTypeUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refDelegate);
+    GCX_COOP();
 
     // Retrieve the method table from the RuntimeType. We already verified in managed
-    // code that the type was a RuntimeType that represented a delegate. Because type handles
-    // for delegates must have a method table, we are safe in telling prefix to assume it below.
-    MethodTable* pMT = refType->GetType().GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-    refDelegate = COMDelegate::ConvertToDelegate(FPtr, pMT);
+    // code that the type was a RuntimeType that represented a delegate.
+    MethodTable* pMT = t.AsTypeHandle().AsMethodTable();
+    OBJECTREF refDelegate = COMDelegate::ConvertToDelegate(FPtr, pMT);
+    retDelegate.Set(refDelegate);
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refDelegate);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(LPVOID, MarshalNative::GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE)
+extern "C" PVOID QCALLTYPE MarshalNative_GetFunctionPointerForDelegateInternal(QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    LPVOID pFPtr = NULL;
+    PVOID pFPtr = NULL;
 
-    OBJECTREF refDelegate = (OBJECTREF) refDelegateUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refDelegate);
+    BEGIN_QCALL;
 
-    pFPtr = COMDelegate::ConvertToCallback(refDelegate);
+    GCX_COOP();
+    pFPtr = COMDelegate::ConvertToCallback(d.Get());
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return pFPtr;
 }
-FCIMPLEND
 
 #ifdef _DEBUG
 namespace
@@ -450,18 +323,18 @@ FCIMPLEND
  * Support for the GCHandle class.
  */
 
-NOINLINE static OBJECTHANDLE FCDiagCreateHandle(OBJECTREF objRef, int type)
+extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type)
 {
+    QCALL_CONTRACT;
+
     OBJECTHANDLE hnd = NULL;
 
-    FC_INNER_PROLOG(MarshalNative::GCHandleInternalAlloc);
+    BEGIN_QCALL;
 
-    // Make the stack walkable for the profiler
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXACT_DEPTH | Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-    hnd = GetAppDomain()->CreateTypedHandle(objRef, static_cast<HandleType>(type));
-    HELPER_METHOD_FRAME_END_POLL();
+    GCX_COOP();
+    hnd = GetAppDomain()->CreateTypedHandle(obj.Get(), static_cast<HandleType>(type));
 
-    FC_INNER_EPILOG();
+    END_QCALL;
 
     return hnd;
 }
@@ -470,47 +343,39 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF objRef(obj);
-
     assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_SIZEDREF);
 
     if (CORProfilerTrackGC())
-    {
-        FC_INNER_RETURN(LPVOID, (LPVOID) FCDiagCreateHandle(objRef, type));
-    }
+        return NULL;
 
-    OBJECTHANDLE hnd = GetAppDomain()->GetHandleStore()->CreateHandleOfType(OBJECTREFToObject(objRef), static_cast<HandleType>(type));
-    if (!hnd)
-    {
-        FCThrow(kOutOfMemoryException);
-    }
-    return (LPVOID) hnd;
+    return GetAppDomain()->GetHandleStore()->CreateHandleOfType(obj, static_cast<HandleType>(type));
 }
 FCIMPLEND
 
-NOINLINE static void FCDiagDestroyHandle(OBJECTHANDLE handle)
+extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle)
 {
-    FC_INNER_PROLOG(MarshalNative::GCHandleInternalFree);
+    QCALL_CONTRACT;
 
-    // Make the stack walkable for the profiler
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH | Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
+    _ASSERTE(handle != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
     DestroyTypedHandle(handle);
-    HELPER_METHOD_FRAME_END();
 
-    FC_INNER_EPILOG();
+    END_QCALL;
 }
 
 // Free a GC handle.
-FCIMPL1(VOID, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
+FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
     if (CORProfilerTrackGC())
-    {
-        FC_INNER_RETURN_VOID(FCDiagDestroyHandle(handle));
-    }
+        FC_RETURN_BOOL(false);
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 
