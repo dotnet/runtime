@@ -1339,10 +1339,13 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     }
 
     // Update loop table
-    m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
-    if (optReturnBlock)
+    if (m_comp->optLoopTableValid)
     {
-        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
+        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
+        if (optReturnBlock)
+        {
+            m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
+        }
     }
 
     // Update IL range of first block

@@ -5016,6 +5016,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDomsComputed            = false;
     optLoopTableValid         = false;
     optLoopsRequirePreHeaders = false;
+    optLoopTable              = nullptr;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);

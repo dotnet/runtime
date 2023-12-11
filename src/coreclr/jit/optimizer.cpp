@@ -8333,23 +8333,6 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     return true;
 }
 
-bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)
-{
-    for (unsigned lnum = blk->bbNatLoopNum; lnum != BasicBlock::NOT_IN_LOOP; lnum = optLoopTable[lnum].lpParent)
-    {
-        if (optLoopTable[lnum].lpIsRemoved())
-        {
-            continue;
-        }
-        if (optLoopTable[lnum].lpEntry == blk)
-        {
-            *pLnum = lnum;
-            return true;
-        }
-    }
-    return false;
-}
-
 LoopSideEffects::LoopSideEffects() : VarInOut(VarSetOps::UninitVal()), VarUseDef(VarSetOps::UninitVal())
 {
     for (MemoryKind mk : allMemoryKinds())

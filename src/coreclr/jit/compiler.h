@@ -6790,10 +6790,6 @@ protected:
     //   VNPhi's connect VN's to the SSA definition, so we can know if the SSA def occurs in the loop.
     bool optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* recordedVNs);
 
-    // If "blk" is the entry block of a natural loop, returns true and sets "*pLnum" to the index of the loop
-    // in the loop table.
-    bool optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum);
-
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();

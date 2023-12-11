@@ -1925,7 +1925,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     }
 
     // Don't compact away any loop entry blocks that we added in optCanonicalizeLoops
-    if (optIsLoopEntry(block))
+    if (optLoopTableValid && optIsLoopEntry(block))
     {
         return false;
     }
@@ -2404,7 +2404,10 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    fgUpdateLoopsAfterCompacting(block, bNext);
+    if (optLoopTableValid)
+    {
+        fgUpdateLoopsAfterCompacting(block, bNext);
+    }
 
 #if DEBUG
     if (verbose && 0)
@@ -6210,8 +6213,11 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         /* Mark the block as removed */
                         bNext->SetFlags(BBF_REMOVED);
 
-                        // Update the loop table if we removed the bottom of a loop, for example.
-                        fgUpdateLoopsAfterCompacting(block, bNext);
+                        if (optLoopTableValid)
+                        {
+                            // Update the loop table if we removed the bottom of a loop, for example.
+                            fgUpdateLoopsAfterCompacting(block, bNext);
+                        }
 
                         // If this block was aligned, unmark it
                         bNext->unmarkLoopAlign(this DEBUG_ARG("Optimized jump"));

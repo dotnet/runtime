@@ -300,19 +300,23 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
-        poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-        if (lpIndex != BasicBlock::NOT_IN_LOOP)
+        if (optLoopTableValid)
         {
-            // Set the new lpBottom in the natural loop table
-            optLoopTable[lpIndex].lpBottom = bottom;
-        }
+            poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
-        {
-            // Set the new lpHead in the natural loop table
-            optLoopTable[lpIndexFallThrough].lpHead = bottom;
+            bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
+            if (lpIndex != BasicBlock::NOT_IN_LOOP)
+            {
+                // Set the new lpBottom in the natural loop table
+                optLoopTable[lpIndex].lpBottom = bottom;
+            }
+
+            if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
+            {
+                // Set the new lpHead in the natural loop table
+                optLoopTable[lpIndexFallThrough].lpHead = bottom;
+            }
         }
 
         // Add the GC_CALL node to Poll.
