@@ -39,7 +39,7 @@ namespace ILCompiler.ObjectWriter
             _symbols.Add(new ElfSymbol {});
         }
 
-        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
             string sectionName =
                 section.Name == "rdata" ? ".rodata" :
@@ -177,7 +177,7 @@ namespace ILCompiler.ObjectWriter
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
-        protected override void EmitSymbolTable(
+        private protected override void EmitSymbolTable(
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols)
         {
@@ -228,7 +228,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             switch (_machine)
             {
@@ -351,11 +351,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitSectionsAndLayout()
+        private protected override void EmitSectionsAndLayout()
         {
         }
 
-        protected override void EmitObjectFile(string objectFilePath)
+        private protected override void EmitObjectFile(string objectFilePath)
         {
             using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
             switch (_machine)

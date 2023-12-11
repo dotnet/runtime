@@ -58,7 +58,7 @@ namespace ILCompiler.ObjectWriter
             _targetOS = factory.Target.OperatingSystem;
         }
 
-        protected override void EmitSectionsAndLayout()
+        private protected override void EmitSectionsAndLayout()
         {
             // Layout sections. At this point we don't really care if the file offsets are correct
             // but we need to compute the virtual addresses to populate the symbol table.
@@ -127,7 +127,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitObjectFile(string objectFilePath)
+        private protected override void EmitObjectFile(string objectFilePath)
         {
             _sections.Add(_compactUnwindSection);
 
@@ -267,7 +267,7 @@ namespace ILCompiler.ObjectWriter
             stringTable.Write(outputFileStream);
         }
 
-        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
             string segmentName = section.Name switch
             {
@@ -450,7 +450,7 @@ namespace ILCompiler.ObjectWriter
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
-        protected override void EmitSymbolTable(
+        private protected override void EmitSymbolTable(
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols)
         {
@@ -510,7 +510,7 @@ namespace ILCompiler.ObjectWriter
             EmitCompactUnwindTable(definedSymbols);
         }
 
-        protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             if (_cpuType == MachNative.CPU_TYPE_ARM64)
             {
@@ -737,7 +737,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override string ExternCName(string name) => "_" + name;
+        private protected override string ExternCName(string name) => "_" + name;
 
         // This represents the following DWARF code:
         //   DW_CFA_advance_loc: 4
@@ -760,7 +760,7 @@ namespace ILCompiler.ObjectWriter
             0x08, 0x01, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00
         };
 
-        protected override bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob)
+        private protected override bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob)
         {
             uint encoding = _compactUnwindDwarfCode;
 
@@ -783,7 +783,7 @@ namespace ILCompiler.ObjectWriter
             return encoding != _compactUnwindDwarfCode;
         }
 
-        protected override bool UseFrameNames => true;
+        private protected override bool UseFrameNames => true;
 
         private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
 

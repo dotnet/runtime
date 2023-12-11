@@ -14,11 +14,11 @@ namespace ILCompiler.ObjectWriter
 {
     internal abstract class UnixObjectWriter : ObjectWriter
     {
-        private sealed record SectionDefinition(string SymbolName, Stream SectionStream);
+        private sealed record UnixSectionDefinition(string SymbolName, Stream SectionStream);
 
         // Debugging
         private DwarfBuilder _dwarfBuilder;
-        private readonly List<SectionDefinition> _sections = new();
+        private readonly List<UnixSectionDefinition> _sections = new();
 
         // Exception handling sections
         private SectionWriter _lsdaSectionWriter;
@@ -43,7 +43,7 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
             if (section.Type != SectionType.Debug &&
                 section != LsdaSection &&
@@ -51,7 +51,7 @@ namespace ILCompiler.ObjectWriter
                 (comdatName is null || Equals(comdatName, symbolName)))
             {
                 // Record code and data sections that can be referenced from debugging information
-                _sections.Add(new SectionDefinition(symbolName, sectionStream));
+                _sections.Add(new UnixSectionDefinition(symbolName, sectionStream));
             }
             else
             {
@@ -59,11 +59,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected virtual bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob) => false;
+        private protected virtual bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob) => false;
 
-        protected virtual bool UseFrameNames => false;
+        private protected virtual bool UseFrameNames => false;
 
-        protected override void EmitUnwindInfo(
+        private protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
             string currentSymbolName)
@@ -156,7 +156,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitDebugFunctionInfo(
+        private protected override void EmitDebugFunctionInfo(
             uint methodTypeIndex,
             string methodName,
             SymbolDefinition methodSymbol,
@@ -170,7 +170,7 @@ namespace ILCompiler.ObjectWriter
                 clauses = nodeWithCodeInfo.DebugEHClauseInfos;
             }
 
-            if (_sections[methodSymbol.SectionIndex] is SectionDefinition section)
+            if (_sections[methodSymbol.SectionIndex] is UnixSectionDefinition section)
             {
                 _dwarfBuilder.EmitSubprogramInfo(
                     methodName,
@@ -192,9 +192,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
+        private protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
         {
-            foreach (SectionDefinition section in _sections)
+            foreach (UnixSectionDefinition section in _sections)
             {
                 if (section is not null)
                 {
@@ -221,7 +221,7 @@ namespace ILCompiler.ObjectWriter
                 symbolName =>
                 {
                     if (definedSymbols.TryGetValue(ExternCName(symbolName), out SymbolDefinition symbolDef) &&
-                        _sections[symbolDef.SectionIndex] is SectionDefinition section)
+                        _sections[symbolDef.SectionIndex] is UnixSectionDefinition section)
                     {
                         return (section.SymbolName, symbolDef.Value);
                     }
@@ -229,7 +229,7 @@ namespace ILCompiler.ObjectWriter
                 });
         }
 
-        protected override void CreateEhSections()
+        private protected override void CreateEhSections()
         {
             SectionWriter ehFrameSectionWriter;
 
@@ -252,7 +252,7 @@ namespace ILCompiler.ObjectWriter
             _dwarfEhFrame.AddCie(_dwarfCie);
         }
 
-        protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
+        private protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
         {
             return _dwarfBuilder = new DwarfBuilder(
                 _nodeFactory.NameMangler,

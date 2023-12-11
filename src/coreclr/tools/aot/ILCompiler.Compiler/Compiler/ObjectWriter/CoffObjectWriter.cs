@@ -65,7 +65,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
             var sectionHeader = new CoffSectionHeader
             {
@@ -230,12 +230,12 @@ namespace ILCompiler.ObjectWriter
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
-        protected override void EmitReferencedMethod(string symbolName)
+        private protected override void EmitReferencedMethod(string symbolName)
         {
             _referencedMethods.Add(symbolName);
         }
 
-        protected override void EmitSymbolTable(
+        private protected override void EmitSymbolTable(
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols)
         {
@@ -290,7 +290,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             CoffSectionHeader sectionHeader = _sections[sectionIndex].Header;
             List<CoffRelocation> coffRelocations = _sections[sectionIndex].Relocations;
@@ -387,17 +387,16 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitUnwindInfo(
+        private protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
             string currentSymbolName)
         {
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
-                nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
+                nodeWithCodeInfo is ISymbolDefinitionNode)
             {
                 SectionWriter xdataSectionWriter;
                 SectionWriter pdataSectionWriter;
-                Span<byte> tempBuffer = stackalloc byte[4];
                 bool shareSymbol = ShouldShareSymbol((ObjectNode)nodeWithCodeInfo);
 
                 for (int i = 0; i < frameInfos.Length; i++)
@@ -484,11 +483,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitSectionsAndLayout()
+        private protected override void EmitSectionsAndLayout()
         {
         }
 
-        protected override void EmitObjectFile(string objectFilePath)
+        private protected override void EmitObjectFile(string objectFilePath)
         {
             using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
             var stringTable = new CoffStringTable();
@@ -591,14 +590,14 @@ namespace ILCompiler.ObjectWriter
             stringTable.Write(outputFileStream);
         }
 
-        protected override void CreateEhSections()
+        private protected override void CreateEhSections()
         {
             // Create .xdata and .pdata
             _xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection);
             _pdataSectionWriter = GetOrCreateSection(PDataSection);
         }
 
-        protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
+        private protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
         {
             _debugFileTableBuilder = new CodeViewFileTableBuilder();
 
@@ -616,7 +615,7 @@ namespace ILCompiler.ObjectWriter
             return _debugTypesBuilder;
         }
 
-        protected override void EmitDebugFunctionInfo(
+        private protected override void EmitDebugFunctionInfo(
             uint methodTypeIndex,
             string methodName,
             SymbolDefinition methodSymbol,
@@ -660,13 +659,13 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
+        private protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
         {
             _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
             _debugFileTableBuilder.Write(_debugSymbolSectionWriter);
         }
 
-        private sealed class CoffHeader
+        private struct CoffHeader
         {
             public Machine Machine { get; set; }
             public uint NumberOfSections { get; set; }

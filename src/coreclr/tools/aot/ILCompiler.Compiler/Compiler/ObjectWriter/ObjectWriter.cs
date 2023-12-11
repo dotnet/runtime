@@ -15,14 +15,14 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
-    public abstract class ObjectWriter : IDisposable
+    public abstract class ObjectWriter
     {
-        protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
-        protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
-        protected sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
+        private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
+        private protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
+        private protected sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
 
-        protected readonly NodeFactory _nodeFactory;
-        protected readonly ObjectWritingOptions _options;
+        private protected readonly NodeFactory _nodeFactory;
+        private protected readonly ObjectWritingOptions _options;
         private readonly bool _isSingleFileCompilation;
         private readonly bool _usesSubsectionsViaSymbols;
 
@@ -41,7 +41,7 @@ namespace ILCompiler.ObjectWriter
         // Debugging
         private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 
-        protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options)
+        private protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options)
         {
             _nodeFactory = factory;
             _options = options;
@@ -57,16 +57,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        public void Dispose()
-        {
-            // Close all the streams
-            /*foreach (ObjectWriterStream sectionStream in _sectionIndexToStream)
-            {
-                sectionStream.Close();
-            }*/
-        }
-
-        protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream);
+        private protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream);
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
 
@@ -84,7 +75,7 @@ namespace ILCompiler.ObjectWriter
         /// For associated sections, such as exception or debugging information, the <paramref name="symbolName"/>
         /// will be different.
         /// </remarks>
-        protected SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
+        private protected SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
         {
             int sectionIndex;
             SectionData sectionData;
@@ -112,7 +103,7 @@ namespace ILCompiler.ObjectWriter
                 sectionData);
         }
 
-        protected bool ShouldShareSymbol(ObjectNode node)
+        private protected bool ShouldShareSymbol(ObjectNode node)
         {
             if (_usesSubsectionsViaSymbols)
                 return false;
@@ -120,7 +111,7 @@ namespace ILCompiler.ObjectWriter
             return ShouldShareSymbol(node, node.GetSection(_nodeFactory));
         }
 
-        protected bool ShouldShareSymbol(ObjectNode node, ObjectNodeSection section)
+        private protected bool ShouldShareSymbol(ObjectNode node, ObjectNodeSection section)
         {
             if (_usesSubsectionsViaSymbols)
                 return false;
@@ -144,7 +135,7 @@ namespace ILCompiler.ObjectWriter
             return true;
         }
 
-        protected static ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
+        private protected static ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
         {
             string standardSectionPrefix = "";
             if (section.IsStandardSection)
@@ -208,12 +199,12 @@ namespace ILCompiler.ObjectWriter
             _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
         }
 
-        protected bool SectionHasRelocations(int sectionIndex)
+        private protected bool SectionHasRelocations(int sectionIndex)
         {
             return _sectionIndexToRelocations[sectionIndex].Count > 0;
         }
 
-        protected virtual void EmitReferencedMethod(string symbolName) { }
+        private protected virtual void EmitReferencedMethod(string symbolName) { }
 
         /// <summary>
         /// Emit symbolic relocations into object file as format specific
@@ -222,7 +213,7 @@ namespace ILCompiler.ObjectWriter
         /// <remarks>
         /// This methods is guaranteed to run after <see cref="EmitSymbolTable" />.
         /// </remarks>
-        protected abstract void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList);
+        private protected abstract void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList);
 
         /// <summary>
         /// Emit new symbol definition at specified location in a given section.
@@ -248,13 +239,13 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Emit symbolic definitions into object file symbols.
         /// </summary>
-        protected abstract void EmitSymbolTable(
+        private protected abstract void EmitSymbolTable(
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols);
 
-        protected virtual string ExternCName(string name) => name;
+        private protected virtual string ExternCName(string name) => name;
 
-        protected string GetMangledName(ISymbolNode symbolNode)
+        private protected string GetMangledName(ISymbolNode symbolNode)
         {
             string symbolName;
 
@@ -267,12 +258,12 @@ namespace ILCompiler.ObjectWriter
             return symbolName;
         }
 
-        protected abstract void EmitUnwindInfo(
+        private protected abstract void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
             string currentSymbolName);
 
-        protected uint GetVarTypeIndex(bool isStateMachineMoveNextMethod, DebugVarInfoMetadata debugVar)
+        private protected uint GetVarTypeIndex(bool isStateMachineMoveNextMethod, DebugVarInfoMetadata debugVar)
         {
             uint typeIndex;
             try
@@ -297,11 +288,11 @@ namespace ILCompiler.ObjectWriter
             return typeIndex;
         }
 
-        protected abstract void EmitSectionsAndLayout();
+        private protected abstract void EmitSectionsAndLayout();
 
-        protected abstract void EmitObjectFile(string objectFilePath);
+        private protected abstract void EmitObjectFile(string objectFilePath);
 
-        protected abstract void CreateEhSections();
+        private protected abstract void CreateEhSections();
 
         private SortedSet<string> GetUndefinedSymbols()
         {
@@ -317,18 +308,18 @@ namespace ILCompiler.ObjectWriter
             return undefinedSymbolSet;
         }
 
-        protected abstract ITypesDebugInfoWriter CreateDebugInfoBuilder();
+        private protected abstract ITypesDebugInfoWriter CreateDebugInfoBuilder();
 
-        protected abstract void EmitDebugFunctionInfo(
+        private protected abstract void EmitDebugFunctionInfo(
             uint methodTypeIndex,
             string methodName,
             SymbolDefinition methodSymbol,
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
 
-        protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
+        private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
 
-        protected void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
+        private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection);
@@ -520,19 +511,12 @@ namespace ILCompiler.ObjectWriter
             {
                 LegacyObjectWriter.EmitObject(objectFilePath, nodes, factory, options, dumper, logger);
             }
-            else if (factory.Target.IsOSXLike)
-            {
-                using MachObjectWriter objectWriter = new MachObjectWriter(factory, options);
-                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
-            }
-            else if (factory.Target.OperatingSystem == TargetOS.Windows)
-            {
-                using CoffObjectWriter objectWriter = new CoffObjectWriter(factory, options);
-                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
-            }
             else
             {
-                using ElfObjectWriter objectWriter = new ElfObjectWriter(factory, options);
+                ObjectWriter objectWriter =
+                    factory.Target.IsOSXLike ? new MachObjectWriter(factory, options) :
+                    factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                    new ElfObjectWriter(factory, options);
                 objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
             }
 
