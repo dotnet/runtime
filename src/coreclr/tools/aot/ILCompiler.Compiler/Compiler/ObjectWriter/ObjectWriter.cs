@@ -186,7 +186,7 @@ namespace ILCompiler.ObjectWriter
 
                     case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
                         var ins = BinaryPrimitives.ReadUInt32LittleEndian(data) & 0xFC000000;
-                        BinaryPrimitives.WriteUInt32LittleEndian(data, ((uint)(int)(definedSymbol.Value - offset) & 0x3FFFFFF) | ins);
+                        BinaryPrimitives.WriteUInt32LittleEndian(data, (((uint)(int)(definedSymbol.Value - offset) & 0x3FFFFFF) >> 2) | ins);
                         break;
                 }
             }
