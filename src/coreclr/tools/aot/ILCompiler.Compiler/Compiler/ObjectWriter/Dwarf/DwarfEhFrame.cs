@@ -141,7 +141,7 @@ namespace ILCompiler.ObjectWriter
             stream.Write(tempBuffer.Slice(0, 4));
             BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(stream.Position - cieOffset));
             stream.Write(tempBuffer.Slice(0, 4));
-            WriteAddress(fde.Cie.PointerEncoding, fde.PcStartSymbolName);
+            WriteAddress(fde.Cie.PointerEncoding, fde.PcStartSymbolName, fde.PcStartSymbolOffset);
             WriteSize(fde.Cie.PointerEncoding, fde.PcLength);
 
             if (fde.Cie.FdesHaveAugmentationData)
@@ -172,7 +172,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void WriteAddress(byte encoding, string symbolName)
+        private void WriteAddress(byte encoding, string symbolName, long symbolOffset = 0)
         {
             if (symbolName != null)
             {
@@ -182,7 +182,7 @@ namespace ILCompiler.ObjectWriter
                     DW_EH_PE_absptr => RelocType.IMAGE_REL_BASED_DIR64,
                     _ => throw new NotSupportedException()
                 };
-                _sectionWriter.EmitSymbolReference(relocationType, symbolName);
+                _sectionWriter.EmitSymbolReference(relocationType, symbolName, symbolOffset);
             }
             else
             {

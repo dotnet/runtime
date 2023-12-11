@@ -783,6 +783,8 @@ namespace ILCompiler.ObjectWriter
             return encoding != _compactUnwindDwarfCode;
         }
 
+        protected override bool UseFrameNames => true;
+
         private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
 
         private struct MachHeader64

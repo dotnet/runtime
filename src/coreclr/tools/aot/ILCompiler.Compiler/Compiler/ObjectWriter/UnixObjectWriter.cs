@@ -61,6 +61,8 @@ namespace ILCompiler.ObjectWriter
 
         protected virtual bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob) => false;
 
+        protected virtual bool UseFrameNames => false;
+
         protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
@@ -69,6 +71,7 @@ namespace ILCompiler.ObjectWriter
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
             {
+                bool useFrameNames = UseFrameNames;
                 SectionWriter lsdaSectionWriter;
                 Span<byte> tempBuffer = stackalloc byte[4];
 
@@ -95,7 +98,7 @@ namespace ILCompiler.ObjectWriter
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
 
                     lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
-                    if (start != 0)
+                    if (start != 0 && useFrameNames)
                     {
                         sectionWriter.EmitSymbolDefinition(framSymbolName, start);
                     }
@@ -141,13 +144,14 @@ namespace ILCompiler.ObjectWriter
                         }
                     }
 
-                    string startSymbolName = start != 0 ? framSymbolName : currentSymbolName;
+                    string startSymbolName = useFrameNames && start != 0 ? framSymbolName : currentSymbolName;
                     ulong length = (ulong)(end - start);
                     if (!EmitCompactUnwinding(startSymbolName, length, lsdaSymbolName, blob))
                     {
                         var fde = new DwarfFde(_dwarfCie, DwarfFde.CfiCodeToInstructions(_dwarfCie, blob))
                         {
                             PcStartSymbolName = startSymbolName,
+                            PcStartSymbolOffset = useFrameNames ? 0 : start,
                             PcLength = (ulong)(end - start),
                             LsdaSymbolName = lsdaSymbolName,
                         };
