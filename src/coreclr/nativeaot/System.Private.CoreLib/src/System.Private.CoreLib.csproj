@@ -419,6 +419,7 @@
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
