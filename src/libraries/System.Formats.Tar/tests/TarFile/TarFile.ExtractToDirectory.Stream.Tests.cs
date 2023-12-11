@@ -281,6 +281,7 @@ namespace System.Formats.Tar.Tests
         {
             string entryFolderName = "folder";
             string destinationFolderName = "folderSibling";
+
             using TempDirectory root = new TempDirectory();
 
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
@@ -357,6 +358,7 @@ namespace System.Formats.Tar.Tests
 
             string entryFolderName = inverted ? "folderSibling" : "folder";
             string destinationFolderName = inverted ? "folder" : "folderSibling";
+
             using TempDirectory root = new TempDirectory();
 
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
@@ -387,6 +389,7 @@ namespace System.Formats.Tar.Tests
 
             string linkTargetFileName = "file.txt";
             string linkFileName = "link";
+
             using TempDirectory root = new TempDirectory();
 
             string entryFolderPath = Path.Join(root.Path, entryFolderName);
