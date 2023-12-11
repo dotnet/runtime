@@ -49723,7 +49723,7 @@ void gc_heap::do_pre_gc()
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         settings.condemned_generation,
-        total_allocated _since_last_gc));
+        total_allocated_since_last_gc));
 #endif //BACKGROUND_GC
 
     if (heap_hard_limit)
