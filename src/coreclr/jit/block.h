@@ -757,7 +757,7 @@ public:
         bbSwtTarget = swtTarget;
     }
 
-    BBehfDesc* GetEhfTarget() const
+    BBehfDesc* GetEhfTargets() const
     {
         assert(KindIs(BBJ_EHFINALLYRET));
         return bbEhfTarget;
@@ -1945,15 +1945,15 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             // We don't use the m_succs in-line data; use the existing successor table in the block.
             // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
             // been computed.
-            if (block->GetEhfTarget() == nullptr)
+            if (block->GetEhfTargets() == nullptr)
             {
                 m_begin = nullptr;
                 m_end   = nullptr;
             }
             else
             {
-                m_begin = block->GetEhfTarget()->bbeSuccs;
-                m_end   = block->GetEhfTarget()->bbeSuccs + block->GetEhfTarget()->bbeCount;
+                m_begin = block->GetEhfTargets()->bbeSuccs;
+                m_end   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
             }
             break;
 

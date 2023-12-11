@@ -2011,7 +2011,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 printf("->");
 
                 int                    ehfWidth = 0;
-                const BBehfDesc* const ehfDesc  = block->GetEhfTarget();
+                const BBehfDesc* const ehfDesc  = block->GetEhfTargets();
                 if (ehfDesc == nullptr)
                 {
                     printf(" ????");

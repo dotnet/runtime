@@ -1209,7 +1209,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 if (block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    assert(block->GetEhfTarget()->bbeCount == 0);
+                    assert(block->GetEhfTargets()->bbeCount == 0);
                     block->SetKind(BBJ_EHFAULTRET);
                 }
             }
