@@ -170,27 +170,11 @@ inline UINT32 GetStubCodePageSize()
 
 
 //===============================================================================
-// This is the base class for LoaderHeap and ExplicitControlLoaderHeap. Unfortunately,
-// this class has become schizophrenic. Sometimes, it's used as a simple
+// This is the base class for LoaderHeap It's used as a simple
 // allocator that's semantically (but not perfwise!) equivalent to a blackbox
-// alloc/free heap. Othertimes, it's used by callers who are actually aware
-// of how it reserves addresses and want direct control over the range over which
-// this thing allocates. These two types of allocations are handed out
-// from two independent pools inside the heap.
+// alloc/free heap. The ability to free is via a "backout" mechanism that is
+// not considered to have good performance.
 //
-// The backout strategy we use for the simple heap probably isn't
-// directly applicable to the more advanced uses.
-//
-// We don't have time to refactor this so as a second-best measure,
-// we make most of UnlockedLoaderHeap's methods protected and force everyone
-// to use it them through two public derived classes that are mutual siblings.
-//
-// The LoaderHeap is the black-box heap and has a Backout() method but none
-// of the advanced features that let you control address ranges.
-//
-// The ExplicitControlLoaderHeap exposes all the advanced features but
-// has no Backout() feature. (If someone wants a backout feature, they need
-// to design an appropriate one into this class.)
 //===============================================================================
 class UnlockedLoaderHeap
 {
@@ -449,35 +433,17 @@ public:
 };
 
 //===============================================================================
-// This is the base class for LoaderHeap and ExplicitControlLoaderHeap. Unfortunately,
-// this class has become schizophrenic. Sometimes, it's used as a simple
-// allocator that's semantically (but not perfwise!) equivalent to a blackbox
-// alloc/free heap. Othertimes, it's used by callers who are actually aware
-// of how it reserves addresses and want direct control over the range over which
-// this thing allocates. These two types of allocations are handed out
-// from two independent pools inside the heap.
+// This is the class used for CodeManager allocations. At one point it the logic
+// was shared with UnlockedLoaderHeap, but that has been changed. This heap is designed
+// to provide an api surface that can be used to control the memory regions where
+// allocations occur, and provides an alloc only api surface.
 //
-// The backout strategy we use for the simple heap probably isn't
-// directly applicable to the more advanced uses.
-//
-// We don't have time to refactor this so as a second-best measure,
-// we make most of UnlockedLoaderHeap's methods protected and force everyone
-// to use it them through two public derived classes that are mutual siblings.
-//
-// The LoaderHeap is the black-box heap and has a Backout() method but none
-// of the advanced features that let you control address ranges.
-//
-// The ExplicitControlLoaderHeap exposes all the advanced features but
-// has no Backout() feature. (If someone wants a backout feature, they need
-// to design an appropriate one into this class.)
+// Caller is responsible for synchronization. ExplicitControlLoaderHeap is
+// not multithread safe.
 //===============================================================================
-class UnlockedExplicitControlLoaderHeap
+typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
+class ExplicitControlLoaderHeap
 {
-#ifdef _DEBUG
-    friend class LoaderHeapSniffer;
-    friend struct LoaderHeapFreeBlock;
-#endif
-
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
@@ -529,25 +495,25 @@ public:
     void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
 
 #ifndef DACCESS_COMPILE
-protected:
-    UnlockedExplicitControlLoaderHeap();
+public:
+    ExplicitControlLoaderHeap();
 
-    ~UnlockedExplicitControlLoaderHeap();
+    ~ExplicitControlLoaderHeap();
 #endif
 
 private:
     size_t GetBytesAvailCommittedRegion();
     size_t GetBytesAvailReservedRegion();
 
-protected:
+public:
     // number of bytes available in region
-    size_t UnlockedGetReservedBytesFree()
+    size_t GetReservedBytesFree()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pEndReservedRegion - m_pAllocPtr;
     }
 
-    PTR_BYTE UnlockedGetAllocPtr()
+    PTR_BYTE GetAllocPtr()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pAllocPtr;
@@ -561,29 +527,10 @@ private:
     // Commit memory pages starting at the specified adress
     BOOL CommitPages(void* pData, size_t dwSizeToCommitPart);
 
-protected:
-    // Reserve some pages at any address
-    BOOL UnlockedReservePages(size_t dwCommitBlockSize);
-
-protected:
-    // In debug mode, allocate an extra LOADER_HEAP_DEBUG_BOUNDARY bytes and fill it with invalid data.  The reason we
-    // do this is that when we're allocating vtables out of the heap, it is very easy for code to
-    // get careless, and end up reading from memory that it doesn't own - but since it will be
-    // reading some other allocation's vtable, no crash will occur.  By keeping a gap between
-    // allocations, it is more likely that these errors will be encountered.
-    void *UnlockedAllocMem(size_t dwSize
-#ifdef _DEBUG
-                          ,_In_ _In_z_ const char *szFile
-                          ,int  lineNum
-#endif
-                          );
-    void *UnlockedAllocMem_NoThrow(size_t dwSize
-#ifdef _DEBUG
-                                   ,_In_ _In_z_ const char *szFile
-                                   ,int  lineNum
-#endif
-                                   );
 public:
+    // Reserve some pages at any address
+    BOOL ReservePages(size_t dwCommitBlockSize);
+
     // Perf Counter reports the size of the heap
     size_t GetSize ()
     {
@@ -594,22 +541,10 @@ public:
     size_t AllocMem_TotalSize(size_t dwRequestedSize);
 
 public:
-#ifdef _DEBUG
-    void DumpFreeList();
-#endif
 
-public:
-// Extra CallTracing support
-#ifdef _DEBUG
-    void UnlockedClearEvents();     //Discard saved events
-    void UnlockedCompactEvents();   //Discard matching alloc/free events
-    void UnlockedPrintEvents();     //Print event list
-#endif
+    void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
 
-protected:
-    void *UnlockedAllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
-
-    void UnlockedSetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
+    void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
 };
 
 //===============================================================================
@@ -950,64 +885,6 @@ public:
 #endif
 
 };
-
-
-
-
-
-//===============================================================================
-// The ExplicitControlLoaderHeap exposes all the advanced features but
-// has no Backout() feature. (If someone wants a backout feature, they need
-// to design an appropriate one into this class.)
-//
-// Caller is responsible for synchronization. ExplicitControlLoaderHeap is
-// not multithread safe.
-//===============================================================================
-typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
-class ExplicitControlLoaderHeap : public UnlockedExplicitControlLoaderHeap
-{
-#ifndef DACCESS_COMPILE
-public:
-    ExplicitControlLoaderHeap()
-      : UnlockedExplicitControlLoaderHeap()
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-#endif // DACCESS_COMPILE
-    void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs)
-    {
-        WRAPPER_NO_CONTRACT;
-        return UnlockedAllocMemForCode_NoThrow(dwHeaderSize, dwCodeSize, dwCodeAlignment, dwReserveForJumpStubs);
-    }
-
-    void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory)
-    {
-        WRAPPER_NO_CONTRACT;
-        return UnlockedSetReservedRegion(dwReservedRegionAddress, dwReservedRegionSize, fReleaseMemory);
-    }
-
-public:
-    // number of bytes available in region
-    size_t GetReservedBytesFree()
-    {
-        WRAPPER_NO_CONTRACT;
-        return UnlockedGetReservedBytesFree();
-    }
-
-    PTR_BYTE GetAllocPtr()
-    {
-        WRAPPER_NO_CONTRACT;
-        return UnlockedGetAllocPtr();
-    }
-
-    void ReservePages(size_t size)
-    {
-        WRAPPER_NO_CONTRACT;
-        UnlockedReservePages(size);
-    }
-};
-
-
 
 //==============================================================================
 // AllocMemHolder : Allocated memory from LoaderHeap
