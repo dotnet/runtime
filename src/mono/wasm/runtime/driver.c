@@ -969,6 +969,7 @@ mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
+// this will return bool value if the object is a bool, otherwise it will return -1 or error
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_read_value_if_bool_unsafe (PVOLATILE(MonoObject) obj) {
 	MONO_ENTER_GC_UNSAFE;
