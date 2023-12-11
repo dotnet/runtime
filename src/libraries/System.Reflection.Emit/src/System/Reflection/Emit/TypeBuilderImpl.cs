@@ -64,7 +64,7 @@ namespace System.Reflection.Emit
                 for (int i = 0; i < interfaces.Length; i++)
                 {
                     Type @interface = interfaces[i];
-                    // cannot contain null in the iface list
+                    // cannot contain null in the interface list
                     ArgumentNullException.ThrowIfNull(@interface, nameof(interfaces));
                     _interfaces.Add(@interface);
                 }

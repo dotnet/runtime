@@ -13,6 +13,17 @@ namespace System.Reflection.Emit.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class AssemblySaveAssemblyBuilder
     {
+        public class Outer
+        {
+            public class Inner
+            {
+                public class InnerMostType
+                {
+                    void DoNothing () { }
+                }
+            }
+        }
+
         [Fact]
         public void AssemblyWithDifferentTypes()
         {
@@ -73,6 +84,8 @@ namespace System.Reflection.Emit.Tests
                 tb3.DefineField("FieldNested", tbNested, FieldAttributes.Public | FieldAttributes.Static);
                 // Nested type ref
                 tb3.DefineField("FieldNestedRef", typeof(TimeZoneInfo.AdjustmentRule), FieldAttributes.Public | FieldAttributes.Static);
+                // Double Nested type ref
+                tb3.DefineField("FieldDoubleNestedRef", typeof(Outer.Inner.InnerMostType), FieldAttributes.Public | FieldAttributes.Static);
                 // Primitive types
                 tb3.DefineField("FieldInt", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
                 // Typeref array
@@ -283,6 +296,7 @@ namespace System.Reflection.Emit.Tests
             var t = a.GetType("Type3");
             Assert.Equal(typeNested, t.GetField("FieldNested").FieldType);
             Assert.Equal(typeof(TimeZoneInfo.AdjustmentRule).FullName, t.GetField("FieldNestedRef").FieldType.FullName);
+            Assert.Equal(typeof(Outer.Inner.InnerMostType).FullName, t.GetField("FieldDoubleNestedRef").FieldType.FullName);
             Assert.Equal(typeof(int).FullName, t.GetField("FieldInt").FieldType.FullName);
             Assert.Equal(typeof(object[]).FullName, t.GetField("FieldArrayTyperef").FieldType.FullName);
             Assert.Equal(type1.MakeArrayType(), t.GetField("FieldSzArray").FieldType);
