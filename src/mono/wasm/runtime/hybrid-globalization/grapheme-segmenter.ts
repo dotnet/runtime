@@ -27,7 +27,7 @@ type SegmentationTypeRaw = {
     rules: Record<string, SegmentationRuleRaw>
 }
 
-function replace_variables(variables: Record<string, string>, input: string): string {
+function replaceVariables(variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
     return input.replaceAll(findVarRegex, match => {
         if (!(match in variables)) {
@@ -37,8 +37,8 @@ function replace_variables(variables: Record<string, string>, input: string): st
     });
 }
 
-function generate_rule_regex (rule: string, variables: Record<string, string>, after: boolean): RegExp {
-    return new RegExp(`${after ? "^" : ""}${replace_variables(variables, rule)}${after ? "" : "$"}`);
+function generateRegexRule (rule: string, variables: Record<string, string>, after: boolean): RegExp {
+    return new RegExp(`${after ? "^" : ""}${replaceVariables(variables, rule)}${after ? "" : "$"}`);
 }
 
 export class GraphemeSegmenter {
@@ -47,7 +47,7 @@ export class GraphemeSegmenter {
 
     public constructor() {  
         // Process segmentation rules
-        this.rules = GraphemeSegmenter.prepare_segmanation_rules(SegmentationRules);
+        this.rules = GraphemeSegmenter.prepareSegmentationRules(SegmentationRules);
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
 
@@ -57,8 +57,8 @@ export class GraphemeSegmenter {
      * @param startIndex - The starting index.
      * @returns The next grapheme.
      */
-    public next_grapheme(str: string, startIndex: number): string {
-        const breakIdx = this.next_grapheme_break(str, startIndex);
+    public nextGrapheme(str: string, startIndex: number): string {
+        const breakIdx = this.nextGraphemeBreak(str, startIndex);
         return str.substring(startIndex, breakIdx);
     }
 
@@ -69,7 +69,7 @@ export class GraphemeSegmenter {
      * @param startIndex - The index to start searching from.
      * @returns The index of the next grapheme break.
      */
-    public next_grapheme_break(str: string, startIndex: number): number {
+    public nextGraphemeBreak(str: string, startIndex: number): number {
         if (startIndex < 0)
             return 0;
     
@@ -84,7 +84,7 @@ export class GraphemeSegmenter {
             }
 
             const curr = String.fromCodePoint(str.codePointAt(i)!);
-            if (this.is_grapheme_break(prev, curr))
+            if (this.isGraphemeBreak(prev, curr))
                 return i;
     
             prev = curr;
@@ -93,7 +93,7 @@ export class GraphemeSegmenter {
         return str.length;
     }
 
-    private is_grapheme_break(previous: string, current: string): boolean {
+    private isGraphemeBreak(previous: string, current: string): boolean {
         for (const key of this.ruleSortedKeys) {
             const {before, after, breaks} = this.rules[key];
             // match before and after rules
@@ -111,7 +111,7 @@ export class GraphemeSegmenter {
         return true;
     }
 
-    private static prepare_segmanation_rules(segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
+    private static prepareSegmentationRules(segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
         const preparedRules: Record<string, SegmentationRule> = {};
     
         for (const key of Object.keys(segmentationRules.rules)) {
@@ -119,10 +119,10 @@ export class GraphemeSegmenter {
             const preparedRule: SegmentationRule = { breaks: ruleValue.breaks, };
     
             if ("before" in ruleValue && ruleValue.before) {
-                preparedRule.before = generate_rule_regex(ruleValue.before, segmentationRules.variables, false);
+                preparedRule.before = generateRegexRule(ruleValue.before, segmentationRules.variables, false);
             }
             if ("after" in ruleValue && ruleValue.after) {
-                preparedRule.after = generate_rule_regex(ruleValue.after, segmentationRules.variables, true);
+                preparedRule.after = generateRegexRule(ruleValue.after, segmentationRules.variables, true);
             }
     
             preparedRules[key] = preparedRule;

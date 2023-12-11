@@ -124,14 +124,14 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
 
         // Grapheme segmentation of needle string
         while (needleIdx < needle.length) {
-            const needleGrapheme = graphemeSegmenter.next_grapheme(needle, needleIdx);
+            const needleGrapheme = graphemeSegmenter.nextGrapheme(needle, needleIdx);
             needleSegments.push(needleGrapheme);
             needleIdx += needleGrapheme.length;
         }
 
         let srcIdx = 0;
         while (srcIdx < source.length) {
-            const srcGrapheme = graphemeSegmenter.next_grapheme(source, srcIdx);
+            const srcGrapheme = graphemeSegmenter.nextGrapheme(source, srcIdx);
             srcIdx += srcGrapheme.length;
 
             if (!check_match_found(srcGrapheme, needleSegments[0], locale, casePicker)) {
@@ -141,7 +141,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
             let j;
             let srcNextIdx = srcIdx;
             for (j = 1; j < needleSegments.length; j++) {
-                const srcGrapheme = graphemeSegmenter.next_grapheme(source, srcNextIdx);
+                const srcGrapheme = graphemeSegmenter.nextGrapheme(source, srcNextIdx);
 
                 if (!check_match_found(srcGrapheme, needleSegments[j], locale, casePicker)) {
                     break;
