@@ -1947,13 +1947,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // We cannot compact a block that participates in loop alignment.
-    //
-    if ((bNext->countOfInEdges() > 1) && bNext->isLoopAlign())
-    {
-        return false;
-    }
-
     // Don't compact blocks from different loops.
     //
     if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
@@ -2352,30 +2345,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     }
 
     assert(block->KindIs(bNext->GetKind()));
-
-    if (bNext->KindIs(BBJ_ALWAYS) && bNext->GetTarget()->isLoopAlign())
-    {
-        // `bNext` has a backward target to some block which mean bNext is part of a loop.
-        // `block` into which `bNext` is compacted should be updated with its loop number
-        JITDUMP("Updating loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", block->bbNum,
-                block->bbNatLoopNum, bNext->bbNatLoopNum);
-        block->bbNatLoopNum = bNext->bbNatLoopNum;
-    }
-    else if (bNext->KindIs(BBJ_COND) && bNext->GetTrueTarget()->isLoopAlign())
-    {
-        // `bNext` has a backward target to some block which mean bNext is part of a loop.
-        // `block` into which `bNext` is compacted should be updated with its loop number
-        JITDUMP("Updating loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", block->bbNum,
-                block->bbNatLoopNum, bNext->bbNatLoopNum);
-        block->bbNatLoopNum = bNext->bbNatLoopNum;
-    }
-
-    if (bNext->isLoopAlign())
-    {
-        block->SetFlags(BBF_LOOP_ALIGN);
-        JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
-                block->bbNum);
-    }
 
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
@@ -6260,9 +6229,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         // Update the loop table if we removed the bottom of a loop, for example.
                         fgUpdateLoopsAfterCompacting(block, bNext);
-
-                        // If this block was aligned, unmark it
-                        bNext->unmarkLoopAlign(this DEBUG_ARG("Optimized jump"));
 
                         // If this is the first Cold basic block update fgFirstColdBlock
                         if (bNext->IsFirstColdBlock(this))
