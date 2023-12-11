@@ -445,9 +445,9 @@ namespace System.Tests
         public static void Parse_Utf8Span_InvalidUtf8()
         {
             FormatException fe = Assert.Throws<FormatException>(() => short.Parse([0xA0]));
-            Assert.DoesNotContain("A0", fe.Message);
-            Assert.DoesNotContain("ReadOnlySpan", fe.Message);
-            Assert.DoesNotContain("\uFFFD", fe.Message);
+            Assert.DoesNotContain("A0", fe.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("ReadOnlySpan", fe.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", fe.Message, StringComparison.Ordinal);
         }
 
         [Theory]
