@@ -25,6 +25,7 @@ public class HandleRefTest
     private static extern HandleRef InvalidMarshalPointer_Return();
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public unsafe static int TestEntryPoint()
     {
         try{

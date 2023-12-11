@@ -33,8 +33,8 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfs   = m_comp->fgComputeDfs();
-    m_loops = FlowGraphNaturalLoops::Find(m_dfs);
+    m_dfsTree = m_comp->fgComputeDfs();
+    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     // Retain or compute edge likelihood information
     //
@@ -721,7 +721,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
         }
         else
         {
-            FlowGraphNaturalLoop* const nestedLoop = m_loops->GetLoopFromHeader(block);
+            FlowGraphNaturalLoop* const nestedLoop = m_loops->GetLoopByHeader(block);
 
             if (nestedLoop != nullptr)
             {
@@ -1000,9 +1000,9 @@ void ProfileSynthesis::ComputeBlockWeights()
 {
     JITDUMP("Computing block weights\n");
 
-    for (unsigned i = m_dfs->GetPostOrderCount(); i != 0; i--)
+    for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
-        BasicBlock* block = m_dfs->GetPostOrder()[i - 1];
+        BasicBlock* block = m_dfsTree->GetPostOrder()[i - 1];
         ComputeBlockWeight(block);
     }
 }
@@ -1015,7 +1015,7 @@ void ProfileSynthesis::ComputeBlockWeights()
 //
 void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
 {
-    FlowGraphNaturalLoop* const loop      = m_loops->GetLoopFromHeader(block);
+    FlowGraphNaturalLoop* const loop      = m_loops->GetLoopByHeader(block);
     weight_t                    newWeight = block->bbWeight;
     const char*                 kind      = "";
 
