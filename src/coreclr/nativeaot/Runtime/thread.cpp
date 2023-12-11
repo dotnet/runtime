@@ -327,7 +327,7 @@ void Thread::FreeSignalAlternateStack()
             // Make sure this altstack is this PAL's before freeing.
             if (oss.ss_sp == altstack)
             {
-                int st = munmap(oss.ss_sp, oss.ss_size);
+                int st = munmap((void*)((uint8_t*)oss.ss_sp - PalOsPageSize()), oss.ss_size + PalOsPageSize());
                 _ASSERTE(st == 0);
             }
         }
@@ -345,21 +345,18 @@ bool Thread::EnsureSignalAlternateStack()
     if ((st == 0) && (oss.ss_flags == SS_DISABLE))
     {
         // There is no alternate stack for SIGSEGV handling installed yet so allocate one
-
-        // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the
-        // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
-        int altStackSize = SIGSTKSZ + PalOsPageSize();
+        int altStackSize = SIGSTKSZ;
 #ifdef HAS_ADDRESS_SANITIZER
         // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
         // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
-        altStackSize += SIGSTKSZ * 4 + PalOsPageSize();
+        altStackSize += SIGSTKSZ * 4;
 #endif
         altStackSize = ALIGN_UP(altStackSize, PalOsPageSize());
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
 #ifdef MAP_STACK
         flags |= MAP_STACK;
 #endif
-        void* altStack = mmap(NULL, altStackSize, PROT_READ | PROT_WRITE, flags, -1, 0);
+        void* altStack = mmap(NULL, altStackSize + PalOsPageSize(), PROT_READ | PROT_WRITE, flags, -1, 0);
         if (altStack != MAP_FAILED)
         {
             // create a guard page for the alternate stack
@@ -367,8 +364,8 @@ bool Thread::EnsureSignalAlternateStack()
             if (st == 0)
             {
                 stack_t ss;
-                ss.ss_sp = (char*)altStack;
-                ss.ss_size = altStackSize;
+                ss.ss_sp = (uint8_t*)altStack + PalOsPageSize();
+                ss.ss_size = altStackSize - PalOsPageSize();
                 ss.ss_flags = 0;
                 st = sigaltstack(&ss, NULL);
             }
