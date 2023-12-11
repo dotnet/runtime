@@ -430,7 +430,7 @@ enum BasicBlockFlags : unsigned __int64
                                                           // and should be treated as if it falls through.
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
-    BBF_CLONED_LOOP_HEADER             = MAKE_BBFLAG(43),
+    BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42),
 
     // The following are sets of flags.
 

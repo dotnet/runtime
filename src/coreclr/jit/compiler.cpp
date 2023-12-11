@@ -4990,10 +4990,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             // Dominator and reachability sets are no longer valid.
             // The loop table is no longer valid.
-            fgDomsComputed            = false;
-            optLoopTableValid         = false;
-            optLoopsRequirePreHeaders = false;
-            optLoopTable              = nullptr;
+            fgCompactRenumberQuirk = true;
+            fgDomsComputed         = false;
+            optLoopTableValid      = false;
+            optLoopTable           = nullptr;
 
             if (fgModified)
             {
@@ -5017,6 +5017,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             RecomputeLoopInfo();
         }
     }
+
+    optLoopsRequirePreHeaders = false;
+    fgCompactRenumberQuirk    = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);

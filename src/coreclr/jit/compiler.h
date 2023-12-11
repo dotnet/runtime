@@ -5097,6 +5097,7 @@ public:
     bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
+    bool fgCompactRenumberQuirk; // Should fgCompactBlocks renumber BBs above fgDomBBcount? TODO-Quirk: Remove
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 

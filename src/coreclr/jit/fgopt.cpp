@@ -2372,20 +2372,28 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     // before the updates, we can create pred lists with duplicate m_block->bbNum
     // values (though different m_blocks).
     //
-    if (fgDomsComputed && (block->bbNum > fgDomBBcount))
+    if ((fgDomsComputed || fgCompactRenumberQuirk) && (block->bbNum > fgDomBBcount))
     {
-        assert(fgReachabilitySetsValid);
-        BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-        BlockSetOps::ClearD(this, bNext->bbReach);
+        if (fgDomsComputed)
+        {
+            assert(fgReachabilitySetsValid);
+            BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
+            BlockSetOps::ClearD(this, bNext->bbReach);
 
-        block->bbIDom = bNext->bbIDom;
-        bNext->bbIDom = nullptr;
+            block->bbIDom = bNext->bbIDom;
+            bNext->bbIDom = nullptr;
 
-        // In this case, there's no need to update the preorder and postorder numbering
-        // since we're changing the bbNum, this makes the basic block all set.
-        //
-        JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " to preserve dominator information\n", block->bbNum,
-                bNext->bbNum);
+            // In this case, there's no need to update the preorder and postorder numbering
+            // since we're changing the bbNum, this makes the basic block all set.
+            //
+            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " to preserve dominator information\n", block->bbNum,
+                    bNext->bbNum);
+        }
+        else
+        {
+            // TODO-Quirk: Remove
+            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " for a quirk\n", block->bbNum, bNext->bbNum);
+        }
 
         block->bbNum = bNext->bbNum;
 
