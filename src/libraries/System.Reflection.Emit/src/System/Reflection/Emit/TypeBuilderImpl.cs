@@ -671,14 +671,6 @@ namespace System.Reflection.Emit
             ThrowIfNotCreated();
             ArgumentNullException.ThrowIfNull(name);
 
-            if (types != null)
-            {
-                for (int i = 0; i < types.Length; i++)
-                {
-                    ArgumentNullException.ThrowIfNull(types[i], nameof(types));
-                }
-            }
-
             foreach (MethodBuilderImpl method in _methodDefinitions)
             {
                 if (name.Equals(method.Name) && MatchesTheFilter(method, GetBindingFlags(method), bindingAttr, callConvention, types))
