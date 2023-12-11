@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,6 +19,7 @@ namespace ILCompiler.ObjectWriter
     {
         protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
+        protected sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
 
         protected readonly NodeFactory _nodeFactory;
         protected readonly ObjectWritingOptions _options;
@@ -164,7 +166,34 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
+            if (_definedSymbols.TryGetValue(symbolName, out SymbolDefinition definedSymbol) &&
+                definedSymbol.SectionIndex == sectionIndex &&
+                relocType is RelocType.IMAGE_REL_BASED_REL32 or RelocType.IMAGE_REL_BASED_RELPTR32 or RelocType.IMAGE_REL_BASED_ARM64_BRANCH26)
+            {
+                // Resolve the relocation to already defined symbol and write it into data
+                switch (relocType)
+                {
+                    case RelocType.IMAGE_REL_BASED_REL32:
+                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
+                        addend -= 4;
+                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
+                        break;
+
+                    case RelocType.IMAGE_REL_BASED_RELPTR32:
+                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
+                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
+                        break;
+
+                    case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                        var ins = BinaryPrimitives.ReadUInt32LittleEndian(data) & 0xFC000000;
+                        BinaryPrimitives.WriteUInt32LittleEndian(data, ((uint)(int)(definedSymbol.Value - offset) & 0x3FFFFFF) | ins);
+                        break;
+                }
+            }
+            else
+            {
+                _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
+            }
         }
 
         protected bool SectionHasRelocations(int sectionIndex)
@@ -322,6 +351,7 @@ namespace ILCompiler.ObjectWriter
                 progressReporter = new ProgressReporter(logger, count);
             }
 
+            List<BlockToRelocate> blocksToRelocate = new();
             foreach (DependencyNode depNode in nodes)
             {
                 ObjectNode node = depNode as ObjectNode;
@@ -370,26 +400,11 @@ namespace ILCompiler.ObjectWriter
 
                 if (nodeContents.Relocs != null)
                 {
-                    foreach (Relocation reloc in nodeContents.Relocs)
-                    {
-                        string relocSymbolName = GetMangledName(reloc.Target);
-
-                        sectionWriter.EmitRelocation(
-                            reloc.Offset,
-                            nodeContents.Data.AsSpan(reloc.Offset),
-                            reloc.RelocType,
-                            relocSymbolName,
-                            reloc.Target.Offset);
-
-                        if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                            reloc.Target is IMethodNode or AssemblyStubNode)
-                        {
-                            // For now consider all method symbols address taken.
-                            // We could restrict this in the future to those that are referenced from
-                            // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
-                            EmitReferencedMethod(relocSymbolName);
-                        }
-                    }
+                    blocksToRelocate.Add(new BlockToRelocate(
+                        sectionWriter.SectionIndex,
+                        sectionWriter.Stream.Position,
+                        nodeContents.Data,
+                        nodeContents.Relocs));
                 }
 
                 // Emit unwinding frames and LSDA
@@ -401,6 +416,31 @@ namespace ILCompiler.ObjectWriter
                 // Write the data. Note that this has to be done last as not to advance
                 // the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
+            }
+
+            foreach (BlockToRelocate blockToRelocate in blocksToRelocate)
+            {
+                foreach (Relocation reloc in blockToRelocate.Relocations)
+                {
+                    string relocSymbolName = GetMangledName(reloc.Target);
+
+                    EmitRelocation(
+                        blockToRelocate.SectionIndex,
+                        blockToRelocate.Offset + reloc.Offset,
+                        blockToRelocate.Data.AsSpan(reloc.Offset),
+                        reloc.RelocType,
+                        relocSymbolName,
+                        reloc.Target.Offset);
+
+                    if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
+                        reloc.Target is IMethodNode or AssemblyStubNode)
+                    {
+                        // For now consider all method symbols address taken.
+                        // We could restrict this in the future to those that are referenced from
+                        // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
+                        EmitReferencedMethod(relocSymbolName);
+                    }
+                }
             }
 
             EmitSectionsAndLayout();
