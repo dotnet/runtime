@@ -2203,8 +2203,7 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 //**************************************************************************
 
 LoaderCodeHeap::LoaderCodeHeap()
-    : m_LoaderHeap(NULL,                    // RangeList *pRangeList
-                   TRUE),                   // BOOL fMakeExecutable
+    : m_LoaderHeap(),
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
@@ -2452,7 +2451,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     HeapList *pHp = new HeapList;
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
+    pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMemForCode_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
 #else
     // Ensure that the heap has a reserved block of memory and so the GetReservedBytesFree()
     // and GetAllocPtr() calls below return nonzero values.
