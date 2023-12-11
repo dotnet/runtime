@@ -530,7 +530,7 @@ private:
         BasicBlock* bbTarget;     // basic block
         BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
         BBswtDesc*  bbSwtTargets;  // switch descriptor
-        BBehfDesc*  bbEhfTarget;  // BBJ_EHFINALLYRET descriptor
+        BBehfDesc*  bbEhfTargets;  // BBJ_EHFINALLYRET descriptor
     };
 
     // Points to the successor of a BBJ_COND block if bbTrueTarget is not taken
@@ -760,20 +760,20 @@ public:
     BBehfDesc* GetEhfTargets() const
     {
         assert(KindIs(BBJ_EHFINALLYRET));
-        return bbEhfTarget;
+        return bbEhfTargets;
     }
 
-    void SetEhfTarget(BBehfDesc* ehfTarget)
+    void SetEhfTargets(BBehfDesc* ehfTarget)
     {
         assert(KindIs(BBJ_EHFINALLYRET));
-        bbEhfTarget = ehfTarget;
+        bbEhfTargets = ehfTarget;
     }
 
     void SetEhf(BBehfDesc* ehfTarget)
     {
         assert(ehfTarget != nullptr);
         bbKind      = BBJ_EHFINALLYRET;
-        bbEhfTarget = ehfTarget;
+        bbEhfTargets = ehfTarget;
     }
 
 private:
@@ -1083,7 +1083,7 @@ public:
     BBEhfSuccList EHFinallyRetSuccs() const
     {
         assert(bbKind == BBJ_EHFINALLYRET);
-        return BBEhfSuccList(bbEhfTarget);
+        return BBEhfSuccList(bbEhfTargets);
     }
 
     BasicBlock* GetUniquePred(Compiler* comp) const;

@@ -12229,7 +12229,7 @@ void Compiler::impFixPredLists()
                     continue;
                 }
 
-                // Count the number of predecessors. Then we can allocate the bbEhfTarget table and fill it in.
+                // Count the number of predecessors. Then we can allocate the bbEhfTargets table and fill it in.
                 // We only need to count once, since it's invariant with the finally block.
                 if (predCount == (unsigned)-1)
                 {
@@ -12282,7 +12282,7 @@ void Compiler::impFixPredLists()
                     assert(predNum == predCount);
                 }
 
-                finallyBlock->SetEhfTarget(jumpEhf);
+                finallyBlock->SetEhfTargets(jumpEhf);
             }
         }
     }

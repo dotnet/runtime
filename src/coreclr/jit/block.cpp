@@ -687,14 +687,14 @@ void BasicBlock::dspKind()
             printf(" ->");
 
             // Early in compilation, we display the jump kind before the BBJ_EHFINALLYRET successors have been set.
-            if (bbEhfTarget == nullptr)
+            if (bbEhfTargets == nullptr)
             {
                 printf(" ????");
             }
             else
             {
-                const unsigned     jumpCnt = bbEhfTarget->bbeCount;
-                BasicBlock** const jumpTab = bbEhfTarget->bbeSuccs;
+                const unsigned     jumpCnt = bbEhfTargets->bbeCount;
+                BasicBlock** const jumpTab = bbEhfTargets->bbeSuccs;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
@@ -1168,12 +1168,12 @@ unsigned BasicBlock::NumSucc() const
 
             // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
             //
-            if (bbEhfTarget == nullptr)
+            if (bbEhfTargets == nullptr)
             {
                 return 0;
             }
 
-            return bbEhfTarget->bbeCount;
+            return bbEhfTargets->bbeCount;
 
         case BBJ_SWITCH:
             return bbSwtTargets->bbsCount;
@@ -1217,7 +1217,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             }
 
         case BBJ_EHFINALLYRET:
-            return bbEhfTarget->bbeSuccs[i];
+            return bbEhfTargets->bbeSuccs[i];
 
         case BBJ_SWITCH:
             return bbSwtTargets->bbsDstTab[i];
@@ -1257,12 +1257,12 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 
             // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
             //
-            if (bbEhfTarget == nullptr)
+            if (bbEhfTargets == nullptr)
             {
                 return 0;
             }
 
-            return bbEhfTarget->bbeCount;
+            return bbEhfTargets->bbeCount;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1315,9 +1315,9 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             return bbTarget;
 
         case BBJ_EHFINALLYRET:
-            assert(bbEhfTarget != nullptr);
-            assert(i < bbEhfTarget->bbeCount);
-            return bbEhfTarget->bbeSuccs[i];
+            assert(bbEhfTargets != nullptr);
+            assert(i < bbEhfTargets->bbeCount);
+            return bbEhfTargets->bbeSuccs[i];
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
