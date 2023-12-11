@@ -95,24 +95,17 @@ debug-any:
 	-ex "b mini.c:2156" \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
 
+debug-any-baseline:
+	COMPlus_DebugWriteToStdErr=1 \
+	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
+	gdb \
+	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-x86/shared/Microsoft.NETCore.App/8.0.0" \
+	-ex "b mini-exceptions.c:2285" \
+	--args $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-x64/dotnet \
+	$(ANY_PATH) \
+
 clean:
 	rm -f *.exe *.exe.mdb
-# System.Func`1<object> System.Text.Json.Serialization.Metadata.ReflectionEmitCachingMemberAccessor/<>cni(System.ValueTuple`3<string, System.Type, System.Reflection.MemberInfo>)
-# 1969
-# System.ValueTuple`3<string, System.Type, System.Reflection.MemberInfo>: a0: 0x4001815f50
-# 
-# System.Text.Json.Serialization.Metadata.ReflectionEmitMemberAccessor:CreateConstructor (System.Type) 1970
-# a1: 0x4001815f50
-# 0(a1): 0x0000004001815fb0
-# 728(a1): 0x0000004002c154d8
-# System.Reflection.ConstructorInfo System.Type:GetConstructor 1971
-# a0: 0x4001815f50
-# 0(a0): 0x0000004001815fb0
-# 728(a0): 0x0000004002c154d8
-# System.Reflection.ConstructorInfo System.Type:GetConstructor 1972
-# s6: 0x4001815f50
-# 0(s6): 0x0000004001815fb0
-# 728(a6): 0x0000004002c154d8
 
 
 # COMPlus_DebugWriteToStdErr="1" MONO_LOG_LEVEL="debug" MONO_LOG_MASK="all" COREHOST_TRACE="1" COREHOST_TRACE_VERBOSITY="4" MONO_ENV_OPTIONS="--compile-all --trace=all" qemu-riscv64 -L ../../../..//.tools/rootfs/riscv64/ -g 12345 ../../../../artifacts/bin/testhost/net8.0-Linux-Debug-riscv64/dotnet TestRun.exe
@@ -121,6 +114,9 @@ clean:
 # ./build.sh mono+libs+host -c Debug --cross --arch riscv64 --build
 
 # ROOTFS_DIR="" ./build.sh clr.hosts -c Debug
+
+# ROOTFS_DIR="" ./build.sh mono+libs+host -c Debug  --ninja /p:KeepNativeSymbols=true
+# ./build.sh mono+libs+host -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
 
 TEST_PATH=/home/wuxinlong/workspace/samples/
 
