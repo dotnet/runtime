@@ -12,6 +12,7 @@ namespace ILCompiler.ObjectWriter
     {
         public DwarfCie Cie;
         public string PcStartSymbolName;
+        public long PcStartSymbolOffset;
         public ulong PcLength;
         public string LsdaSymbolName;
         public string PersonalitySymbolName;

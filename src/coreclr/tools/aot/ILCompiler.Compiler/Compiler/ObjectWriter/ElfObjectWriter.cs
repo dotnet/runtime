@@ -545,7 +545,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         NameIndex = _stringTable.GetStringOffset(".rela" + section.Name),
                         Type = ElfNative.SHT_RELA,
-                        Flags = section.GroupSection is not null ? ElfNative.SHF_GROUP : 0u,
+                        Flags = (section.GroupSection is not null ? ElfNative.SHF_GROUP : 0u) | ElfNative.SHF_INFO_LINK,
                         Address = 0u,
                         Offset = section.SectionHeader.Offset + section.SectionHeader.Size,
                         Size = (ulong)section.RelocationStream.Length,
