@@ -43,7 +43,7 @@ resources:
     - container: android_docker
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-android-docker
 
-    - container: linux_x64_xl
+    - container: linux_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64
       env:
         ROOTFS_DIR: /crossrootfs/x64
