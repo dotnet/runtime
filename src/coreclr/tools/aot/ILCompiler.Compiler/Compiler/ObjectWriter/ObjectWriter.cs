@@ -153,6 +153,43 @@ namespace ILCompiler.ObjectWriter
             return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
 
+        private void EmitOrResolveRelocation(
+            int sectionIndex,
+            long offset,
+            Span<byte> data,
+            RelocType relocType,
+            string symbolName,
+            long addend)
+        {
+            if (!_usesSubsectionsViaSymbols &&
+                relocType is RelocType.IMAGE_REL_BASED_REL32 or RelocType.IMAGE_REL_BASED_RELPTR32 or RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 &&
+                _definedSymbols.TryGetValue(symbolName, out SymbolDefinition definedSymbol) &&
+                definedSymbol.SectionIndex == sectionIndex)
+            {
+                // Resolve the relocation to already defined symbol and write it into data
+                switch (relocType)
+                {
+                    case RelocType.IMAGE_REL_BASED_REL32:
+                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
+                        addend -= 4;
+                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
+                        return;
+
+                    case RelocType.IMAGE_REL_BASED_RELPTR32:
+                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
+                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
+                        return;
+
+                    case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                        var ins = BinaryPrimitives.ReadUInt32LittleEndian(data) & 0xFC000000;
+                        BinaryPrimitives.WriteUInt32LittleEndian(data, (((uint)(int)(definedSymbol.Value - offset) >> 2) & 0x3FFFFFF) | ins);
+                        return;
+                }
+            }
+
+            EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+        }
+
         /// <summary>
         /// Emits a single relocation into a given section.
         /// </summary>
@@ -168,35 +205,7 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            if (!_usesSubsectionsViaSymbols &&
-                _definedSymbols.TryGetValue(symbolName, out SymbolDefinition definedSymbol) &&
-                definedSymbol.SectionIndex == sectionIndex &&
-                relocType is RelocType.IMAGE_REL_BASED_REL32 or RelocType.IMAGE_REL_BASED_RELPTR32 or RelocType.IMAGE_REL_BASED_ARM64_BRANCH26)
-            {
-                // Resolve the relocation to already defined symbol and write it into data
-                switch (relocType)
-                {
-                    case RelocType.IMAGE_REL_BASED_REL32:
-                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
-                        addend -= 4;
-                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
-                        break;
-
-                    case RelocType.IMAGE_REL_BASED_RELPTR32:
-                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
-                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
-                        break;
-
-                    case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
-                        var ins = BinaryPrimitives.ReadUInt32LittleEndian(data) & 0xFC000000;
-                        BinaryPrimitives.WriteUInt32LittleEndian(data, (((uint)(int)(definedSymbol.Value - offset) >> 2) & 0x3FFFFFF) | ins);
-                        break;
-                }
-            }
-            else
-            {
-                _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
-            }
+            _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
         }
 
         protected bool SectionHasRelocations(int sectionIndex)
@@ -427,7 +436,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     string relocSymbolName = GetMangledName(reloc.Target);
 
-                    EmitRelocation(
+                    EmitOrResolveRelocation(
                         blockToRelocate.SectionIndex,
                         blockToRelocate.Offset + reloc.Offset,
                         blockToRelocate.Data.AsSpan(reloc.Offset),
