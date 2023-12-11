@@ -4747,12 +4747,35 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // For each successor of the original block, set the new block as their predecessor.
     // Note we are using the "rational" version of the successor iterator that does not hide the finallyret arcs.
     // Without these arcs, a block 'b' may not be a member of succs(preds(b))
-    if (!curr->KindIs(BBJ_SWITCH, BBJ_COND))
+    switch (curr->GetKind())
     {
-        // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::New(this, curr->GetKind(), curr->GetTarget());
-        newBlock->bbRefs = 0;
+        case BBJ_COND:
+            newBlock = BasicBlock::New(this, BBJ_COND, curr->GetTrueTarget());
+            break;
 
+        case BBJ_EHFINALLYRET:
+            newBlock = BasicBlock::New(this, curr->GetEhfTargets());
+            break;
+
+        case BBJ_SWITCH:
+            newBlock = BasicBlock::New(this, curr->GetSwitchTargets());
+            break;
+
+        default:
+            newBlock = BasicBlock::New(this, curr->GetKind(), curr->GetTarget());
+    }
+
+    // Start the new block with no refs. When we set the preds below, this will get updated correctly.
+    newBlock->bbRefs = 0;
+
+    if (curr->KindIs(BBJ_SWITCH))
+    {
+        // In the case of a switch statement there's more complicated logic in order to wire up the predecessor lists
+        // but fortunately there's an existing method that implements this functionality.
+        fgChangeSwitchBlock(curr, newBlock);
+    }
+    else
+    {
         for (BasicBlock* const succ : curr->Succs(this))
         {
             if (succ != newBlock)
@@ -4762,35 +4785,6 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
                 fgReplacePred(succ, curr, newBlock);
             }
         }
-    }
-    else if (curr->KindIs(BBJ_COND))
-    {
-        // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::New(this, BBJ_COND, curr->GetTrueTarget());
-        newBlock->bbRefs = 0;
-
-        // Make newBlock a predecessor to curr's false target
-        JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", curr->GetFalseTarget()->bbNum,
-                curr->bbNum, newBlock->bbNum);
-        fgReplacePred(curr->GetFalseTarget(), curr, newBlock);
-
-        // Make newBlock a predecessor to curr's true target
-        assert(newBlock->TrueTargetIs(curr->GetTrueTarget()));
-        JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", curr->GetTrueTarget()->bbNum,
-                curr->bbNum, newBlock->bbNum);
-        fgReplacePred(curr->GetTrueTarget(), curr, newBlock);
-    }
-    else
-    {
-        assert(curr->KindIs(BBJ_SWITCH));
-
-        // Start the new block with no refs. When we set the preds below, this will get updated correctly.
-        newBlock         = BasicBlock::New(this, curr->GetSwitchTargets());
-        newBlock->bbRefs = 0;
-
-        // In the case of a switch statement there's more complicated logic in order to wire up the predecessor lists
-        // but fortunately there's an existing method that implements this functionality.
-        fgChangeSwitchBlock(curr, newBlock);
     }
 
     newBlock->inheritWeight(curr);

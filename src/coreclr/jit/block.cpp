@@ -1610,11 +1610,19 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* swtTarget)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBehfDesc* ehfTargets)
 {
-    BasicBlock* block  = BasicBlock::New(compiler);
-    block->bbKind      = BBJ_SWITCH;
-    block->bbSwtTargets = swtTarget;
+    BasicBlock* block   = BasicBlock::New(compiler);
+    block->bbKind       = BBJ_EHFINALLYRET;
+    block->bbEhfTargets = ehfTargets;
+    return block;
+}
+
+BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* swtTargets)
+{
+    BasicBlock* block   = BasicBlock::New(compiler);
+    block->bbKind       = BBJ_SWITCH;
+    block->bbSwtTargets = swtTargets;
     return block;
 }
 

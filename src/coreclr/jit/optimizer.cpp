@@ -2808,7 +2808,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
                         fgAddRefPred(newJumpDest, blk);
                     }
                     blk->GetSwitchTargets()->bbsDstTab[i] = newJumpDest;
-                    redirected                           = true;
+                    redirected                            = true;
                 }
                 else if (addPreds)
                 {

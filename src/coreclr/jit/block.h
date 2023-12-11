@@ -529,8 +529,8 @@ private:
         unsigned    bbTargetOffs; // PC offset (temporary only)
         BasicBlock* bbTarget;     // basic block
         BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
-        BBswtDesc*  bbSwtTargets;  // switch descriptor
-        BBehfDesc*  bbEhfTargets;  // BBJ_EHFINALLYRET descriptor
+        BBswtDesc*  bbSwtTargets; // switch descriptor
+        BBehfDesc*  bbEhfTargets; // BBJ_EHFINALLYRET descriptor
     };
 
     // Points to the successor of a BBJ_COND block if bbTrueTarget is not taken
@@ -539,7 +539,8 @@ private:
 public:
     static BasicBlock* New(Compiler* compiler);
     static BasicBlock* New(Compiler* compiler, BBKinds kind, BasicBlock* target = nullptr);
-    static BasicBlock* New(Compiler* compiler, BBswtDesc* swtTarget);
+    static BasicBlock* New(Compiler* compiler, BBehfDesc* ehfTargets);
+    static BasicBlock* New(Compiler* compiler, BBswtDesc* swtTargets);
     static BasicBlock* New(Compiler* compiler, BBKinds kind, unsigned targetOffs);
 
     BBKinds GetKind() const
@@ -636,8 +637,8 @@ public:
 
     BasicBlock* GetTarget() const
     {
-        // BBJ_COND should use GetTrueTarget
-        assert(!KindIs(BBJ_COND));
+        // BBJ_COND should use GetTrueTarget, and BBJ_EHFINALLYRET/BBJ_SWITCH don't use bbTarget
+        assert(!KindIs(BBJ_COND, BBJ_EHFINALLYRET, BBJ_SWITCH));
 
         // If bbKind indicates this block has a jump, bbTarget cannot be null
         assert(!HasTarget() || HasInitializedTarget());
@@ -646,8 +647,8 @@ public:
 
     void SetTarget(BasicBlock* target)
     {
-        // BBJ_COND should use SetTrueTarget
-        assert(!KindIs(BBJ_COND));
+        // BBJ_COND should use SetTrueTarget, and BBJ_EHFINALLYRET/BBJ_SWITCH don't use bbTarget
+        assert(!KindIs(BBJ_COND, BBJ_EHFINALLYRET, BBJ_SWITCH));
 
         // SetKindAndTarget() nulls target for non-jump kinds,
         // so don't use SetTarget() to null bbTarget without updating bbKind.
@@ -713,8 +714,10 @@ public:
 
     void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
     {
-        // To set BBJ_COND, use SetCond
+        // For BBJ_COND/BBJ_EHFINALLYRET/BBJ_SWITCH, use SetCond/SetEhf/SetSwitch
         assert(kind != BBJ_COND);
+        assert(kind != BBJ_EHFINALLYRET);
+        assert(kind != BBJ_SWITCH);
 
         bbKind   = kind;
         bbTarget = target;
@@ -731,8 +734,8 @@ public:
 
     bool TargetIs(const BasicBlock* target) const
     {
-        // BBJ_COND should use TrueTargetIs
-        assert(!KindIs(BBJ_COND));
+        // BBJ_COND should use TrueTargetIs, and BBJ_EHFINALLYRET/BBJ_SWITCH don't use bbTarget
+        assert(!KindIs(BBJ_COND, BBJ_EHFINALLYRET, BBJ_SWITCH));
         assert(HasInitializedTarget());
         return (bbTarget == target);
     }
@@ -753,7 +756,7 @@ public:
     void SetSwitch(BBswtDesc* swtTarget)
     {
         assert(swtTarget != nullptr);
-        bbKind      = BBJ_SWITCH;
+        bbKind       = BBJ_SWITCH;
         bbSwtTargets = swtTarget;
     }
 
@@ -772,7 +775,7 @@ public:
     void SetEhf(BBehfDesc* ehfTarget)
     {
         assert(ehfTarget != nullptr);
-        bbKind      = BBJ_EHFINALLYRET;
+        bbKind       = BBJ_EHFINALLYRET;
         bbEhfTargets = ehfTarget;
     }
 
