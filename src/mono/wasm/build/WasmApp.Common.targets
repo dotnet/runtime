@@ -425,43 +425,6 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="_GenerateManagedToNative">
-    <ItemGroup>
-      <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
-
-      <_WasmPInvokeModules Include="libSystem.Native" />
-      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
-      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'mscorlib.dll'))</_MscorlibPath>
-    </PropertyGroup>
-
-    <Error Condition="'$(_HasMscorlib)' != 'true' and !Exists($(_MscorlibPath))" Text="Could not find 'mscorlib.dll' in the runtime pack at $(_MscorlibPath)" />
-    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
-           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
-
-    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' Condition="!Exists($(_WasmRuntimeICallTablePath))" />
-    <ItemGroup>
-      <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')"  />
-
-    <ManagedToNativeGenerator
-      Assemblies="@(_WasmAssembliesInternal);$(_MscorlibPath)"
-      RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
-      IcallOutputPath="$(_WasmICallTablePath)"
-      PInvokeModules="@(_WasmPInvokeModules)"
-      PInvokeOutputPath="$(_WasmPInvokeTablePath)"
-      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
-      CacheFilePath="$(_WasmM2NCachePath)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ManagedToNativeGenerator>
-  </Target>
-
   <Target Name="_EmitWasmAssembliesFinal" Returns="@(WasmAssembliesFinal)">
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
