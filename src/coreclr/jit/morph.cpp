@@ -14102,10 +14102,10 @@ PhaseStatus Compiler::fgMorphBlocks()
 
     // We are done with the global morphing phase
     //
+    fgInvalidateDfsTree();
     fgGlobalMorph     = false;
     fgGlobalMorphDone = true;
     compCurBB         = nullptr;
-    m_dfsTree         = nullptr;
 
 #ifdef DEBUG
     if (optLocalAssertionProp)

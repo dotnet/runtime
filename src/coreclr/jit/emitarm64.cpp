@@ -1158,9 +1158,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             break;
 
+        case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
+            elemsize = id->idOpSize();
+            assert(insOptsScalableSimple(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // nnnnn
+            assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(optGetSveElemsize(id->idInsOpt()) != EA_8BYTE);
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+                                                                              // x
+            break;
+
         case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
             elemsize = id->idOpSize();
-            assert(insOptsScalable(id->idInsOpt()));
+            assert(insOptsScalableSimple(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // mmmmm
 #ifdef DEBUG
@@ -1178,7 +1188,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_GL_1A: // ................ ...........ddddd -- SVE2 crypto unary operations
             elemsize = id->idOpSize();
-            assert(insOptsScalable(id->idInsOpt()));
+            assert(insOptsScalableSimple(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isScalableVectorSize(elemsize));
             break;
@@ -5257,6 +5267,46 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     }
 }
 
+//  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
+//  asserts and returns EA_UNKNOWN if an invalid 'arrangement' value is passed
+//
+/*static*/ emitAttr emitter::optGetSveElemsize(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+        case INS_OPTS_SCALABLE_WIDE_B:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_B_WITH_SCALAR:
+            return EA_1BYTE;
+
+        case INS_OPTS_SCALABLE_H:
+        case INS_OPTS_SCALABLE_WIDE_H:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_H_WITH_SCALAR:
+            return EA_2BYTE;
+
+        case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_WIDE_S:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_S_WITH_SCALAR:
+            return EA_4BYTE;
+
+        case INS_OPTS_SCALABLE_D:
+        case INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR:
+        case INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR:
+        case INS_OPTS_SCALABLE_D_WITH_SCALAR:
+            return EA_8BYTE;
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+            return EA_UNKNOWN;
+    }
+}
+
 /*static*/ insOpts emitter::optWidenElemsizeArrangement(insOpts arrangement)
 {
     if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_16B))
@@ -5275,6 +5325,25 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     {
         assert(!" invalid 'arrangement' value");
         return INS_OPTS_NONE;
+    }
+}
+
+/*static*/ insOpts emitter::optWidenSveElemsizeArrangement(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+            return INS_OPTS_SCALABLE_H;
+
+        case INS_OPTS_SCALABLE_H:
+            return INS_OPTS_SCALABLE_S;
+
+        case INS_OPTS_SCALABLE_S:
+            return INS_OPTS_SCALABLE_D;
+
+        default:
+            assert(!" invalid 'arrangement' value");
+            return INS_OPTS_NONE;
     }
 }
 
@@ -6755,6 +6824,21 @@ void emitter::emitIns_R_R(
                 assert(isValidVectorElemsize(size));
                 fmt = IF_DV_2L;
             }
+            break;
+
+        case INS_sve_sqxtnb:
+        case INS_sve_sqxtnt:
+        case INS_sve_uqxtnb:
+        case INS_sve_uqxtnt:
+        case INS_sve_sqxtunb:
+        case INS_sve_sqxtunt:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(optGetSveElemsize(opt) != EA_8BYTE);
+            assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_GD_2A;
             break;
 
         case INS_sve_aese:
@@ -12500,6 +12584,31 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return 0;
 }
 
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_1BYTE:
+            return 0x080000; // set the bit at location 19
+
+        case EA_2BYTE:
+            return 0x100000; // set the bit at location 20
+
+        case EA_4BYTE:
+            return 0x400000; // set the bit at location 22
+
+        default:
+            assert(!"Invalid size for vector register");
+    }
+    return 0;
+}
+
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
 {
     instruction ins    = id->idIns();
@@ -14522,6 +14631,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeVectorShift(EA_4BYTE, /* right-shift */ -imm); // iiii
             code |= insEncodeReg_V_4_to_0(id->idReg1());                    // ddddd
             code |= insEncodeReg_V_9_to_6_Times_Two(id->idReg2());          // nnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
+            code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
+                                                                                                   // x
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -16884,10 +17002,17 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), (insOpts)((unsigned)id->idInsOpt() - 1), false); // mmmmm
             break;
 
+        // <Zd>.H, { <Zn1>.S-<Zn2>.S }, #<const>
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
             emitDispSveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
             emitDispImm(emitGetInsSC(id), false);                           // iiii
+            break;
+
+        // <Zd>.<T>, <Zn>.<Tb>
+        case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                  // ddddd
+            emitDispSveReg(id->idReg2(), optWidenSveElemsizeArrangement(id->idInsOpt()), false); // nnnnn
             break;
 
         // <Zdn>.B, <Zdn>.B, <Zm>.B
@@ -19372,28 +19497,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         // Not available in Arm Neoverse N2 Software Optimization Guide.
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-            switch (ins)
-            {
-                case INS_sve_sqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
+            result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
+            result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
+            break;
 
-                case INS_sve_sqrshrun:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
-
-                case INS_sve_uqrshrn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_25C; // TODO-SVE: Placeholder
-                    result.insLatency    = PERFSCORE_LATENCY_20C;    // TODO-SVE: Placeholder
-                    break;
-
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
+        case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
         case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations

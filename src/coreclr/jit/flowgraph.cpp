@@ -551,30 +551,6 @@ bool Compiler::fgMayExplicitTailCall()
 }
 
 //------------------------------------------------------------------------
-// fgFindJumpTargets: walk the IL stream, determining jump target offsets
-//
-// Arguments:
-//    codeAddr   - base address of the IL code buffer
-//    codeSize   - number of bytes in the IL code buffer
-//    jumpTarget - [OUT] bit vector for flagging jump targets
-//
-// Notes:
-//    If inlining or prejitting the root, this method also makes
-//    various observations about the method that factor into inline
-//    decisions.
-//
-//    May throw an exception if the IL is malformed.
-//
-//    jumpTarget[N] is set to 1 if IL offset N is a jump target in the method.
-//
-//    Also sets m_addrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
-
-//------------------------------------------------------------------------
 // fgImport: read the IL for the method and create jit IR
 //
 // Returns:
@@ -4053,64 +4029,29 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
-    BitVecTraits traits(fgBBNumMax + 1, this);
 
-    BitVec visited(BitVecOps::MakeEmpty(&traits));
+    unsigned numBlocks = fgRunDfs([](BasicBlock* block, unsigned preorderNum) { block->bbPreorderNum = preorderNum; },
+                                  [=](BasicBlock* block, unsigned postorderNum) {
+                                      block->bbNewPostorderNum = postorderNum;
+                                      assert(postorderNum < fgBBcount);
+                                      postOrder[postorderNum] = block;
+                                  });
 
-    unsigned preOrderIndex  = 0;
-    unsigned postOrderIndex = 0;
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks);
+}
 
-    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
-
-    auto dfsFrom = [&, postOrder](BasicBlock* firstBB) {
-
-        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
-        blocks.Emplace(this, firstBB);
-        firstBB->bbPreorderNum = preOrderIndex++;
-
-        while (!blocks.Empty())
-        {
-            BasicBlock* block = blocks.TopRef().Block();
-            BasicBlock* succ  = blocks.TopRef().NextSuccessor();
-
-            if (succ != nullptr)
-            {
-                if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
-                {
-                    blocks.Emplace(this, succ);
-                    succ->bbPreorderNum = preOrderIndex++;
-                }
-            }
-            else
-            {
-                blocks.Pop();
-                postOrder[postOrderIndex] = block;
-                block->bbNewPostorderNum  = postOrderIndex++;
-            }
-        }
-
-    };
-
-    dfsFrom(fgFirstBB);
-
-    if ((fgEntryBB != nullptr) && !BitVecOps::IsMember(&traits, visited, fgEntryBB->bbNum))
-    {
-        // OSR methods will early on create flow that looks like it goes to the
-        // patchpoint, but during morph we may transform to something that
-        // requires the original entry (fgEntryBB).
-        assert(opts.IsOSR());
-        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
-        dfsFrom(fgEntryBB);
-    }
-
-    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum) && !fgGlobalMorphDone)
-    {
-        // We introduce the merged return BB before morph and will redirect
-        // other returns to it as part of morph; keep it reachable.
-        dfsFrom(genReturnBB);
-    }
-
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, postOrderIndex);
+//------------------------------------------------------------------------
+// fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations
+// (like loops, dominators and SSA).
+//
+void Compiler::fgInvalidateDfsTree()
+{
+    m_dfsTree      = nullptr;
+    m_loops        = nullptr;
+    fgSsaDomTree   = nullptr;
+    m_newToOldLoop = nullptr;
+    m_oldToNewLoop = nullptr;
+    fgSsaValid     = false;
 }
 
 //------------------------------------------------------------------------
@@ -5425,6 +5366,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     {
         BasicBlock* block  = postOrder[i];
         BasicBlock* parent = block->bbIDom;
+        assert(parent != nullptr);
         assert(dfsTree->Contains(block) && dfsTree->Contains(parent));
 
         domTree[i].nextSibling                        = domTree[parent->bbNewPostorderNum].firstChild;
