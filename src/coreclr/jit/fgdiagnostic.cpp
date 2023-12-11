@@ -4753,7 +4753,6 @@ void Compiler::fgDebugCheckSsa()
     }
 
     assert(fgSsaPassesCompleted > 0);
-    assert(fgDomsComputed);
 
     // Visit the blocks that SSA initially renamed
     //

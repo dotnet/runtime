@@ -13192,8 +13192,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* Unmark the loop if we are removing a backwards branch */
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
-                if (block->GetJumpDest()->isLoopHead() && (block->GetJumpDest()->bbNum <= block->bbNum) &&
-                    fgReachable(block->GetJumpDest(), block))
+                if (optLoopTableValid && block->GetJumpDest()->isLoopHead() &&
+                    (block->GetJumpDest()->bbNum <= block->bbNum) && fgReachable(block->GetJumpDest(), block))
                 {
                     optUnmarkLoopBlocks(block->GetJumpDest(), block);
                 }

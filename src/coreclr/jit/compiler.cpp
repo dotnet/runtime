@@ -4828,9 +4828,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
 
-        // Clear loop table info that is not used after this point, and might become invalid.
-        //
-        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
+        // The loop table is no longer valid.
+        optLoopTableValid = false;
+        optLoopTable      = nullptr;
     }
 
 #ifdef DEBUG
@@ -4846,6 +4846,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Create the variable table (and compute variable ref counts)
     //
     DoPhase(this, PHASE_MARK_LOCAL_VARS, &Compiler::lvaMarkLocalVars);
+
+    // Dominator and reachability sets are no longer valid.
+    fgDomsComputed         = false;
+    fgCompactRenumberQuirk = true;
 
     // IMPORTANT, after this point, locals are ref counted.
     // However, ref counts are not kept incrementally up to date.
@@ -4987,13 +4991,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
-
-            // Dominator and reachability sets are no longer valid.
-            // The loop table is no longer valid.
-            fgCompactRenumberQuirk = true;
-            fgDomsComputed         = false;
-            optLoopTableValid      = false;
-            optLoopTable           = nullptr;
 
             if (fgModified)
             {

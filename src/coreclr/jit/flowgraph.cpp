@@ -2719,7 +2719,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 //
 BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 {
-    assert(fgDomsComputed);
+    assert(fgSsaDomTree != nullptr);
     BasicBlock* lastReachablePred = nullptr;
 
     // Check if we have unreachable preds
@@ -2732,7 +2732,7 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
         }
 
         // We check pred's count of InEdges - it's quite conservative.
-        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        // We, probably, could use optReachable(fgFirstBb, pred) here to detect unreachable preds
         if (predBlock->countOfInEdges() > 0)
         {
             if (lastReachablePred != nullptr)
