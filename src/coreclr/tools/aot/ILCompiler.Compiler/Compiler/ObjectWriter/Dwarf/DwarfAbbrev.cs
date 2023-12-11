@@ -22,32 +22,32 @@ namespace ILCompiler.ObjectWriter
 
         public int AbbreviationCode { get; set; }
 
-        public void Write(ObjectWriterStream stream, int targetPointerSize)
+        public void Write(SectionWriter writer, int targetPointerSize)
         {
-            stream.WriteULEB128((ulong)AbbreviationCode);
-            stream.WriteULEB128(Tag);
-            stream.WriteULEB128(HasChildren ? DW_CHILDREN_yes : DW_CHILDREN_no);
+            writer.WriteULEB128((ulong)AbbreviationCode);
+            writer.WriteULEB128(Tag);
+            writer.WriteULEB128(HasChildren ? DW_CHILDREN_yes : DW_CHILDREN_no);
 
             for (int i = 2; i < _definition.Length; i++)
             {
                 // Attribute
-                stream.WriteULEB128(_definition[i++]);
+                writer.WriteULEB128(_definition[i++]);
                 // Form
                 if (_definition[i] != DW_FORM_size)
                 {
-                    stream.WriteULEB128(_definition[i]);
+                    writer.WriteULEB128(_definition[i]);
                 }
                 else if (targetPointerSize == 8)
                 {
-                    stream.WriteULEB128(DW_FORM_data8);
+                    writer.WriteULEB128(DW_FORM_data8);
                 }
                 else if (targetPointerSize == 4)
                 {
-                    stream.WriteULEB128(DW_FORM_data4);
+                    writer.WriteULEB128(DW_FORM_data4);
                 }
             }
 
-            stream.Write([0, 0]);
+            writer.Write([0, 0]);
         }
 
         public static DwarfAbbrev CompileUnit = new([

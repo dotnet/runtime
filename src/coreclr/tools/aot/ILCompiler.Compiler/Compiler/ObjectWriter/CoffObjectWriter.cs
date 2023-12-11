@@ -274,11 +274,9 @@ namespace ILCompiler.ObjectWriter
                 // Create section with control flow guard symbols
                 SectionWriter gfidsSectionWriter = GetOrCreateSection(GfidsSection);
 
-                Span<byte> tempBuffer = stackalloc byte[4];
                 foreach (var symbolName in _referencedMethods)
                 {
-                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, _symbolNameToIndex[symbolName]);
-                    gfidsSectionWriter.Stream.Write(tempBuffer);
+                    gfidsSectionWriter.WriteLittleEndian<uint>(_symbolNameToIndex[symbolName]);
                 }
 
                 // Emit the feat.00 symbol that controls various linker behaviors
@@ -436,13 +434,13 @@ namespace ILCompiler.ObjectWriter
                     xdataSectionWriter.EmitSymbolDefinition(unwindSymbolName);
 
                     // Emit UNWIND_INFO
-                    xdataSectionWriter.Stream.Write(blob);
+                    xdataSectionWriter.Write(blob);
 
                     FrameInfoFlags flags = frameInfo.Flags;
 
                     if (i != 0)
                     {
-                        xdataSectionWriter.Stream.WriteByte((byte)flags);
+                        xdataSectionWriter.WriteByte((byte)flags);
                     }
                     else
                     {
@@ -452,7 +450,7 @@ namespace ILCompiler.ObjectWriter
                         flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                         flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
-                        xdataSectionWriter.Stream.WriteByte((byte)flags);
+                        xdataSectionWriter.WriteByte((byte)flags);
 
                         if (associatedDataNode != null)
                         {
@@ -468,7 +466,7 @@ namespace ILCompiler.ObjectWriter
 
                         if (nodeWithCodeInfo.GCInfo != null)
                         {
-                            xdataSectionWriter.Stream.Write(nodeWithCodeInfo.GCInfo);
+                            xdataSectionWriter.Write(nodeWithCodeInfo.GCInfo);
                         }
                     }
 
@@ -614,7 +612,7 @@ namespace ILCompiler.ObjectWriter
             _debugTypesSectionWriter.EmitAlignment(4);
             _debugTypesBuilder = new CodeViewTypesBuilder(
                 _nodeFactory.NameMangler, _nodeFactory.Target.Architecture,
-                _debugTypesSectionWriter.Stream);
+                _debugTypesSectionWriter);
             return _debugTypesBuilder;
         }
 
@@ -665,7 +663,7 @@ namespace ILCompiler.ObjectWriter
         protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
         {
             _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
-            _debugFileTableBuilder.Write(_debugSymbolSectionWriter.Stream);
+            _debugFileTableBuilder.Write(_debugSymbolSectionWriter);
         }
 
         private sealed class CoffHeader

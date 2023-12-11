@@ -15,7 +15,7 @@ namespace ILCompiler.ObjectWriter
         private sealed record InfoReference(uint TypeIndex, int Position, byte[] Data);
 
         private readonly SectionWriter _infoSectionWriter;
-        private readonly ObjectWriterStream _stringTableWriter;
+        private readonly SectionWriter _stringTableWriter;
         private readonly SectionWriter _abbrevSectionWriter;
         private readonly SectionWriter _locSectionWriter;
         private readonly SectionWriter _rangeSectionWriter;
@@ -28,7 +28,7 @@ namespace ILCompiler.ObjectWriter
 
         public DwarfInfoWriter(
             SectionWriter infoSectionWriter,
-            ObjectWriterStream stringTableWriter,
+            SectionWriter stringTableWriter,
             SectionWriter abbrevSectionWriter,
             SectionWriter locSectionWriter,
             SectionWriter rangeSectionWriter,
@@ -47,7 +47,7 @@ namespace ILCompiler.ObjectWriter
         public TargetArchitecture TargetArchitecture => _builder.TargetArchitecture;
         public int FrameRegister => _builder.FrameRegister;
         public byte TargetPointerSize => _builder.TargetPointerSize;
-        public long Position => _infoSectionWriter.Stream.Position;
+        public long Position => _infoSectionWriter.Position;
 
         public void WriteStartDIE(DwarfAbbrev abbrev)
         {
@@ -76,12 +76,12 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void Write(ReadOnlySpan<byte> buffer) => _infoSectionWriter.Stream.Write(buffer);
-        public void WriteULEB128(ulong value) => _infoSectionWriter.Stream.WriteULEB128(value);
-        public void WriteUInt8(byte value) => _infoSectionWriter.Stream.WriteLittleEndian<byte>(value);
-        public void WriteUInt16(ushort value) => _infoSectionWriter.Stream.WriteLittleEndian<ushort>(value);
-        public void WriteUInt32(uint value) => _infoSectionWriter.Stream.WriteLittleEndian<uint>(value);
-        public void WriteUInt64(ulong value) => _infoSectionWriter.Stream.WriteLittleEndian<ulong>(value);
+        public void Write(ReadOnlySpan<byte> buffer) => _infoSectionWriter.Write(buffer);
+        public void WriteULEB128(ulong value) => _infoSectionWriter.WriteULEB128(value);
+        public void WriteUInt8(byte value) => _infoSectionWriter.WriteLittleEndian<byte>(value);
+        public void WriteUInt16(ushort value) => _infoSectionWriter.WriteLittleEndian<ushort>(value);
+        public void WriteUInt32(uint value) => _infoSectionWriter.WriteLittleEndian<uint>(value);
+        public void WriteUInt64(ulong value) => _infoSectionWriter.WriteLittleEndian<ulong>(value);
 
         public void WriteAddressSize(ulong value)
         {
@@ -116,8 +116,8 @@ namespace ILCompiler.ObjectWriter
             {
                 // Late bound forward reference
                 var data = new byte[sizeof(uint)];
-                _lateBoundReferences.Add(new InfoReference(typeIndex, (int)_infoSectionWriter.Stream.Position, data));
-                _infoSectionWriter.Stream.AppendData(data);
+                _lateBoundReferences.Add(new InfoReference(typeIndex, (int)_infoSectionWriter.Position, data));
+                _infoSectionWriter.EmitData(data);
             }
             else
             {
@@ -152,7 +152,7 @@ namespace ILCompiler.ObjectWriter
 
         public void WriteStartLocationList()
         {
-            long offset = _locSectionWriter.Stream.Position;
+            long offset = _locSectionWriter.Position;
             Debug.Assert(offset < uint.MaxValue);
             _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_loc", (int)offset);
         }
@@ -162,18 +162,18 @@ namespace ILCompiler.ObjectWriter
             _ = expressionBuilder;
             _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, startOffset);
             _locSectionWriter.EmitSymbolReference(_codeRelocType, methodName, endOffset);
-            _locSectionWriter.Stream.WriteLittleEndian<ushort>((ushort)_expressionBufferWriter.WrittenCount);
-            _locSectionWriter.Stream.Write(_expressionBufferWriter.WrittenSpan);
+            _locSectionWriter.WriteLittleEndian<ushort>((ushort)_expressionBufferWriter.WrittenCount);
+            _locSectionWriter.Write(_expressionBufferWriter.WrittenSpan);
         }
 
         public void WriteEndLocationList()
         {
-            _locSectionWriter.Stream.Write(stackalloc byte[TargetPointerSize * 2]);
+            _locSectionWriter.Write(stackalloc byte[TargetPointerSize * 2]);
         }
 
         public void WriteStartRangeList()
         {
-            long offset = _rangeSectionWriter.Stream.Position;
+            long offset = _rangeSectionWriter.Position;
             Debug.Assert(offset < uint.MaxValue);
             _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_ranges", offset);
         }
@@ -186,7 +186,7 @@ namespace ILCompiler.ObjectWriter
 
         public void WriteEndRangeList()
         {
-            _rangeSectionWriter.Stream.Write(stackalloc byte[TargetPointerSize * 2]);
+            _rangeSectionWriter.Write(stackalloc byte[TargetPointerSize * 2]);
         }
 
         public void Dispose()
@@ -194,7 +194,7 @@ namespace ILCompiler.ObjectWriter
             // Debug.Assert(_dieStack.Count == 0);
 
             // Flush late bound forward references
-            int streamOffset = (int)_infoSectionWriter.Stream.Position;
+            int streamOffset = (int)_infoSectionWriter.Position;
             foreach (var lateBoundReference in _lateBoundReferences)
             {
                 uint offset = _builder.ResolveOffset(lateBoundReference.TypeIndex);
@@ -210,9 +210,9 @@ namespace ILCompiler.ObjectWriter
             // Write abbreviation section
             foreach (var abbrev in _usedAbbrevs)
             {
-                abbrev.Write(_abbrevSectionWriter.Stream, TargetPointerSize);
+                abbrev.Write(_abbrevSectionWriter, TargetPointerSize);
             }
-            _abbrevSectionWriter.Stream.Write([0, 0]);
+            _abbrevSectionWriter.Write([0, 0]);
         }
     }
 }

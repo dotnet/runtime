@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis;
 using static ILCompiler.ObjectWriter.DwarfNative;
@@ -9,7 +10,7 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfLineSequenceWriter
     {
-        private readonly ObjectWriterStream _writer;
+        private readonly ArrayBufferWriter<byte> _writer;
         private readonly string _sectionName;
         private readonly byte _minimumInstructionLength;
         private readonly uint _maxDeltaAddressPerSpecialCode;
@@ -22,7 +23,7 @@ namespace ILCompiler.ObjectWriter
 
         public DwarfLineSequenceWriter(string sectionName, byte minimumInstructionLength)
         {
-            _writer = new ObjectWriterStream();
+            _writer = new ArrayBufferWriter<byte>();
             _sectionName = sectionName;
 
             // Calculations hard code this
@@ -33,20 +34,30 @@ namespace ILCompiler.ObjectWriter
             _minimumInstructionLength = minimumInstructionLength;
         }
 
+        private void WriteByte(byte value)
+        {
+            _writer.GetSpan(1)[0] = value;
+            _writer.Advance(1);
+        }
+
+        private void WriteULEB128(ulong value) => DwarfHelper.WriteULEB128(_writer, value);
+
+        private void WriteSLEB128(long value) => DwarfHelper.WriteSLEB128(_writer, value);
+
         public void EmitLineInfo(int fileNameIndex, long methodAddress, NativeSequencePoint sequencePoint)
         {
             if (_column != sequencePoint.ColNumber)
             {
                 _column = sequencePoint.ColNumber;
-                _writer.WriteByte(DW_LNS_set_column);
-                _writer.WriteULEB128((uint)_column);
+                WriteByte(DW_LNS_set_column);
+                WriteULEB128((uint)_column);
             }
 
             if (_fileNameIndex != fileNameIndex)
             {
                 _fileNameIndex = fileNameIndex;
-                _writer.WriteByte(DW_LNS_set_file);
-                _writer.WriteULEB128((uint)_fileNameIndex);
+                WriteByte(DW_LNS_set_file);
+                WriteULEB128((uint)_fileNameIndex);
             }
 
             int deltaLine = sequencePoint.LineNumber - _line;
@@ -58,8 +69,8 @@ namespace ILCompiler.ObjectWriter
 
                 if (!canEncodeLineInSpecialCode)
                 {
-                    _writer.WriteByte(DW_LNS_advance_line);
-                    _writer.WriteSLEB128(deltaLine);
+                    WriteByte(DW_LNS_advance_line);
+                    WriteSLEB128(deltaLine);
                     deltaLine = 0;
                 }
             }
@@ -68,7 +79,7 @@ namespace ILCompiler.ObjectWriter
             if (deltaAddress > _maxDeltaAddressPerSpecialCode && deltaAddress <= (2U * _maxDeltaAddressPerSpecialCode))
             {
                 deltaAddress -= _maxDeltaAddressPerSpecialCode;
-                _writer.WriteByte(DW_LNS_const_add_pc);
+                WriteByte(DW_LNS_const_add_pc);
             }
 
             if (deltaAddress > 0 || deltaLine != 0)
@@ -79,20 +90,20 @@ namespace ILCompiler.ObjectWriter
                     DwarfLineProgramTableWriter.OpCodeBase + (ulong)(deltaLine - DwarfLineProgramTableWriter.LineBase);
                 if (opcode > 255)
                 {
-                    _writer.WriteByte(DW_LNS_advance_pc);
-                    _writer.WriteULEB128((uint)operationAdvance);
+                    WriteByte(DW_LNS_advance_pc);
+                    WriteULEB128((uint)operationAdvance);
                     if (deltaLine != 0)
                     {
-                        _writer.WriteByte((byte)(DwarfLineProgramTableWriter.OpCodeBase + deltaLine - DwarfLineProgramTableWriter.LineBase));
+                        WriteByte((byte)(DwarfLineProgramTableWriter.OpCodeBase + deltaLine - DwarfLineProgramTableWriter.LineBase));
                     }
                     else
                     {
-                        _writer.WriteByte(DW_LNS_copy);
+                        WriteByte(DW_LNS_copy);
                     }
                 }
                 else
                 {
-                    _writer.WriteByte((byte)opcode);
+                    WriteByte((byte)opcode);
                 }
             }
 
@@ -103,15 +114,11 @@ namespace ILCompiler.ObjectWriter
         public void Write(SectionWriter lineSection, byte targetPointerSize, RelocType codeRelocType)
         {
             // Set the address to beginning of section
-            lineSection.Stream.Write([0, (byte)(1u + targetPointerSize), DW_LNE_set_address]);
+            lineSection.Write([0, (byte)(1u + targetPointerSize), DW_LNE_set_address]);
             lineSection.EmitSymbolReference(codeRelocType, _sectionName, 0);
 
-            // TODO: Optimize
-            _writer.Position = 0;
-            _writer.CopyTo(lineSection.Stream);
-
-            // FIXME: Double row?
-            lineSection.Stream.Write([0, 1, DW_LNE_end_sequence]);
+            lineSection.Write(_writer.WrittenSpan);
+            lineSection.Write([0, 1, DW_LNE_end_sequence]);
         }
     }
 }

@@ -69,11 +69,10 @@ namespace ILCompiler.ObjectWriter
             string currentSymbolName)
         {
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
-                nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
+                nodeWithCodeInfo is ISymbolDefinitionNode)
             {
                 bool useFrameNames = UseFrameNames;
                 SectionWriter lsdaSectionWriter;
-                Span<byte> tempBuffer = stackalloc byte[4];
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
                 {
@@ -84,14 +83,13 @@ namespace ILCompiler.ObjectWriter
                     lsdaSectionWriter = _lsdaSectionWriter;
                 }
 
-                long mainLsdaOffset = lsdaSectionWriter.Stream.Position;
+                long mainLsdaOffset = lsdaSectionWriter.Position;
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
                     FrameInfo frameInfo = frameInfos[i];
 
                     int start = frameInfo.StartOffset;
                     int end = frameInfo.EndOffset;
-                    int len = frameInfo.BlobData.Length;
                     byte[] blob = frameInfo.BlobData;
 
                     string lsdaSymbolName = $"_lsda{i}{currentSymbolName}";
@@ -107,14 +105,10 @@ namespace ILCompiler.ObjectWriter
 
                     if (i != 0)
                     {
-                        lsdaSectionWriter.Stream.WriteByte((byte)flags);
-
-                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(mainLsdaOffset - lsdaSectionWriter.Stream.Position));
-                        lsdaSectionWriter.Stream.Write(tempBuffer);
-
+                        lsdaSectionWriter.WriteByte((byte)flags);
+                        lsdaSectionWriter.WriteLittleEndian<int>((int)(mainLsdaOffset - lsdaSectionWriter.Position));
                         // Emit relative offset from the main function
-                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(start - frameInfos[0].StartOffset));
-                        lsdaSectionWriter.Stream.Write(tempBuffer);
+                        lsdaSectionWriter.WriteLittleEndian<uint>((uint)(start - frameInfos[0].StartOffset));
                     }
                     else
                     {
@@ -124,7 +118,7 @@ namespace ILCompiler.ObjectWriter
                         flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                         flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
-                        lsdaSectionWriter.Stream.WriteByte((byte)flags);
+                        lsdaSectionWriter.WriteByte((byte)flags);
 
                         if (associatedDataNode != null)
                         {
@@ -140,7 +134,7 @@ namespace ILCompiler.ObjectWriter
 
                         if (nodeWithCodeInfo.GCInfo != null)
                         {
-                            lsdaSectionWriter.Stream.Write(nodeWithCodeInfo.GCInfo);
+                            lsdaSectionWriter.Write(nodeWithCodeInfo.GCInfo);
                         }
                     }
 

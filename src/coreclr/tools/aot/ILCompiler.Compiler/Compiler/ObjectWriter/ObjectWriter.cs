@@ -32,7 +32,7 @@ namespace ILCompiler.ObjectWriter
 
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
-        private readonly List<ObjectWriterStream> _sectionIndexToStream = new();
+        private readonly List<SectionData> _sectionIndexToData = new();
         private readonly List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
 
         // Symbol table
@@ -60,10 +60,10 @@ namespace ILCompiler.ObjectWriter
         public void Dispose()
         {
             // Close all the streams
-            foreach (ObjectWriterStream sectionStream in _sectionIndexToStream)
+            /*foreach (ObjectWriterStream sectionStream in _sectionIndexToStream)
             {
                 sectionStream.Close();
-            }
+            }*/
         }
 
         protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream);
@@ -87,14 +87,14 @@ namespace ILCompiler.ObjectWriter
         protected SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
         {
             int sectionIndex;
-            ObjectWriterStream sectionStream;
+            SectionData sectionData;
 
             if (comdatName is not null || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
             {
-                sectionStream = new ObjectWriterStream(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
-                sectionIndex = _sectionIndexToStream.Count;
-                CreateSection(section, comdatName, symbolName, sectionStream);
-                _sectionIndexToStream.Add(sectionStream);
+                sectionData = new SectionData(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
+                sectionIndex = _sectionIndexToData.Count;
+                CreateSection(section, comdatName, symbolName, sectionData.GetReadStream());
+                _sectionIndexToData.Add(sectionData);
                 _sectionIndexToRelocations.Add(new());
                 if (comdatName is null)
                 {
@@ -103,13 +103,13 @@ namespace ILCompiler.ObjectWriter
             }
             else
             {
-                sectionStream = _sectionIndexToStream[sectionIndex];
+                sectionData = _sectionIndexToData[sectionIndex];
             }
 
             return new SectionWriter(
                 this,
                 sectionIndex,
-                sectionStream);
+                sectionData);
         }
 
         protected bool ShouldShareSymbol(ObjectNode node)
@@ -414,7 +414,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     blocksToRelocate.Add(new BlockToRelocate(
                         sectionWriter.SectionIndex,
-                        sectionWriter.Stream.Position,
+                        sectionWriter.Position,
                         nodeContents.Data,
                         nodeContents.Relocs));
                 }

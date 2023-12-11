@@ -39,7 +39,7 @@ namespace ILCompiler.ObjectWriter
     internal sealed class CodeViewTypesBuilder : ITypesDebugInfoWriter
     {
         private NameMangler _nameMangler;
-        private Stream _outputStream;
+        private SectionWriter _sectionWriter;
         private int _targetPointerSize;
 
         private uint _classVTableTypeIndex;
@@ -50,10 +50,10 @@ namespace ILCompiler.ObjectWriter
 
         public IList<(string, uint)> UserDefinedTypes => _userDefinedTypes;
 
-        public CodeViewTypesBuilder(NameMangler nameMangler, TargetArchitecture targetArchitecture, Stream outputStream)
+        public CodeViewTypesBuilder(NameMangler nameMangler, TargetArchitecture targetArchitecture, SectionWriter sectionWriter)
         {
             _nameMangler = nameMangler;
-            _outputStream = outputStream;
+            _sectionWriter = sectionWriter;
             _targetPointerSize = targetArchitecture switch
             {
                 TargetArchitecture.ARM => 4,
@@ -64,7 +64,7 @@ namespace ILCompiler.ObjectWriter
             // Write CodeView version header
             Span<byte> versionBuffer = stackalloc byte[sizeof(uint)];
             BinaryPrimitives.WriteUInt32LittleEndian(versionBuffer, 4);
-            _outputStream.Write(versionBuffer);
+            _sectionWriter.Write(versionBuffer);
 
             // We pretend that the MethodTable pointer in System.Object is VTable shape.
             // We use the same "Vtable" for all types because the vtable shape debug
@@ -418,9 +418,9 @@ namespace ILCompiler.ObjectWriter
                 Debug.Assert(length <= ushort.MaxValue);
                 Span<byte> lengthBuffer = stackalloc byte[sizeof(ushort)];
                 BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(length + padding - sizeof(ushort)));
-                _debugTypesBuilder._outputStream.Write(lengthBuffer);
-                _debugTypesBuilder._outputStream.Write(_bufferWriter.WrittenSpan);
-                _debugTypesBuilder._outputStream.Write(stackalloc byte[padding]);
+                _debugTypesBuilder._sectionWriter.Write(lengthBuffer);
+                _debugTypesBuilder._sectionWriter.Write(_bufferWriter.WrittenSpan);
+                _debugTypesBuilder._sectionWriter.Write(stackalloc byte[padding]);
                 _bufferWriter.Clear();
             }
 
@@ -517,11 +517,9 @@ namespace ILCompiler.ObjectWriter
                     // Flush the current record up to _lastListMemberStart and write LF_INDEX to reference it.
                     int length = sizeof(ushort) + _lastListMemberStart;
                     int padding = ((length + 3) & ~3) - length;
-                    Span<byte> lengthBuffer = stackalloc byte[sizeof(ushort)];
-                    BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(length + padding - sizeof(ushort)));
-                    _debugTypesBuilder._outputStream.Write(lengthBuffer);
-                    _debugTypesBuilder._outputStream.Write(_bufferWriter.WrittenSpan.Slice(0, _lastListMemberStart));
-                    _debugTypesBuilder._outputStream.Write(stackalloc byte[padding]);
+                    _debugTypesBuilder._sectionWriter.WriteLittleEndian<ushort>((ushort)(length + padding - sizeof(ushort)));
+                    _debugTypesBuilder._sectionWriter.Write(_bufferWriter.WrittenSpan.Slice(0, _lastListMemberStart));
+                    _debugTypesBuilder._sectionWriter.Write(stackalloc byte[padding]);
                     byte[] overflow = _bufferWriter.WrittenSpan.Slice(_lastListMemberStart).ToArray();
                     _bufferWriter.Clear();
 

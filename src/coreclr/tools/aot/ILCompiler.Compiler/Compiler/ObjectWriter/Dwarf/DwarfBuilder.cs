@@ -122,13 +122,13 @@ namespace ILCompiler.ObjectWriter
         {
             // Length
             byte[] sizeBuffer = new byte[sizeof(uint)];
-            infoSectionWriter.Stream.AppendData(sizeBuffer);
+            infoSectionWriter.EmitData(sizeBuffer);
             // Version
-            infoSectionWriter.Stream.WriteLittleEndian<ushort>((ushort)(_useDwarf5 ? 5u : 4u));
+            infoSectionWriter.WriteLittleEndian<ushort>((ushort)(_useDwarf5 ? 5u : 4u));
             if (_useDwarf5)
             {
                 // Unit type, Address Size
-                infoSectionWriter.Stream.Write([DW_UT_compile, _targetPointerSize]);
+                infoSectionWriter.Write([DW_UT_compile, _targetPointerSize]);
                 // Abbrev offset
                 infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_abbrev", 0);
             }
@@ -137,12 +137,12 @@ namespace ILCompiler.ObjectWriter
                 // Abbrev offset
                 infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_abbrev", 0);
                 // Address Size
-                infoSectionWriter.Stream.Write([_targetPointerSize]);
+                infoSectionWriter.Write([_targetPointerSize]);
             }
 
             using (DwarfInfoWriter dwarfInfoWriter = new(
                 infoSectionWriter,
-                stringSectionWriter.Stream,
+                stringSectionWriter,
                 abbrevSectionWriter,
                 locSectionWriter,
                 rangeSectionWriter,
@@ -199,10 +199,10 @@ namespace ILCompiler.ObjectWriter
             }
 
             // End of compile unit
-            infoSectionWriter.Stream.Write([(byte)0]);
+            infoSectionWriter.WriteByte(0);
 
             // Update the size
-            BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(infoSectionWriter.Stream.Length - sizeof(uint)));
+            BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(infoSectionWriter.Position - sizeof(uint)));
         }
 
         private void WriteLineInfoTable(SectionWriter lineSectionWriter)
@@ -225,13 +225,13 @@ namespace ILCompiler.ObjectWriter
         {
             // Length
             var sizeBuffer = new byte[sizeof(uint)];
-            arangeSectionWriter.Stream.AppendData(sizeBuffer);
+            arangeSectionWriter.EmitData(sizeBuffer);
             // Version
-            arangeSectionWriter.Stream.WriteLittleEndian<ushort>(2);
+            arangeSectionWriter.WriteLittleEndian<ushort>(2);
             // Debug Info Offset
             arangeSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", 0);
             // Address size, Segment selector size
-            arangeSectionWriter.Stream.Write([_targetPointerSize, 0]);
+            arangeSectionWriter.Write([_targetPointerSize, 0]);
             // Ranges have to be aligned
             arangeSectionWriter.EmitAlignment(_targetPointerSize * 2);
             foreach (var sectionInfo in _sections)
@@ -239,14 +239,14 @@ namespace ILCompiler.ObjectWriter
                 arangeSectionWriter.EmitSymbolReference(_codeRelocType, sectionInfo.SectionSymbolName, 0);
                 switch (_targetPointerSize)
                 {
-                    case 8: arangeSectionWriter.Stream.WriteLittleEndian<ulong>(sectionInfo.Size); break;
-                    case 4: arangeSectionWriter.Stream.WriteLittleEndian<uint>((uint)sectionInfo.Size); break;
+                    case 8: arangeSectionWriter.WriteLittleEndian<ulong>(sectionInfo.Size); break;
+                    case 4: arangeSectionWriter.WriteLittleEndian<uint>((uint)sectionInfo.Size); break;
                     default: throw new NotSupportedException();
                 }
             }
-            arangeSectionWriter.Stream.Write(stackalloc byte[_targetPointerSize * 2]);
+            arangeSectionWriter.Write(stackalloc byte[_targetPointerSize * 2]);
             // Update the size
-            BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(arangeSectionWriter.Stream.Length - sizeof(uint)));
+            BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(arangeSectionWriter.Position - sizeof(uint)));
         }
 
         public uint GetPrimitiveTypeIndex(TypeDesc type)
