@@ -24,6 +24,7 @@ namespace ILCompiler.ObjectWriter
         protected readonly NodeFactory _nodeFactory;
         protected readonly ObjectWritingOptions _options;
         private readonly bool _isSingleFileCompilation;
+        private readonly bool _usesSubsectionsViaSymbols;
 
         private readonly Dictionary<ISymbolNode, string> _mangledNameMap = new();
 
@@ -45,6 +46,7 @@ namespace ILCompiler.ObjectWriter
             _nodeFactory = factory;
             _options = options;
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
+            _usesSubsectionsViaSymbols = factory.Target.IsOSXLike;
 
             // Padding byte for code sections (NOP for x86/x64)
             _insPaddingByte = factory.Target.Architecture switch
@@ -112,7 +114,7 @@ namespace ILCompiler.ObjectWriter
 
         protected bool ShouldShareSymbol(ObjectNode node)
         {
-            if (_nodeFactory.Target.IsOSXLike)
+            if (_usesSubsectionsViaSymbols)
                 return false;
 
             return ShouldShareSymbol(node, node.GetSection(_nodeFactory));
@@ -120,7 +122,7 @@ namespace ILCompiler.ObjectWriter
 
         protected bool ShouldShareSymbol(ObjectNode node, ObjectNodeSection section)
         {
-            if (_nodeFactory.Target.IsOSXLike)
+            if (_usesSubsectionsViaSymbols)
                 return false;
 
             // Foldable sections are always COMDATs
@@ -166,7 +168,8 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            if (_definedSymbols.TryGetValue(symbolName, out SymbolDefinition definedSymbol) &&
+            if (!_usesSubsectionsViaSymbols &&
+                _definedSymbols.TryGetValue(symbolName, out SymbolDefinition definedSymbol) &&
                 definedSymbol.SectionIndex == sectionIndex &&
                 relocType is RelocType.IMAGE_REL_BASED_REL32 or RelocType.IMAGE_REL_BASED_RELPTR32 or RelocType.IMAGE_REL_BASED_ARM64_BRANCH26)
             {
@@ -186,7 +189,7 @@ namespace ILCompiler.ObjectWriter
 
                     case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
                         var ins = BinaryPrimitives.ReadUInt32LittleEndian(data) & 0xFC000000;
-                        BinaryPrimitives.WriteUInt32LittleEndian(data, (((uint)(int)(definedSymbol.Value - offset) & 0x3FFFFFF) >> 2) | ins);
+                        BinaryPrimitives.WriteUInt32LittleEndian(data, (((uint)(int)(definedSymbol.Value - offset) >> 2) & 0x3FFFFFF) | ins);
                         break;
                 }
             }
@@ -442,6 +445,7 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
             }
+            blocksToRelocate.Clear();
 
             EmitSectionsAndLayout();
 
