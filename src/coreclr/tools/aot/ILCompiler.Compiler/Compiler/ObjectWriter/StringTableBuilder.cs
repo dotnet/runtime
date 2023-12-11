@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace ILCompiler.ObjectWriter
 {
-    public class StringTableBuilder
+    internal class StringTableBuilder
     {
         private readonly MemoryStream _stream = new();
         private readonly SortedSet<string> _reservedStrings = new(StringComparer.Ordinal);
