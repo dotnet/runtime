@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>export PATH=$HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.16.4-Darwin-x86_64/CMake.app/Contents/bin:$PATH &amp;&amp; </_AOTBuildCommand>
+    <_AOTBuildCommand>export PATH=$HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.28.0-macos-universal/CMake.app/Contents/bin:$PATH &amp;&amp; </_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
