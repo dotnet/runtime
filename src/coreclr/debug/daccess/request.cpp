@@ -3470,6 +3470,42 @@ static HRESULT TraverseLoaderHeapBlock(PTR_LoaderHeapBlock firstBlock, VISITHEAP
     return i < iterationMax ? S_OK : S_FALSE;
 }
 
+static HRESULT TraverseExplicitControlLoaderHeapBlock(PTR_ExplicitControlLoaderHeapBlock firstBlock, VISITHEAP pFunc)
+{
+    // If we are given a bad address, we may end up mis-interpreting random memory
+    // as a loader heap.  We'll do three things to try to avoid this:
+    //  1.  Put a cap on the number of heaps we enumerate at some sensible number.
+    //  2.  If we detect the block is bad, return a failure HRESULT.  Callers of
+    //      this function need to check the return before acting on data given
+    //      by the callback.
+    //  3.  If we hit an exception, we'll return a failing HRESULT as before.
+    const int iterationMax = 8192;
+
+    int i = 0;
+    PTR_ExplicitControlLoaderHeapBlock block = firstBlock;
+
+    while (block != nullptr && i++ < iterationMax)
+    {
+        if (!block.IsValid())
+            return E_POINTER;
+
+        TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
+        size_t size = block->dwVirtualSize;
+
+        BOOL bCurrentBlock = (block == firstBlock);
+        pFunc(addr, size, bCurrentBlock);
+
+        block = block->pNext;
+
+        // Ensure we only see the first block once and that we aren't looping
+        // infinitely.
+        if (block == firstBlock)
+            return E_POINTER;
+    }
+
+    return i < iterationMax ? S_OK : S_FALSE;
+}
+
 HRESULT
 ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFunc)
 {
@@ -3501,7 +3537,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind
             break;
 
         case LoaderHeapKindExplicitControl:
-            hr = TraverseLoaderHeapBlock(PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
+            hr = TraverseExplicitControlLoaderHeapBlock(PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
             break;
 
         default:

@@ -143,6 +143,50 @@ struct LoaderHeapBlock
 #endif
 };
 
+typedef DPTR(struct ExplicitControlLoaderHeapBlock) PTR_ExplicitControlLoaderHeapBlock;
+
+struct ExplicitControlLoaderHeapBlock
+{
+    PTR_ExplicitControlLoaderHeapBlock     pNext;
+    PTR_VOID                               pVirtualAddress;
+    size_t                                 dwVirtualSize;
+    BOOL                                   m_fReleaseMemory;
+
+#ifndef DACCESS_COMPILE
+    // pVirtualMemory  - the start address of the virtual memory
+    // cbVirtualMemory - the length in bytes of the virtual memory
+    // fReleaseMemory  - should LoaderHeap be responsible for releasing this memory
+    void Init(void   *pVirtualMemory,
+              size_t  cbVirtualMemory,
+              BOOL    fReleaseMemory)
+    {
+        LIMITED_METHOD_CONTRACT;
+        this->pNext = NULL;
+        this->pVirtualAddress = pVirtualMemory;
+        this->dwVirtualSize = cbVirtualMemory;
+        this->m_fReleaseMemory = fReleaseMemory;
+    }
+
+    // Just calls ExplicitControlLoaderHeapBlock::Init
+    ExplicitControlLoaderHeapBlock(void   *pVirtualMemory,
+                    size_t  cbVirtualMemory,
+                    BOOL    fReleaseMemory)
+    {
+        WRAPPER_NO_CONTRACT;
+        Init(pVirtualMemory, cbVirtualMemory, fReleaseMemory);
+    }
+
+    ExplicitControlLoaderHeapBlock()
+    {
+        WRAPPER_NO_CONTRACT;
+        Init(NULL, 0, FALSE);
+    }
+#else
+    // No ctors in DAC builds
+    ExplicitControlLoaderHeapBlock() {}
+#endif
+};
+
 struct LoaderHeapFreeBlock;
 
 // Collection of methods for helping in debugging heap corruptions
@@ -450,7 +494,7 @@ class ExplicitControlLoaderHeap
 
 private:
     // Linked list of ClrVirtualAlloc'd pages
-    PTR_LoaderHeapBlock m_pFirstBlock;
+    PTR_ExplicitControlLoaderHeapBlock m_pFirstBlock;
 
     // Allocation pointer in current block
     PTR_BYTE            m_pAllocPtr;
@@ -468,7 +512,7 @@ private:
     // constructor. We do this instead of adding it as the first block because
     // that requires comitting the first page of the reserved block, and for
     // startup working set reasons we want to delay that as long as possible.
-    LoaderHeapBlock      m_reservedBlock;
+    ExplicitControlLoaderHeapBlock      m_reservedBlock;
 
 public:
 

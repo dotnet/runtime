@@ -1080,7 +1080,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
     }
     CONTRACTL_END
 
-    LoaderHeapBlock *pSearch, *pNext;
+    ExplicitControlLoaderHeapBlock *pSearch, *pNext;
 
     for (pSearch = m_pFirstBlock; pSearch; pSearch = pNext)
     {
@@ -1406,7 +1406,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
-    NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+    NewHolder<ExplicitControlLoaderHeapBlock> pNewBlock = new (nothrow) ExplicitControlLoaderHeapBlock;
     if (pNewBlock == NULL)
     {
         return FALSE;
@@ -2198,15 +2198,15 @@ void ExplicitControlLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
 
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
+    PTR_ExplicitControlLoaderHeapBlock block = m_pFirstBlock;
     while (block.IsValid())
     {
         // All we know is the virtual size of this block.  We don't have any way to tell how
         // much of this space was actually comitted, so don't expect that this will always
         // succeed.
         // @dbgtodo : Ideally we'd reduce the risk of corruption causing problems here.
-        //   We could extend LoaderHeapBlock to track a commit size,
-        //   but it seems wasteful (eg. makes each AppDomain objects 32 bytes larger on x64).
+        //   We could extend ExplicitControlLoaderHeapBlock to track a commit size,
+        //   but it seems wasteful
         TADDR addr = dac_cast<TADDR>(block->pVirtualAddress);
         TSIZE_T size = block->dwVirtualSize;
         EMEM_OUT(("MEM: UnlockedLoaderHeap %p - %p\n", addr, addr + size));
@@ -2239,7 +2239,7 @@ void ExplicitControlLoaderHeap::EnumPageRegions (EnumPageRegionsCallback *pCallb
 {
     WRAPPER_NO_CONTRACT;
 
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
+    PTR_ExplicitControlLoaderHeapBlock block = m_pFirstBlock;
     while (block)
     {
         if ((*pCallback)(pvArgs, block->pVirtualAddress, block->dwVirtualSize))
