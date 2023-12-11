@@ -5433,7 +5433,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 // Uncomment "#define ALL_ARM64_EMITTER_UNIT_TESTS" and one or more of the categories to run all the unit tests here.
 // After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
-// #define ALL_ARM64_EMITTER_UNIT_TESTS
+#define ALL_ARM64_EMITTER_UNIT_TESTS
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
