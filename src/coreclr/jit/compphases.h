@@ -64,6 +64,7 @@ CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE2,           "Post-morph head and tail m
 CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,              "Optimize control flow",          false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,            "Optimize layout",                false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_REACHABILITY,       "Compute blocks reachability",    false, -1, false)
+CompPhaseNameMacro(PHASE_CANONICALIZE_ENTRY,         "Canonicalize entry",             false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_WEIGHTS,          "Set block weights",              false, -1, false)
 CompPhaseNameMacro(PHASE_ZERO_INITS,                 "Redundant zero Inits",           false, -1, false)
 CompPhaseNameMacro(PHASE_FIND_LOOPS,                 "Find loops",                     false, -1, false)
