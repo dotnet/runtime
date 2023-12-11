@@ -287,7 +287,6 @@ public:
 #endif
 
 public:
-    BOOL                m_fExplicitControl;  // Am I a LoaderHeap or an ExplicitControlLoaderHeap?
     void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
 #ifdef DACCESS_COMPILE
@@ -447,6 +446,165 @@ public:
     void UnlockedCompactEvents();   //Discard matching alloc/free events
     void UnlockedPrintEvents();     //Print event list
 #endif
+};
+
+//===============================================================================
+// This is the base class for LoaderHeap and ExplicitControlLoaderHeap. Unfortunately,
+// this class has become schizophrenic. Sometimes, it's used as a simple
+// allocator that's semantically (but not perfwise!) equivalent to a blackbox
+// alloc/free heap. Othertimes, it's used by callers who are actually aware
+// of how it reserves addresses and want direct control over the range over which
+// this thing allocates. These two types of allocations are handed out
+// from two independent pools inside the heap.
+//
+// The backout strategy we use for the simple heap probably isn't
+// directly applicable to the more advanced uses.
+//
+// We don't have time to refactor this so as a second-best measure,
+// we make most of UnlockedLoaderHeap's methods protected and force everyone
+// to use it them through two public derived classes that are mutual siblings.
+//
+// The LoaderHeap is the black-box heap and has a Backout() method but none
+// of the advanced features that let you control address ranges.
+//
+// The ExplicitControlLoaderHeap exposes all the advanced features but
+// has no Backout() feature. (If someone wants a backout feature, they need
+// to design an appropriate one into this class.)
+//===============================================================================
+class UnlockedExplicitControlLoaderHeap
+{
+#ifdef _DEBUG
+    friend class LoaderHeapSniffer;
+    friend struct LoaderHeapFreeBlock;
+#endif
+
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
+
+private:
+    // Linked list of ClrVirtualAlloc'd pages
+    PTR_LoaderHeapBlock m_pFirstBlock;
+
+    // Allocation pointer in current block
+    PTR_BYTE            m_pAllocPtr;
+
+    // Points to the end of the committed region in the current block
+    PTR_BYTE            m_pPtrToEndOfCommittedRegion;
+    PTR_BYTE            m_pEndReservedRegion;
+
+    size_t              m_dwTotalAlloc;
+
+    // When we need to commit pages from our reserved list, number of bytes to commit at a time
+    DWORD               m_dwCommitBlockSize;
+
+    // This is used to hold on to a block of reserved memory provided to the
+    // constructor. We do this instead of adding it as the first block because
+    // that requires comitting the first page of the reserved block, and for
+    // startup working set reasons we want to delay that as long as possible.
+    LoaderHeapBlock      m_reservedBlock;
+
+public:
+
+#ifdef _DEBUG
+    size_t              m_dwDebugWastedBytes;
+    static DWORD        s_dwNumInstancesOfLoaderHeaps;
+#endif
+
+#ifdef _DEBUG
+    size_t DebugGetWastedBytes()
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
+    }
+#endif
+
+#ifdef DACCESS_COMPILE
+public:
+    void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
+#endif
+
+public:
+    typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
+    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
+
+#ifndef DACCESS_COMPILE
+protected:
+    UnlockedExplicitControlLoaderHeap();
+
+    ~UnlockedExplicitControlLoaderHeap();
+#endif
+
+private:
+    size_t GetBytesAvailCommittedRegion();
+    size_t GetBytesAvailReservedRegion();
+
+protected:
+    // number of bytes available in region
+    size_t UnlockedGetReservedBytesFree()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pEndReservedRegion - m_pAllocPtr;
+    }
+
+    PTR_BYTE UnlockedGetAllocPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAllocPtr;
+    }
+
+private:
+    // Get some more committed pages - either commit some more in the current reserved region, or, if it
+    // has run out, reserve another set of pages
+    BOOL GetMoreCommittedPages(size_t dwMinSize);
+
+    // Commit memory pages starting at the specified adress
+    BOOL CommitPages(void* pData, size_t dwSizeToCommitPart);
+
+protected:
+    // Reserve some pages at any address
+    BOOL UnlockedReservePages(size_t dwCommitBlockSize);
+
+protected:
+    // In debug mode, allocate an extra LOADER_HEAP_DEBUG_BOUNDARY bytes and fill it with invalid data.  The reason we
+    // do this is that when we're allocating vtables out of the heap, it is very easy for code to
+    // get careless, and end up reading from memory that it doesn't own - but since it will be
+    // reading some other allocation's vtable, no crash will occur.  By keeping a gap between
+    // allocations, it is more likely that these errors will be encountered.
+    void *UnlockedAllocMem(size_t dwSize
+#ifdef _DEBUG
+                          ,_In_ _In_z_ const char *szFile
+                          ,int  lineNum
+#endif
+                          );
+    void *UnlockedAllocMem_NoThrow(size_t dwSize
+#ifdef _DEBUG
+                                   ,_In_ _In_z_ const char *szFile
+                                   ,int  lineNum
+#endif
+                                   );
+public:
+    // Perf Counter reports the size of the heap
+    size_t GetSize ()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_dwTotalAlloc;
+    }
+
+    size_t AllocMem_TotalSize(size_t dwRequestedSize);
+
+public:
+#ifdef _DEBUG
+    void DumpFreeList();
+#endif
+
+public:
+// Extra CallTracing support
+#ifdef _DEBUG
+    void UnlockedClearEvents();     //Discard saved events
+    void UnlockedCompactEvents();   //Discard matching alloc/free events
+    void UnlockedPrintEvents();     //Print event list
+#endif
 
 protected:
     void *UnlockedAllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
@@ -492,7 +650,6 @@ public:
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
-        m_fExplicitControl = FALSE;
     }
 
 public:
@@ -516,7 +673,6 @@ public:
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
-        m_fExplicitControl = FALSE;
     }
 
 #endif // DACCESS_COMPILE
@@ -808,65 +964,16 @@ public:
 // not multithread safe.
 //===============================================================================
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
-class ExplicitControlLoaderHeap : public UnlockedLoaderHeap
+class ExplicitControlLoaderHeap : public UnlockedExplicitControlLoaderHeap
 {
 #ifndef DACCESS_COMPILE
 public:
-    ExplicitControlLoaderHeap(RangeList *pRangeList = NULL,
-                              BOOL fMakeExecutable = FALSE
-               )
-      : UnlockedLoaderHeap(0, 0, NULL, 0,
-                           pRangeList,
-                           fMakeExecutable ? UnlockedLoaderHeap::HeapKind::Executable : UnlockedLoaderHeap::HeapKind::Data)
+    ExplicitControlLoaderHeap()
+      : UnlockedExplicitControlLoaderHeap()
     {
         WRAPPER_NO_CONTRACT;
-        m_fExplicitControl = TRUE;
     }
 #endif // DACCESS_COMPILE
-
-public:
-    void *RealAllocMem(size_t dwSize
-#ifdef _DEBUG
-                       ,_In_ _In_z_ const char *szFile
-                       ,int  lineNum
-#endif
-                       )
-    {
-        WRAPPER_NO_CONTRACT;
-
-        void *pResult;
-
-        pResult = UnlockedAllocMem(dwSize
-#ifdef _DEBUG
-                                   , szFile
-                                   , lineNum
-#endif
-                                   );
-        return pResult;
-    }
-
-    void *RealAllocMem_NoThrow(size_t dwSize
-#ifdef _DEBUG
-                               ,_In_ _In_z_ const char *szFile
-                               ,int  lineNum
-#endif
-                               )
-    {
-        WRAPPER_NO_CONTRACT;
-
-        void *pResult;
-
-        pResult = UnlockedAllocMem_NoThrow(dwSize
-#ifdef _DEBUG
-                                           , szFile
-                                           , lineNum
-#endif
-                                           );
-        return pResult;
-    }
-
-
-public:
     void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs)
     {
         WRAPPER_NO_CONTRACT;
