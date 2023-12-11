@@ -108,7 +108,7 @@ public class ILStripTests : BuildTestBase
 
             if (!singleFileBundle)
             {
-                // original == included assembly
+                // included == stripped assembly
                 Assert.True(compressedincludedAssembly_fi!.Length == compressedStrippedAssembly_fi.Length,
                             $"Expected included assembly ({compressedIncludedAssembly}) size ({compressedincludedAssembly_fi.Length}) " +
                             $"to be the same as the stripped assembly ({compressedStrippedAssembly}) size ({compressedStrippedAssembly_fi.Length})");
