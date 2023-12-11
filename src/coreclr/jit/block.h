@@ -529,7 +529,7 @@ private:
         unsigned    bbTargetOffs; // PC offset (temporary only)
         BasicBlock* bbTarget;     // basic block
         BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
-        BBswtDesc*  bbSwtTarget;  // switch descriptor
+        BBswtDesc*  bbSwtTargets;  // switch descriptor
         BBehfDesc*  bbEhfTarget;  // BBJ_EHFINALLYRET descriptor
     };
 
@@ -746,15 +746,15 @@ public:
     BBswtDesc* GetSwitchTargets() const
     {
         assert(KindIs(BBJ_SWITCH));
-        assert(bbSwtTarget != nullptr);
-        return bbSwtTarget;
+        assert(bbSwtTargets != nullptr);
+        return bbSwtTargets;
     }
 
     void SetSwitch(BBswtDesc* swtTarget)
     {
         assert(swtTarget != nullptr);
         bbKind      = BBJ_SWITCH;
-        bbSwtTarget = swtTarget;
+        bbSwtTargets = swtTarget;
     }
 
     BBehfDesc* GetEhfTargets() const
@@ -1073,7 +1073,7 @@ public:
     BBSwitchTargetList SwitchTargets() const
     {
         assert(bbKind == BBJ_SWITCH);
-        return BBSwitchTargetList(bbSwtTarget);
+        return BBSwitchTargetList(bbSwtTargets);
     }
 
     // EHFinallyRetSuccs: convenience method for enabling range-based `for` iteration over BBJ_EHFINALLYRET block
@@ -1959,10 +1959,10 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->bbSwtTarget != nullptr);
-            assert(block->bbSwtTarget->bbsDstTab != nullptr);
-            m_begin = block->bbSwtTarget->bbsDstTab;
-            m_end   = block->bbSwtTarget->bbsDstTab + block->bbSwtTarget->bbsCount;
+            assert(block->bbSwtTargets != nullptr);
+            assert(block->bbSwtTargets->bbsDstTab != nullptr);
+            m_begin = block->bbSwtTargets->bbsDstTab;
+            m_end   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
             break;
 
         default:
