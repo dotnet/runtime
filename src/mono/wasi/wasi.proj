@@ -230,16 +230,16 @@
 
     <ItemGroup>
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\runtime.c"   DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\pinvoke.c"   DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/driver.c"            DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/main.c"              DestinationFolder="$(NativeBinDir)src" />
-      <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/pinvoke.c"           DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/stubs.c"             DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/synthetic-pthread.c" DestinationFolder="$(NativeBinDir)src" />
 
       <_FilesToCopy Include="$(MonoProjectRoot)wasi\mono-include\driver.h"           DestinationFolder="$(NativeBinDir)include\wasm" />
-      <_FilesToCopy Include="$(MonoProjectRoot)wasi\mono-include\pinvoke.h"          DestinationFolder="$(NativeBinDir)include\wasm" />
       <_FilesToCopy Include="$(MonoProjectRoot)wasm\runtime\gc-common.h"             DestinationFolder="$(NativeBinDir)include\wasm" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\runtime.h"   DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\pinvoke.h"   DestinationFolder="$(NativeBinDir)include\wasm" />
     </ItemGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"

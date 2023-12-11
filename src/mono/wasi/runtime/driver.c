@@ -29,18 +29,9 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
-#include "pinvoke.h"
-
 #include "gc-common.h"
 #include "driver.h"
 #include "runtime.h"
-
-#if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
-#ifndef LINK_ICALLS
-// FIXME: llvm+interp mode needs this to call icalls
-#define NEED_NORMAL_ICALL_TABLES 1
-#endif
-#endif
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
