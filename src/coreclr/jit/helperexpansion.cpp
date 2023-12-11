@@ -289,7 +289,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->Next(), true);
 
     assert(fallbackBb->JumpsToNext());
-    fallbackBb->bbFlags |= BBF_NONE_QUIRK;
+    fallbackBb->SetFlags(BBF_NONE_QUIRK);
 
     // Set nullcheckBb's real jump target
     nullcheckBb->SetJumpDest(fallbackBb);
@@ -1097,7 +1097,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // that only accepts a single argument
     BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->Next(), true);
     assert(helperCallBb->JumpsToNext());
-    helperCallBb->bbFlags |= BBF_NONE_QUIRK;
+    helperCallBb->SetFlags(BBF_NONE_QUIRK);
 
     GenTree* replacementNode = nullptr;
     if (retValKind == SHRV_STATIC_BASE_PTR)
@@ -1166,7 +1166,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // prevBb always flows into isInitedBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
     prevBb->SetJumpDest(isInitedBb);
-    prevBb->bbFlags |= BBF_NONE_QUIRK;
+    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
     fgAddRefPred(isInitedBb, prevBb);
 
@@ -1429,7 +1429,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
     BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true, block);
-    lengthCheckBb->bbFlags |= BBF_INTERNAL;
+    lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
     GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
@@ -1452,7 +1452,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->Next());
     assert(fastpathBb->JumpsToNext());
-    fastpathBb->bbFlags |= (BBF_INTERNAL | BBF_NONE_QUIRK);
+    fastpathBb->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 
     // The widest type we can use for loads
     const var_types maxLoadType = roundDownMaxType(srcLenU8);
@@ -1509,7 +1509,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // prevBb flows into lengthCheckBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
     prevBb->SetJumpDest(lengthCheckBb);
-    prevBb->bbFlags |= BBF_NONE_QUIRK;
+    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
     fgAddRefPred(lengthCheckBb, prevBb);
     // lengthCheckBb has two successors: block and fastpathBb

@@ -39,7 +39,7 @@ namespace System.Net.Mail
 
         internal void ParseValue(string addresses)
         {
-            IList<MailAddress> result = MailAddressParser.ParseMultipleAddresses(addresses);
+            List<MailAddress> result = MailAddressParser.ParseMultipleAddresses(addresses);
 
             for (int i = 0; i < result.Count; i++)
             {

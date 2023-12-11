@@ -68,7 +68,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                              ssize_t*          cns          = nullptr)
 {
     // NOTE: caller is expected to check that a block has multiple statements or not
-    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
+    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && !block->HasFlag(BBF_DONT_REMOVE))
     {
         const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));
@@ -79,9 +79,9 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
             GenTree* op1 = rootNode->gtGetOp1()->gtGetOp1();
             GenTree* op2 = rootNode->gtGetOp1()->gtGetOp2();
 
-            if (!varTypeIsIntegral(op1) || !varTypeIsIntegral(op2))
+            if (!varTypeIsIntOrI(op1) || !varTypeIsIntOrI(op2))
             {
-                // Only integral types are supported
+                // Only TYP_INT and TYP_LONG are supported
                 return false;
             }
 
@@ -253,6 +253,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
 bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest)
 {
     assert(firstBlock->KindIs(BBJ_COND));
+    assert(!varTypeIsSmall(nodeToTest));
 
     if (testsCount < SWITCH_MIN_TESTS)
     {

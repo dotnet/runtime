@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
                 // Use a pseudo-handle if available.
                 if (Interop.BCrypt.PseudoHandlesSupported)
                 {
-                    HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac : false, destination, out hashSize);
+                    HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac: false, destination, out hashSize);
                     return hashSize;
                 }
                 else
