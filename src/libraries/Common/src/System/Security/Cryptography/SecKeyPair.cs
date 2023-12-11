@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Apple;
+using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography
 {
@@ -9,6 +10,7 @@ namespace System.Security.Cryptography
     {
         internal SafeSecKeyRefHandle PublicKey { get; private set; }
         internal SafeSecKeyRefHandle? PrivateKey { get; private set; }
+        private SafeSecCertificateHandle? OwningCertificate { get; set; }
 
         private SecKeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle? privateKey)
         {
@@ -22,6 +24,9 @@ namespace System.Security.Cryptography
             PrivateKey = null;
             PublicKey?.Dispose();
             PublicKey = null!;
+            OwningCertificate?.Dispose();
+            OwningCertificate = null;
+
         }
 
         internal static SecKeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
@@ -32,6 +37,19 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(privateKey));
 
             return new SecKeyPair(publicKey, privateKey);
+        }
+
+        internal static SecKeyPair PublicPrivatePair(
+            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyRefHandle privateKey,
+            SafeSecCertificateHandle owningCertificate)
+        {
+            if (owningCertificate is null || owningCertificate.IsInvalid)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(owningCertificate));
+
+            SecKeyPair pair = PublicPrivatePair(publicKey, privateKey);
+            pair.OwningCertificate = owningCertificate;
+            return pair;
         }
 
         internal static SecKeyPair PublicOnly(SafeSecKeyRefHandle publicKey)

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Security.Cryptography.Apple;
+using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography
 {
@@ -25,6 +26,14 @@ namespace System.Security.Cryptography
             internal ECDiffieHellmanSecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
+            }
+
+            internal ECDiffieHellmanSecurityTransforms(
+                SafeSecKeyRefHandle publicKey,
+                SafeSecKeyRefHandle privateKey,
+                SafeSecCertificateHandle owningCertificate)
+            {
+                KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey, owningCertificate));
             }
 
             // Return the three sizes that can be explicitly set (for backwards compatibility)

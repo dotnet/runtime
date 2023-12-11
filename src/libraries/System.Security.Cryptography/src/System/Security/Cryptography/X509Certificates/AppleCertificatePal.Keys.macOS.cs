@@ -19,6 +19,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (_identityHandle == null)
                 return null;
 
+            bool ignored = false;
+            _certHandle.DangerousAddRef(ref ignored);
+
             Debug.Assert(!_identityHandle.IsInvalid);
             SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
             SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
@@ -29,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
                 publicKey = Interop.AppleCrypto.ImportEphemeralKey(_certData.SubjectPublicKeyInfo, false);
             }
 
-            return new DSAImplementation.DSASecurityTransforms(publicKey, privateKey);
+            return new DSAImplementation.DSASecurityTransforms(publicKey, privateKey, _certHandle);
         }
 
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)

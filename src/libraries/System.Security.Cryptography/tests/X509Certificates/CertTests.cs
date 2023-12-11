@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Dsa.Tests;
+using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
@@ -23,6 +25,132 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public CertTests(ITestOutputHelper output)
         {
             _log = output;
+        }
+
+        [Fact]
+        public static void PublicPrivateKey_IndependentLifetimes_ECDsa()
+        {
+            X509Certificate2 loaded;
+
+            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                {
+                    loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                }
+            }
+
+            using (ECDsa verifyKey = loaded.GetECDsaPublicKey())
+            {
+                byte[] signature;
+                byte[] data = RandomNumberGenerator.GetBytes(32);
+
+                using (ECDsa signingKey = loaded.GetECDsaPrivateKey())
+                {
+                    loaded.Dispose();
+                    signature = signingKey.SignHash(data);
+                }
+
+                Assert.True(verifyKey.VerifyHash(data, signature), nameof(verifyKey.VerifyHash));
+            }
+        }
+
+        [Fact]
+        public static void PublicPrivateKey_IndependentLifetimes_ECDiffieHellman()
+        {
+            X509Certificate2 loaded;
+
+            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                {
+                    loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                }
+            }
+
+            using (ECDiffieHellman partyB = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+            using (ECDiffieHellman partyAPrivateKey = loaded.GetECDiffieHellmanPrivateKey())
+            using (ECDiffieHellman partyAPublicKey = loaded.GetECDiffieHellmanPublicKey())
+            {
+                loaded.Dispose();
+                byte[] derivedB = partyB.DeriveKeyFromHash(partyAPublicKey.PublicKey, HashAlgorithmName.SHA256, null, null);
+                byte[] derivedA = partyAPrivateKey.DeriveKeyFromHash(partyB.PublicKey, HashAlgorithmName.SHA256, null, null);
+                Assert.Equal(derivedB, derivedA);
+
+            }
+        }
+
+        [Fact]
+        public static void PublicPrivateKey_IndependentLifetimes_RSA()
+        {
+            X509Certificate2 loaded;
+
+            using (RSA ca = RSA.Create(2048))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                {
+                    loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                }
+            }
+
+            using (RSA verifyKey = loaded.GetRSAPublicKey())
+            {
+                byte[] signature;
+                byte[] data = RandomNumberGenerator.GetBytes(32);
+
+                using (RSA signingKey = loaded.GetRSAPrivateKey())
+                {
+                    loaded.Dispose();
+                    signature = signingKey.SignHash(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                }
+
+                Assert.True(verifyKey.VerifyHash(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1), nameof(verifyKey.VerifyHash));
+            }
+        }
+
+        [Fact]
+        public static void PublicPrivateKey_IndependentLifetimes_DSA()
+        {
+            X509Certificate2 loaded;
+
+            using (DSA ca = DSA.Create())
+            {
+                ca.ImportParameters(DSATestData.GetDSA1024Params());
+                DSAX509SignatureGenerator gen = new DSAX509SignatureGenerator(ca);
+                X500DistinguishedName dn = new X500DistinguishedName("CN=potatos");
+
+                CertificateRequest req = new CertificateRequest(
+                    dn,
+                    gen.PublicKey,
+                    HashAlgorithmName.SHA1);
+
+                using (X509Certificate2 cert = req.Create(dn, gen, DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3), new byte[] { 1, 2, 3 }))
+                using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(ca))
+                {
+
+                    loaded = new X509Certificate2(certWithKey.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                }
+            }
+
+            using (DSA verifyKey = loaded.GetDSAPublicKey())
+            {
+                byte[] signature;
+                byte[] data = RandomNumberGenerator.GetBytes(20);
+
+                using (DSA signingKey = loaded.GetDSAPrivateKey())
+                {
+                    loaded.Dispose();
+                    signature = signingKey.CreateSignature(data);
+                }
+
+                Assert.True(verifyKey.VerifySignature(data, signature), nameof(verifyKey.VerifySignature));
+            }
         }
 
         [Fact]

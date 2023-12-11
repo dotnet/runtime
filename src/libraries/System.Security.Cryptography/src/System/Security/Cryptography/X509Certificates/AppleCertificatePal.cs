@@ -327,12 +327,15 @@ namespace System.Security.Cryptography.X509Certificates
             if (_identityHandle == null)
                 return null;
 
+            bool ignored = false;
+            _certHandle.DangerousAddRef(ref ignored);
+
             Debug.Assert(!_identityHandle.IsInvalid);
             SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
             SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
-            return new RSAImplementation.RSASecurityTransforms(publicKey, privateKey);
+            return new RSAImplementation.RSASecurityTransforms(publicKey, privateKey, _certHandle);
         }
 
         public ECDsa? GetECDsaPrivateKey()
@@ -340,12 +343,15 @@ namespace System.Security.Cryptography.X509Certificates
             if (_identityHandle == null)
                 return null;
 
+            bool ignored = false;
+            _certHandle.DangerousAddRef(ref ignored);
+
             Debug.Assert(!_identityHandle.IsInvalid);
             SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
             SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
-            return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
+            return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey, _certHandle);
         }
 
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
@@ -353,12 +359,15 @@ namespace System.Security.Cryptography.X509Certificates
             if (_identityHandle == null)
                 return null;
 
+            bool ignored = false;
+            _certHandle.DangerousAddRef(ref ignored);
+
             Debug.Assert(!_identityHandle.IsInvalid);
             SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
             SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
-            return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey);
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey, _certHandle);
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)

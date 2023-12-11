@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -36,6 +37,14 @@ namespace System.Security.Cryptography
             internal RSASecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
             {
                 SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
+            }
+
+            internal RSASecurityTransforms(
+                SafeSecKeyRefHandle publicKey,
+                SafeSecKeyRefHandle privateKey,
+                SafeSecCertificateHandle owningCertificate)
+            {
+                SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey, owningCertificate));
             }
 
             public override KeySizes[] LegalKeySizes
