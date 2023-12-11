@@ -4483,7 +4483,7 @@ private:
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
     // TEMP BEG
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspension_end_time;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_end_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t h0_gc_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
     // TEMP END
