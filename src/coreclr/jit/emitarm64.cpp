@@ -1152,7 +1152,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-            elemsize = id->idOpSize();
             assert(isVectorRegister(id->idReg1())); // nnnn
             assert(isVectorRegister(id->idReg2())); // ddddd
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
@@ -1176,7 +1175,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
-            elemsize = id->idOpSize();
             assert(insOptsScalableSimple(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // nnnnn
             assert(isVectorRegister(id->idReg2())); // ddddd
