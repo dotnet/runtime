@@ -9,8 +9,8 @@ public enum MyError: Error {
 
 var errorMessage: NSString = ""
 
-public func setMyErrorMessage(message: UnsafePointer<unichar>, length: Int) {
-    errorMessage = NSString(characters: message, length: length)
+public func setMyErrorMessage(message: UnsafePointer<unichar>, length: Int32) {
+    errorMessage = NSString(characters: message, length: Int(length))
 }
 
 public func conditionallyThrowError(willThrow: Bool) throws -> Int {

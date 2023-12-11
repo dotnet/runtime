@@ -12,7 +12,7 @@ public class ErrorHandlingTests
 {
     private const string SwiftLib = "libSwiftErrorHandling.dylib";
 
-    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message7message6lengthySPys6UInt16VG_SitF", CharSet = CharSet.Unicode)]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message7message6lengthySPys6UInt16VG_s5Int32VtF", CharSet = CharSet.Unicode)]
     public static extern void SetErrorMessage(string message, int length);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
