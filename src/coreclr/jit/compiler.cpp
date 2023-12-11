@@ -5010,6 +5010,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 break;
             }
+
+            // We may have optimized away the canonical entry BB that SSA
+            // depends on above, so if we are going for another iteration then
+            // make sure we still have a canonical entry.
+            //
+            DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
+
             ResetOptAnnotations();
             RecomputeLoopInfo();
         }
