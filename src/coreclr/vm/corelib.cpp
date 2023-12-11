@@ -13,7 +13,6 @@
 // Headers for all ECall entrypoints
 //
 #include "arraynative.h"
-#include "stringnative.h"
 #include "objectnative.h"
 #include "comdelegate.h"
 #include "customattribute.h"
@@ -45,7 +44,6 @@
 #include "typestring.h"
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"
-#include "varargsnative.h"
 #include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP

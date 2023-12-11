@@ -619,6 +619,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BOUNDS_CHECK:
         {
             GenTreeBoundsChk* node = tree->AsBoundsChk();
+            if (genActualType(node->GetIndex()->TypeGet()) == TYP_INT)
+            {
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
             srcCount = BuildOperandUses(node->GetIndex());
@@ -1388,6 +1393,12 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     buildInternalRegisterUses();
     int srcCount = BuildOperandUses(cast->CastOp());
     BuildDef(cast);
+
+    if (varTypeIsFloating(cast->gtOp1) && !varTypeIsFloating(cast->TypeGet()))
+    {
+        buildInternalIntRegisterDefForNode(cast);
+        buildInternalRegisterUses();
+    }
 
     return srcCount;
 }

@@ -506,7 +506,7 @@ namespace Internal.Reflection.Execution
             KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
             if (ldFtnReverseLookup == null)
             {
-                var ldFtnReverseLookupBuilder = new ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>();
+                var ldFtnReverseLookupBuilder = default(ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>);
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 {
                     ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookup_InvokeMap(module)));
@@ -594,7 +594,7 @@ namespace Internal.Reflection.Execution
 
         private static FunctionPointersToOffsets ComputeLdftnReverseLookup_InvokeMap(NativeFormatModuleInfo mappingTableModule)
         {
-            FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = new FunctionPointersToOffsets();
+            FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = default;
 
             NativeReader invokeMapReader;
             if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.InvokeMap, out invokeMapReader))

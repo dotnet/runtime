@@ -4,7 +4,7 @@
 //
 
 //
-// File which contains a bunch of of array related things.
+// File which contains a bunch of array related things.
 //
 
 #include "common.h"
