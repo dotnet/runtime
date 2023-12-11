@@ -54,7 +54,7 @@ namespace ILCompiler.ObjectWriter
             {
                 var text = reservedStrings[i];
                 uint index;
-                if (lastText != null && lastText.EndsWith(text, StringComparison.Ordinal))
+                if (lastText is not null && lastText.EndsWith(text, StringComparison.Ordinal))
                 {
                     // Suffix matches the last symbol
                     index = (uint)(_stream.Length - Encoding.UTF8.GetByteCount(text) - 1);
