@@ -25303,7 +25303,7 @@ int gc_heap::calculate_new_heap_count ()
     }
 
     // If changing the heap count takes very little time, we should feel free to change it more precisely and frequently.
-    // Instead of 20% we could make this a proportional value.
+    // Instead of 50% we could make this a proportional value.
     bool precise_count_change_p = false;
     float change_pause_percent = (float)change_heap_count_time / (float)min_pause;
     dprintf (6666, ("last heap change took %I64d / min gc pause is %I64d = %d%%", change_heap_count_time, min_pause, (int)(change_pause_percent * 100.0)));
