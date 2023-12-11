@@ -14712,8 +14712,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R_4_to_0(id->idReg1()); // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2()); // MMMM
+            code |= insEncodeReg_R_4_to_0(id->idReg1());  // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());  // MMMM
             code |= insEncodeVLSElemsize(id->idOpSize()); // X
             code |= insEncodeSveElemsize(id->idInsOpt()); // xx
             dst += emitOutput_Instr(dst, code);
