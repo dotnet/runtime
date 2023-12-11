@@ -42,6 +42,7 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb1 = module.DefineType("Type1", TypeAttributes.Public | TypeAttributes.SequentialLayout, typeof(object), PackingSize.Size2, 16);
                 tb1.AddInterfaceImplementation(iface1);
                 tb1.AddInterfaceImplementation(typeof(IComparable));
+                tb1.DefineMethod("CompareTo", MethodAttributes.Public, CallingConventions.Standard | CallingConventions.HasThis, typeof(int), [typeof(object)]);
                 tb1.SetCustomAttribute(cattrb);
                 tb1.CreateType();
 

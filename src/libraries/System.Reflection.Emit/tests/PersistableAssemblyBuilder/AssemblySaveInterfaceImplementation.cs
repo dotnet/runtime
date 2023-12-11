@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Xml.Linq;
 using Xunit;
 
@@ -295,12 +296,42 @@ namespace System.Reflection.Emit.Tests
             AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
 
-            Assert.Throws<NotSupportedException>(() => type.GetInterfaceMap(typeof(Impl)));
+            Assert.Throws<NotSupportedException>(() => type.GetInterfaceMap(typeof(Impl))); // type not created
+            type.DefineMethod("M", MethodAttributes.Public, typeof(int), null);
             type.CreateType();
 
             Assert.Throws<ArgumentNullException>(() => type.GetInterfaceMap(null));
-            Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(Impl)));
-            Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(InterfaceWithMethod)));
+            Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(Impl))); // not interface
+            Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(InterfaceWithMethod))); // not implemented
+        }
+
+        public interface InterfaceDerivedFromOtherInterface : DefineMethodOverrideInterface
+        {
+            public string M2(int a);
+        }
+
+        public abstract class PartialImplementation : InterfaceDerivedFromOtherInterface
+        {
+            public int M() => 1;
+            public abstract string M2(int a);
+        }
+
+        [Fact]
+        public void CreateType_InterfaceMethodNotImplemented()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+            TypeBuilder partiallyImplementedType = module.DefineType("Type2", TypeAttributes.Public);
+            partiallyImplementedType.AddInterfaceImplementation(typeof(InterfaceDerivedFromOtherInterface));
+            partiallyImplementedType.DefineMethod("M2", MethodAttributes.Public, typeof(string), [typeof(int)]);
+            TypeBuilder baseTypeImplementedTheInterfaceMethod = module.DefineType("Type3", TypeAttributes.Public, parent: typeof(DefineMethodOverrideClass));
+            TypeBuilder baseTypePartiallyImplemented = module.DefineType("Type4", TypeAttributes.Public, parent: typeof(PartialImplementation));
+
+            Assert.Throws<TypeLoadException>(() => type.CreateType());
+            Assert.Throws<TypeLoadException>(() => partiallyImplementedType.CreateType());
+            baseTypeImplementedTheInterfaceMethod.CreateType(); // succeeds
+            Assert.Throws<TypeLoadException>(() => baseTypePartiallyImplemented.CreateType());
         }
     }
 }

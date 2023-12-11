@@ -101,9 +101,93 @@ namespace System.Reflection.Emit
             }
 
             _module.PopulateTypeAndItsMembersTokens(this);
-
             _isCreated = true;
+
+            if (!IsAbstract)
+            {
+                CheckAllAbstractMethodsImplemented();
+            }
+
             return this;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
+        private void CheckAllAbstractMethodsImplemented()
+        {
+            if (_interfaces != null)
+            {
+                CheckInterfaces(_interfaces.ToArray());
+            }
+
+            if (_typeParent != null && _typeParent.IsAbstract)
+            {
+                foreach (MethodInfo method in _typeParent.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    if (method.IsAbstract)
+                    {
+                        MethodInfo? targetMethod = GetMethodImpl(method.Name, GetBindingFlags(method), null, method.CallingConvention, GetParameterTypes(method.GetParameters()), null);
+
+                        if (targetMethod == null && !FoundInInterfaceMapping(method))
+                        {
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, method, FullName));
+                        }
+                    }
+                }
+            }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:DynamicallyAccessedMembers", Justification = "The interface methods should be available at this point")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
+        private void CheckInterfaces(Type[] _interfaces)
+        {
+            foreach (Type interfaceType in _interfaces)
+            {
+                MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                for (int i = 0; i < interfaceMethods.Length; i++)
+                {
+                    MethodInfo interfaceMethod = interfaceMethods[i];
+                    MethodInfo? implementedMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
+
+                    if (implementedMethod == null)
+                    {
+                        Type? parent = _typeParent;
+                        while (parent != null && implementedMethod == null)
+                        {
+                            implementedMethod = parent.GetMethod(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
+                            parent = parent.BaseType;
+                        }
+                    }
+
+                    if (implementedMethod == null && !FoundInInterfaceMapping(interfaceMethod))
+                    {
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, interfaceMethod, FullName));
+                    }
+                }
+
+                // Check parent interfaces too
+                CheckInterfaces(interfaceType.GetInterfaces());
+            }
+        }
+
+        private bool FoundInInterfaceMapping(MethodInfo abstractMethod)
+        {
+            if (_interfaceMappings == null)
+            {
+                return false;
+            }
+
+            if (_interfaceMappings.TryGetValue(abstractMethod.DeclaringType!, out InterfaceMap? mapping))
+            {
+                foreach (MethodInfo method in mapping._interfaceMethods)
+                {
+                    if (abstractMethod.Equals(method))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         internal void ThrowIfCreated()

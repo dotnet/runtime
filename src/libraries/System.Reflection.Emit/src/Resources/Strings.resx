@@ -249,4 +249,7 @@
   <data name="Argument_MustBeInterface" xml:space="preserve">
     <value>Type passed must be an interface.</value>
   </data>
+  <data name="TypeLoad_MissingMethod" xml:space="preserve">
+    <value>Abstract method '{0}' in type '{1}' does not have an implementation.</value>
+  </data>
 </root>
