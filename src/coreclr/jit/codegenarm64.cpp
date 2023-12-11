@@ -10165,6 +10165,24 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_sve_umulh, EA_SCALABLE, REG_V12, REG_P2, REG_V24,
                               INS_OPTS_SCALABLE_B); /* UMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
 
+    // IF_SVE_AH_3A
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V13, REG_P0, REG_V31,
+                              INS_OPTS_SCALABLE_B); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V14, REG_P1, REG_V0,
+                              INS_OPTS_SCALABLE_H); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V13, REG_P2, REG_V1,
+                              INS_OPTS_SCALABLE_S); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V15, REG_P3, REG_V2,
+                              INS_OPTS_SCALABLE_D); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V16, REG_P4, REG_V3,
+                              INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V17, REG_P5, REG_V12,
+                              INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V0, REG_P6, REG_V13,
+                              INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V31, REG_P7, REG_V22,
+                              INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+
     // IF_SVE_AN_3A
     theEmitter->emitIns_R_R_R(INS_sve_asr, EA_SCALABLE, REG_V5, REG_P0, REG_V21,
                               INS_OPTS_SCALABLE_S); /* ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
