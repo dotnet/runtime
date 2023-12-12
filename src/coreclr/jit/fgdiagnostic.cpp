@@ -95,7 +95,7 @@ void Compiler::fgDebugCheckUpdate()
 
         if (block->isEmpty() && !block->HasFlag(BBF_DONT_REMOVE))
         {
-            switch (block->GetJumpKind())
+            switch (block->GetKind())
             {
                 case BBJ_CALLFINALLY:
                 case BBJ_EHFINALLYRET:
@@ -1009,7 +1009,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             fprintf(fgxFile, "\n        <block");
             fprintf(fgxFile, "\n            id=\"%d\"", block->bbNum);
             fprintf(fgxFile, "\n            ordinal=\"%d\"", blockOrdinal);
-            fprintf(fgxFile, "\n            jumpKind=\"%s\"", kindImage[block->GetJumpKind()]);
+            fprintf(fgxFile, "\n            jumpKind=\"%s\"", kindImage[block->GetKind()]);
             if (block->hasTryIndex())
             {
                 fprintf(fgxFile, "\n            inTry=\"%s\"", "true");
@@ -1132,7 +1132,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
-                        if (bSource->GetJumpSwt()->getDefault() == bTarget)
+                        if (bSource->GetSwitchTargets()->getDefault() == bTarget)
                         {
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
@@ -1846,6 +1846,11 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*s", m_indent, "");
 
             loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* block) {
+                if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbNewPostorderNum))
+                {
+                    return BasicBlockVisit::Continue;
+                }
+
                 if (block != loop->GetHeader())
                 {
                     FlowGraphNaturalLoop* childLoop = m_loops->GetLoopByHeader(block);
@@ -1858,10 +1863,8 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
                     }
                 }
 
-                if (BitVecOps::TryAddElemD(&m_traits, m_outputBlocks, block->bbPostorderNum))
-                {
-                    fprintf(m_file, FMT_BB ";", block->bbNum);
-                }
+                fprintf(m_file, FMT_BB ";", block->bbNum);
+                BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbNewPostorderNum);
 
                 return BasicBlockVisit::Continue;
             });
@@ -2067,34 +2070,34 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     }
     else
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_COND:
-                printf("-> " FMT_BB "%*s ( cond )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s ( cond )", block->GetTrueTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTrueTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_CALLFINALLY:
-                printf("-> " FMT_BB "%*s (callf )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s (callf )", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_ALWAYS:
                 if (flags & BBF_KEEP_BBJ_ALWAYS)
                 {
-                    printf("-> " FMT_BB "%*s (ALWAYS)", block->GetJumpDest()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                    printf("-> " FMT_BB "%*s (ALWAYS)", block->GetTarget()->bbNum,
+                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 }
                 else
                 {
-                    printf("-> " FMT_BB "%*s (always)", block->GetJumpDest()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                    printf("-> " FMT_BB "%*s (always)", block->GetTarget()->bbNum,
+                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 }
                 break;
 
             case BBJ_LEAVE:
-                printf("-> " FMT_BB "%*s (leave )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s (leave )", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_EHFINALLYRET:
@@ -2102,7 +2105,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 printf("->");
 
                 int                    ehfWidth = 0;
-                const BBehfDesc* const ehfDesc  = block->GetJumpEhf();
+                const BBehfDesc* const ehfDesc  = block->GetEhfTargets();
                 if (ehfDesc == nullptr)
                 {
                     printf(" ????");
@@ -2138,13 +2141,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHFILTERRET:
-                printf("-> " FMT_BB "%*s (fltret)", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s (fltret)", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_EHCATCHRET:
-                printf("-> " FMT_BB "%*s ( cret )", block->GetJumpDest()->bbNum,
-                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
+                printf("-> " FMT_BB "%*s ( cret )", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
             case BBJ_THROW:
@@ -2163,7 +2166,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             {
                 printf("->");
 
-                const BBswtDesc* const jumpSwt     = block->GetJumpSwt();
+                const BBswtDesc* const jumpSwt     = block->GetSwitchTargets();
                 const unsigned         jumpCnt     = jumpSwt->bbsCount;
                 BasicBlock** const     jumpTab     = jumpSwt->bbsDstTab;
                 int                    switchWidth = 0;
@@ -2839,17 +2842,17 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 
 bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
 {
-    switch (blockPred->GetJumpKind())
+    switch (blockPred->GetKind())
     {
         case BBJ_COND:
-            assert(blockPred->NextIs(block) || blockPred->HasJumpTo(block));
+            assert(blockPred->FalseTargetIs(block) || blockPred->TrueTargetIs(block));
             return true;
 
         case BBJ_ALWAYS:
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            assert(blockPred->HasJumpTo(block));
+            assert(blockPred->TargetIs(block));
             return true;
 
         case BBJ_EHFINALLYRET:
@@ -2883,7 +2886,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             break;
 
         default:
-            assert(!"Unexpected bbJumpKind");
+            assert(!"Unexpected bbKind");
             break;
     }
     return false;
@@ -2918,7 +2921,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
     found = false;
     for (BasicBlock* const bcall : comp->Blocks(firstBlock, lastBlock))
     {
-        if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block))
+        if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->TargetIs(finBeg) && bcall->NextIs(block))
         {
             found = true;
             break;
@@ -2936,7 +2939,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
-            if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block) &&
+            if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->TargetIs(finBeg) && bcall->NextIs(block) &&
                 comp->ehCallFinallyInCorrectRegion(bcall, hndIndex))
             {
                 found = true;
@@ -3047,6 +3050,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         maxBBNum = max(maxBBNum, block->bbNum);
+
+        // BBJ_COND's normal (false) jump target is expected to be the next block
+        // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext
+        if (block->KindIs(BBJ_COND))
+        {
+            assert(block->NextIs(block->GetFalseTarget()));
+        }
 
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
@@ -3188,9 +3198,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         // Blocks with these jump kinds must have non-null jump targets
-        if (block->HasJumpDest())
+        if (block->HasTarget())
         {
-            assert(block->HasInitializedJumpDest());
+            assert(block->HasInitializedTarget());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
@@ -3208,7 +3218,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         {
             if (succBlock->KindIs(BBJ_CALLFINALLY))
             {
-                BasicBlock* finallyBlock = succBlock->GetJumpDest();
+                BasicBlock* finallyBlock = succBlock->GetTarget();
                 assert(finallyBlock->hasHndIndex());
                 unsigned finallyIndex = finallyBlock->getHndIndex();
 
@@ -5068,7 +5078,7 @@ void Compiler::fgDebugCheckLoopTable()
             // The pre-header can only be BBJ_ALWAYS and must enter the loop.
             BasicBlock* e = loop.lpEntry;
             assert(h->KindIs(BBJ_ALWAYS));
-            assert(h->HasJumpTo(e));
+            assert(h->TargetIs(e));
 
             // The entry block has a single non-loop predecessor, and it is the pre-header.
             for (BasicBlock* const predBlock : e->PredBlocks())
