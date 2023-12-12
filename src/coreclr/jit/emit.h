@@ -990,7 +990,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             struct
             {
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
@@ -1021,24 +1021,24 @@ protected:
             {
                 return iiaJmpOffset;
             }
-#elif defined(TARGET_RISCV64)
-            struct
-            {
-                unsigned int iiaEncodedInstr; // instruction's binary encoding.
-                regNumber    _idReg3 : REGNUM_BITS;
-                regNumber    _idReg4 : REGNUM_BITS;
-            };
+// #elif defined(TARGET_RISCV64)
+//             struct
+//             {
+//                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
+//                 regNumber    _idReg3 : REGNUM_BITS;
+//                 regNumber    _idReg4 : REGNUM_BITS;
+//             };
 
-            emitLclVarAddr iiaLclVar;
+//             emitLclVarAddr iiaLclVar;
 
-            void iiaSetInstrEncode(unsigned int encode)
-            {
-                iiaEncodedInstr = encode;
-            }
-            unsigned int iiaGetInstrEncode() const
-            {
-                return iiaEncodedInstr;
-            }
+//             void iiaSetInstrEncode(unsigned int encode)
+//             {
+//                 iiaEncodedInstr = encode;
+//             }
+//             unsigned int iiaGetInstrEncode() const
+//             {
+//                 return iiaEncodedInstr;
+//             }
 #endif // defined(TARGET_RISCV64)
 
         } _idAddrUnion;

@@ -1936,7 +1936,7 @@ AGAIN:
             assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
-            if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2009,7 +2009,7 @@ AGAIN:
             assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
-            if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2129,6 +2129,8 @@ ssize_t emitter::emitOutputInstrJumpSize(BYTE const* const         destination,
 
     UNATIVE_OFFSET distanceOffset  = jumpDescription->idAddr()->iiaIGlabel->igOffs;
     BYTE const*    distanceAddress = emitOffsetToPtr(distanceOffset);
+
+    printf("Emmiting jump with size: %p\n", distanceAddress - sourceAddress);
 
     return static_cast<ssize_t>(distanceAddress - sourceAddress);
 }
