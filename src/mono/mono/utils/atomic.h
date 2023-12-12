@@ -95,6 +95,13 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #include <stdatomic.h>
 
+static inline int8_t
+mono_atomic_cas_i8 (volatile int8_t *dest, int8_t exch, int8_t comp)
+{
+	g_static_assert (sizeof (atomic_schar) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
+	(void)atomic_compare_exchange_strong ((volatile atomic_schar *)dest, &comp, exch);
+	return comp;
+}
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -311,6 +318,12 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 #include <windows.h>
 #include <intrin.h>
 
+static inline int8_t
+mono_atomic_cas_i8 (volatile int8_t *dest, int8_t exch, int8_t comp)
+{
+	return _InterlockedCompareExchange8 ((CHAR volatile *)dest, (CHAR)exch, (CHAR)comp);
+}
+
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -509,6 +522,12 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 #define gcc_sync_fetch_and_add(a, b) __sync_fetch_and_add (a, b)
 #endif
 
+static inline int8_t mono_atomic_cas_i8(volatile int8_t *dest,
+						int8_t exch, int8_t comp)
+{
+	return gcc_sync_val_compare_and_swap (dest, comp, exch);
+}
+	
 static inline gint32 mono_atomic_cas_i32(volatile gint32 *dest,
 						gint32 exch, gint32 comp)
 {
