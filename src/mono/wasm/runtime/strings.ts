@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root_buffer } from "./roots";
+import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
@@ -248,4 +248,20 @@ export function viewOrCopy(view: Uint8Array, start: CharPtr, end: CharPtr): Uint
     return needsCopy
         ? view.slice(<any>start, <any>end)
         : view.subarray(<any>start, <any>end);
+}
+
+// below is minimal legacy support for Blazor
+let mono_wasm_string_root: any;
+
+/* @deprecated not GC safe, use monoStringToString */
+export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
+    if (mono_string === MonoStringNull)
+        return null;
+    if (!mono_wasm_string_root)
+        mono_wasm_string_root = mono_wasm_new_root();
+
+    mono_wasm_string_root.value = mono_string;
+    const result = monoStringToString(mono_wasm_string_root);
+    mono_wasm_string_root.value = MonoStringNull;
+    return result;
 }

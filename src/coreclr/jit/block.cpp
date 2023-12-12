@@ -591,6 +591,10 @@ void BasicBlock::dspFlags()
     {
         printf("gcpoll ");
     }
+    if (HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+    {
+        printf("loopheader ");
+    }
 }
 
 /*****************************************************************************

@@ -4833,9 +4833,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
 
-        // Clear loop table info that is not used after this point, and might become invalid.
-        //
-        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
+        // The loop table is no longer valid.
+        optLoopTableValid = false;
+        optLoopTable      = nullptr;
     }
 
 #ifdef DEBUG
@@ -4851,6 +4851,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Create the variable table (and compute variable ref counts)
     //
     DoPhase(this, PHASE_MARK_LOCAL_VARS, &Compiler::lvaMarkLocalVars);
+
+    // Dominator and reachability sets are no longer valid.
+    fgDomsComputed         = false;
+    fgCompactRenumberQuirk = true;
 
     // IMPORTANT, after this point, locals are ref counted.
     // However, ref counts are not kept incrementally up to date.
@@ -5023,11 +5027,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    // Dominator and reachability sets are no longer valid.
-    // The loop table is no longer valid.
-    fgDomsComputed            = false;
-    optLoopTableValid         = false;
     optLoopsRequirePreHeaders = false;
+    fgCompactRenumberQuirk    = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5897,13 +5898,17 @@ void Compiler::RecomputeLoopInfo()
     fgDomsComputed = false;
     fgComputeReachability();
     optSetBlockWeights();
-    // Rebuild the loop tree annotations themselves
-    // But don't leave the iter info lying around.
     optFindLoops();
-    optClearLoopIterInfo();
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    // Dominators and the loop table are computed above for old<->new loop
+    // crossreferencing, but they are not actually used for optimization
+    // anymore.
+    optLoopTableValid = false;
+    optLoopTable      = nullptr;
+    fgDomsComputed    = false;
 }
 
 /*****************************************************************************/
