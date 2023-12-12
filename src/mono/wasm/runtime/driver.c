@@ -58,7 +58,6 @@ char *mono_method_get_full_name (MonoMethod *method);
 extern void mono_register_timezones_bundle (void);
 #endif /* INVARIANT_TIMEZONE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
-static void mono_wasm_init_finalizer_thread (void);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
 extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
@@ -542,9 +541,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_thread_set_main (mono_thread_current ());
 
-	// TODO: we can probably delay starting the finalizer thread even longer - maybe from JS
-	// once we're done with loading and are about to begin running some managed code.
-	mono_wasm_init_finalizer_thread ();
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
@@ -1296,12 +1292,11 @@ mono_wasm_profiler_init_browser (const char *desc)
 
 #endif
 
-static void
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_init_finalizer_thread (void)
 {
-	// At this time we don't use a dedicated thread for finalization even if threading is enabled.
-	// Finalizers periodically run on the main thread
-#if 0
+	// in the single threaded build, finalizers periodically run on the main thread instead.
+#ifndef DISABLE_THREADS
 	mono_gc_init_finalizer_thread ();
 #endif
 }
