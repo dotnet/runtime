@@ -94,8 +94,9 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
         public void Ctor_CultureInfo_GetHashCodeCompare_TurkishI()
         {
             var cultureNames = Helpers.TestCultureNames;

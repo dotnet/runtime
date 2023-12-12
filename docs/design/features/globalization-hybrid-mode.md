@@ -343,7 +343,8 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 
 - `IgnoreSymbols` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
 
-- `IgnoreKanaType` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+- `IgnoreKanaType`:
+   `CompareOptions.IgnoreKanaType` is mapped to `NSStringCompareOptions.NSCaseInsensitiveSearch | NSStringCompareOptions.NSDiacriticInsensitiveSearch | `NSStringCompareOptions.NSWidthInsensitiveSearch`
 
 - `None`:
 
@@ -384,8 +385,6 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 - All combinations that contain below `CompareOptions` always throw `PlatformNotSupportedException`:
 
    `IgnoreSymbols`,
-
-   `IgnoreKanaType`,
 
 ## String starts with / ends with
 
