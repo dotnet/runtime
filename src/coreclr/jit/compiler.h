@@ -7096,7 +7096,7 @@ public:
 
 #ifdef DEBUG
     unsigned loopAlignCandidates; // number of candidates identified by placeLoopAlignInstructions
-    unsigned loopsAligned; // number of loops actually aligned
+    unsigned loopsAligned;        // number of loops actually aligned
 #endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
