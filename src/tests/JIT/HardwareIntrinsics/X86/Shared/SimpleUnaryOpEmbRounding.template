@@ -77,7 +77,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = 0.95; }
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType})0.95; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
                 return testStruct;
@@ -107,10 +107,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = 0.95; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType})0.95; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = 0.95; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType})0.95; }
             _dataTable = new SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
@@ -289,8 +289,11 @@ namespace JIT.HardwareIntrinsics.X86
         private static Dictionary<(string, string, string), ulong[]> unaryEmbRoundingAnswerTable = new Dictionary<(string, string, string), ulong[]>
         {
             {("Double", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35}},
+            {("Single", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497}},
             {("Double", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36}},
+            {("Single", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498}},
             {("Double", "Sqrt", "ToZero"), new ulong[] {0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35}},
+            {("Single", "Sqrt", "ToZero"), new ulong[] {0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497}},
         };
     }
 }
