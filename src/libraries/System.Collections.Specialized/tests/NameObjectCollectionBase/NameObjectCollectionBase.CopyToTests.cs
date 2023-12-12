@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseCopyToTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0, 0)]
         [InlineData(0, 5)]
         [InlineData(10, 0)]
@@ -39,7 +39,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(previousCount, copyArray.Length);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(10)]
         public void CopyTo_Invalid(int count)
