@@ -5353,7 +5353,7 @@ public:
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
 #if FEATURE_LOOP_ALIGN
-    void optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop);
+    bool shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top);
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
@@ -7082,7 +7082,6 @@ public:
     bool          optLoopTableValid;         // info in loop table should be valid
     bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
     unsigned char optLoopCount;              // number of tracked loops
-    unsigned      loopAlignCandidates;       // number of loops identified for alignment
 
     // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
     // loop table pointers from the previous epoch are invalid.
@@ -7096,7 +7095,8 @@ public:
     }
 
 #ifdef DEBUG
-    unsigned char loopsAligned; // number of loops actually aligned
+    unsigned loopAlignCandidates; // number of candidates identified by placeLoopAlignInstructions
+    unsigned loopsAligned; // number of loops actually aligned
 #endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
