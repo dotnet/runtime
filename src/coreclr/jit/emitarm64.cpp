@@ -14726,27 +14726,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R_4_to_0(id->idReg1());  // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());  // MMMM
-            code |= insEncodeSveElemsize(id->idInsOpt()); // xx
+            code |= insEncodeReg_R_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // MMMM
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());  // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());  // MMMM
-            code |= insEncodeSveElemsize(id->idInsOpt()); // xx
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // MMMM
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R_4_to_0(id->idReg1());  // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());  // MMMM
-            code |= insEncodeVLSElemsize(id->idOpSize()); // X
-            code |= insEncodeSveElemsize(id->idInsOpt()); // xx
+            code |= insEncodeReg_R_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // MMMM
+            code |= insEncodeVLSElemsize(id->idOpSize());                    // X
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
