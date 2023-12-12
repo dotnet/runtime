@@ -445,7 +445,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     // corlib assemblies.
 #endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
-	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
+	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
 	const char *appctx_keys[2];
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 	appctx_keys [1] = "RUNTIME_IDENTIFIER";
