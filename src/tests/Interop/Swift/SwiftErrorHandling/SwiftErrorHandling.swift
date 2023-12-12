@@ -25,9 +25,8 @@ public func getMyErrorMessage(from error: Error) -> UnsafePointer<unichar>? {
     if let myError = error as? MyError {
         switch myError {
         case .runtimeError(let message):
-            let buffer = UnsafeMutableBufferPointer<unichar>.allocate(capacity: message.length + 1)
+            let buffer = UnsafeMutableBufferPointer<unichar>.allocate(capacity: message.length)
             message.getCharacters(buffer.baseAddress!, range: NSRange(location: 0, length: message.length))
-            buffer[message.length] = 0 // must be null terminated so that it can be read by managed code
             return UnsafePointer(buffer.baseAddress!)
         }
     }
