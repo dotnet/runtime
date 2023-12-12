@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
@@ -587,7 +588,7 @@ namespace System.Net
                     {
                         // If a TLS channel binding token (cbt) is available then get the pointer
                         // to the application specific data.
-                        int appDataOffset = sizeof(SecChannelBindings);
+                        int appDataOffset = Unsafe.SizeOf<SecChannelBindings>();
                         Debug.Assert(appDataOffset < channelBinding.Size);
                         IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
                         int cbtAppDataSize = channelBinding.Size - appDataOffset;
