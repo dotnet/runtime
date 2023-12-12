@@ -3084,15 +3084,12 @@ private:
     PER_HEAP_METHOD size_t get_current_allocated();
     PER_HEAP_ISOLATED_METHOD size_t get_total_allocated();
     PER_HEAP_ISOLATED_METHOD size_t get_total_promoted();
-#if defined(BGC_SERVO_TUNING) || defined(DYNAMIC_HEAP_COUNT)
-    PER_HEAP_ISOLATED_METHOD size_t get_total_generation_size (int gen_number);
-    PER_HEAP_ISOLATED_METHOD size_t get_total_begin_data_size (int gen_number);
-    PER_HEAP_ISOLATED_METHOD size_t get_total_survived_size (int gen_number);
-#endif // BGC_SERVO_TUNING || DYNAMIC_HEAP_COUNT
 #ifdef BGC_SERVO_TUNING
+    PER_HEAP_ISOLATED_METHOD size_t get_total_generation_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_servo_alloc (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_bgc_promoted();
     PER_HEAP_ISOLATED_METHOD size_t get_total_surv_size (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_begin_data_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_generation_fl_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_current_gc_index (int gen_number);
 #endif //BGC_SERVO_TUNING

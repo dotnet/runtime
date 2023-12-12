@@ -21046,7 +21046,7 @@ size_t gc_heap::get_total_promoted()
     return total_promoted_size;
 }
 
-#if defined(BGC_SERVO_TUNING) || defined(DYNAMIC_HEAP_COUNT)
+#if defined(BGC_SERVO_TUNING)
 size_t gc_heap::get_total_generation_size (int gen_number)
 {
     size_t total_generation_size = 0;
@@ -21063,9 +21063,7 @@ size_t gc_heap::get_total_generation_size (int gen_number)
     }
     return total_generation_size;
 }
-#endif // BGC_SERVO_TUNING || DYNAMIC_HEAP_COUNT
 
-#ifdef BGC_SERVO_TUNING
 // gets all that's allocated into the gen. This is only used for gen2/3
 // for servo tuning.
 size_t gc_heap::get_total_servo_alloc (int gen_number)
@@ -21124,10 +21122,6 @@ size_t gc_heap::get_total_surv_size (int gen_number)
     return total_surv_size;
 }
 
-#endif // BGC_SERVO_TUNING
-
-#if defined(BGC_SERVO_TUNING) || defined(DYNAMIC_HEAP_COUNT)
-
 size_t gc_heap::get_total_begin_data_size (int gen_number)
 {
     size_t total_begin_data_size = 0;
@@ -21144,27 +21138,6 @@ size_t gc_heap::get_total_begin_data_size (int gen_number)
     }
     return total_begin_data_size;
 }
-
-size_t gc_heap::get_total_survived_size (int gen_number)
-{
-    size_t total_survived_size = 0;
-#ifdef MULTIPLE_HEAPS
-    for (int i = 0; i < gc_heap::n_heaps; i++)
-    {
-        gc_heap* hp = gc_heap::g_heaps[i];
-#else //MULTIPLE_HEAPS
-    {
-        gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-        total_survived_size += dd_survived_size (hp->dynamic_data_of (gen_number));
-    }
-    return total_survived_size;
-}
-
-#endif // BGC_SERVO_TUNING || DYNAMIC_HEAP_COUNT
-
-#ifdef BGC_SERVO_TUNING
 
 size_t gc_heap::get_total_generation_fl_size (int gen_number)
 {
@@ -50137,15 +50110,6 @@ void gc_heap::do_post_gc()
 #else
     const char* str_gc_type = "NGC";
 #endif //BACKGROUND_GC
-
-    for (int gen_number = 0; gen_number <= settings.condemned_generation; gen_number++)
-    {
-        size_t total_begin_data_size = get_total_begin_data_size(gen_number);
-        size_t total_survived_size = get_total_survived_size(gen_number);
-        float rate = total_begin_data_size != 0 ? (total_survived_size / (float)total_begin_data_size) : 0;
-        dprintf (6666, ("(%s) gen %d begin_data_size %zd survived %zd rate %.3f",
-            str_gc_type, gen_number, total_begin_data_size, total_survived_size, rate));
-    }
 
     dprintf (1, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad (&settings.gc_index),
