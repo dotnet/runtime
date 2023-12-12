@@ -1165,6 +1165,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableSimple(id->idInsOpt())); // xx
             assert(isGeneralRegister(id->idReg1()));       // ddddd
             assert(isPredicateRegister(id->idReg2()));     // MMMM
+            assert(isValidGeneralDatasize(id->idOpSize()));
             break;
 
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
@@ -1172,6 +1173,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableAtLeastHalf(id->idInsOpt())); // xx
             assert(isPredicateRegister(id->idReg1()));          // MMMM
             assert(isVectorRegister(id->idReg2()));             // ddddd
+            assert(isScalableVectorSize(id->idOpSize()));
             break;
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
@@ -6853,12 +6855,14 @@ void emitter::emitIns_R_R(
             if (isGeneralRegister(reg1)) // ddddd
             {
                 assert(insOptsScalableSimple(opt)); // xx
+                assert(size == EA_8BYTE);
                 fmt = IF_SVE_DM_2A;
             }
             else
             {
                 assert(insOptsScalableAtLeastHalf(opt)); // xx
                 assert(isVectorRegister(reg1));          // ddddd
+                assert(isScalableVectorSize(size));
                 fmt = IF_SVE_DN_2A;
             }
             break;
@@ -6871,14 +6875,15 @@ void emitter::emitIns_R_R(
 
             if (isGeneralRegister(reg1)) // ddddd
             {
-                assert(insOptsScalableSimple(opt));   // xx
-                assert(isValidGeneralDatasize(size)); // X
+                assert(insOptsScalableSimple(opt)); // xx
+                assert(isValidGeneralDatasize(size));
                 fmt = IF_SVE_DO_2A;
             }
             else
             {
                 assert(insOptsScalableAtLeastHalf(opt)); // xx
                 assert(isVectorRegister(reg1));          // ddddd
+                assert(isScalableVectorSize(size));
                 fmt = IF_SVE_DP_2A;
             }
             break;
