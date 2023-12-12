@@ -5436,16 +5436,16 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #define ALL_ARM64_EMITTER_UNIT_TESTS
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-#define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
+// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 // #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
 #if defined(DEBUG)
 void CodeGen::genArm64EmitterUnitTests()
 {
-/*    if (!verbose)
+    if (!verbose)
     {
         return;
-    }*/
+    }
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     // Mark the "fake" instructions in the output.
