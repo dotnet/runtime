@@ -5429,7 +5429,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             block->SetFlags(BBF_LOOP_ALIGN);
             BitVecOps::AddElemD(&loopTraits, alignedLoops, loop->GetIndex());
-            loopAlignCandidates++;
+            INDEBUG(loopAlignCandidates++);
 
             BasicBlock* prev = block->Prev();
             // shouldAlignLoop should have guaranteed these properties.
