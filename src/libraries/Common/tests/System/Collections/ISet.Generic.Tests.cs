@@ -202,6 +202,7 @@ namespace System.Collections.Tests
                     break;
                 }
             }
+            isProperSuperset = isProperSuperset && setContainsElementsNotInEnumerable;
             CollectionAsserts.IsProperSupersetOf(set, enumerable, isProperSuperset);
         }
 
