@@ -24469,24 +24469,21 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     if (simdSize == 64)
     {
         assert(IsBaselineVector512IsaSupportedDebugOnly());
-        GenTree* op1Dup     = fgMakeMultiUse(&op1);
-        GenTree* op1Lower32 = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
-        GenTree* op1Upper32 = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
-        simdSize            = simdSize / 2;
-        op1Lower32          = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1Lower32, op1Upper32, simdBaseJitType, simdSize);
-        GenTree* op1Dup32   = fgMakeMultiUse(&op1Lower32);
-        GenTree* op1Lower16 = gtNewSimdGetUpperNode(TYP_SIMD16, op1Lower32, simdBaseJitType, simdSize);
-        GenTree* op1Upper16 = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup32, simdBaseJitType, simdSize);
-        simdSize            = simdSize / 2;
-        op1                 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lower16, op1Upper16, simdBaseJitType, simdSize);
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        op1             = gtNewSimdGetUpperNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
+        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
+        simdSize        = simdSize / 2;
+        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseJitType, simdSize);
     }
-    else if (simdSize == 32)
+
+    if (simdSize == 32)
     {
-        GenTree* op1Dup     = fgMakeMultiUse(&op1);
-        GenTree* op1Lower16 = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
-        GenTree* op1Upper16 = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
-        simdSize            = simdSize / 2;
-        op1                 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lower16, op1Upper16, simdBaseJitType, simdSize);
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        op1             = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
+        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
+        simdSize        = simdSize / 2;
+        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, simdSize);
     }
 
     assert(simdSize == 16);
