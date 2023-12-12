@@ -329,15 +329,15 @@
       <_EmccLDFlags Include="-s EXPORT_ES6=1" />
       <_EmccLDFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'" Include="-s EXPORT_EXCEPTION_HANDLING_HELPERS=1"   />
 
-      <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
-      <_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
+      <_RuntimeCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
+      <_RuntimeCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
 
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)pinvoke.c"
                                Dependencies="$(_WasmPInvokeHPath);$(_WasmPInvokeTablePath)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)driver.c"
-                               Dependencies="@(_DriverCDependencies)" />
+                               Dependencies="" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)runtime.c"
-                               Dependencies="@(_DriverCDependencies)" />
+                               Dependencies="@(_RuntimeCDependencies)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)corebindings.c" />
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
