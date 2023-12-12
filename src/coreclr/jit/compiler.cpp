@@ -5898,13 +5898,17 @@ void Compiler::RecomputeLoopInfo()
     fgDomsComputed = false;
     fgComputeReachability();
     optSetBlockWeights();
-    // Rebuild the loop tree annotations themselves
-    // But don't leave the iter info lying around.
     optFindLoops();
-    optClearLoopIterInfo();
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    // Dominators and the loop table are computed above for old<->new loop
+    // crossreferencing, but they are not actually used for optimization
+    // anymore.
+    optLoopTableValid = false;
+    optLoopTable      = nullptr;
+    fgDomsComputed    = false;
 }
 
 /*****************************************************************************/
