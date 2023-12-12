@@ -291,6 +291,7 @@ void MethodTable::InitializeAsGcFreeType()
 #endif // !DACCESS_COMPILE
 
 extern void GcEnumObject(PTR_OBJECTREF pObj, uint32_t flags, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
+extern void GcEnumObjectConservatively(PTR_PTR_Object ppObj, EnumGcRefCallbackFunc* fnGcEnumRef, EnumGcRefScanContext* pSc);
 extern void GcEnumObjectsConservatively(PTR_OBJECTREF pLowerBound, PTR_OBJECTREF pUpperBound, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
 extern void GcBulkEnumObjects(PTR_OBJECTREF pObjs, DWORD cObjs, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
 
@@ -356,7 +357,7 @@ void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void *
 // static
 void RedhawkGCInterface::EnumGcRefConservatively(PTR_RtuObjectRef pRef, void* pfnEnumCallback, void* pvCallbackData)
 {
-    GcEnumObject((PTR_OBJECTREF)pRef, GC_CALL_INTERIOR | GC_CALL_PINNED, (EnumGcRefCallbackFunc*)pfnEnumCallback, (EnumGcRefScanContext*)pvCallbackData);
+    GcEnumObjectConservatively((PTR_OBJECTREF)pRef, (EnumGcRefCallbackFunc*)pfnEnumCallback, (EnumGcRefScanContext*)pvCallbackData);
 }
 
 #ifndef DACCESS_COMPILE
