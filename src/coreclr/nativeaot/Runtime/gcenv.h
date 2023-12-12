@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <cstddef>
 #include <string.h>
+#include <math.h>
 
 #ifdef TARGET_UNIX
 #include <pthread.h>
