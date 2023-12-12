@@ -53,7 +53,7 @@
  - [linq/queryexecution](https://github.com/dotnet/samples/tree/main/core/linq/csharp/queryexecution/)
  - [linq/restriction](https://github.com/dotnet/samples/tree/main/core/linq/csharp/restriction/)
  - [linq/setoperators](https://github.com/dotnet/samples/tree/main/core/linq/csharp/setoperators/)
- - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [logging/console-formatter-custom](https://github.com/dotnet/samples/tree/main/core/logging/console-formatter-custom/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
