@@ -178,6 +178,12 @@ mono_loader_lock_is_owned_by_self (void)
 	return GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) > 0;
 }
 
+gboolean
+mono_loader_lock_tracking (void)
+{
+	return loader_lock_track_ownership;
+}
+
 /*
  * mono_loader_lock_if_inited:
  *

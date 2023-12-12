@@ -30,5 +30,17 @@ mono_class_setup_need_stelemref_method (MonoClass *klass);
 gboolean
 mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *method);
 
+/*
+ * Get the class and all its parents and interfaces to at least the
+ * MONO_CLASS_READY_APPROX_PARENT ready level, loading assemblies
+ * along the way.
+ */
+void
+mono_class_preload_class (MonoClass *klass);
+
+
+/* Just for class-init, class-init-preload and sre.c - nothing else should be using this */
+gboolean
+m_class_set_ready_level_at_least (MonoClass *klass, int8_t level);
 
 #endif /* __MONO_METADATA_CLASS_INIT_INTERNALS_H__ */

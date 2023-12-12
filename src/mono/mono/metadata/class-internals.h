@@ -277,9 +277,19 @@ typedef enum {
 typedef enum {
 	/* MonoClass is alocated, but not inited */
 	MONO_CLASS_READY_BAREBONES = 0,
+	/* We've started to preload the assemblies for the parent type and instantiations */
+	MONO_CLASS_READY_PRELOAD_STARTED = 1,
+	/* We have aproximate parent info: we preloaded the parent gtd and its instantiations, but
+         * haven't formed a GINST yet
+	 */
+	MONO_CLASS_READY_APPROX_PARENT = 2,
+	/* At this point we need to take the loader lock to record the gclass instantiations (to
+         * check for cycles) and to construct the exact parent. This is the state after
+         * mono_class_create_from_typedef returns */
+	MONO_CLASS_READY_EXACT_PARENT = 3,
 	/*
 	 * MonoClass is fully inited (note: some fields have their own initialization state not
-         * covered by this level.)
+         * covered by this level.)  This is the state after mono_class_init_internal returns.
 	 */
 	MONO_CLASS_READY_INITED = 0x7F,
 } MonoClassReady;
@@ -1030,6 +1040,9 @@ mono_loader_lock_track_ownership (gboolean track);
 MONO_COMPONENT_API gboolean
 mono_loader_lock_is_owned_by_self (void);
 
+gboolean
+mono_loader_lock_tracking (void);
+
 void
 mono_loader_lock_if_inited (void);
 
@@ -1655,10 +1668,6 @@ m_method_alloc0 (MonoMethod *method, guint size)
 {
 	return mono_mem_manager_alloc0 (m_method_get_mem_manager (method), size);
 }
-
-/* DO NOT USE - this is just here to make sre.c happy.  All the other class init code is in class-init.c */
-void
-m_class_set_ready_level_at_least (MonoClass *klass, int8_t level);
 
 // Enum and static storage for JIT icalls.
 #include "jit-icall-reg.h"

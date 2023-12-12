@@ -162,7 +162,8 @@ disable_gclass_recording (gclass_record_func func, void *user_data)
 #define mono_class_new0(klass,struct_type, n_structs)		\
     ((struct_type *) mono_class_alloc0 ((klass), ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
 
-void
+/* returns TRUE if the current thread changed the readiness level */
+gboolean
 m_class_set_ready_level_at_least (MonoClass *klass, int8_t level)
 {
 	int8_t old_level;
@@ -170,8 +171,9 @@ m_class_set_ready_level_at_least (MonoClass *klass, int8_t level)
 		old_level = m_class_get_ready_level (klass);
 		/* if the class is already initialized past the readiness we want, we're done. */
 		if (old_level >= level)
-			return;
+			return FALSE;
 	} while (mono_atomic_cas_i8 (m_class_ready_level_addr (klass), level, old_level) != old_level);
+	return TRUE;
 }
 
 /**
@@ -495,11 +497,16 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return NULL;
 	}
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 
+	gboolean need_insert = TRUE;
 	if ((klass = (MonoClass *)mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
-		mono_loader_unlock ();
-		return klass;
+		if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT)) {
+			mono_image_unlock (image);
+			return klass;
+		}
+		/* class is already in the class cache, but it isn't initialized enough, we will initialize it */
+		need_insert = FALSE;
 	}
 
 	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
@@ -507,28 +514,47 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
-	if (mono_metadata_has_generic_params (image, type_token)) {
+	if (!klass && mono_metadata_has_generic_params (image, type_token)) {
 		klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassGtd));
 		klass->class_kind = MONO_CLASS_GTD;
 		UnlockedAdd (&classes_size, sizeof (MonoClassGtd));
 		++class_gtd_count;
-	} else {
+	} else if (!klass) {
 		klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassDef));
 		klass->class_kind = MONO_CLASS_DEF;
 		UnlockedAdd (&classes_size, sizeof (MonoClassDef));
 		++class_def_count;
 	}
+	g_assert (klass);
 
 	klass->name = name;
 	klass->name_space = nspace;
-
-	MONO_PROFILER_RAISE (class_loading, (klass));
 
 	klass->image = image;
 	klass->type_token = type_token;
 	mono_class_set_flags (klass, cols [MONO_TYPEDEF_FLAGS]);
 
-	mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
+	if (need_insert)
+		mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
+
+	mono_image_unlock(image);
+	/*
+	 * At this point class is in the barebones state, at least.  Run the preloading code to
+         * trigger all the assembly loading up front, without holding any locks.
+	 */ 
+	mono_class_preload_class (klass);
+
+	mono_loader_lock();
+
+	/* after we take the global loader lock, we're the only ones responsible for initializing this class to the EXACT_PARENT stage. */
+	g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT));
+
+	/* maybe it's already done? */
+	if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT)) {
+		mono_loader_unlock ();
+		return klass;
+	}
+	MONO_PROFILER_RAISE (class_loading, (klass));
 
 	/*
 	 * Check whether we're a generic type definition.
@@ -593,6 +619,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		if (!is_ok (error)) {
 			/*FIXME implement a mono_class_set_failure_from_mono_error */
 			mono_class_set_type_load_failure (klass, "%s",  mono_error_get_message (error));
+			m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 			mono_loader_unlock ();
 			MONO_PROFILER_RAISE (class_failed, (klass));
 			return NULL;
@@ -646,6 +673,16 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 				break;
 		}
 	}
+
+	/* we have to set the ready level to EXACT_PARENT relatively early while still holding the
+	 * loader lock so that certain recursive uses will bail at the EXACT_PARENT check early
+	 * after we took the loader lock - we don't want to get stuck in an infinite loop
+	 * initializing interfaces or generic param constraints.
+	 *
+	 * But after we set the level, we still have some more initialization to do while holding
+         * the loader lock.
+	 */
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 
 	if (!klass->enumtype) {
 		if (!mono_metadata_interfaces_from_typedef_full (
@@ -733,6 +770,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	 */
 	if (mono_class_is_gtd (klass) && !mono_metadata_load_generic_param_constraints_checked (image, type_token, mono_class_get_generic_container (klass), error)) {
 		mono_class_set_type_load_failure (klass, "Could not load generic parameter constrains due to %s", mono_error_get_message (error));
+		m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 		mono_loader_unlock ();
 		MONO_PROFILER_RAISE (class_failed, (klass));
 		return NULL;
@@ -765,6 +803,7 @@ parent_failure:
 		disable_gclass_recording (discard_gclass_due_to_failure, klass);
 
 	mono_class_setup_mono_type (klass);
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 	mono_loader_unlock ();
 	MONO_PROFILER_RAISE (class_failed, (klass));
 	return NULL;
@@ -947,6 +986,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT); // FIXME: is this true?
+
 	if (mono_get_runtime_callbacks ()->init_class)
 		mono_get_runtime_callbacks ()->init_class (klass);
 
@@ -1005,6 +1046,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	MONO_PROFILER_RAISE (class_loading, (klass));
 
 	mono_generic_class_setup_parent (klass, gklass);
+
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 
 	if (gclass->is_dynamic)
 		mono_class_setup_supertypes (klass);
@@ -1181,6 +1224,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->instance_size = mono_class_instance_size (klass->parent);
 	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 
 	if (MONO_TYPE_IS_VOID (m_class_get_byval_arg (eclass))) {
 		mono_class_set_type_load_failure (klass, "Arrays of System.Void types are invalid.");
@@ -2967,6 +3011,23 @@ mono_class_init_internal (MonoClass *klass)
 	int first_iface_slot = 0;
 
 	g_assert (klass);
+
+	/* if it's only partially ready, try running the creation code again. */
+	if (!m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT)) {
+		if (mono_class_has_failure (klass))
+			return FALSE;
+		int class_kind = m_class_get_class_kind (klass);
+		/* only typedefs are partially ready - all the other classes go to full init. */
+		g_assert(class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD);
+		MonoImage *image = m_class_get_image (klass);
+		uint32_t token = m_class_get_type_token (klass);
+		ERROR_DECL (reinit_error);
+		MonoClass *reinited_class = mono_class_create_from_typedef (image, token, reinit_error);
+		/* FIXME: can we fail to reinit? */
+		mono_error_assert_ok (reinit_error);
+		g_assert (reinited_class == klass);
+	}
+	g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT));
 
 	/* Double-checking locking pattern */
 	if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_INITED) || mono_class_has_failure (klass))

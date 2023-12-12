@@ -56,6 +56,7 @@ set(metadata_common_sources
     class-init.h
     class-init-internals.h
     class-init.c
+    class-init-preload.c
     class-internals.h
     class-inlines.h
     class-private-definition.h
