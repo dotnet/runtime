@@ -272,6 +272,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetExactRootDirMatchCases))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "The temporary directory on Apple mobile platforms exceeds the path length limit.")]
         public async Task ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Async(TarEntryFormat format, TarEntryType entryType, string fileName)
         {
             await ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal_Async(format, entryType, fileName, inverted: false);
@@ -279,6 +280,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "The temporary directory on Apple mobile platforms exceeds the path length limit.")]
         public async Task ExtractToDirectory_ExactRootDirMatch_Directory_Relative_Throws_Async()
         {
             string entryFolderName = "folder";
@@ -305,6 +307,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "The temporary directory on Apple mobile platforms exceeds the path length limit.")]
         public async Task ExtractToDirectory_ExactRootDirMatch_HardLinks_Throws_Async(TarEntryFormat format)
         {
             await ExtractToDirectory_ExactRootDirMatch_Links_Throws_Async(format, TarEntryType.HardLink, inverted: false);
