@@ -56,6 +56,7 @@ export function export_internal(): any {
         get_global_this,
         get_dotnet_instance: () => exportedRuntimeAPI,
         dynamic_import,
+        thread_available,
 
         // BrowserWebSocket
         mono_wasm_cancel_promise,
