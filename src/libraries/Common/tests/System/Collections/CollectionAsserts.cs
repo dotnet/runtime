@@ -10,7 +10,7 @@ namespace System.Collections.Tests
 {
     internal static class CollectionAsserts
     {
-        public static void HasCount(ICollection<T> collection, int count)
+        public static void HasCount<T>(ICollection<T> collection, int count)
         {
             Assert.Equal(count, collection.Count);
 #if !NETFRAMEWORK
