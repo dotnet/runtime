@@ -64,6 +64,16 @@ namespace standalone
             ::GCToEEInterface::SyncBlockCachePromotionsGranted(max_gen);
         }
 
+        void TaskletPromotionsGranted(int condemned, int max_gen, ScanContext* sc)
+        {
+            ::GCToEEInterface::TaskletPromotionsGranted(condemned, max_gen, sc);
+        }
+
+        void TaskletDemote(int condemned, int max_gen, ScanContext* sc)
+        {
+            ::GCToEEInterface::TaskletDemote(condemned, max_gen, sc);
+        }
+
         uint32_t GetActiveSyncBlockCount()
         {
             return ::GCToEEInterface::GetActiveSyncBlockCount();

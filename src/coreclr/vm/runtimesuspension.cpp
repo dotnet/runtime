@@ -75,6 +75,10 @@ struct Tasklet
     uintptr_t restoreIPAddress;
     StackDataInfo* pStackDataInfo;
     TaskletReturnType taskletReturnType;
+    // min generation of all managed objects referred from this frame.
+    // -1 means the frame is a part of actiely executing stack and may have byrefs pointing to it
+    int32_t  minGeneration;
+    Tasklet* pTaskletPrevInStack;
 };
 
 struct RuntimeAsyncReturnValue
@@ -136,20 +140,31 @@ extern "C" RegRestore* PlatformIndependentRestore(Tasklet* tasklet, RuntimeAsync
     uint8_t* pNewLocation = restoreLocals->GetFutureRSPLocation() + tasklet->pStackDataInfo->UnrecordedDataSize;
     adjustment.Adjustment = ((uintptr_t)pNewLocation) - ((uintptr_t)adjustment.pOldLocation);
 
-    // Adjust all pointers to the stack data that we are about to move, both in this frame, and in the caller frames
+    // Adjust all pointers to the stack data that we are about to move.
+    // NB: We only check refs from the current frame.
+    //     If we have references from the caller frames, something has gone horribly bad already.
     Tasklet *pTaskletToAdjustByrefsOn = tasklet;
-    do
+    uint32_t cByRefs = pTaskletToAdjustByrefsOn->pStackDataInfo->cByRefs;
+    uint32_t* byRefOffsets = (uint32_t*)pTaskletToAdjustByrefsOn->pStackDataInfo->ByRefOffsets;
+    uint8_t* taskletData = pTaskletToAdjustByrefsOn->pStackData;
+    for (uint32_t iByRef = 0; iByRef < cByRefs; iByRef++)
     {
-        uint32_t cByRefs = pTaskletToAdjustByrefsOn->pStackDataInfo->cByRefs;
-        uint32_t* byRefOffsets = (uint32_t*)pTaskletToAdjustByrefsOn->pStackDataInfo->ByRefOffsets;
-        uint8_t* taskletData = pTaskletToAdjustByrefsOn->pStackData;
-        for (uint32_t iByRef = 0; iByRef < cByRefs; iByRef++)
+        RelocAtAddress(&adjustment, taskletData + byRefOffsets[iByRef]);
+    }
+
+    // Mark stacklets as "active" so they no longer age.
+    // this is only needed as long as we allow cross-frame byrefs
+    // as such byrefs may allow a calee to chage min age of a caller.
+    if (tasklet->minGeneration >= 0 && tasklet->pStackDataInfo->cByRefs > 0)
+    {
+        Tasklet* pTaskletToMarkActive = tasklet;
+        do
         {
-            RelocAtAddress(&adjustment, taskletData + byRefOffsets[iByRef]);
-        }
-        pTaskletToAdjustByrefsOn = pTaskletToAdjustByrefsOn->pTaskletNextInStack;
-    } while (pTaskletToAdjustByrefsOn != NULL);
-    
+            pTaskletToMarkActive->minGeneration = -1;
+            pTaskletToMarkActive = pTaskletToMarkActive->pTaskletNextInStack;
+        } while (pTaskletToMarkActive != NULL);
+    }
+
     StackDataInfo *pStackDataInfo = tasklet->pStackDataInfo;
 
     // Copy most of the memory
@@ -525,7 +540,6 @@ PORTABILIT_ASSERT()
     pTasklet->restoreIPAddress = (uintptr_t)GetControlPC(pCf->GetRegisterSet());
     pTasklet->pStackDataInfo = pStackDataInfo;
     pTasklet->taskletReturnType = taskletReturnType;
-    RegisterTasklet(pTasklet);
 
     if (taskletCaptureData->firstTasklet == NULL)
     {
@@ -535,6 +549,7 @@ PORTABILIT_ASSERT()
     else
     {
         taskletCaptureData->lastTasklet->pTaskletNextInStack = pTasklet;
+        pTasklet->pTaskletPrevInStack = taskletCaptureData->lastTasklet;
         taskletCaptureData->lastTasklet = pTasklet;
     }
     taskletCaptureData->framesCaptured++;
@@ -569,11 +584,27 @@ extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCraw
 
 extern "C" void QCALLTYPE RuntimeSuspension_DeleteTasklet(Tasklet* tasklet)
 {
-    UnregisterTasklet(tasklet);
+    if (tasklet->pTaskletNextInStack == NULL)
+    {
+        UnregisterTasklet(tasklet);
+    }
+    else
+    {
+        tasklet->pTaskletNextInStack->pTaskletPrevInStack = NULL;
+    }
+
     tasklet->pStackDataInfo->CleanupStackDataInfo();
     free(tasklet->pStackData);
     free(tasklet->pStackDataInfo);
     free(tasklet);
+}
+
+extern "C" void QCALLTYPE RuntimeSuspension_RegisterTasklet(Tasklet * tasklet)
+{
+    // only heads of stack chains are registered.
+    _ASSERTE(tasklet->pTaskletNextInStack == NULL);
+
+    RegisterTasklet(tasklet);
 }
 
 void RegisterTasklet(Tasklet* pTasklet);
@@ -611,35 +642,174 @@ void UnregisterTasklet(Tasklet* pTasklet)
     pTasklet->pTaskletNextInLiveList->pTaskletPrevInLiveList = pTasklet->pTaskletPrevInLiveList;
 }
 
-void IterateTaskletsForGC(promote_func* pCallback, ScanContext* sc)
+void IterateTaskletsForGC(promote_func* pCallback, int condemned, ScanContext* sc)
 {
     CrstHolder crstHolder(&g_taskletCrst);
-    Tasklet *pCurTasklet = g_pTaskletSentinel->pTaskletNextInLiveList;
-    while (pCurTasklet != g_pTaskletSentinel)
+    for (Tasklet* pCurStack = g_pTaskletSentinel->pTaskletNextInLiveList;
+        pCurStack != g_pTaskletSentinel;
+        pCurStack = pCurStack->pTaskletNextInLiveList)
     {
-        // Report GC pointers
-        auto pStackDataInfo = pCurTasklet->pStackDataInfo;
-        uint8_t *pLogicalRSP = pCurTasklet->pStackData - pStackDataInfo->UnrecordedDataSize;
-        uint32_t iRef;
-        for (iRef = 0; iRef < pStackDataInfo->cObjectRefs; iRef++)
+        if (pCurStack->minGeneration > condemned)
         {
-            pCallback((PTR_PTR_Object)(pLogicalRSP + pStackDataInfo->ObjectRefOffsets[iRef]), sc, 0);
-        }
-        
-        for (iRef = 0; iRef < pStackDataInfo->cByRefs; iRef++)
+            // this stack is too old to be interesting in this GC
+            continue;
+        };
+
+        Tasklet* pCurTasklet = pCurStack;
+        do
         {
-            int32_t offset = pStackDataInfo->ByRefOffsets[iRef];
-            uint32_t flags = GC_CALL_INTERIOR;
-            if (offset < 0)
+            // because of rejuvenation, some tasklets could be older than the head
+            // skip them if too old.
+            if (pCurTasklet->minGeneration > condemned)
             {
-                offset = -offset;
-                flags |= GC_CALL_PINNED;
+                // this stack is too old to be interesting in this GC
+                continue;
+            };
+
+            // Report GC pointers
+            auto pStackDataInfo = pCurTasklet->pStackDataInfo;
+            uint8_t *pLogicalRSP = pCurTasklet->pStackData - pStackDataInfo->UnrecordedDataSize;
+            uint32_t iRef;
+            for (iRef = 0; iRef < pStackDataInfo->cObjectRefs; iRef++)
+            {
+                pCallback((PTR_PTR_Object)(pLogicalRSP + pStackDataInfo->ObjectRefOffsets[iRef]), sc, 0);
             }
 
-            pCallback((PTR_PTR_Object)(pLogicalRSP + offset), sc, flags);
+            for (iRef = 0; iRef < pStackDataInfo->cByRefs; iRef++)
+            {
+                int32_t offset = pStackDataInfo->ByRefOffsets[iRef];
+                uint32_t flags = GC_CALL_INTERIOR;
+                if (offset < 0)
+                {
+                    offset = -offset;
+                    flags |= GC_CALL_PINNED;
+                }
+
+                pCallback((PTR_PTR_Object)(pLogicalRSP + offset), sc, flags);
+            }
+
+            pCurTasklet = pCurTasklet->pTaskletPrevInStack;
+        } while (pCurTasklet != NULL);
+    }
+}
+
+void AgeTasklets(int condemned, int max_gen, ScanContext* sc)
+{
+    if (!g_pConfig->TaskletAging())
+    {
+        return;
+    }
+
+    CrstHolder crstHolder(&g_taskletCrst);
+    for (Tasklet* pCurStack = g_pTaskletSentinel->pTaskletNextInLiveList; pCurStack != g_pTaskletSentinel; pCurStack = pCurStack->pTaskletNextInLiveList)
+    {
+        if (pCurStack->minGeneration > condemned)
+        {
+            // this stack is too old to be interesting in this GC
+            continue;
+        };
+
+        if (pCurStack->minGeneration < 0)
+        {
+            // this stack is active, do not age it
+            continue;
         }
 
-        pCurTasklet = pCurTasklet->pTaskletNextInLiveList;
+        Tasklet* pCurTasklet = pCurStack;
+        do
+        {
+             // actually age the tasklet
+            pCurTasklet->minGeneration = min(pCurTasklet->minGeneration + 1, max_gen);
+
+            pCurTasklet = pCurTasklet->pTaskletPrevInStack;
+        } while (pCurTasklet != NULL);
+    }
+}
+
+void RejuvenateTasklets(int condemned, int max_gen, ScanContext* sc)
+{
+    if (!g_pConfig->TaskletAging())
+    {
+        return;
+    }
+
+    CrstHolder crstHolder(&g_taskletCrst);
+    for (Tasklet* pCurStack = g_pTaskletSentinel->pTaskletNextInLiveList;
+        pCurStack != g_pTaskletSentinel;
+        pCurStack = pCurStack->pTaskletNextInLiveList)
+    {
+        if (pCurStack->minGeneration <= 0)
+        {
+            // this stack is as young as it can be
+            continue;
+        };
+
+        if (pCurStack->minGeneration > condemned)
+        {
+            // this tasklet is too old to be interesting in this GC
+            continue;
+        }
+
+        Tasklet* pCurTasklet = pCurStack;
+        do
+        {
+            // update the minGeneration
+            auto pStackDataInfo = pCurTasklet->pStackDataInfo;
+            uint8_t* pLogicalRSP = pCurTasklet->pStackData - pStackDataInfo->UnrecordedDataSize;
+            uint32_t iRef;
+            for (iRef = 0; iRef < pStackDataInfo->cObjectRefs; iRef++)
+            {
+                auto ppObj = (PTR_PTR_Object)(pLogicalRSP + pStackDataInfo->ObjectRefOffsets[iRef]);
+                if (*ppObj != NULL)
+                {
+                    int objGen = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(*ppObj);
+                    if (objGen < pCurTasklet->minGeneration)
+                    {
+                        pCurTasklet->minGeneration = objGen;
+                        if (objGen == 0)
+                        {
+                            // we are as young as we can be
+                            goto nextTaskLet;
+                        }
+                    }
+                }
+            }
+
+            for (iRef = 0; iRef < pStackDataInfo->cByRefs; iRef++)
+            {
+                int32_t offset = pStackDataInfo->ByRefOffsets[iRef];
+                if (offset < 0)
+                {
+                    offset = -offset;
+                }
+
+                auto ppObj = (PTR_PTR_Object)(pLogicalRSP + offset);
+                int objGen = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(*ppObj);
+                if (*ppObj != NULL)
+                {
+                    if (objGen < pCurTasklet->minGeneration)
+                    {
+                        pCurTasklet->minGeneration = objGen;
+                        if (objGen == 0)
+                        {
+                            // we are as young as we can be
+                            goto nextTaskLet;
+                        }
+                    }
+                }
+            }
+
+        nextTaskLet:
+
+            // make sure the head tasklet is no older than any tasklets in the list
+            // because we will use the age of the head for short-circuiting
+            if (pCurStack->minGeneration > pCurTasklet->minGeneration)
+            {
+                pCurStack->minGeneration = pCurTasklet->minGeneration;
+            }
+
+            pCurTasklet = pCurTasklet->pTaskletPrevInStack;
+        } while (pCurTasklet != NULL);
     }
 }
 

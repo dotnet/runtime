@@ -45,6 +45,10 @@ public:
     static void SyncBlockCachePromotionsGranted(int max_gen);
     static uint32_t GetActiveSyncBlockCount();
 
+    // Tasklet management
+    static void TaskletPromotionsGranted(int condemned, int max_gen, ScanContext* sc);
+    static void TaskletDemote(int condemned, int max_gen, ScanContext* sc);
+
     // Thread functions
     static bool IsPreemptiveGCDisabled();
     static bool EnablePreemptiveGC();

@@ -90,6 +90,18 @@ inline void GCToEEInterface::SyncBlockCachePromotionsGranted(int max_gen)
     g_theGCToCLR->SyncBlockCachePromotionsGranted(max_gen);
 }
 
+inline void GCToEEInterface::TaskletPromotionsGranted(int condemned, int max_gen, ScanContext* sc)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->TaskletPromotionsGranted(condemned, max_gen, sc);
+}
+
+inline void GCToEEInterface::TaskletDemote(int condemned, int max_gen, ScanContext* sc)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->TaskletDemote(condemned, max_gen, sc);
+}
+
 inline uint32_t GCToEEInterface::GetActiveSyncBlockCount()
 {
     assert(g_theGCToCLR != nullptr);

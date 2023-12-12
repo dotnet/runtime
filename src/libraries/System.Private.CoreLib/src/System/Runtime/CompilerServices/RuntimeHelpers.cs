@@ -243,7 +243,6 @@ namespace System.Runtime.CompilerServices
             public byte _dummy;
 
             public unsafe Tasklet* _nextTasklet;
-            public unsafe Tasklet* _oldTaskletNext;
 
             public RuntimeAsyncReturnValue _retValue;
             public virtual ref byte GetReturnPointer() { return ref _dummy; }
@@ -451,6 +450,8 @@ namespace System.Runtime.CompilerServices
             public IntPtr restoreIPAddress;
             public StackDataInfo* pStackDataInfo;
             public TaskletReturnType taskletReturnType;
+            public int minGeneration;
+            public Tasklet* pTaskletPrevInStack;
 
             public int GetMaxStackNeeded() { return pStackDataInfo->StackRequirement; }
         }
@@ -491,6 +492,9 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_DeleteTasklet")]
         private static unsafe partial void DeleteTasklet(Tasklet* tasklet);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_RegisterTasklet")]
+        private static unsafe partial void RegisterTasklet(Tasklet* tasklet);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void UnwindToFunctionWithAsyncFrame(Tasklet* topTasklet, nint framesToUnwind);
 
@@ -508,8 +512,28 @@ namespace System.Runtime.CompilerServices
             if (nextTaskletInStack == null)
                 throw new OutOfMemoryException();
 
-            maintainedData._oldTaskletNext = maintainedData._nextTasklet;
-            lastTasklet->pTaskletNextInStack = maintainedData._nextTasklet;
+            if (maintainedData._nextTasklet == null)
+            {
+                RegisterTasklet(lastTasklet);
+            }
+            else
+            {
+                maintainedData._nextTasklet->pTaskletPrevInStack = lastTasklet;
+                lastTasklet->pTaskletNextInStack = maintainedData._nextTasklet;
+
+                // we are suspending, so change the age of tasklets from -1 (active) to 0 (very young)
+                // NOTE: this is only needed as long as we allow cross-frame byrefs as
+                // that forces us to make age of active tasklets undefined (see comment in PlatformIndependentRestore)
+                // without such byrefs old tasklets could stay old as nothing could change locals of a captured frame.
+                for (Tasklet* current = maintainedData._nextTasklet; current != null; current = current->pTaskletNextInStack)
+                {
+                    if (current->minGeneration == -1)
+                    {
+                        current->minGeneration = 0;
+                    }
+                }
+            }
+
             maintainedData._nextTasklet = nextTaskletInStack;
             maintainedData._retValue = default(RuntimeAsyncReturnValue);
 

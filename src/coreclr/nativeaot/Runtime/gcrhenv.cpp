@@ -654,6 +654,14 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
 }
 
+void GCToEEInterface::TaskletPromotionsGranted(int /*condemned*/, int /*max_gen*/, ScanContext* /*sc*/)
+{
+}
+
+void GCToEEInterface::TaskletDemote(int /*condemned*/, int /*max_gen*/, ScanContext* /*sc*/)
+{
+}
+
 uint32_t GCToEEInterface::GetActiveSyncBlockCount()
 {
     return 0;

@@ -80,6 +80,7 @@
 
 static const Entry s_QCall[] =
 {
+    DllImportEntry(RuntimeSuspension_RegisterTasklet)
     DllImportEntry(RuntimeSuspension_DeleteTasklet)
     DllImportEntry(RuntimeSuspension_CaptureTasklets)
     DllImportEntry(Enum_GetValuesAndNames)

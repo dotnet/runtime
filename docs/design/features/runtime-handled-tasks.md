@@ -618,3 +618,55 @@ In the current experiment we have looked into two implementing strategies:
 ## On unmanaged pointers.
 We cannot possibly track unmanaged pointers that refer to the stack across suspensions. Disallowing such scenarios would not be a take-back though since currently C# does not allow `await` in unsafe context, therefore await and unmanaged pointers cannot mix.
 
+## Impact on GC (heap size, pauses).
+
+We have examined the behavior of experimental async2 implementations on GC. For simplicity we looked into behavior of a simple benchmark that ensures 10000 suspended tasks at some point, each containing 100 stack frames with at least 1 object and 1 integer alive across await and thus requiring capture. At the time the tasks are suspended, the benchmark forces a number of Gen0 GCs and measures average time taken by GCs as well as the managed heap size.
+To further reduce the number of involved variables, the benchmark is single-threaded and Workstation GC was used.
+
+The benchmark produces very little garbage when the masurements are performed as the main interest is not on how GC handles allocations, but on how the presence of captured tasks impacts GC.
+
+Our observations (on x64, AMD 5950X):
+
+**===== Async1**:
+
+There is some noise, but a typical Gen0 pause in the above scenario was: 120 microseconds.
+The managed heap size (as reported by `GetGCMemoryInfo.HeapSizeBytes`) is stable at 130 Mb.
+The peak working set (as reported by `Task Manager`) is 148 Mb. 
+
+**=====Async2 (unwinding/stack-capturing based)**:
+
+When GC pauses were measured as-is, the results were very disappointing - **48690 microsecond**. (**~400x worse** than async1 and generally unacceptable for a Gen0 pause)
+
+The reasons for such timings is that the implementation would go through every one of the 1000000 tasklets and report referenced objects as roots. That is time consuming and is also very redundant when GC generational model is considered. Since suspended stacks can't see assignments of new objects, once GC performs en-masse promotion, all the roots owned by these tasks become too old to be of interest for collections that target younger generations until the containing task is resumed.  
+This is a unique challenge of stack-capturing implementation. In async1 suspended tasks are regular heap objects and do not require any special reporting in GC STW phases.
+
+As a solution to this issue, we implemented tasklet aging mechanism, similar to approach used by GC handles. We make note of GC promotions, and increase "min age" of suspended tasks, so that, for example, tasks that only refer to tenured objects do not need to report roots in ephemeral collections.
+
+The taklet aging was an enormous optimization and the pause time in the above benchmark went down to **480 microseconds**. That is **100x improvement** and is not too bad, considering that this is close to the worst case scenario.
+It was still **4x worse** than async1.
+
+Once tasks know their age, root reporting is no longer the dominant factor, but we still need to check age of 10000 tasks, even if the answer is "too old". A further improvement is possible by grouping the suspended tasks in groups, so that age of entire group could be examined.
+
+For the memory consumption, the managed heap is reported to be very small - **28Mb**. Unsurprisingly, since this approach uses native/malloc memory to store captured data.  
+However, the peak working set was seen at **499Mb** that is **3.3x worse** than async1.
+
+The reason for higher memory consumption is that this approach captures the entire stack frame and its registers, which is less eficient than async1, which, based on data-flow analysis, may capture only variables that are live across awaits.
+
+**=====Async2 (JIT state-machine based)**:
+
+The pause times were observed at **100 microseconds**, which is **better than in async1** implementation. 
+Since the root set would be roughly the same as in async1, the difference could be just second-order effects of different heap graph or different distribution of object sizes.
+
+The peak working set was seen at 328Mb. 
+That is higher than async1 and most likely just additional transient allocations in the JIT. As the benchmark has just a few methods, it cannot be method bodies, but may need some follow up to confirm.
+
+Managed allocation impact in this model depends on JIT optimizations as the capture is based on liveness information, which is not available in tier-0 compiled methods. That is expected and could be acceptable as hot methods would not stay in tier-0. Besides it is possible to enable liveness analysis in tier-0 async2 methods, if needed, at about 5% of the estimated JIT cost. 
+It is also possible to improve liveness analysis/information in async2 methods in general - to further improve capturing efficiency.
+
+With `set DOTNET_TieredCompilation=0`
+Managed heap size: **157Mb**   - slightly more than async1
+
+With `set DOTNET_TieredCompilation=1`
+Managed heap size: **reaches 300Mb** in the first couple iterations, but then drops and **stays at 105Mb**, which is better than async1.
+
+ 
