@@ -1213,11 +1213,16 @@ namespace ILCompiler.DependencyAnalysis
                         objectWriter.EmitDebugFunctionInfo(node, nodeContents.Data.Length);
                     }
 
+                    // Ensure any allocated MethodTables have debug info
                     if (node is ConstructedEETypeNode MethodTable)
                     {
                         objectWriter._userDefinedTypeDescriptor.GetTypeIndex(MethodTable.Type, needsCompleteType: true);
                     }
                 }
+
+                // Ensure all fields associated with generated static bases have debug info
+                foreach (MetadataType typeWithStaticBase in objectWriter._nodeFactory.MetadataManager.GetTypesWithStaticBases())
+                    objectWriter._userDefinedTypeDescriptor.GetTypeIndex(typeWithStaticBase, needsCompleteType: true);
 
                 // Native side of the object writer is going to do more native memory allocations.
                 // Free up as much memory as possible so that we don't get OOM killed.

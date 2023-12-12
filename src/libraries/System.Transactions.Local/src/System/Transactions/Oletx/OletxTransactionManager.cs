@@ -399,7 +399,7 @@ internal sealed class OletxTransactionManager
         _configuredTransactionOptions.IsolationLevel = _isolationLevelProperty = TransactionManager.DefaultIsolationLevel;
         _configuredTransactionOptions.Timeout = _timeoutProperty = TransactionManager.DefaultTimeout;
 
-        InternalResourceManager = new OletxInternalResourceManager( this );
+        InternalResourceManager = new OletxInternalResourceManager(this);
 
         DtcTransactionManagerLock.AcquireWriterLock(-1);
         try
@@ -579,7 +579,7 @@ internal sealed class OletxTransactionManager
     {
         get
         {
-            if (DtcTransactionManagerLock.IsReaderLockHeld ||DtcTransactionManagerLock.IsWriterLockHeld)
+            if (DtcTransactionManagerLock.IsReaderLockHeld || DtcTransactionManagerLock.IsWriterLockHeld)
             {
                 if (_dtcTransactionManager == null)
                 {
