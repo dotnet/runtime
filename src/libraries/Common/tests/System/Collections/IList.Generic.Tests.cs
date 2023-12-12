@@ -409,7 +409,7 @@ namespace System.Collections.Tests
                 T validAdd = CreateT(12350);
                 list.Insert(count, validAdd);
                 CollectionAsserts.HasCount(list, count + 1);
-                CollectionAsserts.EqualAt(list, count, valueAdd);
+                CollectionAsserts.EqualAt(list, count, validAdd);
             }
         }
 
