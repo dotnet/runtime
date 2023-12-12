@@ -94,7 +94,7 @@ namespace System.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(UpperLowerCasing_TestData))]
         public static void CreateWithCulturesTest(string lowerForm, string upperForm, string cultureName)
         {
@@ -112,7 +112,7 @@ namespace System.Tests
             Assert.Equal(sc.GetHashCode((object) lowerForm), sc.GetHashCode((object) upperForm));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public static void InvariantTest()
         {
             Assert.True(StringComparer.InvariantCulture.Equals("test", "test"), "Same casing strings with StringComparer.InvariantCulture should be equal");
@@ -181,11 +181,12 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
             {
+                bool ignoreSymbolsIgnoresOnlyPunctuation = PlatformDetection.IsHybridGlobalizationOnBrowser;
                 yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
-                yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
                 yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
-                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
                 yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
@@ -198,7 +199,7 @@ namespace System.Tests
             { "abcd", "ABcd", "en-US", CompareOptions.StringSort, false },
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         [MemberData(nameof(CreateFromCultureAndOptionsStringSortData))]
         public static void CreateFromCultureAndOptions(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
@@ -210,7 +211,7 @@ namespace System.Tests
             Assert.Equal(result, sc.Equals((object)actualString, (object)expectedString));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         public static void CreateFromCultureAndOptionsStringSort(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {

@@ -8,7 +8,7 @@ using Internal.Metadata.NativeFormat;
 
 namespace Internal.StackTraceMetadata
 {
-    class MethodNameFormatter
+    internal class MethodNameFormatter
     {
         /// <summary>
         /// Metadata reader used for the purpose of method name formatting.

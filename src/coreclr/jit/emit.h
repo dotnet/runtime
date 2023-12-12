@@ -1705,7 +1705,8 @@ protected:
 #define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_11C 10.0f   // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_14C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C 14.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_16C 16.0f   // slower - 13 cycles
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
@@ -1730,6 +1731,7 @@ protected:
 #define PERFSCORE_LATENCY_11C 11.0f
 #define PERFSCORE_LATENCY_12C 12.0f
 #define PERFSCORE_LATENCY_13C 13.0f
+#define PERFSCORE_LATENCY_14C 14.0f
 #define PERFSCORE_LATENCY_15C 15.0f
 #define PERFSCORE_LATENCY_16C 16.0f
 #define PERFSCORE_LATENCY_18C 18.0f
@@ -1869,10 +1871,16 @@ protected:
         // beginning of the function -- of the target instruction of the jump, used to
         // determine if this jump needs to be patched.
         unsigned idjOffs :
-#if defined(TARGET_XARCH)
-            29;
-        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+#if defined(TARGET_AMD64)
+            28;
+        // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+        // Indicates the jump follows a call instruction and precedes an OS epilog.
+        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
+        unsigned idjIsAfterCallBeforeEpilog : 1;
+#elif defined(TARGET_X86)
+            29;
         unsigned idjIsRemovableJmpCandidate : 1;
 #else
             30;

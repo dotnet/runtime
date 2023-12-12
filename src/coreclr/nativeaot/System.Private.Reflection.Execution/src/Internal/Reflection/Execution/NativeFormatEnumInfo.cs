@@ -11,7 +11,7 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution
 {
-    static class NativeFormatEnumInfo
+    internal static class NativeFormatEnumInfo
     {
         public static void GetEnumValuesAndNames(MetadataReader reader, TypeDefinitionHandle typeDefHandle,
             out object[] unsortedBoxedValues, out string[] unsortedNames, out bool isFlags)

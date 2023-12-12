@@ -400,8 +400,7 @@ namespace System.Globalization.Tests
             Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         public void Ctor_String_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => new CultureInfo(null)); // Name is null

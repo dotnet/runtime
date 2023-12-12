@@ -109,6 +109,8 @@
       <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
 
       <BundleFiles Include="$(WasmSharedPath)data\aot-tests\*"  TargetDir="publish" />
+      <!-- FIXME: what would be the correct place to do this? -->
+      <BundleFiles Include="$(MonoProjectRoot)src\mono\wasm\build\WasmApp.Common*"  TargetDir="publish" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">

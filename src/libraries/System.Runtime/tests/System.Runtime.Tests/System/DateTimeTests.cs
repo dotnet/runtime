@@ -114,7 +114,7 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second, millisecond);
             var dateTime = new DateTime(date, time);
-            
+
             Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond), dateTime);
         }
 
@@ -125,7 +125,7 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second, millisecond);
             var dateTime = new DateTime(date, time, DateTimeKind.Local);
-            
+
             Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond, DateTimeKind.Local), dateTime);
         }
 
@@ -2734,6 +2734,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StandardFormatSpecifiers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95623", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void TryFormat_MatchesToString(string format)
         {
             DateTime dt = DateTime.UtcNow;

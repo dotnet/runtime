@@ -505,7 +505,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -864,7 +864,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 
@@ -1156,11 +1156,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
     }
-    GetEmitter()->emitIns_J(INS_jal, block->GetJumpDest());
+    GetEmitter()->emitIns_J(INS_jal, block->GetTarget());
 
     BasicBlock* const nextBlock = block->Next();
 
-    if (block->bbFlags & BBF_RETLESS_CALL)
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
@@ -1179,7 +1179,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+        BasicBlock* const jumpDest = nextBlock->GetTarget();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -1199,10 +1199,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
+    // jump target using bbTarget - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    if (!block->HasFlag(BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
         block = nextBlock;
@@ -1212,7 +1212,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -2577,8 +2577,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -2591,7 +2591,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -3385,7 +3385,25 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+    assert(tmpReg != treeNode->GetRegNum());
+    assert(tmpReg != op1->GetRegNum());
+
     GetEmitter()->emitIns_R_R(ins, dstSize, treeNode->GetRegNum(), op1->GetRegNum());
+
+    // This part emulates the "flush to zero" option because the RISC-V specification does not provide it.
+    instruction feq_ins = INS_feq_s;
+    if (srcType == TYP_DOUBLE)
+    {
+        feq_ins = INS_feq_d;
+    }
+    // Compare op1 with itself to get 0 if op1 is NaN and 1 for any other value
+    GetEmitter()->emitIns_R_R_R(feq_ins, dstSize, tmpReg, op1->GetRegNum(), op1->GetRegNum());
+    // Get subtraction result of REG_ZERO (always 0) and feq result
+    // As a result we get 0 for NaN and -1 (all bits set) for any other value
+    GetEmitter()->emitIns_R_R_R(INS_sub, dstSize, tmpReg, REG_ZERO, tmpReg);
+    // and instruction with received mask produces 0 for NaN and preserves any other value
+    GetEmitter()->emitIns_R_R_R(INS_and, dstSize, treeNode->GetRegNum(), treeNode->GetRegNum(), tmpReg);
 
     genProduceReg(treeNode);
 }
@@ -3967,7 +3985,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(ins != INS_invalid);
     assert(regs != 0);
 
-    emit->emitIns_J(ins, compiler->compCurBB->GetJumpDest(), regs); // 5-bits;
+    emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
@@ -5460,23 +5478,30 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree*  src1 = bndsChk->GetIndex();
-    GenTree*  src2 = bndsChk->GetArrayLength();
-    regNumber reg1 = src1->GetRegNum();
-    regNumber reg2 = src2->GetRegNum();
+    GenTree*  index     = bndsChk->GetIndex();
+    GenTree*  length    = bndsChk->GetArrayLength();
+    regNumber indexReg  = index->GetRegNum();
+    regNumber lengthReg = length->GetRegNum();
 
-    genConsumeRegs(src1);
-    genConsumeRegs(src2);
+    genConsumeRegs(index);
+    genConsumeRegs(length);
+
+    if (genActualType(index->TypeGet()) == TYP_INT)
+    {
+        regNumber tempReg = oper->GetSingleTempReg();
+        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
+        indexReg = tempReg;
+    }
 
 #ifdef DEBUG
-    var_types bndsChkType = genActualType(src2->TypeGet());
-    var_types src1ChkType = genActualType(src1->TypeGet());
+    var_types lengthType = genActualType(length->TypeGet());
+    var_types indexType  = genActualType(index->TypeGet());
     // Bounds checks can only be 32 or 64 bit sized comparisons.
-    assert(bndsChkType == TYP_INT || bndsChkType == TYP_LONG);
-    assert(src1ChkType == TYP_INT || src1ChkType == TYP_LONG);
+    assert(lengthType == TYP_INT || lengthType == TYP_LONG);
+    assert(indexType == TYP_INT || indexType == TYP_LONG);
 #endif // DEBUG
 
-    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, reg1, bndsChk->gtIndRngFailBB, reg2);
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, bndsChk->gtIndRngFailBB, lengthReg);
 }
 
 //---------------------------------------------------------------------

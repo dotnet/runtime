@@ -58,7 +58,6 @@ char *mono_method_get_full_name (MonoMethod *method);
 extern void mono_register_timezones_bundle (void);
 #endif /* INVARIANT_TIMEZONE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
-static void mono_wasm_init_finalizer_thread (void);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
 extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
@@ -542,9 +541,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_thread_set_main (mono_thread_current ());
 
-	// TODO: we can probably delay starting the finalizer thread even longer - maybe from JS
-	// once we're done with loading and are about to begin running some managed code.
-	mono_wasm_init_finalizer_thread ();
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
@@ -969,6 +965,34 @@ mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
+// this will return bool value if the object is a bool, otherwise it will return -1 or error
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
+
+	int result = -1;
+
+	MONO_ENTER_GC_UNSAFE;
+
+	MonoClass *klass = mono_object_get_class (obj);
+	if (!klass) {
+		goto end;
+	}
+
+	MonoType *type = mono_class_get_type (klass);
+	if (!type) {
+		goto end;
+	}
+
+	int mono_type = mono_type_get_type (type);
+	if (MONO_TYPE_BOOLEAN == mono_type) {
+		result = ((signed char*)mono_object_unbox (obj) == 0 ? 0 : 1);
+	}
+
+	end:
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
 // This code runs inside a gc unsafe region
 static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
@@ -1296,12 +1320,11 @@ mono_wasm_profiler_init_browser (const char *desc)
 
 #endif
 
-static void
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_init_finalizer_thread (void)
 {
-	// At this time we don't use a dedicated thread for finalization even if threading is enabled.
-	// Finalizers periodically run on the main thread
-#if 0
+	// in the single threaded build, finalizers periodically run on the main thread instead.
+#ifndef DISABLE_THREADS
 	mono_gc_init_finalizer_thread ();
 #endif
 }
