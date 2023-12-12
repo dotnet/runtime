@@ -21046,7 +21046,7 @@ size_t gc_heap::get_total_promoted()
     return total_promoted_size;
 }
 
-#if defined(BGC_SERVO_TUNING)
+#ifdef BGC_SERVO_TUNING
 size_t gc_heap::get_total_generation_size (int gen_number)
 {
     size_t total_generation_size = 0;
@@ -22105,7 +22105,6 @@ void gc_heap::update_end_gc_time_per_heap()
 void gc_heap::update_end_ngc_time()
 {
     end_gc_time = GetHighPrecisionTimeStamp();
-
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     last_gc_end_time_us = end_gc_time;
     dprintf (HEAP_BALANCE_LOG, ("[GC#%zd-%zd-%zd]", settings.gc_index,
@@ -25368,7 +25367,6 @@ int gc_heap::calculate_new_heap_count ()
     dprintf (6666, ("stress %d -> %d", n_heaps, new_n_heaps));
 #else //STRESS_DYNAMIC_HEAP_COUNT
     int new_n_heaps = n_heaps;
-
     if (median_throughput_cost_percent > 10.0f)
     {
         float scale;
