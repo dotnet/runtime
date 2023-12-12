@@ -20,6 +20,7 @@ import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { MonoObject, MonoObjectNull } from "./types/internal";
 import { monoStringToStringUnsafe } from "./strings";
+import { thread_available } from "./pthreads/browser";
 
 export function export_internal(): any {
     return {
