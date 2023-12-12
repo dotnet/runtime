@@ -20,9 +20,6 @@
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
     <_targetOS>$(TargetOS)</_targetOS>
-
-    <!-- Forced by ILLink targets -->
-    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
