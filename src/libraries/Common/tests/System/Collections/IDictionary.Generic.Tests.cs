@@ -1028,7 +1028,6 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             TKey missingKey = GetNewKey(dictionary);
             TValue value = CreateTValue(5123);
-            TValue outValue;
             CollectionAsserts.TryGetValue(dictionary, missingKey, false);
         }
 
@@ -1041,7 +1040,6 @@ namespace System.Collections.Tests
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
                 TValue value = CreateTValue(5123);
-                TValue outValue;
                 dictionary.TryAdd(missingKey, value);
                 CollectionAsserts.TryGetValue(dictionary, missingKey, true, value);
             }
@@ -1082,7 +1080,6 @@ namespace System.Collections.Tests
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = default(TKey);
                 TValue value = CreateTValue(5123);
-                TValue outValue;
                 dictionary.TryAdd(missingKey, value);
                 CollectionAsserts.TryGetValue(dictionary, missingKey, true, value);
             }
