@@ -1,16 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Xml.Linq;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public class AssemblySaveInterfaceImplementation
+    public class AssemblySaveMethodBuilderTests
     {
         [Fact]
         public void DefineMethodOverride_InterfaceMethod()
@@ -296,7 +294,7 @@ namespace System.Reflection.Emit.Tests
             AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
 
-            Assert.Throws<NotSupportedException>(() => type.GetInterfaceMap(typeof(Impl))); // type not created
+            Assert.Throws<NotSupportedException>(() => type.GetInterfaceMap(typeof(Impl))); // concreteTypeWithAbstractMethod not created
             type.DefineMethod("M", MethodAttributes.Public, typeof(int), null);
             type.CreateType();
 
@@ -317,7 +315,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void CreateType_InterfaceMethodNotImplemented()
+        public void CreateType_ValidateAllAbstractMethodsAreImplemented()
         {
             AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
@@ -333,5 +331,26 @@ namespace System.Reflection.Emit.Tests
             baseTypeImplementedTheInterfaceMethod.CreateType(); // succeeds
             Assert.Throws<TypeLoadException>(() => baseTypePartiallyImplemented.CreateType());
         }
+
+        [Fact]
+        public void CreateType_ValidateMethods()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder concreteTypeWithAbstractMethod, out MethodInfo _);
+            concreteTypeWithAbstractMethod.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
+
+            Assert.Throws<InvalidOperationException>(() => concreteTypeWithAbstractMethod.CreateType());
+
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+            TypeBuilder abstractType = module.DefineType("AbstractType", TypeAttributes.Public | TypeAttributes.Abstract);
+            MethodBuilder abstractMethod =  abstractType.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
+            abstractType.DefineMethod("PinvokeMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.PinvokeImpl);
+            Assert.Throws<InvalidOperationException>(() => abstractMethod.GetILGenerator());
+            abstractType.CreateType(); // succeeds
+
+            TypeBuilder concreteTypeWithAbstractPinvokeMethod = module.DefineType("Type3", TypeAttributes.Public);
+            concreteTypeWithAbstractPinvokeMethod.DefineMethod("PinvokeMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.PinvokeImpl);
+            concreteTypeWithAbstractPinvokeMethod.CreateType(); 
+        }
+
     }
 }

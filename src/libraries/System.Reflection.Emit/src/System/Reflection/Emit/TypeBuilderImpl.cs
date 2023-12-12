@@ -103,16 +103,49 @@ namespace System.Reflection.Emit
             _module.PopulateTypeAndItsMembersTokens(this);
             _isCreated = true;
 
+            ValidateMethods();
             if (!IsAbstract)
             {
-                CheckAllAbstractMethodsImplemented();
+                ValidateAllAbstractMethodsAreImplemented();
             }
 
             return this;
         }
 
+        private void ValidateMethods()
+        {
+            for (int i = 0; i < _methodDefinitions.Count; i++)
+            {
+                MethodBuilderImpl method = _methodDefinitions[i];
+                MethodAttributes methodAttrs = method.Attributes;
+
+                // Any of these flags in the implementation flags is set, we will not check the IL method body
+                if (((method.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
+                    ((methodAttrs & MethodAttributes.PinvokeImpl) != 0))
+                {
+                    continue;
+                }
+
+                if ((methodAttrs & MethodAttributes.Abstract) != 0)
+                {
+                    // Check if an abstract method declared on a non-abstract class
+                    if ((_attributes & TypeAttributes.Abstract) == 0)
+                    {
+                        throw new InvalidOperationException(SR.InvalidOperation_BadTypeAttributesNotAbstract);
+                    }
+
+                    ILGeneratorImpl? body = method.ILGeneratorImpl;
+                    // If this is an abstract method or an interface should not have body.
+                    if (body != null && body.ILOffset > 0)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, method.Name));
+                    }
+                }
+            }
+        }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
-        private void CheckAllAbstractMethodsImplemented()
+        private void ValidateAllAbstractMethodsAreImplemented()
         {
             if (_interfaces != null)
             {

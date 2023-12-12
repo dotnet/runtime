@@ -252,4 +252,10 @@
   <data name="TypeLoad_MissingMethod" xml:space="preserve">
     <value>Abstract method '{0}' in type '{1}' does not have an implementation.</value>
   </data>
+  <data name="InvalidOperation_BadMethodBody" xml:space="preserve">
+    <value>Method '{0}' cannot have a method body</value>
+  </data>
+  <data name="InvalidOperation_BadTypeAttributesNotAbstract" xml:space="preserve">
+    <value>Type must be declared abstract if any of its methods are abstract.</value>
+  </data>
 </root>
