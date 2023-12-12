@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/csharp/serialization/bin/Debug/net8.0/serialization.dll
+ANY_PATH= /home/wuxinlong/workspace/samples/core/linq/csharp/aggregate/bin/Debug/net8.0/aggregate.dll
 
 GitHubKey=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
 
@@ -16,7 +16,7 @@ GitHubKey=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
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_DEBUG_OPTIONS = "-v"
+MONO_ENV_DEBUG_OPTIONS = "-v --trace=all"
 MONO_ENV_RUN_OPTIONS = ""
 
 build: TestRun.cs
@@ -100,13 +100,12 @@ debug-any-baseline:
 	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
 	gdb \
 	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-x86/shared/Microsoft.NETCore.App/8.0.0" \
-	-ex "b mini-exceptions.c:2285" \
+	-ex "b mini.c:2156" \
 	--args $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-x64/dotnet \
 	$(ANY_PATH) \
 
 clean:
 	rm -f *.exe *.exe.mdb
-
 
 # COMPlus_DebugWriteToStdErr="1" MONO_LOG_LEVEL="debug" MONO_LOG_MASK="all" COREHOST_TRACE="1" COREHOST_TRACE_VERBOSITY="4" MONO_ENV_OPTIONS="--compile-all --trace=all" qemu-riscv64 -L ../../../..//.tools/rootfs/riscv64/ -g 12345 ../../../../artifacts/bin/testhost/net8.0-Linux-Debug-riscv64/dotnet TestRun.exe
 

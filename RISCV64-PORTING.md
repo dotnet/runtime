@@ -33,6 +33,33 @@
  - [MetadataLoadContext](https://github.com/dotnet/samples/tree/main/core/assembly/MetadataLoadContext/)
  - [HelloMsBuild](https://github.com/dotnet/samples/tree/main/core/console-apps/HelloMsBuild/)
  - [DllMapDemo](https://github.com/dotnet/samples/tree/main/core/extensions/DllMapDemo)
+ - [AppWithPlugin](https://github.com/dotnet/samples/tree/main/core/extensions/AppWithPlugin/)
+ - [AssemblyLoading](https://github.com/dotnet/samples/tree/main/core/extensions/AssemblyLoading)
+ - [cyrillic-to-latin](https://github.com/dotnet/samples/tree/main/core/encoding/cyrillic-to-latin)
+ - [linker](https://github.com/dotnet/samples/tree/main/core/linker/)
+ - [linq/csharp/aggregate](https://github.com/dotnet/samples/tree/main/core/linq/csharp/aggregate)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
@@ -47,5 +74,9 @@
  
 
 ## Got Error:
+ - [COMServerDemo](https://github.com/dotnet/samples/tree/main/core/extensions/COMServerDemo): Windows Only
+ - [NetComSxS](https://github.com/dotnet/samples/tree/main/core/extensions/NetComSxS): Windows Only
+ - [json](https://github.com/dotnet/samples/tree/main/core/json): Fail at qemu cuz qemu rcu assertion problems.
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread
  - [AsyncStreams](https://github.com/dotnet/samples/tree/main/csharp/tutorials/AsyncStreams)
+ - 
