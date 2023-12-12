@@ -1115,7 +1115,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     void register_aot_modules (void);
                     void register_aot_modules (void)
                     {
-                        {{JoinLines(symbols.Select(s => $"mono_aot_register_module ({s});"))}}
+                    {{JoinLines(symbols.Select(s => $"    mono_aot_register_module ({s});"))}}
                     }
 
                     {{
@@ -1152,7 +1152,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     void register_aot_modules (void);
                     void register_aot_modules (void)
                     {
-                        {{JoinLines(symbols.Select(s => $"mono_aot_register_module ({s});"))}}
+                    {{JoinLines(symbols.Select(s => $"    mono_aot_register_module ({s});"))}}
                     }
                     #endif
                     """);
