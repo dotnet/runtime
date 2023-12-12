@@ -36,12 +36,12 @@ struct GlobalValueEntry
 
 // This size should be one bigger than the number of entries since a null entry
 // signifies the end of the array.
-static constexpr size_t DebugTypeEntriesArraySize = 96;
+static constexpr size_t DebugTypeEntriesArraySize = 128;
 static DebugTypeEntry s_DebugEntries[DebugTypeEntriesArraySize];
 
 // This size should be one bigger than the number of entries since a null entry
 // signifies the end of the array.
-static constexpr size_t GlobalEntriesArraySize = 6;
+static constexpr size_t GlobalEntriesArraySize = 8;
 static GlobalValueEntry s_GlobalEntries[GlobalEntriesArraySize];
 
 // This structure is part of a in-memory serialization format that is used by diagnostic tools to
