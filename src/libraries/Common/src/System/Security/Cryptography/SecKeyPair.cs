@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 
@@ -10,7 +11,7 @@ namespace System.Security.Cryptography
     {
         internal SafeSecKeyRefHandle PublicKey { get; private set; }
         internal SafeSecKeyRefHandle? PrivateKey { get; private set; }
-        private SafeSecCertificateHandle? OwningCertificate { get; set; }
+        private SafeSecCertificateHandle? _owningCertificate;
 
         private SecKeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle? privateKey)
         {
@@ -25,12 +26,10 @@ namespace System.Security.Cryptography
             PublicKey?.Dispose();
             PublicKey = null!;
 
-            if (OwningCertificate is not null)
-            {
-                // We don't dispose here. Callers that supply a certificate to the key pair are expected to pass
-                // an existing certificate with that has been incremented.
-                OwningCertificate.DangerousRelease();
-            }
+            // We don't dispose here. Callers that supply a certificate to the key pair are expected to pass
+            // an existing certificate with that has been incremented.
+            SafeSecCertificateHandle? handle = Interlocked.Exchange(ref _owningCertificate, null);
+            handle?.DangerousRelease();
         }
 
         internal static SecKeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
@@ -52,7 +51,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(owningCertificate));
 
             SecKeyPair pair = PublicPrivatePair(publicKey, privateKey);
-            pair.OwningCertificate = owningCertificate;
+            pair._owningCertificate = owningCertificate;
             return pair;
         }
 
