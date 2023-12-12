@@ -5898,7 +5898,9 @@ void Compiler::RecomputeLoopInfo()
     fgComputeReachability();
     optSetBlockWeights();
     // Rebuild the loop tree annotations themselves
+    // But don't leave the iter info lying around.
     optFindLoops();
+    optClearLoopIterInfo();
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
