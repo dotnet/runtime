@@ -221,22 +221,22 @@ jobs:
         - WasmTestOnBrowser
         - WasmTestOnNodeJS
 
-  # Hybrid Globalization AOT tests - https://github.com/dotnet/runtime/issues/94212
-  # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-  #   parameters:
-  #     platforms:
-  #       - browser_wasm
-  #       - browser_wasm_win
-  #     nameSuffix: _HybridGlobalization_AOT
-  #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:HybridGlobalization=true
-  #     runAOT: true
-  #     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-  #     isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-  #     alwaysRun: true
-  #     scenarios:
-  #       - normal
-  #       - WasmTestOnBrowser
-  #       - WasmTestOnNodeJS
+  # Hybrid Globalization AOT tests
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      nameSuffix: _HybridGlobalization_AOT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:HybridGlobalization=true
+      runAOT: true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJS
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Builds only

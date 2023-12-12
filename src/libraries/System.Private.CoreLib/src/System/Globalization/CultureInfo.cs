@@ -102,7 +102,11 @@ namespace System.Globalization
         private static volatile CultureInfo? s_userDefaultUICulture;
 
         // The Invariant culture;
+#if TARGET_BROWSER
+        private static CultureInfo? s_InvariantCultureInfo;
+#else
         private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);
+#endif
 
         // These are defaults that we use if a thread has not opted into having an explicit culture
         private static volatile CultureInfo? s_DefaultThreadCurrentUICulture;
@@ -462,7 +466,11 @@ namespace System.Globalization
         {
             get
             {
+#if TARGET_BROWSER
+                s_InvariantCultureInfo ??= new CultureInfo(CultureData.Invariant, isReadOnly: true);
+#else
                 Debug.Assert(s_InvariantCultureInfo != null);
+#endif
                 return s_InvariantCultureInfo;
             }
         }
