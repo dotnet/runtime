@@ -103,7 +103,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] derivedB = partyB.DeriveKeyFromHash(partyAPublicKey.PublicKey, HashAlgorithmName.SHA256, null, null);
                 byte[] derivedA = partyAPrivateKey.DeriveKeyFromHash(partyB.PublicKey, HashAlgorithmName.SHA256, null, null);
                 Assert.Equal(derivedB, derivedA);
-
             }
         }
 
