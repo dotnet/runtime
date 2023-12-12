@@ -306,19 +306,23 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
-        poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-        if (lpIndex != BasicBlock::NOT_IN_LOOP)
+        if (optLoopTableValid)
         {
-            // Set the new lpBottom in the natural loop table
-            optLoopTable[lpIndex].lpBottom = bottom;
-        }
+            poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
-        {
-            // Set the new lpHead in the natural loop table
-            optLoopTable[lpIndexFallThrough].lpHead = bottom;
+            bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
+            if (lpIndex != BasicBlock::NOT_IN_LOOP)
+            {
+                // Set the new lpBottom in the natural loop table
+                optLoopTable[lpIndex].lpBottom = bottom;
+            }
+
+            if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
+            {
+                // Set the new lpHead in the natural loop table
+                optLoopTable[lpIndexFallThrough].lpHead = bottom;
+            }
         }
 
         // Add the GC_CALL node to Poll.
@@ -2696,7 +2700,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 //
 BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 {
-    assert(fgDomsComputed);
+    assert(fgSsaDomTree != nullptr);
     BasicBlock* lastReachablePred = nullptr;
 
     // Check if we have unreachable preds
@@ -2709,7 +2713,7 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
         }
 
         // We check pred's count of InEdges - it's quite conservative.
-        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        // We, probably, could use optReachable(fgFirstBb, pred) here to detect unreachable preds
         if (predBlock->countOfInEdges() > 0)
         {
             if (lastReachablePred != nullptr)
