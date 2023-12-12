@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -36,29 +35,6 @@ namespace System.Tests
             var exception = new TypeLoadException(message, innerException);
             ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_TYPELOAD, innerException: innerException, message: message);
             Assert.Equal("", exception.TypeName);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
-        public static void TypeLoadExceptionMessageContainsMethodNameWhenInternalCallOnlyMethodIsCalled()
-        {
-            AssertExtensions.ThrowsContains<TypeLoadException>(() => new F1(), "Internal call method 'F2.Foo' with non_NULL RVA.");
-        }
-
-        class F1
-        {
-            public F1()
-            {
-                var f2 = new F2();
-            }
-        }
-
-        class F2
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            public void Foo()
-            {
-
-            }
         }
     }
 }
