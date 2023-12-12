@@ -1038,7 +1038,7 @@ namespace System.Net.Sockets.Tests
             // When the connect fails, .NET falls back to use shutdown(SHUT_RDWR).
             // This causes the receive on socket2 to succeed instead of failing with ConnectionReset.
             // The original behavior was restored in Linux 6.6 (419ce133ab928ab5efd7b50b2ef36ddfd4eadbd2).
-            bool mayShutdownGraceful = UsesSync && receiveOrSend && (ipv6Server || dualModeClient) &&
+            bool mayShutdownGraceful = UsesSync && receiveOrSend &&
                                        PlatformDetection.IsLinux && Environment.OSVersion.Version < new Version(6, 6);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
