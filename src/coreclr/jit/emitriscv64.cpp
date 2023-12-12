@@ -2118,13 +2118,49 @@ AGAIN:
  *  Emit a 32-bit RISCV64 instruction
  */
 
-/*static*/ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
+unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
     assert(sizeof(code_t) == 4);
-    BYTE* dstRW       = dst + writeableOffset;
-    *((code_t*)dstRW) = code;
-
+    memcpy(dst + writeableOffset, code, sizeof(code_t));
     return sizeof(code_t);
+}
+
+void emitter::emitOutputInstrJump(BYTE*             destination,
+                                  BYTE const* const source,
+                                  insGroup*         instructionGroup,
+                                  instrDescJmp*     jmp)
+{
+    UNATIVE_OFFSET sourceOffset    = emitCurCodeOffs(source);
+    UNATIVE_OFFSET distanceOffset  = 0;
+    BYTE const*    sourceAddress   = emitOffsetToPtr(sourceOffset);
+    BYTE const*    distanceAddress = nullptr;
+
+    if (jmp->idAddr()->iiaHasInstrCount())
+    {
+        printf("iiaHasInstrCount\n");
+        assert(instructionGroup != nullptr);
+        int      instuctionCount   = jmp->idAddr()->iiaGetInstrCount();
+        unsigned instructionNumber = emitFindInsNum(instructionGroup, jmp);
+        if (instuctionCount < 0)
+        {
+            assert(instructionNumber + 1 >= static_cast<unsigned>(-instuctionCount));
+        }
+
+        distanceOffset =
+            instructionGroup->igOffs + emitFindOffset(instructionGroup, instructionNumber + 1 + instuctionCount);
+        distanceAddress = emitOffsetToPtr(distanceOffset);
+    }
+    else
+    {
+        printf("iiaHasNotInstrCount\n");
+        distanceOffset  = jmp->idAddr()->iiaIGlabel->igOffs;
+        distanceAddress = emitOffsetToPtr(distanceOffset);
+    }
+
+    ptrdiff_t distanceValue = static_cast<ptrdiff_t>(distanceAddress - sourceAddress);
+    printf(
+        "SourceOffset: %u, DistanceOffset: %u, SourceAddress: %p, DistanceAddress: %p, UnrectifiedDistanceValue: %i\n",
+        sourceOffset, distanceOffset, sourceAddress, distanceAddress, distanceValue);
 }
 
 /*****************************************************************************
@@ -2139,6 +2175,7 @@ AGAIN:
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dstRW  = *dp + writeableOffset;
+    BYTE* const dst = *dp;
     BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
     BYTE* const odstRW = dstRW;
     code_t      code   = 0;
