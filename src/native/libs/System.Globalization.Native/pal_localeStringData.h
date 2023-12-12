@@ -50,6 +50,6 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeNam
                                                           int32_t valueLength,
                                                           const UChar* uiLocaleName);
 #else
-PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData);
+PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName);
 #endif  
 
