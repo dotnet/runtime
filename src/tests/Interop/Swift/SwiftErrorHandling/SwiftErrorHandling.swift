@@ -21,13 +21,13 @@ public func conditionallyThrowError(willThrow: Bool) throws -> Int {
     }
 }
 
-public func getMyErrorMessage(from error: Error) -> UnsafePointer<unichar>? {
+public func getMyErrorMessage(from error: Error, messageLength: inout Int32) -> UnsafePointer<unichar>? {
     if let myError = error as? MyError {
         switch myError {
         case .runtimeError(let message):
-            let buffer = UnsafeMutableBufferPointer<unichar>.allocate(capacity: message.length + 1)
+            let buffer = UnsafeMutableBufferPointer<unichar>.allocate(capacity: message.length)
             message.getCharacters(buffer.baseAddress!, range: NSRange(location: 0, length: message.length))
-            buffer[message.length] = 0 // must be null terminated so that it can be read by managed code
+            messageLength = Int32(message.length)
             return UnsafePointer(buffer.baseAddress!)
         }
     }
