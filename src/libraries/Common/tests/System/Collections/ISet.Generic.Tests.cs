@@ -98,15 +98,13 @@ namespace System.Collections.Tests
                 if (!DuplicateValuesAllowed)
                 {
                     ICollection<T> collection = GenericICollectionFactory(count);
-                    IReadOnlyCollection<T> readOnlyCollection = collection;
                     int seed = 800;
                     T duplicateValue = CreateT(seed++);
                     while (collection.Contains(duplicateValue))
                         duplicateValue = CreateT(seed++);
                     collection.Add(duplicateValue);
                     collection.Add(duplicateValue);
-                    Assert.Equal(count + 1, collection.Count);
-                    Assert.Equal(count + 1, readOnlyCollection.Count);
+                    CollectionAsserts.HasCount(collection, count + 1);
                 }
             }
         }
