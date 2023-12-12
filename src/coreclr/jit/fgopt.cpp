@@ -2222,8 +2222,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    /* set the right links */
-
     VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, bNext->bbLiveOut);
 
     // Update the beginning and ending IL offsets (bbCodeOffs and bbCodeOffsEnd).
@@ -2294,11 +2292,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             FALLTHROUGH;
 
         case BBJ_ALWAYS:
-            // Propagate BBF_NONE_QUIRK flag
-            block->CopyFlags(bNext, BBF_NONE_QUIRK);
-
-            FALLTHROUGH;
-
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             block->SetKindAndTarget(bNext->GetKind(), bNext->GetTarget());
@@ -2345,6 +2338,17 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     }
 
     assert(block->KindIs(bNext->GetKind()));
+
+    if (block->KindIs(BBJ_ALWAYS))
+    {
+        // Propagate BBF_NONE_QUIRK flag
+        block->CopyFlags(bNext, BBF_NONE_QUIRK);
+    }
+    else
+    {
+        // It's no longer a BBJ_ALWAYS; remove the BBF_NONE_QUIRK flag.
+        block->RemoveFlags(BBF_NONE_QUIRK);
+    }
 
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
@@ -6026,7 +6030,10 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 if (bDest == bNext)
                 {
                     // Skip jump optimizations, and try to compact block and bNext later
-                    block->SetFlags(BBF_NONE_QUIRK);
+                    if (!block->isBBCallAlwaysPairTail())
+                    {
+                        block->SetFlags(BBF_NONE_QUIRK);
+                    }
                     bDest = nullptr;
                 }
             }
