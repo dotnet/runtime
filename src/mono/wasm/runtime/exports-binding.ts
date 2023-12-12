@@ -163,8 +163,6 @@ export function replace_linker_placeholders(imports: WebAssembly.Imports) {
             const stubFn = env[shortName];
             if (typeof stubFn !== "function") throw new Error(`Expected ${shortName} to be a function`);
             env[shortName] = realFn;
-            // mono_log_debug(`Replaced WASM import ${shortName} stub ${stubFn.name} with ${realFn.name || "minified implementation"}`);
         }
     }
-
 }

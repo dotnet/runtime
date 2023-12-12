@@ -334,7 +334,9 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         Module["FS_createPath"]("/", "usr", true, true);
         Module["FS_createPath"]("/", "usr/share", true, true);
 
-        if (MonoWasmThreads) tcwraps.mono_wasm_init_finalizer_thread();
+        if (MonoWasmThreads) {
+            tcwraps.mono_wasm_init_finalizer_thread();
+        }
 
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
