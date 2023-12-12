@@ -424,9 +424,9 @@ namespace System.Net
             {
                 if (_channelBinding != null)
                 {
-                    int secChannelBindingsSize = Marshal.SizeOf<SecChannelBindings>();
-                    IntPtr cbtData = (nint)_channelBinding.DangerousGetHandle() + secChannelBindingsSize;
-                    int cbtDataSize = _channelBinding.Size - secChannelBindingsSize;
+                    int appDataOffset = sizeof(SecChannelBindings);
+                    IntPtr cbtData = (nint)_channelBinding.DangerousGetHandle() + appDataOffset;
+                    int cbtDataSize = _channelBinding.Size - appDataOffset;
 
                     // Channel bindings are calculated according to RFC 4121, section 4.1.1.2,
                     // so we need to include zeroed initiator fields and length prefix for the

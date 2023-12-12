@@ -11,7 +11,7 @@ namespace System.Net.Security
     internal sealed class SafeChannelBindingHandle : ChannelBinding
     {
         private const int CertHashMaxSize = 128;
-        private static readonly int s_secChannelBindingSize = Marshal.SizeOf<SecChannelBindings>();
+        private static readonly int s_secChannelBindingSize = sizeof(SecChannelBindings);
 
         private readonly int _cbtPrefixByteArraySize;
         internal int Length { get; private set; }
