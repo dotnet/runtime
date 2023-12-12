@@ -228,7 +228,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
     }
-    GetEmitter()->emitIns_J(INS_call, block->GetJumpDest());
+    GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
@@ -253,7 +253,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
 
-        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+        BasicBlock* const jumpDest = nextBlock->GetTarget();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -316,7 +316,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!block->HasFlag(BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        GetEmitter()->emitIns_J(INS_push_hide, nextBlock->GetJumpDest());
+        GetEmitter()->emitIns_J(INS_push_hide, nextBlock->GetTarget());
     }
     else
     {
@@ -325,12 +325,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
 
     // Jump to the finally BB
-    inst_JMP(EJ_jmp, block->GetJumpDest());
+    inst_JMP(EJ_jmp, block->GetTarget());
 
 #endif // !FEATURE_EH_FUNCLETS
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
+    // jump target using bbTarget - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
     if (!block->HasFlag(BBF_RETLESS_CALL))
@@ -348,7 +348,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     // Generate a RIP-relative
     //         lea reg, [rip + disp32] ; the RIP is implicit
     // which will be position-independent.
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->GetJumpDest(), REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->GetTarget(), REG_INTRET);
 }
 
 #else // !FEATURE_EH_FUNCLETS
@@ -1450,7 +1450,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_test, reg, reg, genActualType(op));
-    inst_JMP(EJ_jne, compiler->compCurBB->GetJumpDest());
+    inst_JMP(EJ_jne, compiler->compCurBB->GetTrueTarget());
 }
 
 //------------------------------------------------------------------------
@@ -4265,8 +4265,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 

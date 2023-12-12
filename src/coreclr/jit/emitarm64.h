@@ -370,6 +370,9 @@ static code_t insEncodeReg_P_3_to_1(regNumber reg);
 // Return an encoding for the specified 'P' register used in '2' thru '0' position.
 static code_t insEncodeReg_P_2_to_0(regNumber reg);
 
+// Return an encoding for the specified predicate type used in '16' position.
+static code_t insEncodePredQualifier_16(bool merge);
+
 // Return an encoding for the specified 'V' register used in '19' thru '17' position.
 static code_t insEncodeReg_V_19_to_17(regNumber reg);
 
@@ -466,7 +469,11 @@ static code_t insEncodeExtendScale(ssize_t imm);
 static code_t insEncodeReg3Scale(bool isScaled);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
-static code_t insEncodeSveElemsize(insOpts opt);
+static code_t insEncodeSveElemsize(emitAttr size);
+
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+// This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
@@ -567,8 +574,15 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
+//  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
+static emitAttr optGetSveElemsize(insOpts arrangement);
+
 //  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
 static insOpts optWidenElemsizeArrangement(insOpts arrangement);
+
+//  For the given SVE 'arrangement' returns the one with the element width that is double that of the 'arrangement'
+//  element.
+static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
 
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
 static emitAttr widenDatasize(emitAttr datasize);
@@ -868,7 +882,8 @@ inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
     return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
-            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)));
+            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) ||
+            insOptsScalableWithPredicateMerge(opt));
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -936,6 +951,13 @@ inline static bool insOptsScalableWithScalar(insOpts opt)
     // `opt` is any of the SIMD scalable types that are valid for conversion to/from a scalar.
     return ((opt == INS_OPTS_SCALABLE_B_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SCALAR) ||
             (opt == INS_OPTS_SCALABLE_S_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SCALAR));
+}
+
+inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
+{
+    // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
 }
 
 static bool isValidImmCond(ssize_t imm);

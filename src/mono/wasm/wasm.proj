@@ -427,7 +427,9 @@
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/driver.c;
+    <Copy SourceFiles="runtime/runtime.h;
+                       runtime/runtime.c;
+                       runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;"
           DestinationFolder="$(NativeBinDir)src"
@@ -447,7 +449,7 @@
                       Lines="@(_WasmImportedMethodNames)"
                       Overwrite="false" />
 
-    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
+    <Copy SourceFiles="runtime\runtime.h;runtime\pinvoke.h;runtime\gc-common.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
