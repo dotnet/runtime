@@ -35,7 +35,7 @@ public class ErrorHandlingTests
         Assert.True(error.Value != IntPtr.Zero, "A Swift error was expected to be thrown.");
 
         string errorMessage = GetErrorMessageFromSwift(error);
-        Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: {0}, Actual: {1}", expectedErrorMessage, errorMessage));
+        Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: '{0}', Actual: '{1}'", expectedErrorMessage, errorMessage));
     }
 
     [Fact]
