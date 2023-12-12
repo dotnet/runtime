@@ -1820,7 +1820,9 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FCONV_TO_R4:
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
+	case OP_FCONV_TO_OVF_I8:
 	case OP_RCONV_TO_I8:
+	case OP_RCONV_TO_OVF_I8:
 #endif
 	case OP_FNEG:
 	case OP_IAND:
@@ -1869,9 +1871,13 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_OVF_U2:
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U:
+	case OP_LCONV_TO_OVF_U1:
+	case OP_LCONV_TO_OVF_U2:
 	case OP_LCONV_TO_OVF_I4:
 	case OP_LCONV_TO_OVF_I4_UN:
+	case OP_LCONV_TO_OVF_U4:
 	case OP_LCONV_TO_OVF_U4_UN:
+	case OP_LCONV_TO_OVF_U8:
 
 	case OP_LADD_OVF:
 	case OP_LADD_OVF_UN:
@@ -2460,6 +2466,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_CALL_REG:
+		case OP_FCALL_REG:
 		case OP_VOIDCALL_REG:
 		case OP_VCALL2_REG:
 			break;
@@ -4618,6 +4625,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_CALL_REG:
+		case OP_FCALL_REG:
 		case OP_VOIDCALL_REG:
 		case OP_VCALL2_REG:
 			// JALR x1, 0(src1)
