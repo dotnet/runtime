@@ -4833,9 +4833,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
 
+        // Compute dominators and exceptional entry blocks
+        //
+        DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
+
         // The loop table is no longer valid.
         optLoopTableValid = false;
         optLoopTable      = nullptr;
+        // Old dominators and reachability sets are no longer valid.
+        fgDomsComputed         = false;
+        fgCompactRenumberQuirk = true;
     }
 
 #ifdef DEBUG
@@ -4851,10 +4858,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Create the variable table (and compute variable ref counts)
     //
     DoPhase(this, PHASE_MARK_LOCAL_VARS, &Compiler::lvaMarkLocalVars);
-
-    // Dominator and reachability sets are no longer valid.
-    fgDomsComputed         = false;
-    fgCompactRenumberQuirk = true;
 
     // IMPORTANT, after this point, locals are ref counted.
     // However, ref counts are not kept incrementally up to date.
@@ -5023,7 +5026,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
             ResetOptAnnotations();
-            RecomputeLoopInfo();
+            RecomputeFlowGraphAnnotations();
         }
     }
 
@@ -5882,14 +5885,14 @@ void Compiler::ResetOptAnnotations()
 }
 
 //------------------------------------------------------------------------
-// RecomputeLoopInfo: Recompute loop annotations between opt-repeat iterations.
+// RecomputeLoopInfo: Recompute flow graph annotations between opt-repeat iterations.
 //
 // Notes:
-//    The intent of this method is to update loop structure annotations, and those
-//    they depend on; these annotations may have become stale during optimization,
-//    and need to be up-to-date before running another iteration of optimizations.
+//    The intent of this method is to update all annotations computed on the flow graph
+//    these annotations may have become stale during optimization, and need to be
+//    up-to-date before running another iteration of optimizations.
 //
-void Compiler::RecomputeLoopInfo()
+void Compiler::RecomputeFlowGraphAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
@@ -5902,6 +5905,8 @@ void Compiler::RecomputeLoopInfo()
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 
     // Dominators and the loop table are computed above for old<->new loop
     // crossreferencing, but they are not actually used for optimization

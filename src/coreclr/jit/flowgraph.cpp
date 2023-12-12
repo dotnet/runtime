@@ -2700,7 +2700,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 //
 BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 {
-    assert(fgSsaDomTree != nullptr);
+    assert(m_domTree != nullptr);
     BasicBlock* lastReachablePred = nullptr;
 
     // Check if we have unreachable preds
@@ -4055,7 +4055,7 @@ void Compiler::fgInvalidateDfsTree()
 {
     m_dfsTree      = nullptr;
     m_loops        = nullptr;
-    fgSsaDomTree   = nullptr;
+    m_domTree      = nullptr;
     m_newToOldLoop = nullptr;
     m_oldToNewLoop = nullptr;
     fgSsaValid     = false;
@@ -4326,7 +4326,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
     for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
         unsigned          rpoNum = dfsTree->GetPostOrderCount() - i;
-        BasicBlock* const block  = dfsTree->GetPostOrder()[i - 1];
+        BasicBlock* const block  = dfsTree->GetPostOrder(i - 1);
         JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum + 1, block->bbNum, block->bbPreorderNum + 1,
                 block->bbNewPostorderNum + 1);
     }
@@ -4338,7 +4338,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
     for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
-        BasicBlock* const header = dfsTree->GetPostOrder()[i - 1];
+        BasicBlock* const header = dfsTree->GetPostOrder(i - 1);
 
         // If a block is a DFS ancestor of one if its predecessors then the block is a loop header.
         //
@@ -5309,6 +5309,9 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     Compiler*    comp      = dfsTree->GetCompiler();
     BasicBlock** postOrder = dfsTree->GetPostOrder();
     unsigned     count     = dfsTree->GetPostOrderCount();
+
+    // Reset BlockPredsWithEH cache.
+    comp->m_blockToEHPreds = nullptr;
 
     assert((comp->fgFirstBB->bbPreds == nullptr) && !comp->fgFirstBB->hasTryIndex());
     assert(postOrder[count - 1] == comp->fgFirstBB);
