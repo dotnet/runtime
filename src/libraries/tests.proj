@@ -526,18 +526,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
-
-    <!-- These tests don't run with TestReadyToRun. They fail before starting saying they can't find .NET -->
-    <!-- Tracking Issue: https://github.com/dotnet/runtime/issues/95474 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
-
-    <!-- EXPERIMENTAL DISABLE -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
-
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectExclusions Condition="'$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(RunAOTCompilation)' == 'true'"
                        Include="@(HighAOTResourceRequiringProject)" />
@@ -609,6 +597,31 @@
     -->
   </ItemGroup>
 
+  <!--
+      There is a decent number of hidden tests that fail with TestReadyToRun, and
+      it's proven to be a neverending task to flush all of them at once. So, we will
+      start by only enabling the tests we have confirmed work correctly, and we will
+      gradually enable the rest in subsequent PR's.
+
+      Tracking Issue for this work item: https://github.com/dotnet/runtime/issues/95928
+  -->
+  <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <TestReadyToRunProjects Include="$(MSBuildThisFileDirectory)System.*/tests/**/*.Tests.csproj" />
+
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.ComponentModel.Composition/tests/System.ComponentModel.Composition.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Composition/tests/System.Composition.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Console/tests/System.Console.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Dynamic.Runtime.Tests/System.Dynamic.Runtime.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher/tests/System.IO.FileSystem.Watcher.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Reflection.Tests/System.Reflection.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions/tests/System.Reflection.TypeExtensions.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Runtime.Extensions.Tests/System.Runtime.Extensions.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
+    <TestReadyToRunProjects Remove="$(MSBuildThisFileDirectory)System.Threading.Thread/tests/System.Threading.Thread.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Condition="'$(RunSmokeTestsOnly)' == 'true'"
                       Include="@(SmokeTestProject)" />
@@ -617,9 +630,16 @@
                       BuildInParallel="false" />
     <ProjectReference Condition="'$(RunGrpcTestsOnly)' == 'true'"
                       Include="@(GrpcTestProject)" />
+    <ProjectReference Condition="'$(TestReadyToRun)' == 'true'"
+                      Include="@(TestReadyToRunProjects)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(RunLimitedSetOfTests)' != 'true'">
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'
+                        and '$(RunGrpcTestsOnly)' != 'true'
+                        and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'
+                        and '$(RunLimitedSetOfTests)' != 'true'
+                        and '$(TestReadyToRun)' != 'true'">
+
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'"
