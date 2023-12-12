@@ -965,6 +965,34 @@ mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
+// this will return bool value if the object is a bool, otherwise it will return -1 or error
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
+
+	int result = -1;
+
+	MONO_ENTER_GC_UNSAFE;
+
+	MonoClass *klass = mono_object_get_class (obj);
+	if (!klass) {
+		goto end;
+	}
+
+	MonoType *type = mono_class_get_type (klass);
+	if (!type) {
+		goto end;
+	}
+
+	int mono_type = mono_type_get_type (type);
+	if (MONO_TYPE_BOOLEAN == mono_type) {
+		result = ((signed char*)mono_object_unbox (obj) == 0 ? 0 : 1);
+	}
+
+	end:
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
 // This code runs inside a gc unsafe region
 static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
