@@ -1936,11 +1936,7 @@ AGAIN:
             assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(jmpDist);
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2013,11 +2009,7 @@ AGAIN:
             assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2121,50 +2113,28 @@ AGAIN:
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
     assert(sizeof(code_t) == 4);
-    memcpy(dst + writeableOffset, code, sizeof(code_t));
+    memcpy(dst + writeableOffset, &code, sizeof(code_t));
     return sizeof(code_t);
 }
 
-void emitter::emitOutputInstrJump(BYTE*             destination,
-                                  BYTE const* const source,
-                                  insGroup*         instructionGroup,
-                                  instrDescJmp*     jmp)
+ssize_t emitter::emitOutputInstrJumpSize(BYTE const* const         destination,
+                                         BYTE const* const         source,
+                                         insGroup const* const     instructionGroup,
+                                         instrDescJmp const* const jumpDescription)
 {
-    UNATIVE_OFFSET sourceOffset    = emitCurCodeOffs(source);
-    UNATIVE_OFFSET distanceOffset  = 0;
-    BYTE const*    sourceAddress   = emitOffsetToPtr(sourceOffset);
-    BYTE const*    distanceAddress = nullptr;
+    UNATIVE_OFFSET sourceOffset  = emitCurCodeOffs(source);
+    BYTE const*    sourceAddress = emitOffsetToPtr(sourceOffset);
 
-    if (jmp->idAddr()->iiaHasInstrCount())
-    {
-        printf("iiaHasInstrCount\n");
-        assert(instructionGroup != nullptr);
-        int      instuctionCount   = jmp->idAddr()->iiaGetInstrCount();
-        unsigned instructionNumber = emitFindInsNum(instructionGroup, jmp);
-        if (instuctionCount < 0)
-        {
-            assert(instructionNumber + 1 >= static_cast<unsigned>(-instuctionCount));
-        }
+    assert(!jumpDescription->idAddr()->iiaHasInstrCount()); // not used by riscv64 impl
 
-        distanceOffset =
-            instructionGroup->igOffs + emitFindOffset(instructionGroup, instructionNumber + 1 + instuctionCount);
-        distanceAddress = emitOffsetToPtr(distanceOffset);
-    }
-    else
-    {
-        printf("iiaHasNotInstrCount\n");
-        distanceOffset  = jmp->idAddr()->iiaIGlabel->igOffs;
-        distanceAddress = emitOffsetToPtr(distanceOffset);
-    }
+    UNATIVE_OFFSET distanceOffset  = jumpDescription->idAddr()->iiaIGlabel->igOffs;
+    BYTE const*    distanceAddress = emitOffsetToPtr(distanceOffset);
 
-    ptrdiff_t distanceValue = static_cast<ptrdiff_t>(distanceAddress - sourceAddress);
-    printf(
-        "SourceOffset: %u, DistanceOffset: %u, SourceAddress: %p, DistanceAddress: %p, UnrectifiedDistanceValue: %i\n",
-        sourceOffset, distanceOffset, sourceAddress, distanceAddress, distanceValue);
+    return static_cast<ssize_t>(distanceAddress - sourceAddress);
 }
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -2555,7 +2525,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regNumber reg1 = id->idReg1();
             {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset();
+                ssize_t imm = emitOutputInstrJumpSize(dstRW, dst, ig, jmp);
                 imm -= 4;
 
                 assert((imm & 0x3) == 0);
@@ -2724,7 +2694,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         break;
         case INS_OPTS_J_cond:
         {
-            ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+            ssize_t imm = emitOutputInstrJumpSize(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
             assert(isValidSimm13(imm));
             assert(!(imm & 1));
 
@@ -2745,7 +2715,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+                ssize_t imm = emitOutputInstrJumpSize(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
                 assert((imm & 3) == 0);
 
                 ins  = id->idIns();
