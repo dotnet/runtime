@@ -36,7 +36,7 @@ struct GlobalValueEntry
 
 // This size should be one bigger than the number of entries since a null entry
 // signifies the end of the array.
-static constexpr size_t DebugTypeEntriesArraySize = 128;
+static constexpr size_t DebugTypeEntriesArraySize = 100;
 static DebugTypeEntry s_DebugEntries[DebugTypeEntriesArraySize];
 
 // This size should be one bigger than the number of entries since a null entry
@@ -119,7 +119,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                            \
         s_DebugEntries[currentDebugPos] = { #TypeName, #FieldName, Value, 0  };  \
         ++currentDebugPos;                                                       \
-        ASSERT(currentDebugPos <= DebugTypeEntriesArraySize);                    \
+        ASSERT(currentDebugPos < DebugTypeEntriesArraySize);                     \
     } while(0)
 
 #define MAKE_DEBUG_FIELD_ENTRY(TypeName, FieldName) MAKE_DEBUG_ENTRY(TypeName, FieldName, offsetof(TypeName, FieldName))
@@ -133,7 +133,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                             \
         s_GlobalEntries[currentGlobalPos] = { #Name, Name };                      \
         ++currentGlobalPos;                                                       \
-        ASSERT(currentGlobalPos <= GlobalEntriesArraySize);                       \
+        ASSERT(currentGlobalPos < GlobalEntriesArraySize);                        \
     } while(0)                                                                    \
 
 extern "C" void PopulateDebugHeaders()

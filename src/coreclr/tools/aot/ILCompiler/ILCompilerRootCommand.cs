@@ -40,7 +40,7 @@ namespace ILCompiler
         public CliOption<string> ExportsFile { get; } =
             new("--exportsfile") { Description = "File to write exported symbol and method definitions" };
         public CliOption<bool> ExportUnmanagedEntryPoints { get; } =
-            new("--export-unmanaged-entrypoints") { Description = "Controls whether the exported method definitions are exported" };
+            new("--export-unmanaged-entrypoints") { Description = "Controls whether the named UnmanagedCallersOnly methods are exported" };
         public CliOption<string[]> ExportDynamicSymbols { get; } =
             new("--export-dynamic-symbol") { Description = "Add dynamic export symbol to exports file" };
         public CliOption<string> DgmlLogFileName { get; } =
