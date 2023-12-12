@@ -48189,21 +48189,16 @@ HRESULT GCHeap::Initialize()
 
     /*
      * Allocation requests less than loh_size_threshold will be allocated on the small object heap.
-     * For regions, we constrainted that objects must stay on a single region, so it is impossible to allocate
-     * an object larger than the available space on a single region.
      *
-     * Note that that available space on the region is not the region size, but a bit smaller.
-     * The adjustment formula is based on these three implementation details:
+     * An object cannot span more than one region and regions in small object heap are of the same size - gc_region_size. 
+     * However, the space available for actual allocations is reduced by the following implementation details -
      *
-     * 1.) heap_segment_mem is set to the new pages + sizeof(aligned_plug_and_gap) in make_heap_segment,
-     *     effectively making the bytes before that unusable for objects.
-     * 2.) a_fit_segment_end_p set pad to Align(min_obj_size, align_const), effectively making some end bytes
-     *     unusable
-     * 3.) a_size_fit_p requires the available space to be larger than the allocated size + Align(min_obj_size, align_const)
-     *     again, effectively making some end bytes unusable.
+     * 1.) heap_segment_mem is set to the new pages + sizeof(aligned_plug_and_gap) in make_heap_segment.
+     * 2.) a_fit_segment_end_p set pad to Align(min_obj_size, align_const).
+     * 3.) a_size_fit_p requires the available space to be >= the allocated size + Align(min_obj_size, align_const)
      *
-     * It is guaranteed that allocation request with exactly this amount or less will either succeed or fail (because we either
-     * cannot get new region or cannot commit memory), but never run into an infinite loop.
+     * It is guaranteed that an allocation request with this amount or less will succeed unless
+     * we cannot commit memory for it.
      */
     int align_const = get_alignment_constant (TRUE);
     size_t effective_max_small_object_size = gc_region_size - sizeof(aligned_plug_and_gap) - Align(min_obj_size, align_const) * 2;
@@ -48224,6 +48219,7 @@ HRESULT GCHeap::Initialize()
 
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else
+    // TODO, andrewau, we cannot let user to set an arbitrarily high loh_size_threshold value for segments as well
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 #endif //USE_REGIONS
 
