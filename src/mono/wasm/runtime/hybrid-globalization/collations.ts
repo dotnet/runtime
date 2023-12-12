@@ -22,7 +22,7 @@ export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, s
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         wrap_no_error_root(is_exception, exceptionRoot);
-        return compare_strings(string1, string2, locale, casePicker);
+        return compareStrings(string1, string2, locale, casePicker);
     }
     catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
@@ -39,19 +39,19 @@ export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
         const cultureName = monoStringToString(cultureRoot);
-        const prefix = decode_to_clean_string(str2, str2Length);
+        const prefix = decodeToCleanString(str2, str2Length);
         // no need to look for an empty string
         if (prefix.length == 0)
             return 1; // true
 
-        const source = decode_to_clean_string(str1, str1Length);
+        const source = decodeToCleanString(str1, str1Length);
         if (source.length < prefix.length)
             return 0; //false
         const sourceOfPrefixLength = source.slice(0, prefix.length);
 
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
-        const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
+        const result = compareStrings(sourceOfPrefixLength, prefix, locale, casePicker);
         wrap_no_error_root(is_exception, exceptionRoot);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
@@ -70,11 +70,11 @@ export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Le
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
         const cultureName = monoStringToString(cultureRoot);
-        const suffix = decode_to_clean_string(str2, str2Length);
+        const suffix = decodeToCleanString(str2, str2Length);
         if (suffix.length == 0)
             return 1; // true
 
-        const source = decode_to_clean_string(str1, str1Length);
+        const source = decodeToCleanString(str1, str1Length);
         const diff = source.length - suffix.length;
         if (diff < 0)
             return 0; //false
@@ -82,7 +82,7 @@ export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Le
 
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
-        const result = compare_strings(sourceOfSuffixLength, suffix, locale, casePicker);
+        const result = compareStrings(sourceOfSuffixLength, suffix, locale, casePicker);
         wrap_no_error_root(is_exception, exceptionRoot);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
@@ -102,14 +102,14 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
     try {
         const needle = utf16ToString(<any>needlePtr, <any>(needlePtr + 2 * needleLength));
         // no need to look for an empty string
-        if (clean_string(needle).length == 0) {
+        if (cleanString(needle).length == 0) {
             wrap_no_error_root(is_exception, exceptionRoot);
             return fromBeginning ? 0 : srcLength;
         }
 
         const source = utf16ToString(<any>srcPtr, <any>(srcPtr + 2 * srcLength));
         // no need to look in an empty string
-        if (clean_string(source).length == 0) {
+        if (cleanString(source).length == 0) {
             wrap_no_error_root(is_exception, exceptionRoot);
             return fromBeginning ? 0 : srcLength;
         }
@@ -134,7 +134,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
             const srcGrapheme = graphemeSegmenter.nextGrapheme(source, srcIdx);
             srcIdx += srcGrapheme.length;
 
-            if (!check_match_found(srcGrapheme, needleSegments[0], locale, casePicker)) {
+            if (!checkMatchFound(srcGrapheme, needleSegments[0], locale, casePicker)) {
                 continue;
             }
 
@@ -143,7 +143,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
             for (j = 1; j < needleSegments.length; j++) {
                 const srcGrapheme = graphemeSegmenter.nextGrapheme(source, srcNextIdx);
 
-                if (!check_match_found(srcGrapheme, needleSegments[j], locale, casePicker)) {
+                if (!checkMatchFound(srcGrapheme, needleSegments[j], locale, casePicker)) {
                     break;
                 }
                 srcNextIdx += srcGrapheme.length;
@@ -166,12 +166,12 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
         exceptionRoot.release();
     }
 
-    function check_match_found(str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {
-        return compare_strings(str1, str2, locale, casePicker) === 0;
+    function checkMatchFound(str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {
+        return compareStrings(str1, str2, locale, casePicker) === 0;
     }
 }
 
-function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number): number {
+function compareStrings(string1: string, string2: string, locale: string | undefined, casePicker: number): number {
     switch (casePicker) {
         case 0:
             // 0: None - default algorithm for the platform OR
@@ -263,12 +263,12 @@ function compare_strings(string1: string, string2: string, locale: string | unde
     }
 }
 
-function decode_to_clean_string(strPtr: number, strLen: number) {
+function decodeToCleanString(strPtr: number, strLen: number) {
     const str = utf16ToString(<any>strPtr, <any>(strPtr + 2 * strLen));
-    return clean_string(str);
+    return cleanString(str);
 }
 
-function clean_string(str: string) {
+function cleanString(str: string) {
     const nStr = str.normalize();
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
