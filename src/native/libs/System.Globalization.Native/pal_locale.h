@@ -18,7 +18,6 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeNam
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
 #else
-#include <unicode/utypes.h>
 
 PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
 

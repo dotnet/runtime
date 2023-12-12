@@ -1,9 +1,6 @@
 #include <stdint.h>
 #include "pal_icushim_internal.h"
 #include "pal_casing.h"
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-#include <unicode/uchar.h>
-#endif
 
 void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget)
 {

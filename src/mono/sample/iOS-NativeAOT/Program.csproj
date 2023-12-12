@@ -4,7 +4,6 @@
     <OutputPath>bin</OutputPath>
     <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/</IntermediateOutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <HybridGlobalization>true</HybridGlobalization> 
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>

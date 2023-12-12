@@ -6,7 +6,6 @@
 #include "pal_errors.h"
 
 #import <Foundation/Foundation.h>
-#include <unicode/uchar.h>
 
 #if !__has_feature(objc_arc)
 #error This file relies on ARC for memory management, but ARC is not enabled.
