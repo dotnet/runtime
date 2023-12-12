@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
@@ -12,7 +11,7 @@ namespace System.Net.Security
     internal sealed class SafeChannelBindingHandle : ChannelBinding
     {
         private const int CertHashMaxSize = 128;
-        private static int SecChannelBindingSize => Unsafe.SizeOf<SecChannelBindings>();
+        private static unsafe int SecChannelBindingSize => sizeof(SecChannelBindings);
 
         private readonly int _cbtPrefixByteArraySize;
         internal int Length { get; private set; }

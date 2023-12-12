@@ -8,7 +8,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
@@ -425,7 +424,7 @@ namespace System.Net
             {
                 if (_channelBinding != null)
                 {
-                    int appDataOffset = Unsafe.SizeOf<SecChannelBindings>();
+                    int appDataOffset = sizeof(SecChannelBindings);
                     IntPtr cbtData = (nint)_channelBinding.DangerousGetHandle() + appDataOffset;
                     int cbtDataSize = _channelBinding.Size - appDataOffset;
 
