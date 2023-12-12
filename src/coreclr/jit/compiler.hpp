@@ -4976,7 +4976,6 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
         // patchpoint, but during morph we may transform to something that
         // requires the original entry (fgEntryBB).
         assert(opts.IsOSR());
-        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
         dfsFrom(fgEntryBB);
     }
 
