@@ -27,9 +27,10 @@ struct _MonoClass {
 	/* One of the values from MonoTypeKind */
 	guint8     class_kind;
 
-	int        instance_size; /* object instance size */
+	/* MonoClassReady enum.  Use mono_class_get_ready_level to atomically read the value */
+	int8_t    ready_level_;
 
-	guint inited          : 1;
+	int        instance_size; /* object instance size */
 
 	/* A class contains static and non static data. Static data can be
 	 * of the same type as the class itselfs, but it does not influence

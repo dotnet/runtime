@@ -274,6 +274,16 @@ typedef enum {
 	MONO_CLASS_GC_FILLER = 0xAC /* not a real class kind - used for sgen nursery filler arrays */
 } MonoTypeKind;
 
+typedef enum {
+	/* MonoClass is alocated, but not inited */
+	MONO_CLASS_READY_BAREBONES = 0,
+	/*
+	 * MonoClass is fully inited (note: some fields have their own initialization state not
+         * covered by this level.)
+	 */
+	MONO_CLASS_READY_INITED = 0x7F,
+} MonoClassReady;
+
 typedef struct _MonoClassDef MonoClassDef;
 typedef struct _MonoClassGtd MonoClassGtd;
 typedef struct _MonoClassGenericInst MonoClassGenericInst;
@@ -1645,6 +1655,10 @@ m_method_alloc0 (MonoMethod *method, guint size)
 {
 	return mono_mem_manager_alloc0 (m_method_get_mem_manager (method), size);
 }
+
+/* DO NOT USE - this is just here to make sre.c happy.  All the other class init code is in class-init.c */
+void
+m_class_set_ready_level_at_least (MonoClass *klass, int8_t level);
 
 // Enum and static storage for JIT icalls.
 #include "jit-icall-reg.h"

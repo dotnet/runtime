@@ -272,4 +272,22 @@ m_field_set_meta_flags (MonoClassField *field, unsigned int flags)
 	field->parent_and_flags |= (field->parent_and_flags & ~MONO_CLASS_FIELD_META_FLAG_MASK) | flags;
 }
 
+static inline int8_t
+m_class_get_ready_level (MonoClass *klass)
+{
+	return mono_atomic_load_i8 (m_class_ready_level_addr (klass));
+}
+
+static inline gboolean
+m_class_ready_level_at_least(MonoClass *klass, int8_t level)
+{
+	return m_class_get_ready_level (klass) >= level;
+}
+
+static inline gboolean
+m_class_is_inited (MonoClass *klass)
+{
+	return m_class_ready_level_at_least (klass, MONO_CLASS_READY_INITED);
+}
+
 #endif

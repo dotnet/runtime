@@ -2551,7 +2551,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 
 	klass->image = &dynamic_image->image;
 
-	klass->inited = 1; /* we lie to the runtime */
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_INITED);
 	klass->name = mono_string_to_utf8_image (klass->image, ref_name, error);
 	goto_if_nok (error, leave);
 	klass->name_space = mono_string_to_utf8_image (klass->image, ref_nspace, error);

@@ -162,6 +162,18 @@ disable_gclass_recording (gclass_record_func func, void *user_data)
 #define mono_class_new0(klass,struct_type, n_structs)		\
     ((struct_type *) mono_class_alloc0 ((klass), ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
 
+void
+m_class_set_ready_level_at_least (MonoClass *klass, int8_t level)
+{
+	int8_t old_level;
+	do {
+		old_level = m_class_get_ready_level (klass);
+		/* if the class is already initialized past the readiness we want, we're done. */
+		if (old_level >= level)
+			return;
+	} while (mono_atomic_cas_i8 (m_class_ready_level_addr (klass), level, old_level) != old_level);
+}
+
 /**
  * mono_class_setup_basic_field_info:
  * \param class The class to initialize
@@ -953,7 +965,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 		 * See remove_instantiations_of_and_ensure_contents in reflection.c and its usage in reflection.c to understand the fixup stage of SRE banking.
 		*/
 		if (!gklass->wastypebuilder)
-			klass->inited = 1;
+			m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_INITED);
 
 		if (klass->enumtype) {
 			/*
@@ -1141,7 +1153,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		return cached;
 
 	parent = mono_defaults.array_class;
-	if (!parent->inited)
+	if (!m_class_ready_level_at_least (parent, MONO_CLASS_READY_INITED)) // FIXME: is a lower readiness sufficient?
 		mono_class_init_internal (parent);
 
 	klass = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassArray)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassArray));
@@ -1384,7 +1396,7 @@ make_generic_param_class (MonoGenericParam *param)
 
 	CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->image , image );
 
-	klass->inited = TRUE;
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_INITED);
 	CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->cast_class ,    klass );
 	CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->element_class , klass );
 
@@ -1522,7 +1534,7 @@ mono_class_create_ptr (MonoType *type)
 	MONO_PROFILER_RAISE (class_loading, (result));
 
 	result->image = el_class->image;
-	result->inited = TRUE;
+	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_INITED);
 	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 	result->min_align = sizeof (gpointer);
 	result->element_class = el_class;
@@ -1603,7 +1615,7 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->this_arg.data.method = result->_byval_arg.data.method = sig;
 	result->this_arg.byref__ = TRUE;
 	result->blittable = TRUE;
-	result->inited = TRUE;
+	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_INITED);
 
 	mono_class_setup_supertypes (result);
 
@@ -2957,7 +2969,7 @@ mono_class_init_internal (MonoClass *klass)
 	g_assert (klass);
 
 	/* Double-checking locking pattern */
-	if (klass->inited || mono_class_has_failure (klass))
+	if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_INITED) || mono_class_has_failure (klass))
 		return !mono_class_has_failure (klass);
 
 	/*g_print ("Init class %s\n", mono_type_get_full_name (klass));*/
@@ -2984,11 +2996,11 @@ mono_class_init_internal (MonoClass *klass)
 		MonoClass *element_class = klass->element_class;
 		MonoClass *cast_class = klass->cast_class;
 
-		if (!element_class->inited)
+		if (!m_class_ready_level_at_least (element_class, MONO_CLASS_READY_INITED))
 			mono_class_init_internal (element_class);
 		if (mono_class_set_type_load_failure_causedby_class (klass, element_class, "Could not load array element class"))
 			goto leave;
-		if (!cast_class->inited)
+		if (!m_class_ready_level_at_least (cast_class, MONO_CLASS_READY_INITED))
 			mono_class_init_internal (cast_class);
 		if (mono_class_set_type_load_failure_causedby_class (klass, cast_class, "Could not load array cast class"))
 			goto leave;
@@ -3007,7 +3019,7 @@ mono_class_init_internal (MonoClass *klass)
 			mono_class_setup_interface_id (klass);
 	}
 
-	if (klass->parent && !klass->parent->inited)
+	if (klass->parent && !m_class_ready_level_at_least (klass->parent, MONO_CLASS_READY_INITED))
 		mono_class_init_internal (klass->parent);
 
 	has_cached_info = mono_class_get_cached_class_info (klass, &cached_info);
@@ -3136,7 +3148,7 @@ mono_class_init_internal (MonoClass *klass)
 	mono_loader_lock ();
 	locked = TRUE;
 
-	if (klass->inited || mono_class_has_failure (klass)) {
+	if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_INITED) || mono_class_has_failure (klass)) {
 		/* Somebody might have gotten in before us */
 		goto leave;
 	}
@@ -3180,7 +3192,7 @@ leave_no_init_pending:
 
 	/* Leave this for last */
 	mono_loader_lock ();
-	klass->inited = 1;
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_INITED);
 	mono_loader_unlock ();
 
 	return !mono_class_has_failure (klass);
