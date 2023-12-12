@@ -388,8 +388,7 @@ void OptIfConversionDsc::IfConvertDump()
     }
     if (m_doElseConversion)
     {
-        BasicBlock* dumpBlock =
-            m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
+        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
         for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
         {
             m_comp->fgDumpBlock(dumpBlock);
