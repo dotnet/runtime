@@ -1691,6 +1691,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		load->inst_basereg = src->dreg;
 		load->inst_offset = 0;
 		MONO_ADD_INS (cfg->cbb, load);
+		add_outarg_reg (cfg, call, ArgInIReg, ainfo->reg, load);
 
 		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 		load->dreg = mono_alloc_ireg (cfg);
