@@ -5105,21 +5105,21 @@ size_t& generation_allocated_since_last_pin (generation* inst)
 #endif //FREE_USAGE_STATS
 
 inline
-size_t generation_allocator_efficiency_percent (generation* inst)
+uint64_t generation_allocator_efficiency_percent (generation* inst)
 {
-    size_t free_obj_space = generation_free_obj_space (inst);
-    size_t free_list_allocated = generation_free_list_allocated (inst);
+    uint64_t free_obj_space = generation_free_obj_space (inst);
+    uint64_t free_list_allocated = generation_free_list_allocated (inst);
     if (free_list_allocated==0)
       return 0;
     return (100 * free_list_allocated) / (free_list_allocated + free_obj_space);
 }
 
 inline
-size_t generation_unusable_fragmentation (generation* inst)
+uint64_t generation_unusable_fragmentation (generation* inst)
 {
-    size_t free_obj_space = generation_free_obj_space (inst);
-    size_t free_list_allocated = generation_free_list_allocated (inst);
-    size_t free_list_space = generation_free_list_space (inst);
+    uint64_t free_obj_space = generation_free_obj_space (inst);
+    uint64_t free_list_allocated = generation_free_list_allocated (inst);
+    uint64_t free_list_space = generation_free_list_space (inst);
     if (free_obj_space==0)
       return 0;
     return (free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
