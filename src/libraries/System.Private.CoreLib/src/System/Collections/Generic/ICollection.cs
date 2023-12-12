@@ -19,8 +19,6 @@ namespace System.Collections.Generic
             get;
         }
 
-        int IReadOnlyCollection<T>.Count => Count;
-
         bool IsReadOnly
         {
 #if MONO
@@ -55,5 +53,7 @@ namespace System.Collections.Generic
         [DynamicDependency(nameof(Array.InternalArray__ICollection_Remove) + "``1", typeof(Array))]
 #endif
         bool Remove(T item);
+
+        int IReadOnlyCollection<T>.Count => Count;
     }
 }

@@ -25,8 +25,6 @@ namespace System.Collections.Generic
             set;
         }
 
-        T IReadOnlyList<T>.this[int index] => this[index];
-
         // Returns the index of a particular item, if it is in the list.
         // Returns -1 if the item isn't in the list.
 #if MONO
@@ -48,5 +46,7 @@ namespace System.Collections.Generic
         [DynamicDependency(nameof(Array.InternalArray__RemoveAt), typeof(Array))]
 #endif
         void RemoveAt(int index);
+
+        T IReadOnlyList<T>.this[int index] => this[index];
     }
 }

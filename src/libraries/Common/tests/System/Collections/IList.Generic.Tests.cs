@@ -103,11 +103,8 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_NegativeIndex_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            IReadOnlyList<T> readOnlyList = list;
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1]);
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[-1]);
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue]);
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[int.MinValue]);
+            CollectionAsserts.ThrowsElementAt(list, -1, IList_Generic_Item_InvalidIndex_ThrowType);
+            CollectionAsserts.ThrowsElementAt(list, int.MinValue, IList_Generic_Item_InvalidIndex_ThrowType);
         }
 
         [Theory]
@@ -115,11 +112,8 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            IReadOnlyList<T> readOnlyList = list;
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count]);
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[count]);
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1]);
-            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => readOnlyList[count + 1]);
+            CollectionAsserts.ThrowsElementAt(list, count, IList_Generic_Item_InvalidIndex_ThrowType);
+            CollectionAsserts.ThrowsElementAt(list, count + 1, IList_Generic_Item_InvalidIndex_ThrowType);
         }
 
         [Theory]
@@ -127,10 +121,7 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_ValidGetWithinListBounds(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            IReadOnlyList<T> readOnlyList = list;
-            T result;
-            Assert.All(Enumerable.Range(0, count), index => result = list[index]);
-            Assert.All(Enumerable.Range(0, count), index => result = readOnlyList[index]);
+            Assert.All(Enumerable.Range(0, count), index => CollectionAsserts.ElementAtSucceeds(list, index));
         }
 
         #endregion
@@ -144,12 +135,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T validAdd = CreateT(0);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1] = validAdd);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue] = validAdd);
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
             }
         }
 
@@ -160,12 +149,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T validAdd = CreateT(0);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count] = validAdd);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1] = validAdd);
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
             }
         }
 
@@ -176,11 +163,9 @@ namespace System.Collections.Tests
             if (IsReadOnly && count > 0)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T before = list[count / 2];
                 Assert.Throws<NotSupportedException>(() => list[count / 2] = CreateT(321432));
-                Assert.Equal(before, list[count / 2]);
-                Assert.Equal(before, readOnlyList[count / 2]);
+                CollectionAsserts.EqualAt(list, count / 2, before);
             }
         }
 
@@ -191,11 +176,9 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T value = CreateT(123452);
                 list[0] = value;
-                Assert.Equal(value, list[0]);
-                Assert.Equal(value, readOnlyList[0]);
+                CollectionAsserts.EqualAt(list, 0, value);
             }
         }
 
@@ -206,18 +189,15 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 if (DefaultValueAllowed)
                 {
                     list[0] = default(T);
-                    Assert.Equal(default(T), list[0]);
-                    Assert.Equal(default(T), readOnlyList[0]);
+                    CollectionAsserts.EqualAt(list, 0, default(T));
                 }
                 else
                 {
                     Assert.Throws<ArgumentNullException>(() => list[0] = default(T));
-                    Assert.NotEqual(default(T), list[0]);
-                    Assert.NotEqual(default(T), readOnlyList[0]);
+                    CollectionAsserts.NotEqualAt(list, 0, default(T));
                 }
             }
         }
@@ -229,12 +209,10 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list[lastIndex] = value;
-                Assert.Equal(value, list[lastIndex]);
-                Assert.Equal(value, readOnlyList[lastIndex]);
+                CollectionAsserts.EqualAt(list, lastIndex, value);
             }
         }
 
@@ -245,19 +223,16 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly && DefaultValueAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 int lastIndex = count > 0 ? count - 1 : 0;
                 if (DefaultValueAllowed)
                 {
                     list[lastIndex] = default(T);
-                    Assert.Equal(default(T), list[lastIndex]);
-                    Assert.Equal(default(T), readOnlyList[lastIndex]);
+                    CollectionAsserts.EqualAt(list, lastIndex, default(T));
                 }
                 else
                 {
                     Assert.Throws<ArgumentNullException>(() => list[lastIndex] = default(T));
-                    Assert.NotEqual(default(T), list[lastIndex]);
-                    Assert.NotEqual(default(T), readOnlyList[lastIndex]);
+                    CollectionAsserts.NotEqualAt(list, lastIndex, default(T));
                 }
             }
         }
@@ -269,14 +244,11 @@ namespace System.Collections.Tests
             if (count >= 2 && !IsReadOnly && DuplicateValuesAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T value = CreateT(123452);
                 list[0] = value;
                 list[1] = value;
-                Assert.Equal(value, list[0]);
-                Assert.Equal(value, readOnlyList[0]);
-                Assert.Equal(value, list[1]);
-                Assert.Equal(value, readOnlyList[1]);
+                CollectionAsserts.EqualAt(list, 0, value);
+                CollectionAsserts.EqualAt(list, 1, value);
             }
         }
 
@@ -420,12 +392,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, validAdd));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(int.MinValue, validAdd));
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
             }
         }
 
@@ -436,13 +406,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T validAdd = CreateT(12350);
                 list.Insert(count, validAdd);
-                Assert.Equal(count + 1, list.Count);
-                Assert.Equal(count + 1, readOnlyList.Count);
-                Assert.Equal(validAdd, list[count]);
-                Assert.Equal(validAdd, readOnlyList[count]);
+                CollectionAsserts.HasCount(list, count + 1);
+                CollectionAsserts.EqualAt(list, count, valueAdd);
             }
         }
 
@@ -453,10 +420,8 @@ namespace System.Collections.Tests
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 Assert.Throws<NotSupportedException>(() => list.Insert(count / 2, CreateT(321432)));
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
             }
         }
 
@@ -467,13 +432,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T value = CreateT(123452);
                 list.Insert(0, value);
-                Assert.Equal(value, list[0]);
-                Assert.Equal(value, readOnlyList[0]);
-                Assert.Equal(count + 1, list.Count);
-                Assert.Equal(count + 1, readOnlyList.Count);
+                CollectionAsserts.EqualAt(list, 0, value);
+                CollectionAsserts.HasCount(list, count + 1);
             }
         }
 
@@ -484,13 +446,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DefaultValueAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T value = default(T);
                 list.Insert(0, value);
-                Assert.Equal(value, list[0]);
-                Assert.Equal(value, readOnlyList[0]);
-                Assert.Equal(count + 1, list.Count);
-                Assert.Equal(count + 1, readOnlyList.Count);
+                CollectionAsserts.EqualAt(list, 0, value);
+                CollectionAsserts.HasCount(list, count + 1);
             }
         }
 
@@ -501,14 +460,11 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list.Insert(lastIndex, value);
-                Assert.Equal(value, list[lastIndex]);
-                Assert.Equal(value, readOnlyList[lastIndex]);
-                Assert.Equal(count + 1, list.Count);
-                Assert.Equal(count + 1, readOnlyList.Count);
+                CollectionAsserts.EqualAt(list, lastIndex, value);
+                CollectionAsserts.HasCount(list, count + 1);
             }
         }
 
@@ -519,14 +475,11 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DefaultValueAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T value = default(T);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list.Insert(lastIndex, value);
-                Assert.Equal(value, list[lastIndex]);
-                Assert.Equal(value, readOnlyList[lastIndex]);
-                Assert.Equal(count + 1, list.Count);
-                Assert.Equal(count + 1, readOnlyList.Count);
+                CollectionAsserts.EqualAt(list, lastIndex, value);
+                CollectionAsserts.HasCount(list, count + 1);
             }
         }
 
@@ -544,15 +497,11 @@ namespace System.Collections.Tests
                 }
                 else
                 {
-                    IReadOnlyList<T> readOnlyList = list;
                     list.Insert(0, value);
                     list.Insert(1, value);
-                    Assert.Equal(value, list[0]);
-                    Assert.Equal(value, readOnlyList[0]);
-                    Assert.Equal(value, list[1]);
-                    Assert.Equal(value, readOnlyList[1]);
-                    Assert.Equal(count + 2, list.Count);
-                    Assert.Equal(count + 2, readOnlyList.Count);
+                    CollectionAsserts.EqualAt(list, 0, value);
+                    CollectionAsserts.EqualAt(list, 1, value);
+                    CollectionAsserts.HasCount(list, count + 2);
                 }
             }
         }
@@ -582,12 +531,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(-1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(int.MinValue));
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
             }
         }
 
@@ -598,12 +545,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count + 1));
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
             }
         }
 
@@ -614,10 +559,8 @@ namespace System.Collections.Tests
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 Assert.Throws<NotSupportedException>(() => list.RemoveAt(count / 2));
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
             }
         }
 
@@ -628,14 +571,11 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
-                Assert.Equal(count, list.Count);
-                Assert.Equal(count, readOnlyList.Count);
+                CollectionAsserts.HasCount(list, count);
                 Assert.All(Enumerable.Range(0, count).Reverse(), index =>
                 {
                     list.RemoveAt(index);
-                    Assert.Equal(index, list.Count);
-                    Assert.Equal(index, readOnlyList.Count);
+                    CollectionAsserts.HasCount(list, index);
                 });
             }
         }
@@ -647,12 +587,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                IReadOnlyList<T> readOnlyList = list;
                 Assert.All(Enumerable.Range(0, count), index =>
                 {
                     list.RemoveAt(0);
-                    Assert.Equal(count - index - 1, list.Count);
-                    Assert.Equal(count - index - 1, readOnlyList.Count);
+                    CollectionAsserts.HasCount(list, count - index - 1);
                 });
             }
         }

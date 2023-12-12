@@ -20,15 +20,11 @@ namespace System.Collections.Generic
             set;
         }
 
-        TValue IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
-
         // Returns a collections of the keys in this dictionary.
         new ICollection<TKey> Keys
         {
             get;
         }
-
-        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
 
         // Returns a collections of the values in this dictionary.
         new ICollection<TValue> Values
@@ -36,13 +32,9 @@ namespace System.Collections.Generic
             get;
         }
 
-        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
-
         // Returns whether this dictionary contains a particular key.
         //
         new bool ContainsKey(TKey key);
-
-        bool IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
 
         // Adds a key-value pair to the dictionary.
         //
@@ -53,6 +45,14 @@ namespace System.Collections.Generic
         bool Remove(TKey key);
 
         new bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
+
+        TValue IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
+
+        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
+
+        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
+
+        bool IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
 
         bool IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => TryGetValue(key, out value);
     }

@@ -130,9 +130,7 @@ namespace System.Collections.Tests
         public void ICollection_Generic_Count_Validity(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
-            IReadOnlyCollection<T> readOnlyCollection = collection;
-            Assert.Equal(count, collection.Count);
-            Assert.Equal(count, readOnlyCollection.Count);
+            CollectionAsserts.HasCount(collection, count);
         }
 
         #endregion
@@ -146,10 +144,8 @@ namespace System.Collections.Tests
             if (DefaultValueAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 collection.Add(default(T));
-                Assert.Equal(count + 1, collection.Count);
-                Assert.Equal(count + 1, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count + 1);
             }
         }
 
@@ -162,12 +158,10 @@ namespace System.Collections.Tests
                 Assert.All(InvalidValues, invalidValue =>
                 {
                     ICollection<T> collection = GenericICollectionFactory(count);
-                    IReadOnlyCollection<T> readOnlyCollection = collection;
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
                         collection.Add(CreateT(i));
-                    Assert.Equal(count * 2, collection.Count);
-                    Assert.Equal(count * 2, readOnlyCollection.Count);
+                    CollectionAsserts.HasCount(collection, count * 2);
                 });
             }
         }
@@ -181,12 +175,10 @@ namespace System.Collections.Tests
                 Assert.All(InvalidValues, invalidValue =>
                 {
                     ICollection<T> collection = GenericICollectionFactory(0);
-                    IReadOnlyCollection<T> readOnlyCollection = collection;
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
                         collection.Add(CreateT(i));
-                    Assert.Equal(count, collection.Count);
-                    Assert.Equal(count, readOnlyCollection.Count);
+                    CollectionAsserts.HasCount(collection, count);
                 });
             }
         }
@@ -200,10 +192,9 @@ namespace System.Collections.Tests
                 Assert.All(InvalidValues, invalidValue =>
                 {
                     ICollection<T> collection = GenericICollectionFactory(count);
-                    IReadOnlyCollection<T> readOnlyCollection = collection;
+                    
                     collection.Add(invalidValue);
-                    Assert.Equal(count, collection.Count);
-                    Assert.Equal(count, readOnlyCollection.Count);
+                    CollectionAsserts.HasCount(collection, count);
                 });
             }
         }
@@ -215,12 +206,10 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DuplicateValuesAllowed)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 T duplicateValue = CreateT(700);
                 collection.Add(duplicateValue);
                 collection.Add(duplicateValue);
-                Assert.Equal(count + 2, collection.Count);
-                Assert.Equal(count + 2, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count + 2);
             }
         }
 
@@ -231,11 +220,9 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 collection.Clear();
                 AddToCollection(collection, 5);
-                Assert.Equal(5, collection.Count);
-                Assert.Equal(5, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, 5);
             }
         }
 
@@ -247,7 +234,6 @@ namespace System.Collections.Tests
             {
                 int seed = 840;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 List<T> items = collection.ToList();
                 T toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd))
@@ -262,7 +248,6 @@ namespace System.Collections.Tests
                 collection.Add(toAdd);
                 items.Add(toAdd);
                 CollectionAsserts.EqualUnordered(items, collection);
-                CollectionAsserts.EqualUnordered(items, readOnlyCollection);
             }
         }
 
@@ -273,13 +258,11 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 List<T> itemsToRemove = collection.ToList();
                 for (int i = 0; i < count; i++)
                     collection.Remove(collection.ElementAt(0));
                 collection.Add(CreateT(254));
-                Assert.Equal(1, collection.Count);
-                Assert.Equal(1, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, 1);
             }
         }
 
@@ -290,10 +273,8 @@ namespace System.Collections.Tests
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 Assert.Throws<NotSupportedException>(() => collection.Add(CreateT(0)));
-                Assert.Equal(count, collection.Count);
-                Assert.Equal(count, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
         }
 
@@ -323,18 +304,15 @@ namespace System.Collections.Tests
         public void ICollection_Generic_Clear(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
-            IReadOnlyCollection<T> readOnlyCollection = collection;
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
             {
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
-                Assert.Equal(count, collection.Count);
-                Assert.Equal(count, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
             else
             {
                 collection.Clear();
-                Assert.Equal(0, collection.Count);
-                Assert.Equal(0, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, 0);
             }
         }
 
@@ -343,22 +321,19 @@ namespace System.Collections.Tests
         public void ICollection_Generic_Clear_Repeatedly(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
-            IReadOnlyCollection<T> readOnlyCollection = collection;
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
             {
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
-                Assert.Equal(count, collection.Count);
-                Assert.Equal(count, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
             else
             {
                 collection.Clear();
                 collection.Clear();
                 collection.Clear();
-                Assert.Equal(0, collection.Count);
-                Assert.Equal(0, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, 0);
             }
         }
 
@@ -457,12 +432,10 @@ namespace System.Collections.Tests
             if (DuplicateValuesAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 T item = CreateT(12);
                 collection.Add(item);
                 collection.Add(item);
-                Assert.Equal(count + 2, collection.Count);
-                Assert.Equal(count + 2, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count + 2);
             }
         }
 
@@ -588,7 +561,6 @@ namespace System.Collections.Tests
             {
                 int seed = count * 21;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 T value = default(T);
                 while (collection.Contains(value))
                 {
@@ -596,8 +568,7 @@ namespace System.Collections.Tests
                     count--;
                 }
                 Assert.False(collection.Remove(value));
-                Assert.Equal(count, collection.Count);
-                Assert.Equal(count, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
         }
 
@@ -609,13 +580,11 @@ namespace System.Collections.Tests
             {
                 int seed = count * 251;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 T value = CreateT(seed++);
                 while (collection.Contains(value) || Enumerable.Contains(InvalidValues, value))
                     value = CreateT(seed++);
                 Assert.False(collection.Remove(value));
-                Assert.Equal(count, collection.Count);
-                Assert.Equal(count, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
         }
 
@@ -627,7 +596,6 @@ namespace System.Collections.Tests
             {
                 int seed = count * 21;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 T value = default(T);
                 if (!collection.Contains(value))
                 {
@@ -635,8 +603,7 @@ namespace System.Collections.Tests
                     count++;
                 }
                 Assert.True(collection.Remove(value));
-                Assert.Equal(count - 1, collection.Count);
-                Assert.Equal(count - 1, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count - 1);
             }
         }
 
@@ -648,7 +615,6 @@ namespace System.Collections.Tests
             {
                 int seed = count * 251;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 T value = CreateT(seed++);
                 if (!collection.Contains(value))
                 {
@@ -656,8 +622,7 @@ namespace System.Collections.Tests
                     count++;
                 }
                 Assert.True(collection.Remove(value));
-                Assert.Equal(count - 1, collection.Count);
-                Assert.Equal(count - 1, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count - 1);
             }
         }
 
@@ -669,15 +634,13 @@ namespace System.Collections.Tests
             {
                 int seed = count * 90;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 T value = CreateT(seed++);
                 collection.Add(value);
                 collection.Add(value);
                 count += 2;
                 Assert.True(collection.Remove(value));
                 Assert.True(collection.Contains(value));
-                Assert.Equal(count - 1, collection.Count);
-                Assert.Equal(count - 1, readOnlyCollection.Count);
+                CollectionAsserts.HasCount(collection, count - 1);
             }
         }
 
@@ -688,13 +651,11 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                IReadOnlyCollection<T> readOnlyCollection = collection;
                 Assert.All(collection.ToList(), value =>
                 {
                     Assert.True(collection.Remove(value));
                 });
-                Assert.Empty(collection);
-                Assert.Empty(readOnlyCollection);
+                CollectionAsserts.HasCount(collection, 0);
             }
         }
 
@@ -703,13 +664,11 @@ namespace System.Collections.Tests
         public void ICollection_Generic_Remove_InvalidValue_ThrowsArgumentException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
-            IReadOnlyCollection<T> readOnlyCollection = collection;
             Assert.All(InvalidValues, value =>
             {
                 Assert.Throws<ArgumentException>(() => collection.Remove(value));
             });
-            Assert.Equal(count, collection.Count);
-            Assert.Equal(count, readOnlyCollection.Count);
+            CollectionAsserts.HasCount(collection, count);
         }
 
         [Theory]

@@ -7764,13 +7764,13 @@ namespace System.Collections.Generic
     public partial interface ICollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyCollection<T>
     {
         new int Count { get; }
-        int System.Collections.Generic.IReadOnlyCollection<T>.Count => Count;
         bool IsReadOnly { get; }
         void Add(T item);
         void Clear();
         bool Contains(T item);
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
+        int System.Collections.Generic.IReadOnlyCollection<T>.Count => Count;
     }
     public partial interface IComparer<in T>
     {
@@ -7779,16 +7779,16 @@ namespace System.Collections.Generic
     public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>
     {
         new TValue this[TKey key] { get; set; }
-        TValue System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
         new System.Collections.Generic.ICollection<TKey> Keys { get; }
-        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
         new System.Collections.Generic.ICollection<TValue> Values { get; }
-        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values => Values;
         void Add(TKey key, TValue value);
         new bool ContainsKey(TKey key);
-        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
         bool Remove(TKey key);
         new bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
+        TValue System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values => Values;
+        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
         bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => TryGetValue(key, out value);
     }
     public partial interface IEnumerable<out T> : System.Collections.IEnumerable
@@ -7807,10 +7807,10 @@ namespace System.Collections.Generic
     public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.IReadOnlyCollection<T>
     {
         new T this[int index] { get; set; }
-        T System.Collections.Generic.IReadOnlyList<T>.this[int index] => this[index];
         int IndexOf(T item);
         void Insert(int index, T item);
         void RemoveAt(int index);
+        T System.Collections.Generic.IReadOnlyList<T>.this[int index] => this[index];
     }
     public partial interface IReadOnlyCollection<out T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
@@ -7841,24 +7841,24 @@ namespace System.Collections.Generic
     public partial interface ISet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.IReadOnlyCollection<T>
     {
         new bool Add(T item);
-        new bool Contains(T item) => ((ICollection<T>)this).Contains(item);
-        bool System.Collections.Generic.IReadOnlySet<T>.Contains(T item) => ((ICollection<T>)this).Contains(item);
         void ExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void IntersectWith(System.Collections.Generic.IEnumerable<T> other);
         new bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSubsetOf(other);
         new bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSupersetOf(other);
         new bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsSubsetOf(other);
         new bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsSupersetOf(other);
         new bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
-        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => Overlaps(other);
         new bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
-        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => SetEquals(other);
         void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void UnionWith(System.Collections.Generic.IEnumerable<T> other);
+        new bool Contains(T item) => ((ICollection<T>)this).Contains(item);
+        bool System.Collections.Generic.IReadOnlySet<T>.Contains(T item) => ((ICollection<T>)this).Contains(item);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSubsetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSupersetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsSubsetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsSupersetOf(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => Overlaps(other);
+        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => SetEquals(other);
     }
     public partial class KeyNotFoundException : System.SystemException
     {

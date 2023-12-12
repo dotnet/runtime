@@ -59,20 +59,24 @@ namespace System.Collections.Tests
         public void TryAdd_KeyDoesntExistInIDictionary_ReturnsTrue()
         {
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
-            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
             Assert.True(dictionary.TryAdd("key", "value"));
             Assert.Equal("value", dictionary["key"]);
+#if !NETFRAMEWORK
+            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
             Assert.Equal("value", readOnlyDictionary["key"]);
+#endif
         }
 
         [Fact]
         public void TryAdd_KeyExistsInIDictionary_ReturnsFalse()
         {
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>() { ["key"] = "value" };
-            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
             Assert.False(dictionary.TryAdd("key", "value2"));
             Assert.Equal("value", dictionary["key"]);
+#if !NETFRAMEWORK
+            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
             Assert.Equal("value", readOnlyDictionary["key"]);
+#endif
         }
 
         [Fact]
@@ -97,11 +101,13 @@ namespace System.Collections.Tests
         public void Remove_KeyExistsInIDictionary_ReturnsTrue()
         {
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>() { ["key"] = "value" };
-            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
             Assert.True(dictionary.Remove("key", out var value));
             Assert.Equal("value", value);
             Assert.Throws<KeyNotFoundException>(() => dictionary["key"]);
+#if !NETFRAMEWORK
+            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
             Assert.Throws<KeyNotFoundException>(() => readOnlyDictionary["key"]);
+#endif
         }
 
         [Fact]
