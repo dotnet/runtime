@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RecipeEngine" Version="3.0.0" />
+    <PackageReference Include="RecipeEngine.Api" Version="3.0.1" />
+    <PackageReference Include="RecipeEngine.Api.Extensions" Version="3.0.0" />
+    <PackageReference Include="RecipeEngine.Modules.Git" Version="3.0.0" />
+    <PackageReference Include="RecipeEngine.Platforms" Version="3.0.0" />
+    <PackageReference Include="RecipeEngine.Unity.Abstractions" Version="4.0.0" />
+    <PackageReference Include="SimpleExec" Version="11.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\BuildDriver\NiceIO.cs">
+      <Link>NiceIO.cs</Link>
+    </Compile>
+    <Compile Include="..\BuildDriver\Paths.cs">
+      <Link>Paths.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="platforms.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+
+</Project>
