@@ -9504,7 +9504,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
         case INS_sve_ldnf1h:
         case INS_sve_ldnf1sb:
-            assert(insOptsScalable(opt));
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -9513,7 +9513,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             break;
 
         case INS_sve_ldnf1b:
-            assert(insOptsScalable(opt));
+            assert(insOptsScalableSimple(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -12779,6 +12779,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case INS_sve_ld1h:
         case INS_sve_ldnf1sh:
         case INS_sve_ldnf1w:
+        case INS_sve_ldnf1h:
+        case INS_sve_ldnf1sb:
+        case INS_sve_ldnf1b:
             return true;
 
         default:
@@ -12802,6 +12805,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             switch (ins)
             {
                 case INS_sve_ld1b:
+                case INS_sve_ldnf1b:
                     return code & ~((1 << 22) | (1 << 21)); // Set bit '22' and '21' to 0.
 
                 default:
@@ -12814,9 +12818,12 @@ void emitter::emitIns_Call(EmitCallType          callType,
             {
                 case INS_sve_ld1b:
                 case INS_sve_ld1h:
+                case INS_sve_ldnf1h:
+                case INS_sve_ldnf1b:
                     return code & ~(1 << 22); // Set bit '22' to 0.
 
                 case INS_sve_ld1sb:
+                case INS_sve_ldnf1sb:
                     return code | (1 << 22); // Set bit '22' to 1.
 
                 default:
@@ -12831,11 +12838,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 case INS_sve_ld1b:
                 case INS_sve_ld1h:
                 case INS_sve_ldnf1w:
+                case INS_sve_ldnf1h:
+                case INS_sve_ldnf1b:
                     return code & ~(1 << 21); // Set bit '21' to 0.
 
                 case INS_sve_ld1sb:
                 case INS_sve_ld1sh:
                 case INS_sve_ldnf1sh:
+                case INS_sve_ldnf1sb:
                     return code | (1 << 21); // Set bit '21' to 1.
 
                 default:

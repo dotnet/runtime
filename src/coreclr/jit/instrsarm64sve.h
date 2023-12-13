@@ -2815,8 +2815,8 @@ INST1(ld1rw,             "ld1rw",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IL_3A_C                                  
-INST1(ldnf1b,            "ldnf1b",                0,                       IF_SVE_IL_3A_C,          0xA410A000                                   )
-    // LDNF1B  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_C         101001000001iiii 101gggnnnnnttttt     A410 A000   
+INST1(ldnf1b,            "ldnf1b",                0,                       IF_SVE_IL_3A_C,          0xA470A000                                  )
+    // LDNF1B  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_C         101001000111iiii 101gggnnnnnttttt     A470 A000   
 
 
 //    enum               name                     info                                              SVE_IL_3A                                    
@@ -2828,8 +2828,8 @@ INST1(ldnf1sw,           "ldnf1sw",               0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_IL_3A_B                                  
-INST1(ldnf1h,            "ldnf1h",                0,                       IF_SVE_IL_3A_B,          0xA490A000                                   )
-    // LDNF1H  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_B         101001001001iiii 101gggnnnnnttttt     A490 A000   
+INST1(ldnf1h,            "ldnf1h",                0,                       IF_SVE_IL_3A_B,          0xA4F0A000                                   )
+    // LDNF1H  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_B         101001001111iiii 101gggnnnnnttttt     A4F0 A000   
 
 INST1(ldnf1sb,           "ldnf1sb",               0,                       IF_SVE_IL_3A_B,          0xA590A000                                   )
     // LDNF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_B         101001011001iiii 101gggnnnnnttttt     A590 A000   

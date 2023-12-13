@@ -10728,11 +10728,25 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_IL_3A_B
     theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1h, EA_SCALABLE, REG_V1, REG_P3, REG_R2, 5,
+                                INS_OPTS_SCALABLE_H); // LDNF1H  {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1sb, EA_SCALABLE, REG_V0, REG_P4, REG_R1, 5,
+                                INS_OPTS_SCALABLE_H); // LDNF1SB {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1h, EA_SCALABLE, REG_V1, REG_P3, REG_R2, 5,
+                                INS_OPTS_SCALABLE_S); // LDNF1H  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1sb, EA_SCALABLE, REG_V0, REG_P4, REG_R1, 5,
+                                INS_OPTS_SCALABLE_S); // LDNF1SB {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1h, EA_SCALABLE, REG_V1, REG_P3, REG_R2, 5,
                                 INS_OPTS_SCALABLE_D); // LDNF1H  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
     theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1sb, EA_SCALABLE, REG_V0, REG_P4, REG_R1, 5,
                                 INS_OPTS_SCALABLE_D); // LDNF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
 
     // IF_SVE_IL_3A_C
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1b, EA_SCALABLE, REG_V2, REG_P5, REG_R3, 5,
+                                INS_OPTS_SCALABLE_B); // LDNF1B  {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1b, EA_SCALABLE, REG_V2, REG_P5, REG_R3, 5,
+                                INS_OPTS_SCALABLE_H); // LDNF1B  {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1b, EA_SCALABLE, REG_V2, REG_P5, REG_R3, 5,
+                                INS_OPTS_SCALABLE_S); // LDNF1B  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
     theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1b, EA_SCALABLE, REG_V2, REG_P5, REG_R3, 5,
                                 INS_OPTS_SCALABLE_D); // LDNF1B  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
 
