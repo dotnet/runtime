@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// This module provides data storage and implementations needed by gcrhenv.h to help provide an isolated build
-// and runtime environment in which GC and HandleTable code can exist with minimal modifications from the CLR
-// mainline. See gcrhenv.h for a more detailed explanation of how this all fits together.
-//
-
 #include "common.h"
 
 #include "gcenv.h"
@@ -15,54 +9,25 @@
 
 #include "gcenv.ee.h"
 
-#include "RestrictedCallouts.h"
-
 #include "RedhawkGCInterface.h"
 
-#include "slist.h"
-#include "varint.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-
-#include "thread.h"
-
-#include "shash.h"
-#include "TypeManager.h"
-#include "RuntimeInstance.h"
-#include "objecthandle.h"
-#include "MethodTable.inl"
 #include "RhConfig.h"
 
+#include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
 
+#include "regdisplay.h"
+
 #include "gcdesc.h"
-#include "SyncClean.hpp"
-
 #include "daccess.h"
-
-#include "interoplibinterface.h"
-
-#include "holder.h"
-#include "volatile.h"
-
-#include "gctoclreventsink.h"
 
 #ifndef DACCESS_COMPILE
 
 // A few settings are now backed by the cut-down version of Redhawk configuration values.
 static RhConfig g_sRhConfig;
 RhConfig * g_pRhConfig = &g_sRhConfig;
-
-// TODO: VS where does this go?
-
-// NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the
-// size, but thread.cpp doesn't generally need to include the GC environment headers for any other reason.
-gc_alloc_context* Thread::GetAllocContext()
-{
-    return dac_cast<DPTR(gc_alloc_context)>(dac_cast<TADDR>(this) + offsetof(Thread, m_rgbAllocContextBuffer));
-}
 
 MethodTable g_FreeObjectEEType;
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
@@ -490,74 +455,6 @@ COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
 #endif // FEATURE_GC_STRESS
 
 #endif // !DACCESS_COMPILE
-
-//
-// Support for scanning the GC heap, objects and roots.
-//
-
-// Enumerate every reference field in an object, calling back to the specified function with the given context
-// for each such reference found.
-// static
-void RedhawkGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
-{
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    GCHeapUtilities::GetGCHeap()->DiagWalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
-#else
-    UNREFERENCED_PARAMETER(pObject);
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-#endif // DACCESS_COMPILE
-}
-
-// When scanning for object roots we use existing GC APIs used for object promotion and moving. We use an
-// adapter callback to transform the promote function signature used for these methods into something simpler
-// that avoids exposing unnecessary implementation details. The pointer to a ScanContext normally passed to
-// promotion functions is actually a pointer to the structure below which serves to recall the actual function
-// pointer and context for the real context.
-struct ScanRootsContext
-{
-    GcScanRootFunction  m_pfnCallback;
-    void *              m_pContext;
-};
-
-// Callback with a EnumGcRefCallbackFunc signature that forwards the call to a callback with a GcScanFunction signature
-// and its own context.
-void ScanRootsCallbackWrapper(Object** pObject, EnumGcRefScanContext* pContext, DWORD dwFlags)
-{
-    UNREFERENCED_PARAMETER(dwFlags);
-
-    ScanRootsContext * pRealContext = (ScanRootsContext*)pContext;
-
-    (*pRealContext->m_pfnCallback)((void**)&pObject, pRealContext->m_pContext);
-}
-
-// Enumerate all the object roots located on the specified thread's stack. It is only safe to call this from
-// the context of a GC.
-//
-// static
-void RedhawkGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext)
-{
-#ifndef DACCESS_COMPILE
-    ScanRootsContext sContext;
-    sContext.m_pfnCallback = pfnScanCallback;
-    sContext.m_pContext = pContext;
-
-    pThread->GcScanRoots(reinterpret_cast<void*>(ScanRootsCallbackWrapper), &sContext);
-#else
-    UNREFERENCED_PARAMETER(pThread);
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-#endif // !DACCESS_COMPILE
-}
-
-// Enumerate all the object roots located in statics. It is only safe to call this from the context of a GC.
-//
-// static
-void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext)
-{
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-}
 
 #ifndef DACCESS_COMPILE
 

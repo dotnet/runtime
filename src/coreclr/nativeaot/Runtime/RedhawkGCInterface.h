@@ -49,32 +49,6 @@ public:
 
 typedef DPTR(RtuObjectRef) PTR_RtuObjectRef;
 
-// -----------------------------------------------------------------------------------------------------------
-
-// We provide various ways to enumerate GC objects or roots, each of which calls back to a user supplied
-// function for each object (within the context of a garbage collection). The following function types
-// describe these callbacks. Unfortunately the signatures aren't very specific: we don't want to reference
-// Object* or Object** from this module, see the comment for RtuObjectRef, but this very narrow category of
-// callers can't use RtuObjectRef (they really do need to drill down into the Object). The lesser evil here is
-// to be a bit loose in the signature rather than exposing the Object class to the rest of Redhawk.
-
-// Callback when enumerating objects on the GC heap or objects referenced from instance fields of another
-// object. The GC dictates the shape of this signature (we're hijacking functionality originally developed for
-// profiling). The real signature is:
-//      int ScanFunction(Object* pObject, void* pContext)
-// where:
-//      return      : treated as a boolean, zero indicates the enumeration should terminate, all other values
-//                    say continue
-//      pObject     : pointer to the current object being scanned
-//      pContext    : user context passed to the original scan function and otherwise uninterpreted
-typedef int (*GcScanObjectFunction)(void*, void*);
-
-// Callback when enumerating GC roots (stack locations, statics and handles). Similar to the callback above
-// except there is no means to terminate the scan (no return value) and the root location (pointer to pointer
-// to object) is returned instead of a direct pointer to the object:
-//      void ScanFunction(Object** pRoot, void* pContext)
-typedef void (*GcScanRootFunction)(void**, void*);
-
 typedef void * GcSegmentHandle;
 
 #define RH_LARGE_OBJECT_SIZE 85000
@@ -126,12 +100,6 @@ public:
 #ifdef FEATURE_GC_STRESS
     static void StressGc();
 #endif // FEATURE_GC_STRESS
-
-    // Various routines used to enumerate objects contained within a given scope (on the GC heap, as reference
-    // fields of an object, on a thread stack, in a static or in one of the handle tables).
-    static void ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext);
-    static void ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext);
-    static void ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext);
 
     // Returns size GCDesc. Used by type cloning.
     static uint32_t GetGCDescSize(void * pType);
