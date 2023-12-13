@@ -44,7 +44,9 @@ namespace System.Runtime.InteropServices.JavaScript
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
             lock (_lockObject)
+#endif
             {
                 InFlightCounter++;
                 if (InFlightCounter == 1)
@@ -60,7 +62,9 @@ namespace System.Runtime.InteropServices.JavaScript
         // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
         internal void ReleaseInFlight()
         {
+#if FEATURE_WASM_THREADS
             lock (_lockObject)
+#endif
             {
                 Debug.Assert(InFlightCounter != 0, "InFlightCounter != 0");
 

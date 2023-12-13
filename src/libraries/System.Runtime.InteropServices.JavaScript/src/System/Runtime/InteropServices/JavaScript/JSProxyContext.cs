@@ -117,21 +117,6 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static JSProxyContext AssertCapturedContext()
-        {
-#if FEATURE_WASM_THREADS
-            var ctx = CapturedInstance;
-            if (ctx == null || ctx._disposedValue)
-            {
-                Environment.FailFast($"CapturedInstance was not set. ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}");
-            }
-            return ctx;
-#else
-            return MainInstance;
-#endif
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsJSVHandle(nint jsHandle)
         {
             return jsHandle < -1;
@@ -203,8 +188,7 @@ namespace System.Runtime.InteropServices.JavaScript
             PromiseHolder holder;
             if (IsGCVHandle(gcHandle))
             {
-                // this path should only happen when the Promise is passed as argument of JSExport
-                var ctx = AssertCapturedContext();
+                var ctx = JSProxyContext.DefaultInstance;
                 lock (ctx)
                 {
                     holder = new PromiseHolder(ctx, gcHandle);
@@ -241,7 +225,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     else
                     {
-                        JSProxyContext.CurrentInstance!.ThreadJsOwnedObjects.Remove(target);
+                        ThreadJsOwnedObjects.Remove(target);
                     }
                     handle.Free();
                 }
