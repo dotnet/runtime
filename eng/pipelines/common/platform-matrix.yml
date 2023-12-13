@@ -580,6 +580,29 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+- ${{ if containsValue(parameters.platforms, 'Android_arm64_perf_specific') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Android
+      archType: arm64
+      targetRid: android-arm64
+      platform: Android_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container:
+        image: cbl-mariner-2.0-cross-android-amd64
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Mac Catalyst x64
 
 - ${{ if containsValue(parameters.platforms, 'MacCatalyst_x64') }}:
