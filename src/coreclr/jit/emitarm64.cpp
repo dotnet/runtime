@@ -9474,7 +9474,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             break;
 
         case INS_sve_ld1h:
-            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -12763,6 +12763,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return 0;
 }
 
+/*****************************************************************************
+ *
+ *  Returns true if the specified format can encode the 'dtype' field.
+ */
+
 /*static*/ bool emitter::canEncodeSveElemsize_dtype(insFormat fmt)
 {
     switch (fmt)
@@ -12771,6 +12776,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_IJ_3A_D:
         case IF_SVE_IJ_3A_E:
         case IF_SVE_IJ_3A_F:
+        case IF_SVE_IJ_3A_G:
             return true;
 
         default:
@@ -12781,7 +12787,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
- *  This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+ *  based on the format for the 'dtype' field.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype(insFormat fmt, emitAttr size, code_t code)
@@ -12799,6 +12805,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                     return code; // By default, the instruction already encodes 64-bit.
 
                 case EA_16BYTE:
+                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '0' to get the proper encoding for Q.
                     return (code & ~((1 << 22) | (1 << 21) | (1 << 15))) | (1 << 20); // Set bits '22', '21' and '15' to 0. Set bit '20' to 1.
 
                 default:
@@ -12845,6 +12852,22 @@ void emitter::emitIns_Call(EmitCallType          callType,
             {
                 case EA_4BYTE:
                     return code | (1 << 21); // Set bit '21' to 1.
+
+                case EA_8BYTE:
+                    return code; // By default, the instruction already encodes 64-bit.
+
+                default:
+                    assert(!"Invalid size for encoding dtype.");
+            }
+
+        case IF_SVE_IJ_3A_G:
+            switch (size)
+            {
+                case EA_2BYTE:
+                    return code & ~(1 << 22); // Set bit '22' to 0.
+
+                case EA_4BYTE:
+                    return code & ~(1 << 21); // Set bit '21' to 0.
 
                 case EA_8BYTE:
                     return code; // By default, the instruction already encodes 64-bit.

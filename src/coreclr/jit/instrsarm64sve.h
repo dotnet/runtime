@@ -119,7 +119,7 @@ INST9(ld1sh,             "ld1sh",                 0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IJ_3A_G      SVE_IK_4A_I      
-INST9(ld1h,              "ld1h",                  0,                       IF_SVE_9B,               0x84A04000,      0xC4A04000,      0xC4804000,      0x84804000,      0xC4E0C000,      0xC4C0C000,      0x84A0C000,      0xA480A000,      0xA4804000       )
+INST9(ld1h,              "ld1h",                  0,                       IF_SVE_9B,               0x84A04000,      0xC4A04000,      0xC4804000,      0x84804000,      0xC4E0C000,      0xC4C0C000,      0x84A0C000,      0xA4E0A000,      0xA4804000       )
     // LD1H    {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]                            SVE_HW_4A           100001001h1mmmmm 010gggnnnnnttttt     84A0 4000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]                            SVE_HW_4A_A         110001001h1mmmmm 010gggnnnnnttttt     C4A0 4000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001001h0mmmmm 010gggnnnnnttttt     C480 4000   
@@ -127,7 +127,7 @@ INST9(ld1h,              "ld1h",                  0,                       IF_SV
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #1]                              SVE_HW_4B           11000100111mmmmm 110gggnnnnnttttt     C4E0 C000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B_D         11000100110mmmmm 110gggnnnnnttttt     C4C0 C000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_E         10000100101iiiii 110gggnnnnnttttt     84A0 C000   
-    // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IJ_3A_G         101001001000iiii 101gggnnnnnttttt     A480 A000   
+    // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IJ_3A_G         101001001110iiii 101gggnnnnnttttt     A4E0 A000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]                                SVE_IK_4A_I         10100100100mmmmm 010gggnnnnnttttt     A480 4000   
 
 
