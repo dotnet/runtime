@@ -2953,7 +2953,7 @@ void* emitter::emitAddInlineLabel()
 // emitPrintLabel: Print the assembly label for an insGroup. We could use emitter::emitLabelString()
 // to be consistent, but that seems silly.
 //
-void emitter::emitPrintLabel(insGroup* ig)
+void emitter::emitPrintLabel(const insGroup* ig) const
 {
     printf("G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
 }
@@ -2966,7 +2966,7 @@ void emitter::emitPrintLabel(insGroup* ig)
 // Returns:
 //    String with insGroup label
 //
-const char* emitter::emitLabelString(insGroup* ig)
+const char* emitter::emitLabelString(const insGroup* ig) const
 {
     const int       TEMP_BUFFER_LEN = 40;
     static unsigned curBuf          = 0;

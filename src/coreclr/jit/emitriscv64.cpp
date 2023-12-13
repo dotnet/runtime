@@ -1936,7 +1936,8 @@ AGAIN:
             assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
-            if (!(isLinkingEnd & 0x2) && (extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
+                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2009,7 +2010,8 @@ AGAIN:
             assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
-            if (!(isLinkingEnd & 0x2) && (extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
+                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2143,7 +2145,7 @@ ssize_t emitter::emitOutputInstrJumpSize(BYTE const* const         destination,
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    BYTE* const       dst = *dp;
+    BYTE* const       dst    = *dp;
     BYTE*             dstRW  = *dp + writeableOffset;
     BYTE*             dstRW2 = dstRW + 4; // addr for updating gc info if needed.
     const BYTE* const odstRW = dstRW;
@@ -2912,6 +2914,69 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     return sz;
 }
 
+bool emitter::emitDispBranchInstrType(unsigned opcode2) const
+{
+    switch (opcode2)
+    {
+        case 0:
+            printf("beq ");
+            break;
+        case 1:
+            printf("bne ");
+            break;
+        case 4:
+            printf("blt ");
+            break;
+        case 5:
+            printf("bge ");
+            break;
+        case 6:
+            printf("bltu");
+            break;
+        case 7:
+            printf("bgeu");
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+bool emitter::emitDispBranch(unsigned         opcode2,
+                             const char*      register1Name,
+                             const char*      register2Name,
+                             const instrDesc* id) const
+{
+    if (!emitDispBranchInstrType(opcode2))
+    {
+        return false;
+    }
+    printf("           %s, %s, ", register1Name, register2Name);
+    assert(id != nullptr);
+    if (id->idIsBound())
+    {
+        if (id->idAddr()->iiaHasInstrCount())
+        {
+            printf("%3d instr", id->idAddr()->iiaGetInstrCount());
+        }
+        else
+        {
+            emitPrintLabel(id->idAddr()->iiaIGlabel);
+        }
+    }
+    else
+    {
+        printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+    }
+    printf("\n");
+    return true;
+}
+
+void emitter::emitDispIllegalInstruction(code_t instructionCode)
+{
+    printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
+}
+
 /*****************************************************************************/
 /*****************************************************************************/
 
@@ -3255,47 +3320,16 @@ void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigne
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
             const char*  rs2     = RegNames[(code >> 20) & 0x1f];
-            int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
-                         (((code >> 8) & 0xf) << 1);
-            if (offset & 0x800)
+            // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
+            //              (((code >> 8) & 0xf) << 1);
+            // if (offset & 0x800)
+            // {
+            //     offset |= 0xfffff000;
+            // }
+            if (!emitDispBranch(opcode2, rs1, rs2, id))
             {
-                offset |= 0xfffff000;
+                emitDispIllegalInstruction(code);
             }
-            switch (opcode2)
-            {
-                case 0:
-                    printf("beq ");
-                    break;
-                case 1:
-                    printf("bne ");
-                    break;
-                case 4:
-                    printf("blt ");
-                    break;
-                case 5:
-                    printf("bge ");
-                    break;
-                case 6:
-                    printf("bltu");
-                    break;
-                case 7:
-                    printf("bgeu");
-                    break;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
-            }
-            static const int MAX_LEN = 32;
-
-            int len = printf("           %s, %s, %d", rs1, rs2, offset);
-            if (len <= 0 || len > MAX_LEN)
-            {
-                printf("\n");
-                return;
-            }
-            if (!emitComp->opts.disDiffable)
-                printf("%*s;; offset=0x%04X", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
-            printf("\n");
             return;
         }
         case 0x03:

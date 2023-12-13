@@ -2712,8 +2712,8 @@ private:
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-    void emitPrintLabel(insGroup* ig);
-    const char* emitLabelString(insGroup* ig);
+    void emitPrintLabel(const insGroup* ig) const;
+    const char* emitLabelString(const insGroup* ig) const;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
