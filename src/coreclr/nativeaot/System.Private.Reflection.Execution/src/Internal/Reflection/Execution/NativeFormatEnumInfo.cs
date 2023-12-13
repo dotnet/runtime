@@ -58,10 +58,9 @@ namespace Internal.Reflection.Execution
             }
 
             isFlags = false;
-            string[]? flagsAttributeNamespaceParts = null;
             foreach (CustomAttributeHandle cah in typeDef.CustomAttributes)
             {
-                if (cah.IsCustomAttributeOfType(reader, flagsAttributeNamespaceParts ??= ["System"], "FlagsAttribute"))
+                if (cah.IsCustomAttributeOfType(reader, ["System"], "FlagsAttribute"))
                 {
                     isFlags = true;
                     break;
