@@ -5425,39 +5425,15 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 #endif // PROFILING_SUPPORTED
 
-/*****************************************************************************
- * Unit testing of the ARM64 emitter: generate a bunch of instructions into the prolog
- * (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
- * disassembler thinks the instructions as the same as we do.
- */
-
-// Uncomment "#define ALL_ARM64_EMITTER_UNIT_TESTS" and one or more of the categories to run all the unit tests here.
-// After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
-#define ALL_ARM64_EMITTER_UNIT_TESTS
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE
-// #define ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
 #if defined(DEBUG)
-void CodeGen::genArm64EmitterUnitTests()
+
+/*****************************************************************************
+ * Unit tests for the general instructions.
+ */
+void CodeGen::genArm64EmitterUnitTestsGeneral()
 {
-    if (!verbose)
-    {
-        return;
-    }
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
-    // Mark the "fake" instructions in the output.
-    printf("*************** In genArm64EmitterUnitTests()\n");
-
+    assert(verbose);
     emitter* theEmitter = GetEmitter();
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-    // We use this:
-    //      genDefineTempLabel(genCreateTempLabel());
-    // to create artificial labels to help separate groups of tests.
 
     //
     // Loads/Stores basic general register
@@ -5559,9 +5535,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_stlxrb, EA_4BYTE, REG_R8, REG_R5, REG_R14);
     theEmitter->emitIns_R_R_R(INS_stlxrh, EA_4BYTE, REG_R12, REG_R3, REG_R15);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -5774,9 +5747,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_tbx_4regs, EA_8BYTE, REG_V0, REG_V1, REG_V6, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_tbx_4regs, EA_16BYTE, REG_V0, REG_V1, REG_V6, INS_OPTS_16B);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -5957,9 +5927,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_ld4r, EA_8BYTE, REG_V4, REG_R8, REG_R9, INS_OPTS_1D);
     theEmitter->emitIns_R_R_R(INS_ld4r, EA_16BYTE, REG_V10, REG_R14, REG_R15, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6140,9 +6107,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_ld4r, EA_8BYTE, REG_V30, REG_R2, 32, INS_OPTS_1D);
     theEmitter->emitIns_R_R_I(INS_ld4r, EA_16BYTE, REG_V3, REG_R7, 32, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6197,9 +6161,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_st4, EA_4BYTE, REG_V10, REG_R14, 0);
     theEmitter->emitIns_R_R_I(INS_st4, EA_8BYTE, REG_V15, REG_R19, 1);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6254,9 +6215,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_st4, EA_4BYTE, REG_V12, REG_R16, REG_R17, 0, INS_OPTS_POST_INDEX);
     theEmitter->emitIns_R_R_R_I(INS_st4, EA_8BYTE, REG_V18, REG_R22, REG_R23, 1, INS_OPTS_POST_INDEX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
@@ -6311,9 +6269,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I_I(INS_st4, EA_4BYTE, REG_V10, REG_R14, 0, 16, INS_OPTS_POST_INDEX);
     theEmitter->emitIns_R_R_I_I(INS_st4, EA_8BYTE, REG_V15, REG_R19, 1, 32, INS_OPTS_POST_INDEX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Compares
     //
@@ -6345,9 +6300,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_cmn, EA_8BYTE, REG_R8, 0xfffffffffffff000LL);
     theEmitter->emitIns_R_I(INS_cmn, EA_8BYTE, REG_R8, 0xffffffffff800000LL);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R
     //
 
@@ -6366,9 +6318,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R10, REG_R5);
     theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R11, REG_R6);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_I
     //
@@ -6419,9 +6368,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_tst, EA_4BYTE, REG_R8, 0xFFF00000);
     theEmitter->emitIns_R_I(INS_tst, EA_4BYTE, REG_R8, 0x55555555);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R
     //
@@ -6456,9 +6402,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_Mov(INS_uxtb, EA_4BYTE, REG_R3, REG_R13, /* canSkip */ false);
     theEmitter->emitIns_Mov(INS_uxth, EA_4BYTE, REG_R2, REG_R14, /* canSkip */ false);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_I_I
     //
@@ -6477,9 +6420,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I_I(INS_movn, EA_4BYTE, REG_R8, 0x5678, 16, INS_OPTS_LSL);
     theEmitter->emitIns_R_I_I(INS_movz, EA_4BYTE, REG_R8, 0x8765, 16, INS_OPTS_LSL);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_I
     //
@@ -6587,9 +6527,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_subs, EA_4BYTE, REG_R8, REG_R9, 0xfffffffffffff000LL);
     theEmitter->emitIns_R_R_I(INS_subs, EA_4BYTE, REG_R8, REG_R9, 0xffffffffff800000LL);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_I cmp/txt
     //
@@ -6651,9 +6588,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_cmp, EA_4BYTE, REG_R8, REG_R9, 2, INS_OPTS_SXTH);
     theEmitter->emitIns_R_R_I(INS_cmp, EA_4BYTE, REG_R8, REG_R9, 4, INS_OPTS_SXTW);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R
     //
@@ -6706,9 +6640,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_asrv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_rorv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // ARMv8.1 LSE Atomics
     //
@@ -6775,9 +6706,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_staddl, EA_4BYTE, REG_R8, REG_R10);
     theEmitter->emitIns_R_R(INS_stadd, EA_8BYTE, REG_R8, REG_R10);
     theEmitter->emitIns_R_R(INS_staddl, EA_8BYTE, REG_R8, REG_R10);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_I_I
     //
@@ -6808,9 +6737,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I_I(INS_bfxil, EA_4BYTE, REG_R1, REG_R5, 11, 9);
     theEmitter->emitIns_R_R_I_I(INS_ubfx, EA_4BYTE, REG_R8, REG_R9, 22, 8);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_I
     //
@@ -6915,9 +6841,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_eon, EA_4BYTE, REG_R8, REG_R9, REG_R10, 7, INS_OPTS_ASR);
     theEmitter->emitIns_R_R_R_I(INS_orn, EA_4BYTE, REG_R8, REG_R9, REG_R10, 8, INS_OPTS_ROR);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_I  -- load/store pair
     //
@@ -6963,9 +6886,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SP, 16, INS_OPTS_POST_INDEX);
     theEmitter->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_R8, 16, INS_OPTS_PRE_INDEX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_Ext    -- load/store shifted/extend
     //
@@ -7090,9 +7010,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_Ext(INS_strb, EA_1BYTE, REG_R8, REG_SP, REG_R9, INS_OPTS_SXTX);
     theEmitter->emitIns_R_R_R_Ext(INS_strb, EA_1BYTE, REG_R8, REG_SP, REG_R9, INS_OPTS_UXTX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // R_R_R_R
     //
@@ -7113,9 +7030,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_R(INS_umaddl, EA_8BYTE, REG_R10, REG_R25, REG_R8, REG_R23);
     theEmitter->emitIns_R_R_R_R(INS_umsubl, EA_8BYTE, REG_R11, REG_R26, REG_R9, REG_R24);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_COND
     //
 
@@ -7151,9 +7065,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_COND(INS_csetm, EA_4BYTE, REG_R7, INS_COND_GT); // gt
     theEmitter->emitIns_R_COND(INS_csetm, EA_8BYTE, REG_R6, INS_COND_LE); // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R_COND
     //
 
@@ -7175,9 +7086,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_COND(INS_cinc, EA_4BYTE, REG_R2, REG_R6, INS_COND_GT); // gt
     theEmitter->emitIns_R_R_COND(INS_cinv, EA_8BYTE, REG_R3, REG_R7, INS_COND_LE); // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R_R_COND
     //
 
@@ -7200,9 +7108,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_COND(INS_csel, EA_4BYTE, REG_R2, REG_R6, REG_R0, INS_COND_GT);  // gt
     theEmitter->emitIns_R_R_R_COND(INS_csinc, EA_8BYTE, REG_R3, REG_R7, REG_R1, INS_COND_LE); // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     // R_R_FLAGS_COND
     //
 
@@ -7286,9 +7191,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I_FLAGS_COND(INS_ccmn, EA_8BYTE, REG_R7, 7, INS_FLAGS_NZC, INS_COND_GT);   // gt
     theEmitter->emitIns_R_I_FLAGS_COND(INS_ccmn, EA_4BYTE, REG_R6, 4, INS_FLAGS_NZCV, INS_COND_LE);  // le
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Branch to register
     //
@@ -7299,17 +7201,14 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R(INS_ret, EA_PTRSIZE, REG_R8);
     theEmitter->emitIns_R(INS_ret, EA_PTRSIZE, REG_LR);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
     //
     // Misc
     //
 
     genDefineTempLabel(genCreateTempLabel());
 
-    theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 0);
-    theEmitter->emitIns_I(INS_brk, EA_PTRSIZE, 65535);
+    theEmitter->emitIns_I(INS_BREAKPOINT, EA_PTRSIZE, 0);
+    theEmitter->emitIns_I(INS_BREAKPOINT, EA_PTRSIZE, 65535);
 
     theEmitter->emitIns_BARR(INS_dsb, INS_BARRIER_OSHLD);
     theEmitter->emitIns_BARR(INS_dmb, INS_BARRIER_OSHST);
@@ -7326,10 +7225,16 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_BARR(INS_dsb, INS_BARRIER_LD);
     theEmitter->emitIns_BARR(INS_dmb, INS_BARRIER_ST);
     theEmitter->emitIns_BARR(INS_isb, INS_BARRIER_SY);
+}
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_GENERAL
+/*****************************************************************************
+ * Unit tests for AdvSimd instructions.
+ */
+void CodeGen::genArm64EmitterUnitTestsAdvSimd()
+{
+    assert(verbose);
+    emitter* theEmitter = GetEmitter();
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     ////////////////////////////////////////////////////////////////////////////////
     //
     // SIMD and Floating point
@@ -7503,9 +7408,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_Ext(INS_ldr, EA_1BYTE, REG_V4, REG_SP, REG_R9, INS_OPTS_SXTX);
     theEmitter->emitIns_R_R_R_Ext(INS_ldr, EA_1BYTE, REG_V5, REG_R7, REG_R9, INS_OPTS_UXTX);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   mov and aliases for mov
     //
@@ -7591,9 +7493,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_ext, EA_16BYTE, REG_V8, REG_V9, REG_V10, 11, INS_OPTS_16B);
     theEmitter->emitIns_R_R_R_I(INS_ext, EA_16BYTE, REG_V12, REG_V13, REG_V14, 15, INS_OPTS_16B);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_I   movi and mvni
     //
@@ -7666,9 +7565,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_mvni, EA_16BYTE, REG_V14, 0x5DFF, INS_OPTS_4S);   // MSL  8
     theEmitter->emitIns_R_I(INS_mvni, EA_16BYTE, REG_V15, 0x5DFFFF, INS_OPTS_4S); // MSL 16
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_I   orr/bic vector immediate
     //
@@ -7703,9 +7599,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_I(INS_bic, EA_16BYTE, REG_V12, 0x5D0000, INS_OPTS_4S);   // LSL 16
     theEmitter->emitIns_R_I(INS_bic, EA_16BYTE, REG_V13, 0x5D000000, INS_OPTS_4S); // LSL 24
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_F   cmp/fmov immediate
     //
@@ -7744,9 +7637,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_F(INS_fcmpe, EA_8BYTE, REG_V14, 0.0);
     theEmitter->emitIns_R_F(INS_fcmpe, EA_4BYTE, REG_V15, 0.0);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   cmeq/fmov/fcmp/fcvt
     //
@@ -7788,9 +7678,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_fcvt, EA_2BYTE, REG_V5, REG_V6, INS_OPTS_S_TO_H);
     theEmitter->emitIns_R_R(INS_fcvt, EA_2BYTE, REG_V7, REG_V8, INS_OPTS_D_TO_H);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   floating point conversions
     //
@@ -7985,9 +7872,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_ucvtf, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_4S);
     theEmitter->emitIns_R_R(INS_ucvtf, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   floating point operations, one dest, one source
     //
@@ -8108,9 +7992,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_fcvtxn, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_fcvtxn2, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_4S);
 
-#endif
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     genDefineTempLabel(genCreateTempLabel());
 
     // abs scalar
@@ -8395,9 +8276,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_xtn2, EA_16BYTE, REG_V4, REG_V10, INS_OPTS_8H);
     theEmitter->emitIns_R_R(INS_xtn2, EA_16BYTE, REG_V5, REG_V11, INS_OPTS_4S);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R   floating point round to int, one dest, one source
     //
@@ -8465,9 +8343,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_frintz, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_4S);
     theEmitter->emitIns_R_R(INS_frintz, EA_16BYTE, REG_V8, REG_V9, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R   floating point operations, one dest, two source
     //
@@ -8593,9 +8468,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_fnmul, EA_4BYTE, REG_V0, REG_V1, REG_V2); // scalar 4BYTE
     theEmitter->emitIns_R_R_R(INS_fnmul, EA_8BYTE, REG_V3, REG_V4, REG_V5); // scalar 8BYTE
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_I  vector operations, one dest, one source reg, one immed
     //
@@ -9030,9 +8902,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_uqshrn2, EA_16BYTE, REG_V20, REG_V21, 17, INS_OPTS_4S);
     theEmitter->emitIns_R_R_I(INS_uqshrn2, EA_16BYTE, REG_V22, REG_V23, 32, INS_OPTS_4S);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R   vector operations, one dest, two source
     //
@@ -9144,9 +9013,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_uabd, EA_16BYTE, REG_V9, REG_V10, REG_V11, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R(INS_uabd, EA_8BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_uabd, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // sdot vector
     theEmitter->emitIns_R_R_R(INS_sdot, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_sdot, EA_16BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_4S);
@@ -9292,9 +9159,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_fcmgt, EA_8BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_fcmgt, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
     theEmitter->emitIns_R_R_R(INS_fcmgt, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_2D);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // trn1 vector
     theEmitter->emitIns_R_R_R(INS_trn1, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_trn1, EA_16BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_16B);
@@ -9348,9 +9213,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_zip2, EA_8BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_2S);
     theEmitter->emitIns_R_R_R(INS_zip2, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
     theEmitter->emitIns_R_R_R(INS_zip2, EA_16BYTE, REG_V18, REG_V19, REG_V20, INS_OPTS_2D);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // srshl scalar
     theEmitter->emitIns_R_R_R(INS_srshl, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_NONE);
 
@@ -9798,9 +9661,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_usubw2, EA_16BYTE, REG_V9, REG_V10, REG_V11, INS_OPTS_16B);
     theEmitter->emitIns_R_R_R(INS_usubw2, EA_16BYTE, REG_V12, REG_V13, REG_V14, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R(INS_usubw2, EA_16BYTE, REG_V15, REG_V16, REG_V17, INS_OPTS_4S);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R  vector multiply
     //
@@ -9858,9 +9719,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_mls, EA_16BYTE, REG_V18, REG_V19, REG_V3, 0, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R_I(INS_mls, EA_16BYTE, REG_V20, REG_V21, REG_V4, 3, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R_I(INS_mls, EA_16BYTE, REG_V22, REG_V23, REG_V5, 7, INS_OPTS_8H);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     // pmull vector
     theEmitter->emitIns_R_R_R(INS_pmull, EA_8BYTE, REG_V0, REG_V1, REG_V2, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_pmull, EA_8BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_1D);
@@ -10060,9 +9919,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_umull2, EA_16BYTE, REG_V6, REG_V7, REG_V8, 7, INS_OPTS_8H);
     theEmitter->emitIns_R_R_R_I(INS_umull2, EA_16BYTE, REG_V9, REG_V10, REG_V11, 3, INS_OPTS_4S);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R   floating point operations, one source/dest, and two source
     //
@@ -10089,9 +9945,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_fmls, EA_16BYTE, REG_V24, REG_V25, REG_V26, 2, INS_OPTS_4S);
     theEmitter->emitIns_R_R_R_I(INS_fmls, EA_16BYTE, REG_V27, REG_V28, REG_V29, 0, INS_OPTS_2D);
 
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_ADVSIMD
     //
     // R_R_R_R   floating point operations, one dest, and three source
     //
@@ -10105,10 +9958,16 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_R(INS_fmsub, EA_8BYTE, REG_V5, REG_V13, REG_V21, REG_V29);
     theEmitter->emitIns_R_R_R_R(INS_fnmadd, EA_8BYTE, REG_V6, REG_V14, REG_V22, REG_V30);
     theEmitter->emitIns_R_R_R_R(INS_fnmsub, EA_8BYTE, REG_V7, REG_V15, REG_V23, REG_V31);
+}
 
-#endif
+/*****************************************************************************
+ * Unit tests for SVE instructions.
+ */
+void CodeGen::genArm64EmitterUnitTestsSve()
+{
+    assert(verbose);
+    emitter* theEmitter = GetEmitter();
 
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE
     //
     // R_R_R   SVE operations, one dest, two source
     //
@@ -10743,25 +10602,8 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_H); /* FRECPX  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_fsqrt, EA_SCALABLE, REG_V6, REG_P6, REG_V6,
                               INS_OPTS_SCALABLE_S); /* FSQRT   <Zd>.<T>, <Pg>/M, <Zn>.<T> */
-
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
-
-    BasicBlock* label = genCreateTempLabel();
-    genDefineTempLabel(label);
-    instGen(INS_nop);
-    instGen(INS_nop);
-    instGen(INS_nop);
-    instGen(INS_nop);
-    theEmitter->emitIns_R_L(INS_adr, EA_4BYTE_DSP_RELOC, label, REG_R0);
-
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
-
-#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
-    printf("*************** End of genArm64EmitterUnitTests()\n");
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS
 }
+
 #endif // defined(DEBUG)
 
 //------------------------------------------------------------------------
