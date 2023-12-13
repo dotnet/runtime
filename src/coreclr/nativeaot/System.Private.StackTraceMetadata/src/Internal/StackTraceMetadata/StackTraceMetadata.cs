@@ -65,9 +65,10 @@ namespace Internal.StackTraceMetadata
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle))
             {
+                string[]? systemDiagnosticsNamespaceParts = null;
                 foreach (CustomAttributeHandle cah in reader.GetTypeDefinition(typeHandle).CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(reader, "System.Diagnostics", "StackTraceHiddenAttribute"))
+                    if (cah.IsCustomAttributeOfType(reader, systemDiagnosticsNamespaceParts ??= ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
                     {
                         isStackTraceHidden = true;
                         break;
@@ -76,7 +77,7 @@ namespace Internal.StackTraceMetadata
 
                 foreach (CustomAttributeHandle cah in reader.GetMethod(methodHandle).CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(reader, "System.Diagnostics", "StackTraceHiddenAttribute"))
+                    if (cah.IsCustomAttributeOfType(reader, systemDiagnosticsNamespaceParts ??= ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
                     {
                         isStackTraceHidden = true;
                         break;
