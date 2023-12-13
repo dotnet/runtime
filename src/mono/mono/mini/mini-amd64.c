@@ -1669,8 +1669,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 		regs = g_list_prepend (regs, (gpointer)AMD64_RBP);
 
 	/* We use the callee saved registers for global allocation */
+	regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
 	if (!mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R12);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 	}
@@ -1825,9 +1825,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		cfg->arch.saved_iregs |= AMD64_R12;
+		cfg->arch.saved_iregs |= (size_t)(1 << AMD64_R12) ;
 		cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
-		cfg->arch.saved_iregs |= AMD64_R13;
+		cfg->arch.saved_iregs |= (size_t)(1 << AMD64_R13);
 		cfg->used_int_regs |= (size_t)(1 << AMD64_R13);
 	}
 
@@ -1934,7 +1934,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			 * are volatile across calls.
 			 * FIXME: Optimize this.
 			 */
-			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg) || (ainfo->storage == ArgGSharedVtInReg) || (ainfo->storage == ArgSwiftError))
+			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg) || (ainfo->storage == ArgGSharedVtInReg) || (ainfo->storage == ArgSwiftError) || (ainfo->storage == ArgSwiftSelf))
 				inreg = FALSE;
 
 			ins->opcode = OP_REGOFFSET;
@@ -2503,7 +2503,8 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	int size = ins->backend.size;
 
 	switch (ainfo->storage) {
-	case ArgValuetypeInReg: {
+	case ArgValuetypeInReg:
+	case ArgSwiftSelf: {
 		MonoInst *load;
 		int part;
 
