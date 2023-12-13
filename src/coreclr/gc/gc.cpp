@@ -25370,8 +25370,9 @@ int gc_heap::calculate_new_heap_count ()
         float scale;
         if (precise_count_change_p)
         {
-            // This scale is constructed to match the step_up that the aggressive ('else' branch)
-            // scale would determine times a factor that goes from 0.5 at 10% tcp to 1.0 at 50% tcp.
+            // This scale is constructed to match the (step_up that would be computed from
+            // the aggressive scale in the 'else' branch) times (a factor that goes from
+            // 0.5 at 10% tcp to 1.0 at 50% tcp).
             // (step_up would be ((n_heaps * tcp / 5) - n_heaps) * ((tcp + 30) / 80))
             float limited_tcp = min (50, median_throughput_cost_percent);
             scale = ((limited_tcp * limited_tcp / 400.0f) + (limited_tcp / 16.0f) + (5.0f / 8));
