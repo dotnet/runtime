@@ -551,7 +551,7 @@ void GCToOSInterface::Shutdown()
 // current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the
-uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
+uint64_t GCToOSInterface::GetCurrentThreadId()
 {
     return ::GetCurrentThreadId();
 }

@@ -43,6 +43,14 @@ check_cxx_source_compiles("
     " HAVE_PTHREAD_GETTHREADID_NP)
 
 check_cxx_source_compiles("
+#include <lwp.h>
+
+int main(int argc, char **argv)
+{
+    return (int)_lwp_self();
+}" HAVE_LWP_SELF)
+
+check_cxx_source_compiles("
     #include <sys/mman.h>
 
     int main()

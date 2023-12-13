@@ -18,65 +18,19 @@ typedef void * HANDLE;
 // Across all platforms, NativeAOT Thread::GetPalThreadIdForLogging assumes that the thread
 // ID is stored in the first 8 bytes of this structure.
 
-#ifdef TARGET_UNIX
-
-#ifdef FEATURE_NATIVEAOT
-static_assert(sizeof(pthread_t) == sizeof(uint64_t), "EEThreadId layout mismatch");
-#endif
-
-class EEThreadId
-{
-    pthread_t m_id;
-    // Indicates whether the m_id is valid or not. pthread_t doesn't have any
-    // portable "invalid" value.
-    bool m_isValid;
-
-public:
-    bool IsCurrentThread()
-    {
-        return m_isValid && pthread_equal(m_id, pthread_self());
-    }
-
-    void SetToCurrentThread()
-    {
-        m_id = pthread_self();
-        m_isValid = true;
-    }
-
-    void Clear()
-    {
-        m_isValid = false;
-    }
-};
-
-#else // TARGET_UNIX
-
-#ifndef _INC_WINDOWS
-extern "C" uint32_t __stdcall GetCurrentThreadId();
-#endif
-
 class EEThreadId
 {
     uint64_t m_uiId;
 public:
+    bool IsCurrentThread();
 
-    bool IsCurrentThread()
-    {
-        return m_uiId == ::GetCurrentThreadId();
-    }
-
-    void SetToCurrentThread()
-    {
-        m_uiId = ::GetCurrentThreadId();
-    }
+    void SetToCurrentThread();
 
     void Clear()
     {
         m_uiId = 0;
     }
 };
-
-#endif // TARGET_UNIX
 
 #ifndef _INC_WINDOWS
 

@@ -333,20 +333,25 @@ void GCToOSInterface::Shutdown()
     CleanupCGroup();
 }
 
-// Get numeric id of the current thread if possible on the
-// current platform. It is intended for logging purposes only.
+// Get numeric id of the current thread if possible on the current platform.
 // Return:
 //  Numeric id of the current thread, as best we can retrieve it.
-uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
+uint64_t GCToOSInterface::GetCurrentThreadId()
 {
 #if defined(__linux__)
     return (uint64_t)syscall(SYS_gettid);
+#elif defined(__APPLE__)
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return (uint64_t)tid;
 #elif HAVE_PTHREAD_GETTHREADID_NP
     return (uint64_t)pthread_getthreadid_np();
 #elif HAVE_PTHREAD_THREADID_NP
     unsigned long long tid;
     pthread_threadid_np(pthread_self(), &tid);
     return (uint64_t)tid;
+#elif HAVE_LWP_SELF
+    return (uint64_t)_lwp_self();
 #else
     // Fallback in case we don't know how to get integer thread id on the current platform
     return (uint64_t)pthread_self();

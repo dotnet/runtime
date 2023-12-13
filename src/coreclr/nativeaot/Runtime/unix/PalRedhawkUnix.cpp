@@ -1241,6 +1241,10 @@ extern "C" uint64_t PalGetCurrentOSThreadId()
     return (uint64_t)tid;
 #elif HAVE_PTHREAD_GETTHREADID_NP
     return (uint64_t)pthread_getthreadid_np();
+#elif HAVE_PTHREAD_THREADID_NP
+    unsigned long long tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return (uint64_t)tid;
 #elif HAVE_LWP_SELF
     return (uint64_t)_lwp_self();
 #else

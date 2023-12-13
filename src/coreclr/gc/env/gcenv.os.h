@@ -358,7 +358,7 @@ public:
     // current platform. It is intended for logging purposes only.
     // Return:
     //  Numeric id of the current thread or 0 if the
-    static uint64_t GetCurrentThreadIdForLogging();
+    static uint64_t GetCurrentThreadId();
 
     // Get id of the current process
     // Return:

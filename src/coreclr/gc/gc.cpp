@@ -6675,7 +6675,7 @@ void add_to_hb_numa (
     bool alloc_count_p,
     bool set_ideal_p)
 {
-    int tid = (int)GCToOSInterface::GetCurrentThreadIdForLogging ();
+    int tid = (int)GCToOSInterface::GetCurrentThreadId ();
     uint64_t timestamp = RawGetHighPrecisionTimeStamp ();
 
     int saved_proc_no = proc_no;
@@ -38981,7 +38981,7 @@ void gc_heap::bgc_thread_function()
 
     bool cooperative_mode = true;
     bgc_thread_id.SetToCurrentThread();
-    dprintf (1, ("bgc_thread_id is set to %x", (uint32_t)GCToOSInterface::GetCurrentThreadIdForLogging()));
+    dprintf (1, ("bgc_thread_id is set to %x", (uint32_t)GCToOSInterface::GetCurrentThreadId()));
     while (1)
     {
         // Wait for work to do...

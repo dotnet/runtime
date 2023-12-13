@@ -52,6 +52,22 @@ check_type_size(siginfo_t SIGINFO_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 
 check_cxx_source_compiles("
+    #include <pthread.h>
+    #include <stdint.h>
+
+    int main()
+    {
+        uint64_t tid;
+        pthread_threadid_np(pthread_self(), &tid);
+        return (int)tid;
+    }
+    " HAVE_PTHREAD_THREADID_NP)
+
+if(HAVE_PTHREAD_NP_H)
+  set(PTHREAD_NP_H_INCLUDE "#include <pthread_np.h>")
+endif()
+
+check_cxx_source_compiles("
 #include <lwp.h>
 
 int main(int argc, char **argv)

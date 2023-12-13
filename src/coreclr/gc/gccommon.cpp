@@ -216,7 +216,7 @@ void log_va_msg(const char *fmt, va_list args)
     pBuffer[0] = '\n';
     int buffer_start = 1;
     int pid_len = sprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start,
-        "[%5d]", (uint32_t)GCToOSInterface::GetCurrentThreadIdForLogging());
+        "[%5d]", (uint32_t)GCToOSInterface::GetCurrentThreadId());
     buffer_start += pid_len;
     memset(&pBuffer[buffer_start], '-', BUFFERSIZE - buffer_start);
     int msg_len = _vsnprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, _TRUNCATE, fmt, args);
@@ -264,5 +264,19 @@ void GCLog (const char *fmt, ... )
     }
 }
 #endif //TRACE_GC && SIMPLE_DPRINTF
+
+#if defined(BUILD_AS_STANDALONE) || defined(FEATURE_NATIVEAOT)
+
+bool EEThreadId::IsCurrentThread()
+{
+    return m_uiId == GCToOSInterface::GetCurrentThreadId();
+}
+
+void EEThreadId::SetToCurrentThread()
+{
+    m_uiId = GCToOSInterface::GetCurrentThreadId();
+}
+
+#endif // BUILD_AS_STANDALONE || FEATURE_NATIVEAOT
 
 #endif // !DACCESS_COMPILE
