@@ -156,15 +156,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void DefineMethodOverride_CalledTwiceWithDifferentBodies_ThrowsArgumentException()
+        public void DefineMethodOverride_CalledAgainWithSameDeclaration_ThrowsArgumentException()
         {
             AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
             MethodBuilder method1 = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
             ILGenerator ilGenerator1 = method1.GetILGenerator();
-            ilGenerator1.Emit(OpCodes.Ldc_I4, 2);
+            ilGenerator1.Emit(OpCodes.Ldc_I4, 1);
             ilGenerator1.Emit(OpCodes.Ret);
 
-            MethodBuilder method2 = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
+            MethodBuilder method2 = type.DefineMethod("M2", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
             ILGenerator ilGenerator2 = method2.GetILGenerator();
             ilGenerator2.Emit(OpCodes.Ldc_I4, 2);
             ilGenerator2.Emit(OpCodes.Ret);
@@ -173,6 +173,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
             type.DefineMethodOverride(method1, declaration);
 
+            Assert.Throws<ArgumentException>(() => type.DefineMethodOverride(method1, declaration));
             Assert.Throws<ArgumentException>(() => type.DefineMethodOverride(method2, declaration));
         }
 

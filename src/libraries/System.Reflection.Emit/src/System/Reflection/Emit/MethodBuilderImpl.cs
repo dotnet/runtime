@@ -71,21 +71,28 @@ namespace System.Reflection.Emit
         internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
         internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
-            _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic);
+            _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions, _dllImportData), GetGenericArguments().Length, !IsStatic);
 
-        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
+        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention, DllImportData? dllImportData = null)
         {
-            // TODO: find out and handle other SignatureCallingConvention scenarios
             SignatureCallingConvention convention = SignatureCallingConvention.Default;
-            if ((callingConventions & CallingConventions.HasThis) != 0 ||
-                (callingConventions & CallingConventions.ExplicitThis) != 0)
+
+            if ((callingConvention & CallingConventions.VarArgs) != 0)
             {
-                convention |= SignatureCallingConvention.ThisCall;
+                convention = SignatureCallingConvention.VarArgs;
             }
 
-            if ((callingConventions & CallingConventions.VarArgs) != 0)
+            if (dllImportData != null)
             {
-                convention |= SignatureCallingConvention.VarArgs;
+                // Set native call signature
+                convention = dllImportData.Flags switch
+                {
+                    MethodImportAttributes.CallingConventionCDecl => SignatureCallingConvention.CDecl,
+                    MethodImportAttributes.CallingConventionStdCall => SignatureCallingConvention.StdCall,
+                    MethodImportAttributes.CallingConventionThisCall => SignatureCallingConvention.ThisCall,
+                    MethodImportAttributes.CallingConventionFastCall => SignatureCallingConvention.FastCall,
+                    _ => SignatureCallingConvention.Unmanaged,
+                };
             }
 
             return convention;

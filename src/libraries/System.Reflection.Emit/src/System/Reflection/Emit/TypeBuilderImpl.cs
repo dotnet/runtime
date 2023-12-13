@@ -36,7 +36,7 @@ namespace System.Reflection.Emit
         internal List<Type>? _interfaces;
         internal readonly List<PropertyBuilderImpl> _propertyDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
-        internal Dictionary<Type, InterfaceMap>? _interfaceMappings;
+        internal Dictionary<Type, List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>>? _interfaceMappings;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
@@ -209,11 +209,11 @@ namespace System.Reflection.Emit
                 return false;
             }
 
-            if (_interfaceMappings.TryGetValue(abstractMethod.DeclaringType!, out InterfaceMap? mapping))
+            if (_interfaceMappings.TryGetValue(abstractMethod.DeclaringType!, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? mapping))
             {
-                foreach (MethodInfo method in mapping._interfaceMethods)
+                foreach ((MethodInfo ifaceMethod, MethodInfo targetMethod) pair in mapping)
                 {
-                    if (abstractMethod.Equals(method))
+                    if (abstractMethod.Equals(pair.ifaceMethod))
                     {
                         return true;
                     }
@@ -250,7 +250,7 @@ namespace System.Reflection.Emit
                 name = ConstructorInfo.TypeConstructorName;
             }
 
-            attributes |= MethodAttributes.SpecialName;
+            attributes |= MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
             ConstructorBuilderImpl constBuilder = new ConstructorBuilderImpl(name, attributes, callingConvention, parameterTypes, _module, this);
             _constructorDefinitions.Add(constBuilder);
             return constBuilder;
@@ -359,23 +359,21 @@ namespace System.Reflection.Emit
             Type baseType = methodInfoDeclaration.DeclaringType!;
             ValidateBaseType(baseType, methodInfoDeclaration.Name);
             ValidateImplementedMethod(methodInfoBody, methodInfoDeclaration);
-
             _interfaceMappings ??= new();
-            if (_interfaceMappings.TryGetValue(baseType, out InterfaceMap? im))
+
+            if (_interfaceMappings.TryGetValue(baseType, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? im))
             {
-                if (im._interfaceMethods.Contains(methodInfoDeclaration))
+                if (im.Exists(pair => pair.ifaceMethod.Equals(methodInfoDeclaration)))
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_MethodOverriden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
                 }
 
-                im._interfaceMethods.Add(methodInfoDeclaration);
-                im._targetMethods.Add(methodInfoBody);
+                im.Add((methodInfoDeclaration, methodInfoBody));
             }
             else
             {
-                im = new InterfaceMap(baseType);
-                im._interfaceMethods.Add(methodInfoDeclaration);
-                im._targetMethods.Add(methodInfoBody);
+                im = new List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>();
+                im.Add((methodInfoDeclaration, methodInfoBody));
                 _interfaceMappings.Add(baseType, im);
             }
         }
@@ -871,11 +869,11 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < interfaceMethods.Length; i++)
                 {
-                    for (int j = 0; j < mapping._interfaceMethods.Count; j++)
+                    for (int j = 0; j < mapping.Count; j++)
                     {
-                        if (im.InterfaceMethods[i].Equals(mapping._interfaceMethods[j]))
+                        if (im.InterfaceMethods[i].Equals(mapping[j].ifaceMethod))
                         {
-                            im.TargetMethods[i] = mapping._targetMethods[j];
+                            im.TargetMethods[i] = mapping[j].targetMethod;
                         }
                     }
                 }
@@ -1012,13 +1010,5 @@ namespace System.Reflection.Emit
             DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
             DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes;
-    }
-
-    internal sealed class InterfaceMap
-    {
-        internal Type _interfaceType;
-        internal List<MethodInfo> _interfaceMethods = new();
-        internal List<MethodInfo> _targetMethods = new();
-        public InterfaceMap(Type interfaceType) => _interfaceType = interfaceType;
     }
 }

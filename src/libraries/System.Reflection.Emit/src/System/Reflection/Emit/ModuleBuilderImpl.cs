@@ -195,14 +195,11 @@ namespace System.Reflection.Emit
 
             if (typeBuilder._interfaceMappings != null)
             {
-                foreach (InterfaceMap map in typeBuilder._interfaceMappings.Values)
+                foreach (List<(MethodInfo ifaceMethod, MethodInfo targetMethod)> mapList in typeBuilder._interfaceMappings.Values)
                 {
-                    // _interfaceMethods and _targetMethods expected to be in same size and order.
-                    Debug.Assert(map._interfaceMethods.Count == map._targetMethods.Count);
-
-                    for (int i = 0; i < map._interfaceMethods.Count; i++)
+                    foreach ((MethodInfo ifaceMethod, MethodInfo targetMethod) pair in mapList)
                     {
-                        _metadataBuilder.AddMethodImplementation(typeHandle, GetMemberHandle(map._targetMethods[i]), GetMemberHandle(map._interfaceMethods[i]));
+                        _metadataBuilder.AddMethodImplementation(typeHandle, GetMemberHandle(pair.targetMethod), GetMemberHandle(pair.ifaceMethod));
                     }
                 }
             }

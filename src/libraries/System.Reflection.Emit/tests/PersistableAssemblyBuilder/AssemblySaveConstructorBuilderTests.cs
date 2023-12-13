@@ -17,10 +17,16 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName);
-                ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName, CallingConventions.Standard, new[] { typeof(int) });
+                ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public);
+                ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName, CallingConventions.Standard, [typeof(int)]);
                 constructor2.DefineParameter(1, ParameterAttributes.None, "parameter1");
+                FieldBuilder fieldBuilderA = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
                 ILGenerator il = constructor2.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes));
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Stfld, fieldBuilderA);
                 il.Emit(OpCodes.Ret);
                 type.CreateType();
                 saveMethod.Invoke(ab, [file.Path]);
@@ -58,32 +64,42 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineDefaultConstructor_GenericParentCreated_Works()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
-            type.DefineGenericParameters("T");
-            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
-            FieldBuilder field = type.DefineField("TestField", typeof(bool), FieldAttributes.Public | FieldAttributes.Static);
-            ILGenerator constructorILGenerator = constructor.GetILGenerator();
-            constructorILGenerator.Emit(OpCodes.Ldarg_0);
-            constructorILGenerator.Emit(OpCodes.Ldc_I4_1);
-            constructorILGenerator.Emit(OpCodes.Stfld, field);
-            constructorILGenerator.Emit(OpCodes.Ret);
-            type.CreateType();
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                type.DefineGenericParameters("T");
+                ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
+                FieldBuilder field = type.DefineField("TestField", typeof(bool), FieldAttributes.Public | FieldAttributes.Static);
+                ILGenerator constructorILGenerator = constructor.GetILGenerator();
+                constructorILGenerator.Emit(OpCodes.Ldarg_0);
+                constructorILGenerator.Emit(OpCodes.Ldc_I4_1);
+                constructorILGenerator.Emit(OpCodes.Stfld, field);
+                constructorILGenerator.Emit(OpCodes.Ret);
+                type.CreateType();
 
-            Assert.True(type.IsGenericTypeDefinition);
-            Assert.Equal("T", type.GetGenericTypeDefinition().GetGenericArguments()[0].Name);
+                Assert.True(type.IsGenericTypeDefinition);
+                Assert.Equal("T", type.GetGenericTypeDefinition().GetGenericArguments()[0].Name);
 
-            Type genericParent = type.MakeGenericType(typeof(int));
-            TypeBuilder derived = ((ModuleBuilder)type.Module).DefineType("Derived");
-            derived.SetParent(genericParent);
-            derived.DefineDefaultConstructor(MethodAttributes.Public);
+                Type genericParent = type.MakeGenericType(typeof(int));
+                TypeBuilder derived = ((ModuleBuilder)type.Module).DefineType("Derived");
+                derived.SetParent(genericParent);
+                derived.CreateType();
+                Type genericList = typeof(List<>).MakeGenericType(typeof(int));
+                TypeBuilder type2 = ab.GetDynamicModule("MyModule").DefineType("Type2");
+                type2.SetParent(genericList);
+                type2.DefineDefaultConstructor(MethodAttributes.Public);
+                type2.CreateTypeInfo();
+                saveMethod.Invoke(ab, [file.Path]);
 
-            Type genericList = typeof(List<>).MakeGenericType(typeof(int));
-            TypeBuilder type2 = ab.GetDynamicModule("MyModule").DefineType("Type2");
-            type2.SetParent(genericList);
-            type2.DefineDefaultConstructor(MethodAttributes.Public);
-            type2.CreateTypeInfo();
-
-            Assert.NotNull(type2.GetConstructor(Type.EmptyTypes));
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                ConstructorInfo[] ctors = assemblyFromDisk.GetType("MyType").GetConstructors();
+                Assert.Equal(1, ctors.Length);
+                Assert.Empty(ctors[0].GetParameters());
+                Type derivedFromFile = assemblyFromDisk.GetType("Derived");
+                Assert.NotNull(derivedFromFile.GetConstructor(Type.EmptyTypes));
+                Assert.Equal(genericParent.FullName, derivedFromFile.BaseType.FullName);
+                Assert.NotNull(assemblyFromDisk.GetType("Type2").GetConstructor(Type.EmptyTypes));
+            }
         }
 
         [Fact]
