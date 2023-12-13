@@ -4287,6 +4287,7 @@ private:
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t change_heap_count_time;
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t gc_index_full_gc_end;
@@ -4479,9 +4480,6 @@ private:
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_end_time;
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t h0_gc_start_time;
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
