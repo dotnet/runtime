@@ -5,8 +5,8 @@
 // This header contains the definition of an interface between the GC/HandleTable portions of the Redhawk
 // codebase and the regular Redhawk code.
 
-#ifndef __GCRHINTERFACE_INCLUDED
-#define __GCRHINTERFACE_INCLUDED
+#ifndef __RedhawkGCInterface_h__
+#define __RedhawkGCInterface_h__
 
 #ifndef DACCESS_COMPILE
 // Global data cells exported by the GC.
@@ -125,4 +125,4 @@ private:
     static uint64_t s_DeadThreadsNonAllocBytes;
 };
 
-#endif // __GCRHINTERFACE_INCLUDED
+#endif // __RedhawkGCInterface_h__
