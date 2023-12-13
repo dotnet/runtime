@@ -156,10 +156,18 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 
 `os-` labels not listed here do not have explicit ownership.
 
+> [!NOTE]
+> In this context, ownership is purely for the purposes of identifying which part of
+> of our engineering team (or the community) is on the hook for fixing issues labeled
+> with them. This isn't the same as supported. For example, we don't track `os-windows`
+> here because the regular area owners are on the hook for fixing bugs so there is no
+> dedicated OS lead/owner, rather ownership falls back to the `area-*` label. However,
+> Windows is a supported operating system of course.
+
 | Operating System | Lead          | Owners (area experts to tag in PRs and issues)                      | Description     |
 |------------------|---------------|---------------------------------------------------------------------|-----------------|
 | os-android       | @steveisok    | @akoeplinger                                                        |                 |
-| os-freebsd       |               |                                                                     | Community owned |
+| os-freebsd       |               |  @wfurt @Thefrank @sec                                              | Community owned |
 | os-maccatalyst   | @steveisok    | @kotlarmilos                                                        |                 |
 | os-ios           | @steveisok    | @vargaz, @kotlarmilos                                               |                 |
 | os-tizen         | @gbalykov     | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin, @viewizard |                 |
@@ -170,9 +178,15 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 
 `arch-` labels not listed here do not have explicit ownership.
 
+> [!NOTE]
+> Ownership isn't the same as supported. See [operating systems](#operating-systems) for details.
+
 | Architecture     | Lead          | Owners (area experts to tag in PRs and issues)        | Description  |
 |------------------|---------------|-------------------------------------------------------|--------------|
-| arch-wasm        | @lewing       | @lewing @BrzVlad                                      |              |
+| arch-loongarch64 | @shushanhf    | @LuckyXu-HF                                                     |              |
+| arch-riscv       | @gbalykov | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin, @viewizard |              |
+| arch-s390x       | @uweigand     | @uweigand                                                       |              |
+| arch-wasm        | @lewing       | @lewing @BrzVlad                                                |              |
 
 ## Community Triagers
 
