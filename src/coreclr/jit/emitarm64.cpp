@@ -12793,92 +12793,73 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype(insFormat fmt, emitAttr size, code_t code)
 {
     assert(canEncodeSveElemsize_dtype(fmt));
-    switch (fmt)
+
+    switch (size)
     {
-        case IF_SVE_IH_3A_F:
-            switch (size)
+        case EA_1BYTE:
+            switch (fmt)
             {
-                case EA_4BYTE:
-                    return code & ~(1 << 21); // Set bit '21' to 0.
-
-                case EA_8BYTE:
-                    return code; // By default, the instruction already encodes 64-bit.
-
-                case EA_16BYTE:
-                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '0' to get the proper encoding for Q.
-                    return (code & ~((1 << 22) | (1 << 21) | (1 << 15))) | (1 << 20); // Set bits '22', '21' and '15' to 0. Set bit '20' to 1.
-
-                default:
-                    assert(!"Invalid size for encoding dtype.");
-            }
-
-        case IF_SVE_IJ_3A_D:
-            switch (size)
-            {
-                case EA_2BYTE:
-                    return code | (1 << 22); // Set bit '22' to 1.
-
-                case EA_4BYTE:
-                    return code | (1 << 21); // Set bit '21' to 1.
-
-                case EA_8BYTE:
-                    return code; // By default, the instruction already encodes 64-bit.
-
-                default:
-                    assert(!"Invalid size for encoding dtype.");
-            }
-
-        case IF_SVE_IJ_3A_E:
-            switch (size)
-            {
-                case EA_1BYTE:
+                case IF_SVE_IJ_3A_E:
                     return code & ~((1 << 22) | (1 << 21)); // Set bit '22' and '21' to 0.
 
-                case EA_2BYTE:
+                default:
+                    assert(!"Invalid format for encoding dtype.");
+            }
+            return code;
+
+        case EA_2BYTE:
+            switch (fmt)
+            {
+                case IF_SVE_IJ_3A_E:
+                case IF_SVE_IJ_3A_G:
                     return code & ~(1 << 22); // Set bit '22' to 0.
 
-                case EA_4BYTE:
-                    return code & ~(1 << 21); // Set bit '21' to 0.
-
-                case EA_8BYTE:
-                    return code; // By default, the instruction already encodes 64-bit.
+                case IF_SVE_IJ_3A_D:
+                    return code | (1 << 22); // Set bit '22' to 1.
 
                 default:
-                    assert(!"Invalid size for encoding dtype.");
+                    assert(!"Invalid format for encoding dtype.");
             }
+            return code;
 
-        case IF_SVE_IJ_3A_F:
-            switch (size)
+        case EA_4BYTE:
+            switch (fmt)
             {
-                case EA_4BYTE:
+                case IF_SVE_IH_3A_F:
+                case IF_SVE_IJ_3A_E:
+                case IF_SVE_IJ_3A_G:
+                    return code & ~(1 << 21); // Set bit '21' to 0.
+
+                case IF_SVE_IJ_3A_D:
+                case IF_SVE_IJ_3A_F:
                     return code | (1 << 21); // Set bit '21' to 1.
 
-                case EA_8BYTE:
-                    return code; // By default, the instruction already encodes 64-bit.
-
                 default:
-                    assert(!"Invalid size for encoding dtype.");
+                    assert(!"Invalid format for encoding dtype.");
             }
+            return code;
 
-        case IF_SVE_IJ_3A_G:
-            switch (size)
+        case EA_8BYTE:
+            return code; // By default, the instruction already encodes 64-bit.
+
+        case EA_16BYTE:
+            switch (fmt)
             {
-                case EA_2BYTE:
-                    return code & ~(1 << 22); // Set bit '22' to 0.
-
-                case EA_4BYTE:
-                    return code & ~(1 << 21); // Set bit '21' to 0.
-
-                case EA_8BYTE:
-                    return code; // By default, the instruction already encodes 64-bit.
+                case IF_SVE_IH_3A_F:
+                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '0' to get the
+                    // proper encoding for Q.
+                    return (code & ~((1 << 22) | (1 << 21) | (1 << 15))) |
+                           (1 << 20); // Set bits '22', '21' and '15' to 0. Set bit '20' to 1.
 
                 default:
-                    assert(!"Invalid size for encoding dtype.");
+                    assert(!"Invalid format for encoding dtype.");
             }
+            return code;
 
         default:
-            assert(!"Invalid format for encoding dtype.");
+            assert(!"Invalid size for encoding dtype.");
     }
+
     return code;
 }
 
