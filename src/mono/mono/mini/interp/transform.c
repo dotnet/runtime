@@ -8851,6 +8851,40 @@ interp_fix_localloc_ret (TransformData *td)
 	}
 }
 
+static void
+interp_squash_initlocals (TransformData *td)
+{
+	InterpInst *last_initlocal = NULL;
+	int last_start = 0, last_end = 0;
+
+	for (InterpInst *ins = td->entry_bb->first_ins; ins != NULL; ins = ins->next) {
+		// Once we reach the real method code, we are finished with this pass
+		if (ins->il_offset != -1)
+			break;
+		if (ins->opcode == MINT_INITLOCAL) {
+			if (!last_initlocal) {
+				last_initlocal = ins;
+				last_start = get_var_offset (td, ins->dreg);
+				last_end = last_start + (int)ins->data [0];
+			} else {
+				int new_start = get_var_offset (td, ins->dreg);
+				// We allow a maximum of 64 bytes of redundant memset when squashing initlocals
+				if (new_start >= last_end && new_start <= (last_end + 64)) {
+					last_initlocal->opcode = MINT_INITLOCALS;
+					last_initlocal->data [0] = GINT_TO_UINT16 (last_start);
+					last_end = new_start + ins->data [0];
+					last_initlocal->data [1] = GINT_TO_UINT16 (last_end - last_start);
+					interp_clear_ins (ins);
+				} else {
+					last_initlocal = ins;
+					last_start = get_var_offset (td, ins->dreg);
+					last_end = last_start + ins->data [0];
+				}
+			}
+		}
+	}
+}
+
 static int
 get_native_offset (TransformData *td, int il_offset)
 {
@@ -8972,6 +9006,7 @@ retry:
 		if (mono_interp_opt & INTERP_OPT_JITERPRETER)
 			jiterp_insert_entry_points (rtm, td);
 #endif
+		interp_squash_initlocals (td);
 	}
 
 	generate_compacted_code (rtm, td);
