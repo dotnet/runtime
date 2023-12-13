@@ -625,9 +625,22 @@ struct HWIntrinsicInfo
             case NI_AVX512F_MultiplyScalar:
             case NI_AVX512F_SubtractScalar:
             case NI_AVX512F_SqrtScalar:
+
+            case NI_AVX512F_Scale:
+
+            case NI_AVX512F_ConvertScalarToVector128Double:
+            case NI_AVX512F_ConvertScalarToVector128Single:
                 return 3;
 
             case NI_AVX512F_Sqrt:
+            case NI_AVX512F_ConvertToInt32:
+            case NI_AVX512F_ConvertToUInt32:
+            case NI_AVX512F_ConvertToVector256Int32:
+            case NI_AVX512F_ConvertToVector256Single:
+            case NI_AVX512F_ConvertToVector256UInt32:
+            case NI_AVX512F_ConvertToVector512Single:
+            case NI_AVX512F_ConvertToVector512UInt32:
+            case NI_AVX512F_ConvertToVector512Int32:
                 return 2;
             
             default:

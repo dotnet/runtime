@@ -361,6 +361,12 @@ namespace JIT.HardwareIntrinsics.X86
             {("Single", "Subtract", "ToPositiveInfinity"), new ulong[] {0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc}},
             {("Double", "Subtract", "ToZero"), new ulong[] {0xbfd9999999999999, 0xbfd9999999999999, 0xbfd9999999999999, 0xbfd9999999999999, 0xbfd9999999999999, 0xbfd9999999999999, 0xbfd9999999999999, 0xbfd9999999999999}},
             {("Single", "Subtract", "ToZero"), new ulong[] {0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc, 0xbecccccc}},
+            {("Double", "Scale", "ToNegativeInfinity"), new ulong[] {0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a}},
+            {("Single", "Scale", "ToNegativeInfinity"), new ulong[] {0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "Scale", "ToPositiveInfinity"), new ulong[] {0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a}},
+            {("Single", "Scale", "ToPositiveInfinity"), new ulong[] {0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "Scale", "ToZero"), new ulong[] {0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a, 0x3fa999999999999a}},
+            {("Single", "Scale", "ToZero"), new ulong[] {0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
         };
     }
 }

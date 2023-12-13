@@ -3333,7 +3333,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSCALEFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Scale(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
-
+        /// <summary>
+        /// __m512 _mm512_scalef_ps (__m512 a, __m512 b)
+        ///   VSCALEFPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Scale(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_scalef_pd (__m512d a, __m512d b)
+        ///   VSCALEFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Scale(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_scalef_ss (__m128 a, __m128 b)
         ///   VSCALEFSS xmm1 {k1}{z}, xmm2, xmm3/m32{er}

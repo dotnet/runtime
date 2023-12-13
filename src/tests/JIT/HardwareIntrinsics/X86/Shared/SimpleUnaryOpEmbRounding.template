@@ -77,7 +77,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType})0.95; }
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
                 return testStruct;
@@ -107,10 +107,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType})0.95; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType})0.95; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput}; }
             _dataTable = new SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
@@ -262,7 +262,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 ulong[] answerTable = unaryEmbRoundingAnswerTable[("{RetBaseType}", "{Method}", "{RoundingMode}")];
 
-                if (BitConverter.{CastingMethod}(result[i]) != answerTable[i])
+                if ({CastingMethod}(result[i]) != answerTable[i])
                 {
                     succeeded = false;
                     Console.WriteLine("Avx512 {Method} Embedded rounding failed on {RetBaseType} with {RoundingMode}:");
@@ -288,12 +288,30 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static Dictionary<(string, string, string), ulong[]> unaryEmbRoundingAnswerTable = new Dictionary<(string, string, string), ulong[]>
         {
-            {("Double", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35}},
-            {("Single", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497}},
-            {("Double", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36, 0x3fef3092ece5bc36}},
-            {("Single", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498, 0x3f798498}},
-            {("Double", "Sqrt", "ToZero"), new ulong[] {0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35, 0x3fef3092ece5bc35}},
-            {("Single", "Sqrt", "ToZero"), new ulong[] {0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497, 0x3f798497}},
+            {("UInt32", "ConvertToVector256UInt32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("UInt32", "ConvertToVector256UInt32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("UInt32", "ConvertToVector256UInt32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("UInt32", "ConvertToVector512UInt32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("UInt32", "ConvertToVector512UInt32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("UInt32", "ConvertToVector512UInt32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Int32", "ConvertToVector512Int32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Int32", "ConvertToVector512Int32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Int32", "ConvertToVector512Int32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Int32", "ConvertToVector256Int32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Int32", "ConvertToVector256Int32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Int32", "ConvertToVector256Int32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Single", "ConvertToVector512Single", "ToNegativeInfinity"), new ulong[] {0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000}},
+            {("Single", "ConvertToVector512Single", "ToPositiveInfinity"), new ulong[] {0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000}},
+            {("Single", "ConvertToVector512Single", "ToZero"), new ulong[] {0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000}},
+            {("Single", "ConvertToVector256Single", "ToNegativeInfinity"), new ulong[] {0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2}},
+            {("Single", "ConvertToVector256Single", "ToPositiveInfinity"), new ulong[] {0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3}},
+            {("Single", "ConvertToVector256Single", "ToZero"), new ulong[] {0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2}},
+            {("Double", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec}},
+            {("Single", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd}},
+            {("Double", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed}},
+            {("Single", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce}},
+            {("Double", "Sqrt", "ToZero"), new ulong[] {0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec}},
+            {("Single", "Sqrt", "ToZero"), new ulong[] {0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd}},
         };
     }
 }
