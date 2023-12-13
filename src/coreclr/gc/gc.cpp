@@ -48219,7 +48219,6 @@ HRESULT GCHeap::Initialize()
 
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else
-    // TODO, andrewau, we cannot let user to set an arbitrarily high loh_size_threshold value for segments as well
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 #endif //USE_REGIONS
 
