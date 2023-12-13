@@ -501,10 +501,10 @@ namespace System.Buffers.Text
             Vector128<byte> res2;
             Vector128<byte> res3;
             Vector128<byte> res4;
-            Vector128<byte> tbl_enc1 = Vector128.Create("ABCDEFGHIJKLMNOP"u8).AsByte();
-            Vector128<byte> tbl_enc2 = Vector128.Create("QRSTUVWXYZabcdef"u8).AsByte();
-            Vector128<byte> tbl_enc3 = Vector128.Create("ghijklmnopqrstuv"u8).AsByte();
-            Vector128<byte> tbl_enc4 = Vector128.Create("wxyz0123456789+/"u8).AsByte();
+            Vector128<byte> tblEnc1 = Vector128.Create("ABCDEFGHIJKLMNOP"u8).AsByte();
+            Vector128<byte> tblEnc2 = Vector128.Create("QRSTUVWXYZabcdef"u8).AsByte();
+            Vector128<byte> tblEnc3 = Vector128.Create("ghijklmnopqrstuv"u8).AsByte();
+            Vector128<byte> tblEnc4 = Vector128.Create("wxyz0123456789+/"u8).AsByte();
             byte* src = srcBytes;
             byte* dest = destBytes;
 
@@ -530,10 +530,10 @@ namespace System.Buffers.Text
                 // The bits have now been shifted to the right locations;
                 // translate their values 0..63 to the Base64 alphabet.
                 // Use a 64-byte table lookup:
-                res1 = AdvSimd.Arm64.VectorTableLookup((tbl_enc1, tbl_enc2, tbl_enc3, tbl_enc4), res1);
-                res2 = AdvSimd.Arm64.VectorTableLookup((tbl_enc1, tbl_enc2, tbl_enc3, tbl_enc4), res2);
-                res3 = AdvSimd.Arm64.VectorTableLookup((tbl_enc1, tbl_enc2, tbl_enc3, tbl_enc4), res3);
-                res4 = AdvSimd.Arm64.VectorTableLookup((tbl_enc1, tbl_enc2, tbl_enc3, tbl_enc4), res4);
+                res1 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res1);
+                res2 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res2);
+                res3 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res3);
+                res4 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res4);
 
                 // Interleave and store result:
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
