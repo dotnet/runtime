@@ -472,6 +472,10 @@ static code_t insEncodeSveElemsize(insOpts opt);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+static bool canEncodeSveElemsize_dtype(insFormat fmt);
+
+static code_t insEncodeSveElemsize_dtype(insFormat fmt, emitAttr size, code_t code);
+
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 
 // Returns true if 'reg' represents an integer register.
@@ -901,6 +905,12 @@ inline static bool insOptsScalableWords(insOpts opt)
 {
     // `opt` is any of the standard word and above scalable types.
     return ((opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableWordsOrQuadwords(insOpts opt)
+{
+    // `opt` is any of the standard word, quadword and above scalable types.
+    return (insOptsScalableWords(opt) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
 inline static bool insOptsScalableAtLeastHalf(insOpts opt)

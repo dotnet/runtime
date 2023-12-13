@@ -132,7 +132,7 @@ INST9(ld1h,              "ld1h",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IH_3A_F      SVE_II_4A_H      
-INST9(ld1w,              "ld1w",                  0,                       IF_SVE_9C,               0x85204000,      0xC5204000,      0xC5004000,      0x85004000,      0xC560C000,      0xC540C000,      0x8520C000,      0xA5002000,      0xA5000000       )
+INST9(ld1w,              "ld1w",                  0,                       IF_SVE_9C,               0x85204000,      0xC5204000,      0xC5004000,      0x85004000,      0xC560C000,      0xC540C000,      0x8520C000,      0xA560A000,      0xA5000000       )
     // LD1W    {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #2]                            SVE_HW_4A           100001010h1mmmmm 010gggnnnnnttttt     8520 4000   
     // LD1W    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]                            SVE_HW_4A_A         110001010h1mmmmm 010gggnnnnnttttt     C520 4000   
     // LD1W    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A_B         110001010h0mmmmm 010gggnnnnnttttt     C500 4000   

@@ -1226,17 +1226,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             elemsize = id->idOpSize();
-#ifdef DEBUG
-            if (id->idInsFmt() == IF_SVE_IH_3A_A)
-            {
-                assert(id->idInsOpt() == INS_OPTS_SCALABLE_Q);
-            }
-            else
-            {
-                
-                assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
-            }
-#endif // DEBUG
+            assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
@@ -9433,12 +9423,13 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             else
             {
+                assert(opt == INS_OPTS_SCALABLE_D);
                 fmt = IF_SVE_IH_3A;
             }
             break;
 
         case INS_sve_ld1w:
-            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(insOptsScalableWordsOrQuadwords(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -12772,6 +12763,51 @@ void emitter::emitIns_Call(EmitCallType          callType,
     return 0;
 }
 
+/*static*/ bool emitter::canEncodeSveElemsize_dtype(insFormat fmt)
+{
+    switch (fmt)
+    {
+        case IF_SVE_IH_3A_F:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype(insFormat fmt, emitAttr size, code_t code)
+{
+    assert(canEncodeSveElemsize_dtype(fmt));
+    switch (fmt)
+    {
+        case IF_SVE_IH_3A_F:
+            switch (size)
+            {
+                case EA_4BYTE:
+                    return code & ~(1 << 21); // Set bit '21' to 0.
+
+                case EA_8BYTE:
+                    return code; // By default, the instruction already encodes 64-bit.
+
+                case EA_16BYTE:
+                    return (code & ~((1 << 22) | (1 << 21) | (1 << 15))) | (1 << 20); // Set bits '22', '21' and '15' to 0. Set bit '20' to 1.
+
+                default:
+                    assert(!"Invalid size for encoding dtype.");
+            }
+
+        default:
+            assert(!"Invalid format for encoding dtype.");
+    }
+    return code;
+}
+
 /*****************************************************************************
  *
  *  TODO
@@ -14868,6 +14904,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
             code |= insEncodeSimm4_19_to_16(imm);          // iiii
+
+            if (canEncodeSveElemsize_dtype(fmt))
+            {
+                code = insEncodeSveElemsize_dtype(fmt, optGetSveElemsize(id->idInsOpt()), code);
+            }
+
             dst += emitOutput_Instr(dst, code);
             break;
 
