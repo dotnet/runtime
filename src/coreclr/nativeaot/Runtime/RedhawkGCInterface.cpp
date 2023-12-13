@@ -4,10 +4,9 @@
 #include "common.h"
 
 #include "gcenv.h"
+#include "gcenv.ee.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
-
-#include "gcenv.ee.h"
 
 #include "RedhawkGCInterface.h"
 

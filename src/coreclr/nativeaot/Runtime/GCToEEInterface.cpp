@@ -1,55 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// This module provides data storage and implementations needed by gcrhenv.h to help provide an isolated build
-// and runtime environment in which GC and HandleTable code can exist with minimal modifications from the CLR
-// mainline. See gcrhenv.h for a more detailed explanation of how this all fits together.
-//
-
 #include "common.h"
 
 #include "gcenv.h"
+#include "gcenv.ee.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
 
-#include "gcenv.ee.h"
-
 #include "RestrictedCallouts.h"
 
-#include "RedhawkGCInterface.h"
-
-#include "slist.h"
-#include "varint.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-
-#include "thread.h"
-
-#include "shash.h"
-#include "TypeManager.h"
-#include "RuntimeInstance.h"
-#include "objecthandle.h"
-#include "MethodTable.inl"
 #include "RhConfig.h"
 
+#include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
 
-#include "gcdesc.h"
 #include "SyncClean.hpp"
-
-#include "daccess.h"
 
 #include "interoplibinterface.h"
 
-#include "holder.h"
+#include "gctoclreventsink.h"
+
 #include "volatile.h"
 
-GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
+#include "daccess.h"
 
-#include "gctoclreventsink.h"
+GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
 
 #ifndef DACCESS_COMPILE
 
