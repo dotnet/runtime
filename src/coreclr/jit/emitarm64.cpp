@@ -9447,7 +9447,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             break;
 
         case INS_sve_ld1sb:
-            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -12768,6 +12768,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     switch (fmt)
     {
         case IF_SVE_IH_3A_F:
+        case IF_SVE_IJ_3A_D:
             return true;
 
         default:
@@ -12797,6 +12798,22 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
                 case EA_16BYTE:
                     return (code & ~((1 << 22) | (1 << 21) | (1 << 15))) | (1 << 20); // Set bits '22', '21' and '15' to 0. Set bit '20' to 1.
+
+                default:
+                    assert(!"Invalid size for encoding dtype.");
+            }
+
+        case IF_SVE_IJ_3A_D:
+            switch (size)
+            {
+                case EA_2BYTE:
+                    return code | (1 << 22); // Set bit '22' to 1.
+
+                case EA_4BYTE:
+                    return code | (1 << 21); // Set bit '21' to 1.
+
+                case EA_8BYTE:
+                    return code; // By default, the instruction already encodes 64-bit.
 
                 default:
                     assert(!"Invalid size for encoding dtype.");
