@@ -6,7 +6,7 @@
 #include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "slist.h"
-#include "gcrhinterface.h"
+#include "RedhawkGCInterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"

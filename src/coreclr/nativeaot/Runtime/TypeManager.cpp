@@ -9,7 +9,7 @@
 #include "holder.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
+#include "RedhawkGCInterface.h"
 #include "shash.h"
 #include "varint.h"
 #include "rhbinder.h"

@@ -11,7 +11,7 @@
 #include "gcheaputilities.h"
 #include "RestrictedCallouts.h"
 
-#include "gcrhinterface.h"
+#include "RedhawkGCInterface.h"
 
 #include "PalRedhawkCommon.h"
 #include "slist.h"
