@@ -2955,14 +2955,7 @@ bool emitter::emitDispBranch(unsigned         opcode2,
     assert(id != nullptr);
     if (id->idIsBound())
     {
-        if (id->idAddr()->iiaHasInstrCount())
-        {
-            printf("%3d instr", id->idAddr()->iiaGetInstrCount());
-        }
-        else
-        {
-            emitPrintLabel(id->idAddr()->iiaIGlabel);
-        }
+        emitPrintLabel(id->idAddr()->iiaIGlabel);
     }
     else
     {
