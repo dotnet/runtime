@@ -337,10 +337,11 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
-            if (MonoWasmThreads)
+            if (MonoWasmThreads) {
                 settleUnsettledPromise();
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
+            }
             teardown_managed_proxy(holder, gc_handle, true); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
         }
         catch (ex) {
             runtimeHelpers.abort(ex);
@@ -352,10 +353,11 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
-            if (MonoWasmThreads)
+            if (MonoWasmThreads) {
                 settleUnsettledPromise();
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
+            }
             teardown_managed_proxy(holder, gc_handle, true); // this holds holder alive for finalizer, until the promise is freed
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
         }
         catch (ex) {
             runtimeHelpers.abort(ex);

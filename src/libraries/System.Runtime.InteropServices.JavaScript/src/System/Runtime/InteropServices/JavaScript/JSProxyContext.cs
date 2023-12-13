@@ -200,6 +200,40 @@ namespace System.Runtime.InteropServices.JavaScript
             return holder;
         }
 
+        public unsafe void ReleaseJSOwnedObjectByGCHandle(nint gcHandle)
+        {
+            PromiseHolder? holder = null;
+            lock (this)
+            {
+                if (IsGCVHandle(gcHandle))
+                {
+                    if (ThreadJsOwnedHolders.Remove(gcHandle, out holder))
+                    {
+                        holder.GCHandle = IntPtr.Zero;
+                    }
+                }
+                else
+                {
+                    GCHandle handle = (GCHandle)gcHandle;
+                    var target = handle.Target!;
+                    if (target is PromiseHolder holder2)
+                    {
+                        holder = holder2;
+                        holder.GCHandle = IntPtr.Zero;
+                    }
+                    else
+                    {
+                        ThreadJsOwnedObjects.Remove(target);
+                    }
+                    handle.Free();
+                }
+            }
+            if (holder != null)
+            {
+                holder.Callback!(null);
+            }
+        }
+
         public PromiseHolder? ReleasePromiseHolder(nint holderGCHandle)
         {
             PromiseHolder? holder = null;
@@ -279,40 +313,6 @@ namespace System.Runtime.InteropServices.JavaScript
                         FreeJSVHandle(jsHandle);
                     }
                 }
-            }
-        }
-
-        public unsafe void ReleaseJSOwnedObjectByGCHandle(nint gcHandle)
-        {
-            PromiseHolder? holder = null;
-            lock (this)
-            {
-                if (IsGCVHandle(gcHandle))
-                {
-                    if (ThreadJsOwnedHolders.Remove(gcHandle, out holder))
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                    }
-                }
-                else
-                {
-                    GCHandle handle = (GCHandle)gcHandle;
-                    var target = handle.Target!;
-                    if (target is PromiseHolder holder2)
-                    {
-                        holder = holder2;
-                        holder.GCHandle = IntPtr.Zero;
-                    }
-                    else
-                    {
-                        ThreadJsOwnedObjects.Remove(target);
-                    }
-                    handle.Free();
-                }
-            }
-            if (holder != null)
-            {
-                holder.Callback!(null);
             }
         }
 
