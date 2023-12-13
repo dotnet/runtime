@@ -745,7 +745,7 @@ void CodeGen::genCodeForBBlist()
                 }
 #ifdef TARGET_XARCH
                 // Do not remove a jump between hot and cold regions.
-                bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetJumpDest());
+                bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetTarget());
 
                 inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
 #else
