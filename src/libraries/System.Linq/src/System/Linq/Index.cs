@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace System.Linq.System.Linq
+namespace System.Linq
 {
     public static partial class Enumerable
     {
