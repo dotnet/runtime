@@ -1542,7 +1542,7 @@ void emitter::appendToCurIG(instrDesc* id)
  *  Display (optionally) an instruction offset.
  */
 
-void emitter::emitDispInsAddr(BYTE* code)
+void emitter::emitDispInsAddr(const BYTE* code)
 {
 #ifdef DEBUG
     if (emitComp->opts.disAddr)
@@ -4194,8 +4194,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         printf("\n");
 
-#if !defined(TARGET_RISCV64)
-        // TODO-RISCV64-Bug: When JitDump is on, it asserts in emitDispIns which is not implemented.
         if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
@@ -4228,7 +4226,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
                 printf("\n");
             }
         }
-#endif // !TARGET_RISCV64
     }
 }
 
