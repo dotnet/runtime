@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Assemblies.NativeFormat;
+using System.Reflection.Runtime.CustomAttributes.NativeFormat;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.PropertyInfos;
@@ -184,8 +185,6 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 
 namespace System.Reflection.Runtime.CustomAttributes
 {
-    using NativeFormat;
-
     //-----------------------------------------------------------------------------------------------------------
     // CustomAttributeData objects returned by various CustomAttributes properties.
     //-----------------------------------------------------------------------------------------------------------

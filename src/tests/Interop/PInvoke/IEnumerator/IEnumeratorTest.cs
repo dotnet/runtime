@@ -40,6 +40,7 @@ namespace PInvokeTests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+    [SkipOnMono("PInvoke IEnumerator/IEnumerable marshalling not supported on Mono")]
     public static class IEnumeratorTests
     {
         [Fact]
