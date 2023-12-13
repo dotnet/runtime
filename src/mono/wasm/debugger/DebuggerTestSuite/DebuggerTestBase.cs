@@ -1363,7 +1363,6 @@ namespace DebuggerTests
             JObject.FromObject(new { type = "object", className = className, description = description ?? className });
 
         internal static JObject TArray(string className, string description) => JObject.FromObject(new { type = "object", className, description, subtype = "array" });
-        internal static JObject TArrayJS(string className, string description) => JObject.FromObject(new { type = "object", className, description });
 
         internal static JObject TBool(bool value) => JObject.FromObject(new { type = "boolean", value = @value, description = @value ? "true" : "false" });
 

@@ -949,11 +949,15 @@ namespace DebuggerTests
                     return;
 
                 if (res_array_len < 0)
+                {
                     await CheckValue(result.Value["result"], TObject("Object"), $"cfo-res");
+                }
                 else
-                    // using TArrayJS instead of TArray because "result" value is purely JS and 
-                    // might differ from debuggerProxy's messages on each devtool protocol change
-                    await CheckValue(result.Value["result"], TArrayJS("Array", $"Array({res_array_len})"), $"cfo-res");
+                {
+                    // "result" value is purely JS and might diverge from debuggerProxy's messages on each devtool protocol change
+                    var jsArray = JObject.FromObject(new { type = "object", className = "Array", description = $"Array({res_array_len})" });
+                    await CheckValue(result.Value["result"], jsArray, $"cfo-res");
+                }
             }
         }
     }
