@@ -196,7 +196,7 @@ namespace Wasm.Build.Tests
             extraProperties += "<_WasmDevel>true</_WasmDevel>";
 
             string printValueTarget = @"
-                <Target Name=""PrintWasmBuildNative"" AfterTargets=""_BeforeWasmBuildApp"">
+                <Target Name=""PrintWasmBuildNative"" AfterTargets=""PrepareInputsForWasmBuild"">
                     <Message Text=""** WasmBuildNative: '$(WasmBuildNative)', WasmNativeStrip: '$(WasmNativeStrip)', WasmNativeDebugSymbols: '$(WasmNativeDebugSymbols)', WasmBuildingForNestedPublish: '$(WasmBuildingForNestedPublish)'"" Importance=""High"" />
                 " + (publish
                         ? @"<Error Text=""Stopping the build"" Condition=""$(WasmBuildingForNestedPublish) == 'true'"" />"

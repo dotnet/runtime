@@ -24,6 +24,7 @@ protected:
     size_t                 sortSiz;
     bool                   madeChanges;
     Compiler::codeOptimize codeOptKind;
+    bool                   enableConstCSE;
 
 public:
     virtual void Initialize()
@@ -44,13 +45,24 @@ public:
     {
     }
 
-    virtual bool ConsiderTree(GenTree* tree)
+    // This currently mixes legality and profitability,
+    // eventually it should just be pure legality and
+    // the derived classes handle the profitability.
+    //
+    bool CanConsiderTree(GenTree* tree, bool isReturn);
+
+    virtual bool ConsiderTree(GenTree* tree, bool isReturn)
     {
         return false;
     }
 
     virtual void AdjustHeuristic(CSE_Candidate* candidate)
     {
+    }
+
+    virtual const char* Name() const
+    {
+        return "Common CSE Heuristic";
     }
 
     void ConsiderCandidates();
@@ -84,6 +96,12 @@ public:
     CSE_HeuristicRandom(Compiler*);
     void SortCandidates();
     bool PromotionCheck(CSE_Candidate* candidate);
+    bool ConsiderTree(GenTree* tree, bool isReturn);
+
+    const char* Name() const
+    {
+        return "Random CSE Heuristic";
+    }
 };
 
 #endif
@@ -110,6 +128,12 @@ public:
     void SortCandidates();
     bool PromotionCheck(CSE_Candidate* candidate);
     void AdjustHeuristic(CSE_Candidate* candidate);
+    bool ConsiderTree(GenTree* tree, bool isReturn);
+
+    const char* Name() const
+    {
+        return "Standard CSE Heuristic";
+    }
 };
 
 // Generic list of nodes - used by the CSE logic
