@@ -951,9 +951,10 @@ namespace DebuggerTests
                 if (res_array_len < 0)
                     await CheckValue(result.Value["result"], TObject("Object"), $"cfo-res");
                 else
-                    await CheckValue(result.Value["result"], TArray("Array", $"Array({res_array_len})"), $"cfo-res");
+                    // using TArrayJS instead of TArray because "result" value is purely JS and 
+                    // might differ from debuggerProxy's messages on each devtool protocol change
+                    await CheckValue(result.Value["result"], TArrayJS("Array", $"Array({res_array_len})"), $"cfo-res");
             }
         }
     }
-
 }
