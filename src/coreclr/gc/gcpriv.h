@@ -5104,25 +5104,30 @@ size_t& generation_allocated_since_last_pin (generation* inst)
 }
 #endif //FREE_USAGE_STATS
 
+// Return the percentage of efficiency (between 0 and 100) of the allocator.
 inline
-uint64_t generation_allocator_efficiency_percent (generation* inst)
+size_t generation_allocator_efficiency_percent (generation* inst)
 {
+    // Use integer division to prevent potential floating point exception.
+    // FPE may occur if we use floating point division because of speculative execution.
     uint64_t free_obj_space = generation_free_obj_space (inst);
     uint64_t free_list_allocated = generation_free_list_allocated (inst);
-    if (free_list_allocated==0)
+    if (free_list_allocated == 0)
       return 0;
-    return (100 * free_list_allocated) / (free_list_allocated + free_obj_space);
+    return (size_t)((100 * free_list_allocated) / (free_list_allocated + free_obj_space));
 }
 
 inline
-uint64_t generation_unusable_fragmentation (generation* inst)
+size_t generation_unusable_fragmentation (generation* inst)
 {
+    // Use integer division to prevent potential floating point exception.
+    // FPE may occur if we use floating point division because of speculative execution.
     uint64_t free_obj_space = generation_free_obj_space (inst);
     uint64_t free_list_allocated = generation_free_list_allocated (inst);
     uint64_t free_list_space = generation_free_list_space (inst);
-    if (free_obj_space==0)
+    if (free_obj_space == 0)
       return 0;
-    return (free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
+    return (size_t)(free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
 }
 
 #define plug_skew           sizeof(ObjHeader)
