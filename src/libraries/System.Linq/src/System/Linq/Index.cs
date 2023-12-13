@@ -18,6 +18,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            return IndexIterator(source);
+        }
+
+        private static IEnumerable<(int Index, TSource Item)> IndexIterator<TSource>(IEnumerable<TSource> source)
+        {
             int index = -1;
             foreach (TSource element in source)
             {

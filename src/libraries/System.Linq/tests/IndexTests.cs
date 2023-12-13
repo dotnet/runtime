@@ -17,16 +17,31 @@ namespace System.Linq.Tests
         }
 
         [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
-        public void IndexOverflows()
+        public void LargeEnumerable_ThrowsOverflowException()
         {
-            var infiniteWhere = new FastInfiniteEnumerator<int>().Index();
-            using (var en = infiniteWhere.GetEnumerator())
+            long maxInt = int.MaxValue;
+            var overflowRange = RepeatedNumberGuaranteedNotCollectionType(num: 1, count: maxInt + 2).Index();
+            using (var en = overflowRange.GetEnumerator())
                 Assert.Throws<OverflowException>(() =>
                 {
                     while (en.MoveNext())
                     {
                     }
                 });
+        }
+
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        public void LargeEnumerable()
+        {
+            long maxInt = int.MaxValue;
+            int index = -1;
+            var range = RepeatedNumberGuaranteedNotCollectionType(num: 1, count: maxInt + 1).Index();
+            foreach (var item in range)
+            {
+                ++index;
+                Assert.Equal(index, item.Index);
+            }
+            Assert.Equal(int.MaxValue, index);
         }
 
         [Fact]
