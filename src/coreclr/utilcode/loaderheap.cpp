@@ -1808,8 +1808,6 @@ void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(const size_t dwRequestedSize
 #ifndef _DEBUG
 void *UnlockedLoaderHeap::UnlockedAllocMem_LockFree_NoThrow(size_t dwSize)
 {
-    return NULL;
-    /*
     CONTRACT(void*)
     {
         INSTANCE_CHECK;
@@ -1857,7 +1855,7 @@ void *UnlockedLoaderHeap::UnlockedAllocMem_LockFree_NoThrow(size_t dwSize)
     }
 
     EtwAllocRequest(this, pData, dwSize);
-    RETURN pData;*/
+    RETURN pData;
 }
 #endif // _DEBUG
 
