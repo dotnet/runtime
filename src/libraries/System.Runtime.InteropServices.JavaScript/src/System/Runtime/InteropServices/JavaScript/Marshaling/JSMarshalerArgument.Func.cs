@@ -463,7 +463,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -484,7 +484,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -509,7 +509,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -538,7 +538,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -559,7 +559,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -584,7 +584,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -613,7 +613,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -646,7 +646,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
         }
     }
 }

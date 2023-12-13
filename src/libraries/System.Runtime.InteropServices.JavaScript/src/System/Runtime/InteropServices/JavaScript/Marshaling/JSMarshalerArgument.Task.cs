@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = JSProxyContext.GetPromiseHolder(slot.GCHandle);
+            PromiseHolder holder = JSProxyContext.DefaultInstance.GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource tcs = new TaskCompletionSource(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = JSProxyContext.GetPromiseHolder(slot.GCHandle);
+            PromiseHolder holder = JSProxyContext.DefaultInstance.GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {

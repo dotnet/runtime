@@ -161,38 +161,36 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
+        public IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
         {
             if (obj == null)
             {
                 return IntPtr.Zero;
             }
 
-            var ctx = JSProxyContext.DefaultInstance;
-            lock (ctx)
+            lock (this)
             {
-                if (ctx.ThreadJsOwnedObjects.TryGetValue(obj, out IntPtr gcHandle))
+                if (ThreadJsOwnedObjects.TryGetValue(obj, out IntPtr gcHandle))
                 {
                     return gcHandle;
                 }
 
                 IntPtr result = (IntPtr)GCHandle.Alloc(obj, handleType);
-                ctx.ThreadJsOwnedObjects[obj] = result;
+                ThreadJsOwnedObjects[obj] = result;
                 return result;
             }
         }
 
         // TODO unregister and collect pending PromiseHolder also when no C# is awaiting ?
-        public static PromiseHolder GetPromiseHolder(nint gcHandle)
+        public PromiseHolder GetPromiseHolder(nint gcHandle)
         {
             PromiseHolder holder;
             if (IsGCVHandle(gcHandle))
             {
-                var ctx = JSProxyContext.DefaultInstance;
-                lock (ctx)
+                lock (this)
                 {
-                    holder = new PromiseHolder(ctx, gcHandle);
-                    ctx.ThreadJsOwnedHolders.Add(gcHandle, holder);
+                    holder = new PromiseHolder(this, gcHandle);
+                    ThreadJsOwnedHolders.Add(gcHandle, holder);
                 }
             }
             else

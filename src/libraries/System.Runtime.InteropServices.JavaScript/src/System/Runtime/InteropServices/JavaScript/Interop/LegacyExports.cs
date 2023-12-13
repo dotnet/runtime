@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr GetJSOwnedObjectGCHandleRef(in object obj)
         {
-            return JSProxyContext.GetJSOwnedObjectGCHandle(obj, GCHandleType.Normal);
+            return JSProxyContext.MainInstance.GetJSOwnedObjectGCHandle(obj, GCHandleType.Normal);
         }
 
         public static IntPtr CreateTaskSource()

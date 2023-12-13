@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     ToJS(cpy.Message);
                     slot.Type = MarshalerType.Exception;
-                    slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cpy);
+                    slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cpy);
                 }
             }
         }
