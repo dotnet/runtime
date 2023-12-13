@@ -507,13 +507,16 @@ namespace System.Tests
         public static void FromMinutes_Invalid()
         {
             double maxMinutes = long.MaxValue / (TimeSpan.TicksPerMillisecond / 1000.0 / 60.0);
-
+            long maxMinutesLong = long.MaxValue / (60 * 1000 * TimeSpan.TicksPerMillisecond);
             Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(double.PositiveInfinity)); // Value is positive infinity
             Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(double.NegativeInfinity)); // Value is positive infinity
 
             Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(maxMinutes)); // Value > TimeSpan.MaxValue
             Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(-maxMinutes)); // Value < TimeSpan.MinValue
 
+            Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(maxMinutesLong + 1));
+            Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(maxMinutesLong, 60));
+            
             AssertExtensions.Throws<ArgumentException>(null, () => TimeSpan.FromMinutes(double.NaN)); // Value is NaN
         }
 
