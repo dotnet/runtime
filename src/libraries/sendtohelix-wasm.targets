@@ -13,6 +13,12 @@
 
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1&quot;" />
   </ItemGroup>
 
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">

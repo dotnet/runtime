@@ -94,9 +94,6 @@
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
-
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsWasiSdk)' == 'true'">
