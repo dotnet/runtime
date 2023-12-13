@@ -1655,12 +1655,10 @@ extends:
             - name: timeoutPerTestCollectionInMinutes
               value: 180
           jobParameters:
-            experimental: true
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
             runtimeVariant: llvmfullaot
             buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release
-            crossBuild: true
             timeoutInMinutes: 300
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
