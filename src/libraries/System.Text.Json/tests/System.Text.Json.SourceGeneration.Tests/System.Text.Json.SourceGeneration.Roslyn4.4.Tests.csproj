@@ -7,6 +7,7 @@
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
     <HighAotMemoryUsageAssembly Include="System.Text.Json.SourceGeneration.Roslyn4.4.Tests.dll" />
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </ItemGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.Tests.targets" />
