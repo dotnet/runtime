@@ -2129,9 +2129,6 @@ ssize_t emitter::emitOutputInstrJumpSize(BYTE const* const         destination,
 
     UNATIVE_OFFSET distanceOffset  = jumpDescription->idAddr()->iiaIGlabel->igOffs;
     BYTE const*    distanceAddress = emitOffsetToPtr(distanceOffset);
-
-    printf("Emmiting jump with size: %p\n", distanceAddress - sourceAddress);
-
     return static_cast<ssize_t>(distanceAddress - sourceAddress);
 }
 
@@ -3927,8 +3924,6 @@ void emitter::emitDispInsInstrNum(const instrDesc* id) const
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    emitDispInsDebugOnlyInfo(id);
-
     if (pCode == nullptr)
         return;
 

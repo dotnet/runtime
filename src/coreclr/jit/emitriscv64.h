@@ -64,8 +64,6 @@ void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffs
 
 void emitDispInsInstrNum(const instrDesc* id) const;
 
-void emitDispInsDebugOnlyInfo(instrDesc* id);
-
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + offset]
