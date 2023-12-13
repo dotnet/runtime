@@ -25238,7 +25238,9 @@ int gc_heap::calculate_new_heap_count ()
 
     float median_throughput_cost_percent = median_of_3 (throughput_cost_percents[0], throughput_cost_percents[1], throughput_cost_percents[2]);
 
-    // We should filter out the gc pauses outliers by checking to see if the survived amount changed.
+    // We should filter out the gc pauses outliers by checking to see if the survived amount changed by more than 5%.
+    const float survived_stable_fraction_limit = 0.05f;
+
     float min_tcp = throughput_cost_percents[0];
     size_t min_survived = dynamic_heap_count_data.samples[0].gc_survived_size;
     uint64_t min_pause = dynamic_heap_count_data.samples[0].gc_pause_time;
@@ -25261,7 +25263,7 @@ int gc_heap::calculate_new_heap_count ()
             dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
             float diff = fabsf ((float)(sample.gc_survived_size - min_survived) / (float)min_survived);
             dprintf (6666, ("sample %d abs diff from min is %Id -> %.3f", i, (sample.gc_survived_size - min_survived), diff));
-            if (diff >= 0.05)
+            if (diff >= survived_stable_fraction_limit)
             {
                 survived_stable_p = false;
             }
@@ -25276,14 +25278,10 @@ int gc_heap::calculate_new_heap_count ()
 
     // If changing the heap count takes very little time, we should feel free to change it more precisely and frequently.
     // Instead of 50% we could make this a proportional value.
-    bool precise_count_change_p = false;
-    float change_pause_percent = (float)change_heap_count_time / (float)min_pause;
-    dprintf (6666, ("last heap change took %I64d / min gc pause is %I64d = %d%%", change_heap_count_time, min_pause, (int)(change_pause_percent * 100.0)));
-
-    if (change_pause_percent < 0.5)
-    {
-        precise_count_change_p = true;
-    }
+    const float precise_cost_fraction_limit = 0.5f;
+    float change_pause_fraction = (float)change_heap_count_time / (float)min_pause;
+    dprintf (6666, ("last heap change took %I64d / min gc pause is %I64d = %d%%", change_heap_count_time, min_pause, (int)(change_pause_fraction * 100.0)));
+    bool precise_count_change_p = change_pause_fraction < precise_cost_fraction_limit;
 
     // apply exponential smoothing and use 1/3 for the smoothing factor
     const float smoothing = 3;
