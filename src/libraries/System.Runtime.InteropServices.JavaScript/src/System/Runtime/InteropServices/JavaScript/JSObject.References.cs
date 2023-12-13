@@ -118,7 +118,9 @@ namespace System.Runtime.InteropServices.JavaScript
         // when we know that JS side already freed the handle
         internal void DisposeLocal()
         {
+#if FEATURE_WASM_THREADS
             lock (_lockObject)
+#endif
             {
                 ProxyContext.RemoveCSOwnedObject(JSHandle);
                 _isDisposed = true;
@@ -151,6 +153,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     var self = (JSObject)s!;
                     lock (self._lockObject)
                     {
+                        if (self._isDisposed)
+                        {
+                            return;
+                        }
                         self.ProxyContext.ReleaseCSOwnedObject(self.JSHandle);
                         self._isDisposed = true;
                         self.JSHandle = IntPtr.Zero;
