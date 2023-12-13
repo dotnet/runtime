@@ -307,6 +307,12 @@ namespace JIT.HardwareIntrinsics.X86
         
         private static Dictionary<(string, string, string), ulong[]> binaryEmbRoundingAnswerTable = new Dictionary<(string, string, string), ulong[]>
         {
+            {("Double", "ConvertScalarToVector128Double", "ToNegativeInfinity"), new ulong[] {0x402e000000000000, 0x3ff0000000000000}},
+            {("Single", "ConvertScalarToVector128Single", "ToNegativeInfinity"), new ulong[] {0x41700000, 0x3f800000, 0x3f800000, 0x3f800000}},
+            {("Double", "ConvertScalarToVector128Double", "ToPositiveInfinity"), new ulong[] {0x402e000000000000, 0x3ff0000000000000}},
+            {("Single", "ConvertScalarToVector128Single", "ToPositiveInfinity"), new ulong[] {0x41700000, 0x3f800000, 0x3f800000, 0x3f800000}},
+            {("Double", "ConvertScalarToVector128Double", "ToZero"), new ulong[] {0x402e000000000000, 0x3ff0000000000000}},
+            {("Single", "ConvertScalarToVector128Single", "ToZero"), new ulong[] {0x41700000, 0x3f800000, 0x3f800000, 0x3f800000}},
             {("Double", "AddScalar", "ToNegativeInfinity"), new ulong[] {0x3fe0000000000000, 0x3fa999999999999a}},
             {("Single", "AddScalar", "ToNegativeInfinity"), new ulong[] {0x3effffff, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
             {("Double", "AddScalar", "ToPositiveInfinity"), new ulong[] {0x3fe0000000000001, 0x3fa999999999999a}},

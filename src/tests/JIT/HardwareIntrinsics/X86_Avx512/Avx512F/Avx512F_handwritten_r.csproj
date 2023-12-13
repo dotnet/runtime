@@ -45,6 +45,6 @@
     <Compile Include="UnpackHigh.cs" />
     <Compile Include="UnpackLow.cs" />
     <Compile Include="EmbeddedRounding.Double.cs" />
-    <Compile Include="EmbeddedRounding.Float.cs" />
+    <Compile Include="EmbeddedRounding.Single.cs" />
   </ItemGroup>
 </Project>
