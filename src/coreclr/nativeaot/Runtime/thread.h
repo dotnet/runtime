@@ -276,6 +276,10 @@ public:
     // Do not use anywhere else.
     void                DeferTransitionFrame();
 
+    // Setup the m_pDeferredTransitionFrame field for GC helpers entered from native helper thread
+    // code (e.g. ETW or EventPipe threads). Do not use anywhere else.
+    void                SetDeferredTransitionFrameForNativeHelperThread();
+
     //
     // GC support APIs - do not use except from GC itself
     //

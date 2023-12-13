@@ -459,137 +459,62 @@ void BasicBlock::dspBlockILRange() const
 //
 void BasicBlock::dspFlags()
 {
-    if (HasFlag(BBF_MARKED))
+    static const struct
     {
-        printf("m ");
-    }
-    if (HasFlag(BBF_REMOVED))
+        const BasicBlockFlags flag;
+        const char* const     displayString;
+    } bbFlagDisplay[] = {
+        {BBF_IMPORTED, "i"},
+        {BBF_IS_LIR, "LIR"},
+        {BBF_PROF_WEIGHT, "IBC"},
+        {BBF_RUN_RARELY, "rare"},
+        {BBF_MARKED, "m"},
+        {BBF_REMOVED, "del"},
+        {BBF_DONT_REMOVE, "keep"},
+        {BBF_INTERNAL, "internal"},
+        {BBF_FAILED_VERIFICATION, "failV"},
+        {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
+        {BBF_LOOP_HEAD, "Loop"},
+        {BBF_HAS_LABEL, "label"},
+        {BBF_HAS_JMP, "jmp"},
+        {BBF_HAS_CALL, "hascall"},
+        {BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY, "xentry"},
+        {BBF_GC_SAFE_POINT, "gcsafe"},
+        {BBF_FUNCLET_BEG, "flet"},
+        {BBF_HAS_IDX_LEN, "idxlen"},
+        {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
+        {BBF_HAS_NEWOBJ, "newobj"},
+        {BBF_HAS_NULLCHECK, "nullcheck"},
+        {BBF_BACKWARD_JUMP, "bwd"},
+        {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
+        {BBF_BACKWARD_JUMP_SOURCE, "bwd-src"},
+        {BBF_PATCHPOINT, "ppoint"},
+        {BBF_PARTIAL_COMPILATION_PATCHPOINT, "pc-ppoint"},
+        {BBF_HAS_HISTOGRAM_PROFILE, "hist"},
+        {BBF_TAILCALL_SUCCESSOR, "tail-succ"},
+        {BBF_RECURSIVE_TAILCALL, "r-tail"},
+        {BBF_NO_CSE_IN, "no-cse"},
+        {BBF_CAN_ADD_PRED, "add-pred"},
+        {BBF_RETLESS_CALL, "retless"},
+        {BBF_LOOP_PREHEADER, "LoopPH"},
+        {BBF_COLD, "cold"},
+        {BBF_KEEP_BBJ_ALWAYS, "KEEP"},
+        {BBF_CLONED_FINALLY_BEGIN, "cfb"},
+        {BBF_CLONED_FINALLY_END, "cfe"},
+        {BBF_LOOP_ALIGN, "align"},
+        {BBF_HAS_ALIGN, "has-align"},
+        {BBF_HAS_MDARRAYREF, "mdarr"},
+        {BBF_NEEDS_GCPOLL, "gcpoll"},
+        {BBF_NONE_QUIRK, "q"},
+        {BBF_OLD_LOOP_HEADER_QUIRK, "loopheader"},
+    };
+
+    for (unsigned i = 0; i < ArrLen(bbFlagDisplay); i++)
     {
-        printf("del ");
-    }
-    if (HasFlag(BBF_DONT_REMOVE))
-    {
-        printf("keep ");
-    }
-    if (HasFlag(BBF_IMPORTED))
-    {
-        printf("i ");
-    }
-    if (HasFlag(BBF_INTERNAL))
-    {
-        printf("internal ");
-    }
-    if (HasFlag(BBF_FAILED_VERIFICATION))
-    {
-        printf("failV ");
-    }
-    if (HasFlag(BBF_RUN_RARELY))
-    {
-        printf("rare ");
-    }
-    if (HasFlag(BBF_LOOP_HEAD))
-    {
-        printf("Loop ");
-    }
-    if (HasFlag(BBF_HAS_LABEL))
-    {
-        printf("label ");
-    }
-    if (HasFlag(BBF_HAS_JMP))
-    {
-        printf("jmp ");
-    }
-    if (HasFlag(BBF_HAS_CALL))
-    {
-        printf("hascall ");
-    }
-    if (HasFlag(BBF_GC_SAFE_POINT))
-    {
-        printf("gcsafe ");
-    }
-    if (HasFlag(BBF_FUNCLET_BEG))
-    {
-        printf("flet ");
-    }
-    if (HasFlag(BBF_HAS_IDX_LEN))
-    {
-        printf("idxlen ");
-    }
-    if (HasFlag(BBF_HAS_MD_IDX_LEN))
-    {
-        printf("mdidxlen ");
-    }
-    if (HasFlag(BBF_HAS_NEWOBJ))
-    {
-        printf("newobj ");
-    }
-    if (HasFlag(BBF_HAS_NULLCHECK))
-    {
-        printf("nullcheck ");
-    }
-    if (HasFlag(BBF_BACKWARD_JUMP))
-    {
-        printf("bwd ");
-    }
-    if (HasFlag(BBF_BACKWARD_JUMP_TARGET))
-    {
-        printf("bwd-target ");
-    }
-    if (HasFlag(BBF_BACKWARD_JUMP_SOURCE))
-    {
-        printf("bwd-src ");
-    }
-    if (HasFlag(BBF_PATCHPOINT))
-    {
-        printf("ppoint ");
-    }
-    if (HasFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT))
-    {
-        printf("pc-ppoint ");
-    }
-    if (HasFlag(BBF_RETLESS_CALL))
-    {
-        printf("retless ");
-    }
-    if (HasFlag(BBF_LOOP_PREHEADER))
-    {
-        printf("LoopPH ");
-    }
-    if (HasFlag(BBF_COLD))
-    {
-        printf("cold ");
-    }
-    if (HasFlag(BBF_PROF_WEIGHT))
-    {
-        printf("IBC ");
-    }
-    if (HasFlag(BBF_IS_LIR))
-    {
-        printf("LIR ");
-    }
-    if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
-    {
-        printf("KEEP ");
-    }
-    if (HasFlag(BBF_CLONED_FINALLY_BEGIN))
-    {
-        printf("cfb ");
-    }
-    if (HasFlag(BBF_CLONED_FINALLY_END))
-    {
-        printf("cfe ");
-    }
-    if (HasFlag(BBF_LOOP_ALIGN))
-    {
-        printf("align ");
-    }
-    if (HasFlag(BBF_HAS_MDARRAYREF))
-    {
-        printf("mdarr ");
-    }
-    if (HasFlag(BBF_NEEDS_GCPOLL))
-    {
-        printf("gcpoll ");
+        if (HasFlag(bbFlagDisplay[i].flag))
+        {
+            printf("%s ", bbFlagDisplay[i].displayString);
+        }
     }
 }
 
@@ -1780,25 +1705,6 @@ BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->b
     for (unsigned i = 0; i < bbeCount; i++)
     {
         bbeSuccs[i] = other->bbeSuccs[i];
-    }
-}
-
-//------------------------------------------------------------------------
-// unmarkLoopAlign: Unmarks the LOOP_ALIGN flag from the block and reduce the
-//                  loop alignment count.
-//
-// Arguments:
-//    compiler - Compiler instance
-//    reason - Reason to print in JITDUMP
-//
-void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason))
-{
-    // Make sure we unmark and count just once.
-    if (isLoopAlign())
-    {
-        compiler->loopAlignCandidates--;
-        RemoveFlags(BBF_LOOP_ALIGN);
-        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
 }
 

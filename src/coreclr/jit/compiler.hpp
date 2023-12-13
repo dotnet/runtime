@@ -4976,7 +4976,6 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
         // patchpoint, but during morph we may transform to something that
         // requires the original entry (fgEntryBB).
         assert(opts.IsOSR());
-        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
         dfsFrom(fgEntryBB);
     }
 
@@ -5017,7 +5016,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
         //                     = headPreOrderIndex - index
         unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
@@ -5045,7 +5044,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
         unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;

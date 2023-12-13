@@ -152,6 +152,9 @@ void Thread::EnablePreemptiveMode()
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
 }
 
+// NOTE: In general, this function can only be used in contexts where explicit actions have been taken to
+// ensure that valid m_pDeferredTransitionFrame setting is in place (since this setting is not generally
+// guaranteed to be valid).
 void Thread::DisablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
@@ -162,6 +165,24 @@ void Thread::DisablePreemptiveMode()
     if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
     {
         WaitForGC(m_pDeferredTransitionFrame);
+    }
+}
+
+// Setup the m_pDeferredTransitionFrame field for GC helpers entered from native helper thread
+// code (e.g. ETW or EventPipe threads). Do not use anywhere else.
+void Thread::SetDeferredTransitionFrameForNativeHelperThread()
+{
+    ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(!Thread::IsCurrentThreadInCooperativeMode());
+    m_pDeferredTransitionFrame = m_pTransitionFrame;
+
+    // This function can only be used when there is no managed code anywhere on the current stack (i.e., when
+    // the current thread has the simplest possible transition frame configuration). A real transition (and
+    // the implied possibility of ancestor managed code on this thread) can be deferred only in the restricted
+    // set of cases which are allowed to use DeferTransitionFrame or SetDeferredTransitionFrame.
+    if (m_pDeferredTransitionFrame != TOP_OF_STACK_MARKER)
+    {
+        RhFailFast();
     }
 }
 #endif // !DACCESS_COMPILE

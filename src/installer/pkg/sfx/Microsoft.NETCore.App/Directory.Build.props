@@ -221,6 +221,8 @@
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />

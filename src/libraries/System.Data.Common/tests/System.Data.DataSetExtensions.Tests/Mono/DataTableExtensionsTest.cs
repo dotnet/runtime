@@ -42,7 +42,7 @@ namespace MonoTests.System.Data
     {
         private string _testDataSet = "Mono/testdataset1.xml";
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void CopyToDataTableNoArgNoRows()
         {
             DataTable dt = new DataTable();
@@ -53,7 +53,7 @@ namespace MonoTests.System.Data
             Assert.Throws<InvalidOperationException>(() => dt.AsEnumerable().CopyToDataTable());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void CopyToDataTableNoArg()
         {
             DataTable dt = new DataTable();
@@ -65,7 +65,7 @@ namespace MonoTests.System.Data
             Assert.Equal("foo", dst.Rows[0]["CName"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void CopyToDataTableTableArgNoRows()
         {
             DataTable dt = new DataTable();
@@ -75,7 +75,7 @@ namespace MonoTests.System.Data
             dt.AsEnumerable().CopyToDataTable(dst, LoadOption.PreserveChanges);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void AsEnumerable()
         {
             DataSet ds = new DataSet();
