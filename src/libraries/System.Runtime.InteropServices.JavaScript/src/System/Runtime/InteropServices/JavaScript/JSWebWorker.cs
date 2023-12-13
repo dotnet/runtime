@@ -14,9 +14,37 @@ namespace System.Runtime.InteropServices.JavaScript
     /// This is draft for possible public API of browser thread (web worker) dedicated to JS interop workloads.
     /// The method names are unique to make it easy to call them via reflection for now. All of them should be just `RunAsync` probably.
     /// </summary>
-    public static class WebWorker
+    public static class JSWebWorker
     {
-        public static Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
+        // temporary, for easy reflection
+        internal static Task RunAsyncVoid(Func<Task> body, CancellationToken cancellationToken) => RunAsync(body, cancellationToken);
+        internal static Task<T> RunAsyncGeneric<T>(Func<Task<T>> body, CancellationToken cancellationToken) => RunAsync(body, cancellationToken);
+
+        public static Task<T> RunAsync<T>(Func<Task<T>> body)
+        {
+            return RunAsync(body, CancellationToken.None);
+        }
+
+        public static Task RunAsync(Func<Task> body)
+        {
+            return RunAsync(body, CancellationToken.None);
+        }
+
+        public static async Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
+        {
+            // TODO remove main thread condition later
+            if (Thread.CurrentThread.ManagedThreadId == 1) await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
+            return await RunAsyncImpl(body, cancellationToken).ConfigureAwait(false);
+        }
+
+        public static async Task RunAsync(Func<Task> body, CancellationToken cancellationToken)
+        {
+            // TODO remove main thread condition later
+            if (Thread.CurrentThread.ManagedThreadId == 1) await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
+            await RunAsyncImpl(body, cancellationToken).ConfigureAwait(false);
+        }
+
+        private static Task<T> RunAsyncImpl<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
             var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
             var tcs = new TaskCompletionSource<T>();
@@ -53,7 +81,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return tcs.Task;
         }
 
-        public static Task RunAsyncVoid(Func<Task> body, CancellationToken cancellationToken)
+        private static Task RunAsyncImpl(Func<Task> body, CancellationToken cancellationToken)
         {
             var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
             var tcs = new TaskCompletionSource();
@@ -90,44 +118,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return tcs.Task;
         }
 
-        public static Task Run(Action body, CancellationToken cancellationToken)
-        {
-            var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
-            var tcs = new TaskCompletionSource();
-            var capturedContext = SynchronizationContext.Current;
-            var t = new Thread(() =>
-            {
-                try
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        PostWhenCancellation(parentContext, tcs);
-                        return;
-                    }
-
-                    JSHostImplementation.InstallWebWorkerInterop(false);
-                    try
-                    {
-                        body();
-                        SendWhenDone(parentContext, tcs);
-                    }
-                    catch (Exception ex)
-                    {
-                        SendWhenException(parentContext, tcs, ex);
-                    }
-                    JSHostImplementation.UninstallWebWorkerInterop();
-                }
-                catch (Exception ex)
-                {
-                    SendWhenException(parentContext, tcs, ex);
-                }
-
-            });
-            JSHostImplementation.SetHasExternalEventLoop(t);
-            t.Start();
-            return tcs.Task;
-        }
-
         #region posting result to the original thread when handling exception
 
         private static void PostWhenCancellation(SynchronizationContext ctx, TaskCompletionSource tcs)
@@ -138,7 +128,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("WebWorker.RunAsync failed", e);
+                Environment.FailFast("JSWebWorker.RunAsync failed", e);
             }
         }
 
@@ -150,7 +140,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("WebWorker.RunAsync failed", e);
+                Environment.FailFast("JSWebWorker.RunAsync failed", e);
             }
         }
 
@@ -165,19 +155,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("WebWorker.RunAsync failed", e);
-            }
-        }
-
-        private static void SendWhenDone(SynchronizationContext ctx, TaskCompletionSource tcs)
-        {
-            try
-            {
-                ctx.Send((_) => tcs.SetResult(), null);
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("WebWorker.RunAsync failed", e);
+                Environment.FailFast("JSWebWorker.RunAsync failed", e);
             }
         }
 
@@ -189,7 +167,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("WebWorker.RunAsync failed", e);
+                Environment.FailFast("JSWebWorker.RunAsync failed", e);
             }
         }
 
@@ -201,7 +179,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("WebWorker.RunAsync failed", e);
+                Environment.FailFast("JSWebWorker.RunAsync failed", e);
             }
         }
 
@@ -216,7 +194,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("WebWorker.RunAsync failed", e);
+                Environment.FailFast("JSWebWorker.RunAsync failed", e);
             }
         }
 
@@ -224,7 +202,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (done.IsFaulted)
             {
-                if(done.Exception is AggregateException ag && ag.InnerException!=null)
+                if (done.Exception is AggregateException ag && ag.InnerException != null)
                 {
                     tcs.SetException(ag.InnerException);
                 }
