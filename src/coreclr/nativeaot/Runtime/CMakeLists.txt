@@ -15,7 +15,6 @@ set(COMMON_RUNTIME_SOURCES
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
     GCToEEInterface.cpp
-    gcrhscan.cpp
     GcStressControl.cpp
     HandleTableHelpers.cpp
     MathHelpers.cpp

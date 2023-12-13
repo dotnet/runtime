@@ -90,6 +90,64 @@ void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_conc
 #endif
 }
 
+void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+{
+    // STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Phase = %s\n", sc->promotion ? "promote" : "relocate");
+
+    FOREACH_THREAD(pThread)
+    {
+        // Skip "GC Special" threads which are really background workers that will never have any roots.
+        if (pThread->IsGCSpecial())
+            continue;
+
+#if !defined (ISOLATED_HEAPS)
+        if (!GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(),
+            sc->thread_number))
+        {
+            // STRESS_LOG2(LF_GC|LF_GCROOTS, LL_INFO100, "{ Scan of Thread %p (ID = %x) declined by this heap\n",
+            //             pThread, pThread->GetThreadId());
+        }
+        else
+#endif
+        {
+            InlinedThreadStaticRoot* pRoot = pThread->GetInlinedThreadStaticList();
+            while (pRoot != NULL)
+            {
+                STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p inline thread statics root %p. \n", pThread, pRoot);
+                RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)&pRoot->m_threadStaticsBase, GCRK_Object, fn, sc);
+                pRoot = pRoot->m_next;
+            }
+
+            STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p thread statics root. \n", pThread);
+            RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)pThread->GetThreadStaticStorage(), GCRK_Object, fn, sc);
+
+            STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p\n", pThread);
+            sc->thread_under_crawl = pThread;
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+            sc->dwEtwRootKind = kEtwGCRootKindStack;
+#endif
+            pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+            sc->dwEtwRootKind = kEtwGCRootKindOther;
+#endif
+            STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p }\n", pThread);
+        }
+    }
+    END_FOREACH_THREAD
+
+        sc->thread_under_crawl = NULL;
+}
+
+void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
+{
+    FOREACH_THREAD(thread)
+    {
+        (*fn) (thread->GetAllocContext(), param);
+    }
+    END_FOREACH_THREAD
+}
+
 // EE can perform post stack scanning action, while the user threads are still suspended
 void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* sc)
 {

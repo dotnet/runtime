@@ -343,14 +343,12 @@ struct DacScanCallbackData
     uintptr_t stack_limit;                    // Lowest point on the thread stack that the scanning logic is permitted to read
 };
 
-typedef DacScanCallbackData EnumGcRefScanContext;
-typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, uint32_t flags);
+typedef DacScanCallbackData ScanContext;
+typedef void promote_func(PTR_PTR_Object, ScanContext* callbackData, uint32_t flags);
 
 #else // DACCESS_COMPILE
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
-typedef promote_func EnumGcRefCallbackFunc;
-typedef ScanContext  EnumGcRefScanContext;
 
 #endif // DACCESS_COMPILE
 
