@@ -44,7 +44,7 @@
     static const char* gcDetailedStartMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "*GC* %d(gen0:%d)(%d)(alloc: %zd)(%s)(%d)(%d)";
+        return "*GC* %d(gen0:%d)(%d)(alloc: %zd)(%s)(%d)";
     }
 
     static const char* gcDetailedEndMsg()
