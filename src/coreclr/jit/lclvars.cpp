@@ -88,7 +88,7 @@ void Compiler::lvaInit()
     lvaCallSpCheck = BAD_VAR_NUM;
 #endif
 
-    structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
+    structPromotionHelper = new (this, CMK_Promotion) StructPromotionHelper(this);
 }
 
 /*****************************************************************************/
