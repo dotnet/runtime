@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
         {
             _testIdx = Interlocked.Increment(ref s_testCounter);
             _buildContext = buildContext;
-            _testOutput = output;
+            _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
         }
 
@@ -603,8 +603,6 @@ namespace Wasm.Build.Tests
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine($"{label} {message}");
             }
         }
 
@@ -703,6 +701,7 @@ namespace Wasm.Build.Tests
             .MultiplyWithSingleArgs(true, false) /*propertyValue*/
             .MultiplyWithSingleArgs(true, false) /*aot*/
             .UnwrapItemsAsArrays();
+
         protected CommandResult RunWithoutBuild(string config, string id)
         {
             string runArgs = $"run --no-build -c {config}";
@@ -721,7 +720,7 @@ namespace Wasm.Build.Tests
             return res;
         }
     }
-    
+
     public record BuildArgs(string ProjectName,
                             string Config,
                             bool AOT,
