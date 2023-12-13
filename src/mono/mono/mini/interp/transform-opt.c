@@ -2582,6 +2582,9 @@ interp_cprop (TransformData *td)
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			int opcode, num_sregs, num_dregs;
+			gint32 *sregs;
+			gint32 dreg;
 			// LIVENESS_MARKER is set only for non-eh bblocks
 			if (bb->dfs_index >= td->bblocks_count || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
 				current_liveness++;
@@ -2589,11 +2592,12 @@ interp_cprop (TransformData *td)
 			if (interp_ins_is_nop (ins))
 				continue;
 
-			int opcode = ins->opcode;
-			int num_sregs = mono_interp_op_sregs [opcode];
-			int num_dregs = mono_interp_op_dregs [opcode];
-			gint32 *sregs = &ins->sregs [0];
-			gint32 dreg = ins->dreg;
+retry_instruction:
+			opcode = ins->opcode;
+			num_sregs = mono_interp_op_sregs [opcode];
+			num_dregs = mono_interp_op_dregs [opcode];
+			sregs = &ins->sregs [0];
+			dreg = ins->dreg;
 
 			if (td->verbose_level)
 				interp_dump_ins (ins, td->data_items);
@@ -2762,12 +2766,15 @@ interp_cprop (TransformData *td)
 						}
 					}
 					if (sreg != -1) {
+						td->var_values [ins->sregs [0]].ref_count--;
+						td->var_values [ins->sregs [1]].ref_count--;
 						ins->opcode = mov_op;
 						ins->sregs [0] = sreg;
 						if (td->verbose_level) {
 							g_print ("Replace idempotent binop :\n\t");
 							interp_dump_ins (ins, td->data_items);
 						}
+						goto retry_instruction;
 					}
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
@@ -2988,6 +2995,8 @@ interp_cprop (TransformData *td)
 				if (def && def->opcode == MINT_LDLOCA_S) {
 					// CKNULL on LDLOCA is a NOP
 					ins->opcode = MINT_MOV_P;
+					td->var_values [ins->sregs [0]].ref_count--;
+					goto retry_instruction;
 				}
 			} else if (opcode == MINT_BOX) {
 				// TODO Add more relevant opcodes
