@@ -3859,6 +3859,10 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 {
                     // Keep class handle attached to the helper call since it's difficult to restore it.
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
+                    if (pFieldInfo->useEnclosingTypeOnly)
+                    {
+                        op1->AsCall()->SetArgNeedsEnclosingType();
+                    }
                 }
 
                 op1->gtFlags |= callFlags;

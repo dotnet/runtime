@@ -12301,7 +12301,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     CallArgs* args                    = &call->gtArgs;
     bool      generateUniqueVN        = false;
     bool      useEntryPointAddrAsArg0 = false;
-    bool      useEnclosingTypeAsArg0  = false;
+    bool      useEnclosingTypeAsArg0  = call->IsArgNeedsEnclosingType();
 
     switch (vnf)
     {
@@ -12363,12 +12363,12 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         case VNF_ReadyToRunStaticBaseGC:
         case VNF_ReadyToRunStaticBaseNonGC:
-        case VNF_ReadyToRunStaticBaseThread:
-        case VNF_ReadyToRunStaticBaseThreadNonGC:
         {
-            if (call->gtInitClsHnd != NO_CLASS_HANDLE)
+            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
-                useEnclosingTypeAsArg0 = true;
+                // TODO: Do this for R2R as well
+                vnf = VNF_ReadyToRunStaticBaseCommon;
+                assert(useEnclosingTypeAsArg0 || (call->gtInitClsHnd == NO_CLASS_HANDLE));
             }
             else
             {
@@ -12376,6 +12376,8 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             }
         }
         break;
+        case VNF_ReadyToRunStaticBaseThread:
+        case VNF_ReadyToRunStaticBaseThreadNonGC:
         case VNF_ReadyToRunGenericStaticBase:
         case VNF_ReadyToRunIsInstanceOf:
         case VNF_ReadyToRunCastClass:
