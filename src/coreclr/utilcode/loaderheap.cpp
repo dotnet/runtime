@@ -13,21 +13,6 @@
 INDEBUG(DWORD UnlockedLoaderHeap::s_dwNumInstancesOfLoaderHeaps = 0;)
 INDEBUG(DWORD ExplicitControlLoaderHeap::s_dwNumInstancesOfLoaderHeaps = 0;)
 
-#ifdef RANDOMIZE_ALLOC
-#include <time.h>
-static class Random
-{
-public:
-    Random() { seed = (unsigned int)time(NULL); }
-    unsigned int Next()
-    {
-        return ((seed = seed * 214013L + 2531011L) >> 16) & 0x7fff;
-    }
-private:
-    unsigned int seed;
-} s_random;
-#endif
-
 namespace
 {
 #if !defined(SELF_NO_HOST) // ETW available only in the runtime
@@ -757,6 +742,7 @@ struct LoaderHeapFreeBlock
                 pNewBlock->m_dwSize = dwTotalSize;
                 pNewBlock->m_pBlockAddress = pMem;
                 *ppHead = pNewBlock;
+                pHeap->m_cbMemoryInFreeList += dwTotalSize;
                 MergeBlock(pNewBlock, pHeap);
             }
 
@@ -783,6 +769,7 @@ struct LoaderHeapFreeBlock
                     pResult = pCur->m_pBlockAddress;
                     // Exact match. Hooray!
                     *ppWalk = pCur->m_pNext;
+                    pHeap->m_cbMemoryInFreeList -= pCur->m_dwSize;
                     delete pCur;
                     break;
                 }
@@ -791,6 +778,7 @@ struct LoaderHeapFreeBlock
                     // Partial match. Ok...
                     pResult = pCur->m_pBlockAddress;
                     *ppWalk = pCur->m_pNext;
+                    pHeap->m_cbMemoryInFreeList -= pCur->m_dwSize; // Subtract the entire size of the free block, as InsertFreeBlock will handle adding back the partial size later
                     InsertFreeBlock(ppWalk, ((BYTE*)pCur->m_pBlockAddress) + dwSize, dwCurSize - dwSize, pHeap );
                     delete pCur;
                     break;
@@ -962,13 +950,12 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     CONTRACTL_END;
 
     m_pFirstBlock                = NULL;
+    m_cbMemoryInFreeList         = 0;
 
     m_dwReserveBlockSize         = dwReserveBlockSize;
     m_dwCommitBlockSize          = dwCommitBlockSize;
 
-    m_pPtrToEndOfCommittedRegion = NULL;
     m_pEndReservedRegion         = NULL;
-    m_pAllocPtr                  = NULL;
 
     m_pRangeList                 = pRangeList;
 
@@ -1138,12 +1125,12 @@ void UnlockedLoaderHeap::DebugGuardHeap()
 }
 #endif
 
-size_t UnlockedLoaderHeap::GetBytesAvailCommittedRegion()
+size_t UnlockedLoaderHeap::GetBytesAvailCommittedRegion(PTR_LoaderHeapBlock pLoaderHeapBlock, PTR_BYTE pAllocPtr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_pAllocPtr < m_pPtrToEndOfCommittedRegion)
-        return (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
+    if (pLoaderHeapBlock != NULL && pAllocPtr < pLoaderHeapBlock->m_pPtrToEndOfCommittedRegion)
+        return (size_t)(pLoaderHeapBlock->m_pPtrToEndOfCommittedRegion - pAllocPtr);
     else
         return 0;
 }
@@ -1152,8 +1139,8 @@ size_t UnlockedLoaderHeap::GetBytesAvailReservedRegion()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_pAllocPtr < m_pEndReservedRegion)
-        return (size_t)(m_pEndReservedRegion- m_pAllocPtr);
+    if (UnlockedGetAllocPtr(m_pFirstBlock) < m_pEndReservedRegion)
+        return (size_t)(m_pEndReservedRegion - m_pFirstBlock->m_pAllocPtr);
     else
         return 0;
 }
@@ -1229,7 +1216,7 @@ BOOL ExplicitControlLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPa
     return TRUE;
 }
 
-BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
+PTR_BYTE UnlockedLoaderHeap::UnlockedReservePages(const size_t dwSizeToAlloc, const size_t alignment, size_t *pExtra)
 {
     CONTRACTL
     {
@@ -1240,9 +1227,16 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     CONTRACTL_END;
 
     size_t dwSizeToReserve;
+    const size_t dwSize = GetMinSizeGivenAlignment(NULL, dwSizeToAlloc, alignment, pExtra);
+    _ASSERTE(*pExtra == 0 || *pExtra == alignment); // Assert that the OsPage size is always big enough that we don't need alignment
 
     // Round to page size again
-    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+    size_t dwSizeToCommit = max(m_dwCommitBlockSize, dwSize);
+    
+    if (IsInterleaved())
+        dwSizeToCommit = GetStubCodePageSize() * 2;
+    else
+        dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
 
     ReservedMemoryHolder pData = NULL;
     BOOL fReleaseMemory = TRUE;
@@ -1280,7 +1274,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         if (pData == NULL)
         {
             _ASSERTE(!"Unable to reserve memory range for a loaderheap");
-            return FALSE;
+            while(true) printf("OOM UnlockedReservePages ReserveFail");
+
+            return NULL;
         }
     }
 
@@ -1305,13 +1301,15 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     if (!CommitPages(pData, dwSizeToCommitPart))
     {
-        return FALSE;
+            while(true) printf("OOM UnlockedReservePages CommitPages");
+        return NULL;
     }
 
     NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
     if (pNewBlock == NULL)
     {
-        return FALSE;
+            while(true) printf("OOM UnlockedReservePages new LoaderHeapBlock");
+        return NULL;
     }
 
     // Record reserved range in range list, if one is specified
@@ -1322,7 +1320,8 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
                                     ((const BYTE *) pData) + dwSizeToReserve,
                                     (void *) this))
         {
-            return FALSE;
+            while(true) printf("OOM UnlockedReservePages AddRange");
+            return NULL;
         }
     }
 
@@ -1335,20 +1334,15 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     pNewBlock->pVirtualAddress  = pData;
     pNewBlock->pNext            = m_pFirstBlock;
     pNewBlock->m_fReleaseMemory = fReleaseMemory;
+    pNewBlock->m_pAllocPtr      = (BYTE *) (pData) + dwSize;
+    pNewBlock->m_pPtrToEndOfCommittedRegion = (BYTE *) (pData) + (dwSizeToCommitPart);
 
     // Add to the linked list
-    m_pFirstBlock = pNewBlock;
+    VolatileStore(&m_pFirstBlock, pNewBlock.GetValue());
 
-    if (IsInterleaved())
-    {
-        dwSizeToCommit /= 2;
-    }
-
-    m_pPtrToEndOfCommittedRegion = (BYTE *) (pData) + (dwSizeToCommit);         \
-    m_pAllocPtr                  = (BYTE *) (pData);                            \
     m_pEndReservedRegion         = (BYTE *) (pData) + (dwSizeToReserve);
 
-    return TRUE;
+    return pData + *pExtra;
 }
 
 BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
@@ -1437,7 +1431,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
 // Returns: FALSE if we can't get any more memory
 // TRUE: We can/did get some more memory - check to see if it's sufficient for
 //       the caller's needs (see UnlockedAllocMem for example of use)
-BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
+PTR_BYTE UnlockedLoaderHeap::GetMoreCommittedPages(const size_t dwSizeToAlloc, const size_t alignment, size_t *pExtra)
 {
     CONTRACTL
     {
@@ -1447,20 +1441,32 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
     CONTRACTL_END;
 
-    // If we have memory we can use, what are you doing here!
-    _ASSERTE(dwMinSize > (SIZE_T)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr));
+    *pExtra = 0;
+
+    size_t dwSizeCalc = dwSizeToAlloc;
+
 
     if (IsInterleaved())
     {
+        _ASSERTE(alignment == 1);
         // This mode interleaves data and code pages 1:1. So the code size is required to be smaller than
         // or equal to the page size to ensure that the code range is consecutive.
-        _ASSERTE(dwMinSize <= GetStubCodePageSize());
+        _ASSERTE(dwSizeCalc <= GetStubCodePageSize());
         // For interleaved heap, we always get two memory pages - one for code and one for data
-        dwMinSize = 2 * GetStubCodePageSize();
+        dwSizeCalc = 2 * GetStubCodePageSize();
     }
 
+    const size_t dwMinSize = dwSizeCalc;
+
+    // If we have memory we can use, what are you doing here!
+
     // Does this fit in the reserved region?
-    if (dwMinSize <= (size_t)(m_pEndReservedRegion - m_pAllocPtr))
+retry_alloc_in_reservedregion:
+    PTR_BYTE pAllocPtr = UnlockedGetAllocPtr(m_pFirstBlock);
+    size_t extra;
+    size_t dwMinSizeGivenAlignment = GetMinSizeGivenAlignment(pAllocPtr, dwMinSize, alignment, &extra);
+    _ASSERTE(dwMinSizeGivenAlignment > this->GetBytesAvailCommittedRegion(m_pFirstBlock, UnlockedGetAllocPtr(m_pFirstBlock)));
+    if (pAllocPtr != NULL && dwMinSizeGivenAlignment <= (size_t)(m_pEndReservedRegion - pAllocPtr))
     {
         SIZE_T dwSizeToCommit;
 
@@ -1472,22 +1478,38 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         }
         else
         {
-            dwSizeToCommit = (m_pAllocPtr + dwMinSize) - m_pPtrToEndOfCommittedRegion;
+            dwSizeToCommit = (pAllocPtr + dwMinSizeGivenAlignment) - m_pFirstBlock->m_pPtrToEndOfCommittedRegion;
+            if (InterlockedCompareExchange((size_t*)&m_pFirstBlock->m_pAllocPtr, (size_t)(pAllocPtr + dwMinSizeGivenAlignment), (size_t)pAllocPtr) != (size_t)pAllocPtr)
+            {
+                // If this happens, it is because there was a lock-free allocation which took the expected address. Retry
+                // to see if we can still allocate across the committed/reserved boundary
+                goto retry_alloc_in_reservedregion;
+            }
+            pAllocPtr = pAllocPtr + extra;
+            *pExtra = extra;
         }
 
-        size_t unusedRemainder = (size_t)((BYTE*)m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
+        size_t unusedRemainder = 0;
+        PTR_BYTE pUnusedInBlock = NULL;
+        if (IsInterleaved())
+        {
+            m_pFirstBlock->AllocRemainingCommittedMemory(&pUnusedInBlock, &unusedRemainder);
+        }
 
-        PTR_BYTE pCommitBaseAddress = m_pPtrToEndOfCommittedRegion;
+        PTR_BYTE pCommitBaseAddress = m_pFirstBlock->m_pPtrToEndOfCommittedRegion;
         if (IsInterleaved())
         {
             // The end of committed region for interleaved heaps points to the end of the executable
             // page and the data pages goes right after that. So we skip the data page here.
             pCommitBaseAddress += GetStubCodePageSize();
+            // Adjust m_pAllocPtr to point to a location so that the lock-free allocator will never allocate
+            // memory in the window between CommitPages and when we compute the real allocation size
+            VolatileStore(&m_pFirstBlock->m_pAllocPtr, pCommitBaseAddress + dwMinSize);
         }
         else
         {
             if (dwSizeToCommit < m_dwCommitBlockSize)
-                dwSizeToCommit = min((SIZE_T)(m_pEndReservedRegion - m_pPtrToEndOfCommittedRegion), (SIZE_T)m_dwCommitBlockSize);
+                dwSizeToCommit = min((SIZE_T)(m_pEndReservedRegion - m_pFirstBlock->m_pPtrToEndOfCommittedRegion), (SIZE_T)m_dwCommitBlockSize);
 
             // Round to page size
             dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
@@ -1502,7 +1524,18 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         if (!CommitPages(pCommitBaseAddress, dwSizeToCommitPart))
         {
-            return FALSE;
+            if (IsInterleaved())
+            {
+                // We already bumped the m_pAllocPtr above, but the commit failed. Rollback that bump
+                InterlockedExchange((size_t*)&m_pFirstBlock->m_pAllocPtr, (size_t)pUnusedInBlock);
+            }
+            else
+            {
+                // We already bumped the m_pAllocPtr above, but the commit failed. Rollback that bump
+                InterlockedExchange((size_t*)&m_pFirstBlock->m_pAllocPtr, (size_t)pAllocPtr - extra);
+            }
+            while(true) printf("OOM CommitPagesFail");
+            return NULL;
         }
 
         if (IsInterleaved())
@@ -1510,9 +1543,9 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
             // block list.
             // Otherwise the remaining bytes that are available will be wasted.
-            if (unusedRemainder >= GetStubCodePageSize())
+            if (unusedRemainder >= m_dwGranularity)
             {
-                LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
+                LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, pUnusedInBlock, unusedRemainder, this);
             }
             else
             {
@@ -1521,33 +1554,41 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
             // For interleaved heaps, further allocations will start from the newly committed page as they cannot
             // cross page boundary.
-            m_pAllocPtr = (BYTE*)pCommitBaseAddress;
+            pAllocPtr = (BYTE*)pCommitBaseAddress;
+            VolatileStore(&m_pFirstBlock->m_pAllocPtr, pAllocPtr + dwMinSize);
         }
 
-        m_pPtrToEndOfCommittedRegion += dwSizeToCommit;
+        m_pFirstBlock->m_pPtrToEndOfCommittedRegion += dwSizeToCommit;
+
         m_dwTotalAlloc += dwSizeToCommit;
 
-        return TRUE;
+        return pAllocPtr;
     }
 
     // Need to allocate a new set of reserved pages that will be located likely at a nonconsecutive virtual address.
     // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
     // block list.
     // Otherwise the remaining bytes that are available will be wasted.
-    size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
+    size_t unusedRemainder = 0;
+    PTR_BYTE pUnusedInBlock = NULL;
+    m_pFirstBlock->AllocRemainingCommittedMemory(&pUnusedInBlock, &unusedRemainder);
+
     if (unusedRemainder >= AllocMem_TotalSize(GetStubCodePageSize()))
     {
-        LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
+        LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, pUnusedInBlock, unusedRemainder, this);
     }
     else
     {
-        INDEBUG(m_dwDebugWastedBytes += (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);)
+        INDEBUG(m_dwDebugWastedBytes += unusedRemainder;)
     }
 
     // Note, there are unused reserved pages at end of current region -can't do much about that
     // Provide dwMinSize here since UnlockedReservePages will round up the commit size again
     // after adding in the size of the LoaderHeapBlock header.
-    return UnlockedReservePages(dwMinSize);
+    pAllocPtr = UnlockedReservePages(dwSizeToAlloc, alignment, pExtra);
+    if (pAllocPtr == NULL)
+        while(true) printf("OOM UnlockedReservePages");
+    return pAllocPtr;
 }
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
@@ -1660,7 +1701,7 @@ static DWORD ShouldInjectFault()
 
 #endif
 
-void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
+void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(const size_t dwRequestedSize
                                                    COMMA_INDEBUG(_In_ const char *szFile)
                                                    COMMA_INDEBUG(int lineNum))
 {
@@ -1670,37 +1711,43 @@ void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
         NOTHROW;
         GC_NOTRIGGER;
         INJECT_FAULT(CONTRACT_RETURN NULL;);
-        PRECONDITION(dwSize != 0);
+        PRECONDITION(dwRequestedSize != 0);
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
 
     SHOULD_INJECT_FAULT(RETURN NULL);
 
-    INDEBUG(size_t dwRequestedSize = dwSize;)
-
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
-#ifdef RANDOMIZE_ALLOC
-    if (!IsInterleaved())
-        dwSize += s_random.Next() % 256;
-#endif
-
-    dwSize = AllocMem_TotalSize(dwSize);
-
-again:
+    const size_t dwSize = AllocMem_TotalSize(dwRequestedSize);
 
     {
         // Any memory available on the free list?
         void *pData = LoaderHeapFreeBlock::AllocFromFreeList(&m_pFirstFreeBlock, dwSize, this);
         if (!pData)
         {
+            PTR_BYTE pAllocPtr;
+            PTR_LoaderHeapBlock pLoaderHeapBlock = m_pFirstBlock;
             // Enough bytes available in committed region?
-            if (dwSize <= GetBytesAvailCommittedRegion())
+            while (pAllocPtr = UnlockedGetAllocPtr(pLoaderHeapBlock),
+                   dwSize <= GetBytesAvailCommittedRegion(pLoaderHeapBlock, pAllocPtr))
             {
-                pData = m_pAllocPtr;
-                m_pAllocPtr += dwSize;
+                if (InterlockedCompareExchange((size_t*)&pLoaderHeapBlock->m_pAllocPtr, (size_t)(pAllocPtr + dwSize), (size_t)pAllocPtr) == (size_t)pAllocPtr)
+                {
+                    pData = pAllocPtr;
+                    break;
+                }
             }
+        }
+
+        if (!pData)
+        {
+            // Need to commit some more pages in reserved region.
+            // If we run out of pages in the reserved region, ClrVirtualAlloc some more pages
+            size_t extraUnused;
+            pData = GetMoreCommittedPages(dwRequestedSize, 0, &extraUnused);
+            _ASSERTE(extraUnused == 0);
         }
 
         if (pData)
@@ -1749,19 +1796,70 @@ again:
 
 #endif
 
-            EtwAllocRequest(this, pData, dwSize);
+            EtwAllocRequest(this, pData, dwRequestedSize);
             RETURN pData;
         }
     }
 
-    // Need to commit some more pages in reserved region.
-    // If we run out of pages in the reserved region, ClrVirtualAlloc some more pages
-    if (GetMoreCommittedPages(dwSize))
-        goto again;
-
     // We could not satisfy this allocation request
     RETURN NULL;
 }
+
+#ifndef _DEBUG
+void *UnlockedLoaderHeap::UnlockedAllocMem_LockFree_NoThrow(size_t dwSize)
+{
+    return NULL;
+    /*
+    CONTRACT(void*)
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        INJECT_FAULT(CONTRACT_RETURN NULL;);
+        PRECONDITION(dwSize != 0);
+        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+    }
+    CONTRACT_END;
+
+    SHOULD_INJECT_FAULT(RETURN NULL);
+
+    INDEBUG(size_t dwRequestedSize = dwSize;)
+
+    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
+
+    dwSize = AllocMem_TotalSize(dwSize);
+
+    if (m_cbMemoryInFreeList > 65536)
+    {
+        // If there is significant memory in the free list, take the lock and attempt to use it.
+        RETURN NULL;
+    }
+
+    void *pData = NULL;
+    PTR_BYTE pAllocPtr;
+    PTR_LoaderHeapBlock pLoaderHeapBlock;
+
+    // Enough bytes available in committed region?
+    while (pLoaderHeapBlock = GetActiveLoaderHeapBlock(),
+           pAllocPtr = UnlockedGetAllocPtr(pLoaderHeapBlock),
+           dwSize <= GetBytesAvailCommittedRegion(pLoaderHeapBlock, pAllocPtr))
+    {
+        if (InterlockedCompareExchange((size_t*)&pLoaderHeapBlock->m_pAllocPtr, (size_t)(pAllocPtr + dwSize), (size_t)pAllocPtr) == (size_t)pAllocPtr)
+        {
+            pData = pAllocPtr;
+            break;
+        }
+    }
+
+    if (pData == NULL)
+    {
+        RETURN NULL;
+    }
+
+    EtwAllocRequest(this, pData, dwSize);
+    RETURN pData;*/
+}
+#endif // _DEBUG
 
 void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                                             size_t dwRequestedSize
@@ -1892,7 +1990,9 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     }
 #endif
 
-    if (m_pAllocPtr == ( ((BYTE*)pMem) + dwSize ))
+    PTR_BYTE pAllocPtr = UnlockedGetAllocPtr(m_pFirstBlock);
+    bool successfullyRevertedWithoutUsingFreelist = false;
+    if (pAllocPtr == ( ((BYTE*)pMem) + dwSize ))
     {
         if (IsInterleaved())
         {
@@ -1913,9 +2013,13 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
             // of going to the freelist.
             memset(pMemRW, 0x00, dwSize); // Fill freed region with 0
         }
-        m_pAllocPtr = (BYTE*)pMem;
+        if (InterlockedCompareExchange((size_t*)&m_pFirstBlock->m_pAllocPtr, (size_t)pMem, (size_t)pAllocPtr) == (size_t)pAllocPtr)
+        {
+            successfullyRevertedWithoutUsingFreelist = true;
+        }
     }
-    else
+
+    if (!successfullyRevertedWithoutUsingFreelist)
     {
         LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, pMem, dwSize, this);
     }
@@ -1942,6 +2046,36 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 // behind the scenes.
 //
 //
+
+size_t UnlockedLoaderHeap::GetMinSizeGivenAlignment(PTR_BYTE result, size_t dwRequestedSize, size_t alignment, size_t *pdwExtra)
+{
+    if (alignment == 0)
+    {
+        *pdwExtra = 0;
+        return AllocMem_TotalSize(dwRequestedSize);
+    }
+
+    *pdwExtra = alignment - ((size_t)result & ((size_t)alignment - 1));
+    if ((IsInterleaved()))
+    {
+        _ASSERTE((alignment == 1) || (alignment == 0));
+        *pdwExtra = 0;
+    }
+// On DEBUG, we force a non-zero extra so people don't forget to adjust for it on backout
+#ifndef _DEBUG
+    if (*pdwExtra == alignment)
+    {
+        *pdwExtra = 0;
+    }
+#endif
+    S_SIZE_T cbAllocSize = S_SIZE_T( dwRequestedSize ) + S_SIZE_T( *pdwExtra );
+    if( cbAllocSize.IsOverflow() )
+    {
+        return 0;
+    }
+    return AllocMem_TotalSize( cbAllocSize.Value());
+}
+
 void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSize,
                                                           size_t  alignment,
                                                           size_t *pdwExtra
@@ -1968,72 +2102,67 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     STATIC_CONTRACT_FAULT;
 
     // Set default value
-            if (pdwExtra)
-            {
-                *pdwExtra = 0;
-            }
+    if (pdwExtra)
+    {
+        *pdwExtra = 0;
+    }
 
     SHOULD_INJECT_FAULT(RETURN NULL);
 
-    void *pResult;
+    void *pResult = NULL;
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     // Check for overflow if we align the allocation
     if (dwRequestedSize + alignment < dwRequestedSize)
     {
+        while (true) printf("overflow check OOM");
         RETURN NULL;
     }
 
-    // We don't know how much "extra" we need to satisfy the alignment until we know
-    // which address will be handed out which in turn we don't know because we don't
-    // know whether the allocation will fit within the current reserved range.
-    //
-    // Thus, we'll request as much heap growth as is needed for the worst case (extra == alignment)
-    size_t dwRoomSize = AllocMem_TotalSize(dwRequestedSize + alignment);
-    if (dwRoomSize > GetBytesAvailCommittedRegion())
+    // Any memory available on the free list?
+    PTR_BYTE pAllocPtr;
+    PTR_LoaderHeapBlock pLoaderHeapBlock = GetActiveLoaderHeapBlock();
+    size_t extra = 0;
+    size_t dwSize;
+
+    // Enough bytes available in committed region?
+    while (pAllocPtr = UnlockedGetAllocPtr(pLoaderHeapBlock),
+           dwSize = GetMinSizeGivenAlignment(pAllocPtr, dwRequestedSize, alignment, &extra),
+           dwSize <= GetBytesAvailCommittedRegion(pLoaderHeapBlock, pAllocPtr))
     {
-        if (!GetMoreCommittedPages(dwRoomSize))
+        if (InterlockedCompareExchange((size_t*)&m_pFirstBlock->m_pAllocPtr, (size_t)(pAllocPtr + dwSize), (size_t)pAllocPtr) == (size_t)pAllocPtr)
         {
+            pResult = pAllocPtr + extra;
+            break;
+        }
+    }
+
+    if (!pResult)
+    {
+        // Need to commit some more pages in reserved region.
+        // If we run out of pages in the reserved region, ClrVirtualAlloc some more pages
+        pResult = GetMoreCommittedPages(dwRequestedSize, alignment, &extra);
+        if (pResult == NULL)
+        {
+            while (true) printf("OOMAfterGetMoreCommittedPages");
+
             RETURN NULL;
         }
     }
 
-    pResult = m_pAllocPtr;
-
-    size_t extra = alignment - ((size_t)pResult & ((size_t)alignment - 1));
-    if ((IsInterleaved()))
-    {
-        _ASSERTE(alignment == 1);
-        extra = 0;
-    }
-
-// On DEBUG, we force a non-zero extra so people don't forget to adjust for it on backout
-#ifndef _DEBUG
-    if (extra == alignment)
-    {
-        extra = 0;
-    }
-#endif
-
-    S_SIZE_T cbAllocSize = S_SIZE_T( dwRequestedSize ) + S_SIZE_T( extra );
-    if( cbAllocSize.IsOverflow() )
-    {
-        RETURN NULL;
-    }
-
-    size_t dwSize = AllocMem_TotalSize( cbAllocSize.Value());
-    m_pAllocPtr += dwSize;
-
-
-    ((BYTE*&)pResult) += extra;
 
 #ifdef _DEBUG
+    size_t extraUnused = 0;
+    dwSize = GetMinSizeGivenAlignment((PTR_BYTE)pResult - extra, dwRequestedSize, alignment, &extraUnused);
+
+    _ASSERTE(extraUnused == extra);
+
     BYTE *pAllocatedBytes = (BYTE *)pResult;
     ExecutableWriterHolderNoLog<void> resultWriterHolder;
     if (IsExecutable())
     {
-        resultWriterHolder.AssignExecutableWriterHolder(pResult, dwSize - extra);
+        resultWriterHolder.AssignExecutableWriterHolder(pResult, dwSize);
         pAllocatedBytes = (BYTE *)resultWriterHolder.GetRW();
     }
 

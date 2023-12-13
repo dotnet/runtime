@@ -673,14 +673,14 @@ private:
 // set) and being able to specify specific versions.
 //
 
-#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * GetOsPageSize())
-#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * GetOsPageSize())
+#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        max((16 * 1024), GetOsPageSize())
+#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         max((1 * GetOsPageSize()), 1024*16)
 
-#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (10 * GetOsPageSize())
-#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * GetOsPageSize())
+#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       max((32 * 1024), GetOsPageSize())
+#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        max((1 * GetOsPageSize()), 1024*32)
 
-#define STUB_HEAP_RESERVE_SIZE                 (3 * GetOsPageSize())
-#define STUB_HEAP_COMMIT_SIZE                  (1 * GetOsPageSize())
+#define STUB_HEAP_RESERVE_SIZE                 max((16 * 1024), GetOsPageSize())
+#define STUB_HEAP_COMMIT_SIZE                  max((1 * GetOsPageSize()), 1024*16)
 
 // --------------------------------------------------------------------------------
 // PE File List lock - for creating list locks on PE files
