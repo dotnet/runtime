@@ -4334,7 +4334,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
     FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfsTree);
 
-    jitstd::list<BasicBlock*> worklist(comp->getAllocator(CMK_Loops));
+    ArrayStack<BasicBlock*> worklist(comp->getAllocator(CMK_Loops));
 
     for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
@@ -4371,7 +4371,6 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         // this is a natural loop and to find all the blocks in the loop.
         //
 
-        worklist.clear();
         loop->m_blocksSize = loop->m_header->bbNewPostorderNum + 1;
 
         BitVecTraits loopTraits = loop->LoopBlockTraits();
@@ -4506,7 +4505,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 //   True if the loop is natural; marks the loop blocks into 'loop' as part of
 //   the search.
 //
-bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, jitstd::list<BasicBlock*>& worklist)
+bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist)
 {
     const FlowGraphDfsTree* dfsTree    = loop->m_dfsTree;
     Compiler*               comp       = dfsTree->GetCompiler();
@@ -4515,7 +4514,7 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
 
     // Seed the worklist
     //
-    worklist.clear();
+    worklist.Reset();
     for (FlowEdge* backEdge : loop->m_backEdges)
     {
         BasicBlock* const backEdgeSource = backEdge->getSourceBlock();
@@ -4525,17 +4524,16 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
         }
 
         assert(!BitVecOps::IsMember(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(backEdgeSource)));
-        worklist.push_back(backEdgeSource);
+        worklist.Push(backEdgeSource);
         BitVecOps::AddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(backEdgeSource));
     }
 
     // Work back through flow to loop head or to another pred
     // that is clearly outside the loop.
     //
-    while (!worklist.empty())
+    while (!worklist.Empty())
     {
-        BasicBlock* const loopBlock = worklist.back();
-        worklist.pop_back();
+        BasicBlock* const loopBlock = worklist.Pop();
 
         for (FlowEdge* predEdge = comp->BlockPredsWithEH(loopBlock); predEdge != nullptr;
              predEdge           = predEdge->getNextPredEdge())
@@ -4557,7 +4555,7 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
 
             if (BitVecOps::TryAddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(predBlock)))
             {
-                worklist.push_back(predBlock);
+                worklist.Push(predBlock);
             }
         }
     }
