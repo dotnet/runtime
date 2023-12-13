@@ -4840,6 +4840,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // The loop table is no longer valid.
         optLoopTableValid = false;
         optLoopTable      = nullptr;
+        optLoopCount      = 0;
+
         // Old dominators and reachability sets are no longer valid.
         fgDomsComputed         = false;
         fgCompactRenumberQuirk = true;
@@ -5913,6 +5915,7 @@ void Compiler::RecomputeFlowGraphAnnotations()
     // anymore.
     optLoopTableValid = false;
     optLoopTable      = nullptr;
+    optLoopCount      = 0;
     fgDomsComputed    = false;
 }
 
