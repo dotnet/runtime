@@ -509,6 +509,8 @@ namespace System.Text.Json
                     left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
                     left._ignoreReadonlyFields == right._ignoreReadonlyFields &&
                     left._includeFields == right._includeFields &&
+                    left._indentCharacter == right._indentCharacter &&
+                    left._indentSize == right._indentSize &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
                     left._typeInfoResolver == right._typeInfoResolver &&
@@ -563,6 +565,8 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._ignoreReadOnlyProperties);
                 AddHashCode(ref hc, options._ignoreReadonlyFields);
                 AddHashCode(ref hc, options._includeFields);
+                AddHashCode(ref hc, options._indentCharacter);
+                AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._propertyNameCaseInsensitive);
                 AddHashCode(ref hc, options._writeIndented);
                 AddHashCode(ref hc, options._typeInfoResolver);

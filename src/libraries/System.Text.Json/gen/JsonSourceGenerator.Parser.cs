@@ -335,6 +335,14 @@ namespace System.Text.Json.SourceGeneration
                             includeFields = (bool)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.IndentCharacter):
+                            indentCharacter = (char)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.IndentSize):
+                            indentSize = (int)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.MaxDepth):
                             maxDepth = (int)namedArg.Value.Value!;
                             break;
