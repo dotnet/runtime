@@ -19,6 +19,7 @@ typedef enum
     None = 0,
     IgnoreCase = 1,
     IgnoreNonSpace = 2,
+    IgnoreKanaType = 8,
     IgnoreWidth = 16,
     StringSort = 536870912,
 } CompareOptions;
@@ -45,12 +46,12 @@ static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLengt
     return currentLocale;
 }
 
-static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
+static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions, bool isLiteralSearchSupported)
 {
-    int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort;
+    int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort | IgnoreKanaType;
     // To achieve an equivalent search behavior to the default in ICU,
     // NSLiteralSearch is employed as the default search option.
-    NSStringCompareOptions options = NSLiteralSearch;
+    NSStringCompareOptions options = isLiteralSearchSupported ? NSLiteralSearch : 0;
 
     if ((comparisonOptions | supportedOptions) != supportedOptions)
         return 0;
@@ -67,33 +68,21 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
     return options;
 }
 
-/*
-Function:
-CompareString
-*/
-int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpSource, int32_t cwSourceLength, 
-                                                const uint16_t* lpTarget, int32_t cwTargetLength, int32_t comparisonOptions)
-{    
-    @autoreleasepool
-    {
-        NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
-        NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-        NSString *sourceStrPrecomposed = sourceString.precomposedStringWithCanonicalMapping;
-        NSString *targetString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
-        NSString *targetStrPrecomposed = targetString.precomposedStringWithCanonicalMapping;
+NSString *convertToKatakana(NSString *input) {
+    NSMutableString *mutableString = [input mutableCopy];
+    
+    CFStringTransform((__bridge CFMutableStringRef)mutableString, NULL, kCFStringTransformHiraganaKatakana, false);
+    
+    return mutableString;
+}
 
-        NSRange comparisonRange = NSMakeRange(0, sourceStrPrecomposed.length);
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
-        
-        // in case mapping is not found
-        if (options == 0)
-            return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
-
-        return [sourceStrPrecomposed compare:targetStrPrecomposed
-                                options:options
-                                range:comparisonRange
-                                locale:currentLocale];
-    }
+NSString *stripDiactrics(NSString *input) {
+    NSMutableString *mutableString = [input mutableCopy];
+    
+    CFStringTransform((__bridge CFMutableStringRef)mutableString, NULL, kCFStringTransformStripDiacritics, false);
+    CFStringTransform((__bridge CFMutableStringRef)mutableString, NULL, kCFStringTransformStripCombiningMarks, false);
+    
+    return mutableString;
 }
 
 static NSString* RemoveWeightlessCharacters(NSString* source)
@@ -107,6 +96,57 @@ static NSString* RemoveWeightlessCharacters(NSString* source)
     NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
 
     return modifiedString;
+}
+
+/*
+Function:
+CompareString
+*/
+int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpSource, int32_t cwSourceLength, 
+                                                const uint16_t* lpTarget, int32_t cwTargetLength, int32_t comparisonOptions)
+{
+    @autoreleasepool
+    {
+        NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
+        NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
+        NSString *targetString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
+        NSString *sourceStrPrecomposed = sourceString.precomposedStringWithCanonicalMapping;
+        NSString *targetStrPrecomposed = targetString.precomposedStringWithCanonicalMapping;
+        // in case of CompareOptions.IgnoreKanaType convert both strings to Katakana
+        if (comparisonOptions & IgnoreKanaType)
+        {
+            sourceStrPrecomposed = convertToKatakana(sourceStrPrecomposed);
+            targetStrPrecomposed = convertToKatakana(targetStrPrecomposed);
+        }
+        if (comparisonOptions & IgnoreNonSpace)
+        {
+            sourceStrPrecomposed = stripDiactrics(sourceStrPrecomposed);
+            targetStrPrecomposed = stripDiactrics(targetStrPrecomposed);
+        }
+
+        if (comparisonOptions != 0 && comparisonOptions != StringSort)
+        {
+            NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, false);
+            // IgnoreKanaType is not supported by NSStringCompareOptions, we already have converted strings to Katakana above 
+            if (options == 0 && comparisonOptions != IgnoreKanaType)
+                return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
+            sourceStrPrecomposed = [sourceStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
+            targetStrPrecomposed = [targetStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
+            return [sourceStrPrecomposed compare:targetStrPrecomposed options:NSLiteralSearch range:NSMakeRange(0, sourceStrPrecomposed.length) locale:currentLocale];
+        }
+        else
+        {
+            NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
+            // in case mapping is not found
+            if (options == 0)
+                return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
+            NSRange comparisonRange = NSMakeRange(0, sourceStrPrecomposed.length);
+            return [sourceStrPrecomposed compare:targetStrPrecomposed
+                                         options:options
+                                         range:comparisonRange
+                                         locale:currentLocale];
+        }
+    }
 }
 
 static int32_t IsIndexFound(int32_t fromBeginning, int32_t foundLocation, int32_t newLocation)
@@ -131,7 +171,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     {
         assert(cwTargetLength >= 0);
         Range result = {ERROR_INDEX_NOT_FOUND, 0};
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
         
         // in case mapping is not found
         if (options == 0)
@@ -243,7 +283,7 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
 {
     @autoreleasepool
     {
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
         
         // in case mapping is not found
         if (options == 0)
@@ -273,7 +313,7 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
 {
     @autoreleasepool
     {
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
         
         // in case mapping is not found
         if (options == 0)
@@ -306,6 +346,11 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
             return 1;
         }
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
+        // in case of CompareOptions.IgnoreKanaType convert to Katakana
+        if (options & IgnoreKanaType)
+        {
+            sourceString = convertToKatakana(sourceString);
+        }
         NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString).precomposedStringWithCanonicalMapping;
         // If the string is empty after removing weightless characters, return 1
         if(sourceStringCleaned.length == 0)
@@ -316,7 +361,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         }
 
         NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
-        NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options);
+        NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options, false);
 
         // Generate a sort key for the original string based on the locale
         NSString *transformedString = [sourceStringCleaned stringByFoldingWithOptions:comparisonOptions locale:locale];
