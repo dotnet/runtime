@@ -60,7 +60,9 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
-void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned offset, instrDesc* id);
+void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id);
+
+void emitDispInsInstrNum(const instrDesc* id) const;
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 

@@ -2096,12 +2096,13 @@ AGAIN:
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    BYTE*       dstRW  = *dp + writeableOffset;
-    BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
-    BYTE* const odstRW = dstRW;
-    code_t      code   = 0;
-    instruction ins;
-    size_t      sz; // = emitSizeOfInsDsc(id);
+    BYTE*             dstRW  = *dp + writeableOffset;
+    BYTE*             dstRW2 = dstRW + 4; // addr for updating gc info if needed.
+    const BYTE* const odstRW = dstRW;
+    const BYTE* const odst   = *dp;
+    code_t            code   = 0;
+    instruction       ins;
+    size_t            sz; // = emitSizeOfInsDsc(id);
 
     assert(REG_NA == (int)REG_NA);
 
@@ -2835,7 +2836,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #else  // !DUMP_GC_TABLES
         bool dspOffs = !emitComp->opts.disDiffable;
 #endif // !DUMP_GC_TABLES
-        emitDispIns(id, false, dspOffs, true, 0, *dp, (dstRW - odstRW), ig);
+        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
     }
 
     if (emitComp->compDebugBreak)
@@ -2850,7 +2851,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #else  // !DEBUG
     if (emitComp->opts.disAsm)
     {
-        emitDispIns(id, false, false, true, 0, *dp, (dstRW - odstRW), ig);
+        emitDispIns(id, false, false, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
     }
 #endif // !DEBUG
 
@@ -2883,13 +2884,15 @@ static const char* const RegNames[] =
 // Arguments:
 //    code - The instruction's encoding.
 //    addr - The address of the code.
+//    doffs - Flag informing whether the instruction's offset should be displayed.
+//    insOffset - The instruction's offset.
 //    id   - The instrDesc of the code if needed.
 //
 // Note:
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned offset, instrDesc* id)
+void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id)
 {
     const BYTE* insAdr = addr - writeableOffset;
 
@@ -2897,7 +2900,7 @@ void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigne
     assert((opcode & 0x3) == 0x3);
 
     emitDispInsAddr(insAdr);
-    emitDispInsOffs(offset, doffs);
+    emitDispInsOffs(insOffset, doffs);
 
     printf("      ");
 
@@ -3813,15 +3816,27 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+void emitter::emitDispInsInstrNum(const instrDesc* id) const
+{
+#ifdef DEBUG
+    if (!emitComp->verbose)
+        return;
+
+    printf("IN%04x: ", id->idDebugOnlyInfo()->idNum);
+#endif // DEBUG
+}
+
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
     if (pCode == nullptr)
         return;
 
-    const BYTE* instr = pCode + writeableOffset + offset;
+    emitDispInsInstrNum(id);
+
+    const BYTE* instr = pCode + writeableOffset;
     size_t      instrSize;
-    for (size_t i = 0; i < sz; instr += instrSize, i += instrSize)
+    for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
     {
         // TODO-RISCV64: support different size instructions
         instrSize = sizeof(code_t);
