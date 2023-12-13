@@ -74,6 +74,7 @@
     <Compile Include="System\Linq\First.cs" />
     <Compile Include="System\Linq\Grouping.cs" />
     <Compile Include="System\Linq\GroupJoin.cs" />
+    <Compile Include="System\Linq\Index.cs" />
     <Compile Include="System\Linq\Intersect.cs" />
     <Compile Include="System\Linq\Iterator.cs" />
     <Compile Include="System\Linq\IIListProvider.cs" />
