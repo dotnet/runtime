@@ -8424,10 +8424,10 @@ get_short_brop (int opcode)
 }
 
 static int
-get_local_offset (TransformData *td, int local)
+get_var_offset (TransformData *td, int var)
 {
-	if (td->vars [local].offset != -1)
-		return td->vars [local].offset;
+	if (td->vars [var].offset != -1)
+		return td->vars [var].offset;
 
 	// FIXME Some vars might end up with unitialized offset because they are not declared at all in the code.
 	// This can happen if the bblock declaring the var gets removed, while other unreachable bblocks, that access
@@ -8439,10 +8439,10 @@ get_local_offset (TransformData *td, int local)
 	// If we use the optimized offset allocator, all locals should have had their offsets already allocated
 	g_assert (!td->optimized);
 	// The only remaining locals to allocate are the ones from the execution stack
-	g_assert (td->vars [local].execution_stack);
+	g_assert (td->vars [var].execution_stack);
 
-	td->vars [local].offset = td->total_locals_size + td->vars [local].stack_offset;
-	return td->vars [local].offset;
+	td->vars [var].offset = td->total_locals_size + td->vars [var].stack_offset;
+	return td->vars [var].offset;
 }
 
 static guint16*
@@ -8469,7 +8469,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 	*ip++ = opcode;
 	if (opcode == MINT_SWITCH) {
 		int labels = READ32 (&ins->data [0]);
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [0]));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->sregs [0]));
 		// Write number of switch labels
 		*ip++ = ins->data [0];
 		*ip++ = ins->data [1];
@@ -8497,7 +8497,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		const int br_offset = GPTRDIFF_TO_INT (start_ip - td->new_code);
 		gboolean has_imm = opcode >= MINT_BEQ_I4_IMM_SP && opcode <= MINT_BLT_UN_I8_IMM_SP;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [i]));
+			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->sregs [i]));
 		if (has_imm)
 			*ip++ = ins->data [0];
 
@@ -8566,17 +8566,16 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		guint16 fsize = ins->data [2];
 		ip--;
 
-		if (opcode == MINT_MOV_DST_OFF && get_local_offset (td, ins->dreg) != get_local_offset (td, ins->sregs [1])) {
+		if (opcode == MINT_MOV_DST_OFF && get_var_offset (td, ins->dreg) != get_var_offset (td, ins->sregs [1])) {
 			// We are no longer storing a field into the same valuetype. Copy also the whole vt.
 			*ip++ = MINT_MOV_VT;
-			
-			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
-			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [1]));
+			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->dreg));
+			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->sregs [1]));
 			*ip++ = GINT_TO_UINT16 (td->vars [ins->dreg].size);
 		}
 
-		int dest_off = get_local_offset (td, ins->dreg);
-		int src_off = get_local_offset (td, ins->sregs [0]);
+		int dest_off = get_var_offset (td, ins->dreg);
+		int src_off = get_var_offset (td, ins->sregs [0]);
 		if (opcode == MINT_MOV_SRC_OFF)
 			src_off += foff;
 		else
@@ -8634,7 +8633,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		// actually vars. Resolve their offset
 		int num_vars = mono_interp_oplen [opcode] - 1;
 		for (int i = 0; i < num_vars; i++)
-			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->data [i]));
+			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->data [i]));
 	} else if (opcode == MINT_MOV_STACK_UNOPT) {
 		g_assert (!td->optimized);
 		// ins->data [0] represents the stack offset of the call args (within the execution stack)
@@ -8648,10 +8647,10 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		g_assert (var0 == ins->data [0]);
 		g_assert (var1 == ins->data [1]);
 
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var0));
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var1));
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var0));
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var1));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, var0));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, var1));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, var0));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, var1));
 	} else if (opcode == MINT_INTRINS_MARVIN_BLOCK_SSA1) {
 		int var0 = ins->sregs [0];
 		int var1 = ins->sregs [1];
@@ -8661,27 +8660,27 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		int dvar0 = ins->dreg;
 		int dvar1 = ins->next->dreg;
 		ip [-1] = MINT_INTRINS_MARVIN_BLOCK;
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var0));
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, var1));
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, dvar0));
-		*ip++ = GINT_TO_UINT16 (get_local_offset (td, dvar1));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, var0));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, var1));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, dvar0));
+		*ip++ = GINT_TO_UINT16 (get_var_offset (td, dvar1));
 
 		ins->next->opcode = MINT_NOP;
 		InterpInst *next = interp_next_ins (ins);
 		// We ensure that next->sregs [0] is not used again, it will no longer be set by intrinsic
 		if (next->opcode == MINT_MOV_4 && td->var_values && td->var_values [next->sregs [0]].ref_count == 1) {
 			if (next->sregs [0] == dvar0) {
-				ip [-2] = GINT_TO_UINT16 (get_local_offset (td, next->dreg));
+				ip [-2] = GINT_TO_UINT16 (get_var_offset (td, next->dreg));
 				next->opcode = MINT_NOP;
 			} else if (next->sregs [0] == dvar1) {
-				ip [-1] = GINT_TO_UINT16 (get_local_offset (td, next->dreg));
+				ip [-1] = GINT_TO_UINT16 (get_var_offset (td, next->dreg));
 				next->opcode = MINT_NOP;
 			}
 		}
 	} else {
 opcode_emit:
 		if (mono_interp_op_dregs [opcode])
-			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
+			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->dreg));
 
 		if (mono_interp_op_sregs [opcode]) {
 			for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
@@ -8689,12 +8688,12 @@ opcode_emit:
 					int offset = td->param_area_offset + ins->info.call_info->call_offset;
 					*ip++ = GINT_TO_UINT16 (offset);
 				} else {
-					*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [i]));
+					*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->sregs [i]));
 				}
 			}
 		} else if (opcode == MINT_LDLOCA_S) {
 			// This opcode receives a local but it is not viewed as a sreg since we don't load the value
-			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [0]));
+			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->sregs [0]));
 		}
 
 		int left = interp_get_ins_length (ins) - GPTRDIFF_TO_INT(ip - start_ip);
