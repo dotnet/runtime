@@ -646,8 +646,12 @@ HCIMPLEND
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
     FCALL_CONTRACT;
-
+#if defined(TARGET_AMD64)
+    double long_max_plus_1 = (double)INT64_MAX;
+    return (val != val) ? 0 : (val >= long_max_plus_1) ? INT64_MAX : (INT64)val;
+#else
     return((INT64)val);
+#endif //TARGET_AMD64
 }
 HCIMPLEND
 

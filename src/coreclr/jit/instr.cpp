@@ -2398,9 +2398,9 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si32;
                 case TYP_LONG:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si64;
                 case TYP_FLOAT:
                     return INS_cvtsd2ss;
                 case TYP_DOUBLE:

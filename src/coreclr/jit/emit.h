@@ -4042,7 +4042,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_comisd:
         case INS_cvtsd2si:
         case INS_cvtsd2ss:
-        case INS_cvttsd2si:
+        case INS_cvttsd2si32:
+        case INS_cvttsd2si64:
         case INS_divsd:
         case INS_maxsd:
         case INS_minsd:
