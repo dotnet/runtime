@@ -1,10 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq.Tests;
 using Xunit;
 
-namespace System.Linq.Queryable.Tests
+namespace System.Linq.Tests
 {
     public class IndexTests : EnumerableBasedTests
     {
