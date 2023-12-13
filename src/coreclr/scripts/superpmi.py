@@ -1582,9 +1582,9 @@ def report_replay_asserts(asserts, output_mch_file):
             sorted_instances = sorted(assertion_value, key=lambda d: d['il'])
             for instance in sorted_instances:
                 if output_mch_file:
-                    logging.info("  #%s (%s): IL size %s", instance['mc_num'], instance['mch_file'], instance['il'])
+                    logging.info("  %s # %s : IL size %s", instance['mch_file'], instance['mc_num'], instance['il'])
                 else:
-                    logging.info("  #%s: IL size %s", instance['mc_num'], instance['il'])
+                    logging.info("  # %s : IL size %s", instance['mc_num'], instance['il'])
 
 
 ################################################################################
@@ -1716,7 +1716,7 @@ class SuperPMIReplay:
                         result = False
                         files_with_replay_failures.append(mch_file)
                         asserts = parse_replay_asserts(mch_file, replay_output)
-                        report_replay_asserts(asserts, output_mch_file=False)
+                        report_replay_asserts(asserts, output_mch_file=True)
                         add_to_all_asserts(all_asserts, asserts)
 
                         if is_nonzero_length_file(fail_mcl_file):
