@@ -6767,7 +6767,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
         {
-            if (fgSsaDomTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))
+            if (m_domTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))
             {
                 // If the child loop pre-header dominates the exit, it will get added in the dominator tree
                 // loop below.
