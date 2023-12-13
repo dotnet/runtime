@@ -60,8 +60,7 @@ public class ErrorHandlingTests
 
     private unsafe static string GetErrorMessageFromSwift(SwiftError error)
     {
-        int messageLength;
-        IntPtr pointer = GetErrorMessage(error.Value, out messageLength);
+        IntPtr pointer = GetErrorMessage(error.Value, out int messageLength);
         string errorMessage = Marshal.PtrToStringUni(pointer, messageLength);
         NativeMemory.Free((void*)pointer);
         return errorMessage;
