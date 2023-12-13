@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Numerics;
 
@@ -25,34 +26,36 @@ namespace ILCompiler.ObjectWriter
             return (x * 37) >> 8;
         }
 
-        public static void WriteULEB128(IBufferWriter<byte> writer, ulong value)
+        public static int WriteULEB128(Span<byte> buffer, ulong value)
         {
             if (value >= 0x80)
             {
-                int size = (int)SizeOfULEB128(value);
-                var buffer = writer.GetSpan(size);
+                int pos = 0;
                 do
                 {
-                    buffer[0] = (byte)((value & 0x7f) | ((value >= 0x80) ? 0x80u : 0));
-                    buffer = buffer.Slice(1);
+                    buffer[pos++] = (byte)((value & 0x7f) | ((value >= 0x80) ? 0x80u : 0));
                     value >>= 7;
                 }
                 while (value > 0);
-                writer.Advance(size);
+                return pos;
             }
             else
             {
-                var buffer = writer.GetSpan(1);
                 buffer[0] = (byte)value;
-                writer.Advance(1);
+                return 1;
             }
         }
 
-        public static void WriteSLEB128(IBufferWriter<byte> writer, long value)
+        public static void WriteULEB128(IBufferWriter<byte> writer, ulong value)
         {
-            int size = (int)SizeOfSLEB128(value);
-            var buffer = writer.GetSpan(size);
+            Span<byte> buffer = writer.GetSpan((int)SizeOfULEB128(value));
+            writer.Advance(WriteULEB128(buffer, value));
+        }
+
+        public static int WriteSLEB128(Span<byte> buffer, long value)
+        {
             bool cont = true;
+            int pos = 0;
             while (cont)
             {
                 var b = (byte)((byte)value & 0x7f);
@@ -66,10 +69,15 @@ namespace ILCompiler.ObjectWriter
                 {
                     b |= 0x80;
                 }
-                buffer[0] = b;
-                buffer = buffer.Slice(1);
+                buffer[pos++] = b;
             }
-            writer.Advance(size);
+            return pos;
+        }
+
+        public static void WriteSLEB128(IBufferWriter<byte> writer, long value)
+        {
+            Span<byte> buffer = writer.GetSpan((int)SizeOfSLEB128(value));
+            writer.Advance(WriteSLEB128(buffer, value));
         }
     }
 }
