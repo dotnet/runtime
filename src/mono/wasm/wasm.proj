@@ -152,7 +152,7 @@
 
   <Target Name="GenerateEmccPropsAndRspFiles">
 
-    <!-- Generate emcc-props.json -->
+    <!-- Generate wasm-props.json -->
 
     <RunWithEmSdkEnv Command="$(EmccCmd) --version"
           ConsoleToMsBuild="true"
@@ -312,7 +312,6 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmOptConfigurationFlags>@(WasmOptConfigurationFlags, '%3B ') </_WasmOptConfigurationFlags>
       <_EmccPropsJson>
 <![CDATA[
 {
@@ -322,9 +321,7 @@
       { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
       { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
     ],
-    "WasmOptConfigurationFlags": [
-      { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
-    ],
+    "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')]
   }
@@ -333,7 +330,7 @@
       </_EmccPropsJson>
     </PropertyGroup>
 
-    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
+    <WriteLinesToFile File="$(NativeBinDir)src\wasm-props.json"
                       Lines="$(_EmccPropsJson)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
@@ -471,7 +468,7 @@
                              $(_EmccDefaultsRspPath);
                              $(_EmccCompileRspPath);
                              $(_EmccLinkRspPath);
-                             $(NativeBinDir)src\emcc-props.json" />
+                             $(NativeBinDir)src\wasm-props.json" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
