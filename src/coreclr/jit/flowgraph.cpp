@@ -4709,6 +4709,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
+    info->TestBlock = cond;
     info->IterVar = comp->optIsLoopIncrTree(info->IterTree);
 
     assert(info->IterVar != BAD_VAR_NUM);

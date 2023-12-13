@@ -2026,6 +2026,9 @@ struct NaturalLoopIterInfo
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
 
+    // Block that has the loop test.
+    BasicBlock* TestBlock = nullptr;
+
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
 

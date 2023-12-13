@@ -3915,10 +3915,90 @@ bool Compiler::optComputeLoopRep(int        constInit,
     return false;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
+//// During loop unrolling we may modify the flow graph of nested loops, which
+//// will invalidate the DFS tree and loop information we keep. For example,
+//// trying to visit the basic blocks of an outer loop when a nested loop was
+//// unrolled will still result in visiting old basic blocks that are no longer
+//// in the FG.
+//// This class keeps track of the unrolled loop block ranges that we created
+//// during unrolling to be able to properly visit blocks of outer loops. We make
+//// use of the fact that we during unrolling always create a dense lexical range
+//// for the loop unrolled.
+//class UnrolledLoops
+//{
+//    struct LexicalRange
+//    {
+//        BasicBlock* Top;
+//        BasicBlock* Bottom;
+//    };
+//
+//    FlowGraphNaturalLoops* m_loops;
+//    // Blocks that were part of a loop that we have unrolled.
+//    BitVec m_unrolledBlocks;
+//    // Range of blocks in unrolled loop, one for each loop index.
+//    LexicalRange* m_unrolledLoopRanges = nullptr;
+//
+//public:
+//    UnrolledLoops(FlowGraphNaturalLoops* loops)
+//        : m_loops(loops)
+//        , m_unrolledBlocks(BitVecOps::UninitVal())
+//    {
+//    }
+//
+//    void MarkUnrolled(FlowGraphNaturalLoop* loop, BasicBlock* top, BasicBlock* bottom)
+//    {
+//        if (m_unrolledLoopRanges == nullptr)
+//        {
+//            BitVecTraits postOrderTraits = loop->GetDfsTree()->PostOrderTraits();
+//            m_unrolledBlocks = BitVecOps::MakeEmpty(&postOrderTraits);
+//            m_unrolledLoopRanges = new (loop->GetDfsTree()->GetCompiler(), CMK_LoopUnroll) LexicalRange[m_loops->NumLoops()]{};
+//        }
+//
+//        loop->VisitLoopBlocks([=](BasicBlock* block) {
+//            BitVecTraits postOrderTraits = loop->GetDfsTree()->PostOrderTraits();
+//            BitVecOps::AddElemD(&postOrderTraits, m_unrolledBlocks, block->bbPostorderNum);
+//            return BasicBlockVisit::Continue;
+//            });
+//
+//        m_unrolledLoopRanges[loop->GetIndex()].Top = top;
+//        m_unrolledLoopRanges[loop->GetIndex()].Bottom = bottom;
+//    }
+//
+//    template<typename TFunc>
+//    BasicBlockVisit VisitLoopBlocksLexical(FlowGraphNaturalLoop* loop, TFunc visitor)
+//    {
+//        BasicBlockVisit result =
+//            loop->VisitLoopBlocksLexical([=, &visitor](BasicBlock* block) {
+//
+//            if (!loop->GetDfsTree()->Contains(block))
+//            {
+//                // Newly added block.
+//                return BasicBlockVisit::Continue;
+//            }
+//
+//            BitVecTraits postOrderTraits = loop->GetDfsTree()->PostOrderTraits();
+//            if (BitVecOps::IsMember(&postOrderTraits, m_unrolledBlocks, block->bbPostorderNum))
+//            {
+//                // Old block that belongs to a loop that was unrolled.
+//                FlowGraphNaturalLoop* nestedLoop = m_loops->GetLoopFromHeader(block);
+//                if (nestedLoop != nullptr)
+//                {
+//                    // 
+//                }
+//
+//                return BasicBlockVisit::Continue;
+//            }
+//
+//
+//            if (visitor(block) == BasicBlockVisit::Abort)
+//                return BasicBlockVisit::Abort;
+//
+//            return BasicBlockVisit::Continue;
+//                });
+//
+//        return result;
+//    }
+//};
 
 //-----------------------------------------------------------------------------
 // optUnrollLoops: Look for loop unrolling candidates and unroll them.
@@ -3970,13 +4050,13 @@ PhaseStatus Compiler::optUnrollLoops()
     }
 #endif
 
-    /* Look for loop unrolling candidates */
+    // Look for loop unrolling candidates
 
     bool change                 = false;
     bool anyIRchange            = false;
-    bool anyNestedLoopsUnrolled = false;
     INDEBUG(int unrollCount = 0);    // count of loops unrolled
     INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
+    bool anyNestedLoopsUnrolled = false;
 
     static const unsigned ITER_LIMIT[COUNT_OPT_CODE + 1] = {
         10, // BLENDED_CODE
@@ -4007,65 +4087,66 @@ PhaseStatus Compiler::optUnrollLoops()
     assert(UNROLL_LIMIT_SZ[SMALL_CODE] == 0);
     assert(UNROLL_LIMIT_SZ[COUNT_OPT_CODE] == 0);
 
+    int passes = 0;
+RETRY_UNROLL:
+    BitVecTraits loopTraits((unsigned)m_loops->NumLoops(), this);
+    // We track loops for which we unrolled a descendant loop. Since unrolling
+    // introduces/removes blocks, we retry unrolling for the parent loops
+    // separately.
+    BitVec loopsWithUnrolledDescendant(BitVecOps::MakeEmpty(&loopTraits));
+
     // Visit loops from highest to lowest number to visit them in innermost to outermost order.
     for (unsigned lnum = optLoopCount - 1; lnum != ~0U; --lnum)
     {
-        // This is necessary due to an apparent analysis limitation since
-        // optLoopCount must be strictly greater than 0 upon entry and lnum
-        // cannot wrap due to the loop termination condition.
-        PREFAST_ASSUME(lnum != 0U - 1);
+        LoopDsc* oldLoop = &optLoopTable[lnum];
+        if ((oldLoop->lpFlags & (LPFLG_DONT_UNROLL | LPFLG_REMOVED)) != 0)
+        {
+            continue;
+        }
 
-        LoopDsc&    loop = optLoopTable[lnum];
-        BasicBlock* head;
-        BasicBlock* top;
-        BasicBlock* bottom;
-        BasicBlock* initBlock;
+        FlowGraphNaturalLoop* loop = m_oldToNewLoop[lnum];
+        if (loop == nullptr)
+        {
+            assert(passes > 0);
+            continue;
+        }
+        assert(m_newToOldLoop[loop->GetIndex()] == oldLoop);
 
-        bool       dupCond;      // Does the 'head' block contain a duplicate loop condition (zero trip test)?
-        int        lbeg;         // initial value for iterator
-        int        llim;         // limit value for iterator
-        unsigned   lvar;         // iterator lclVar #
-        int        iterInc;      // value to increment the iterator
-        genTreeOps iterOper;     // type of iterator increment (i.e. ADD, SUB, etc.)
-        var_types  iterOperType; // type result of the oper (for overflow instrs)
-        genTreeOps testOper;     // type of loop test (i.e. GT_LE, GT_GE, etc.)
-        bool       unsTest;      // Is the comparison unsigned?
+        if (BitVecOps::IsMember(&loopTraits, loopsWithUnrolledDescendant, loop->GetIndex()))
+        {
+            continue;
+        }
 
-        unsigned loopRetCount; // number of BBJ_RETURN blocks in loop
-        unsigned totalIter;    // total number of iterations in the constant loop
+        NaturalLoopIterInfo iterInfo;
+        if (!loop->AnalyzeIteration(&iterInfo))
+        {
+            assert((oldLoop->lpFlags & LPFLG_ITER) == 0);
+            continue;
+        }
 
-        const unsigned loopFlags = loop.lpFlags;
+        // TODO-Quirk: Allow this
+        if ((oldLoop->lpFlags & LPFLG_ITER) == 0)
+        {
+            continue;
+        }
+
+        optCrossCheckIterInfo(iterInfo, *oldLoop);
 
         // Check for required flags:
-        // LPFLG_CONST_INIT  - required because this transform only handles full unrolls
-        // LPFLG_CONST_LIMIT - required because this transform only handles full unrolls
-        const unsigned requiredFlags = LPFLG_CONST_INIT | LPFLG_CONST_LIMIT;
-        if ((loopFlags & requiredFlags) != requiredFlags)
+        // HasConstInit  - required because this transform only handles full unrolls
+        // HasConstLimit - required because this transform only handles full unrolls
+        if (!iterInfo.HasConstInit || !iterInfo.HasConstLimit)
         {
             // Don't print to the JitDump about this common case.
             continue;
         }
 
-        // Ignore if removed or marked as not unrollable.
-        if (loopFlags & (LPFLG_DONT_UNROLL | LPFLG_REMOVED))
+        // TODO-Quirk: Unnecessary
+        if (!oldLoop->lpIsTopEntry())
         {
-            // Don't print to the JitDump about this common case.
+            JITDUMP("Failed to unroll loop " FMT_LP ": not top entry\n", loop->GetIndex());
             continue;
         }
-
-        // This transform only handles loops of this form
-        if (!loop.lpIsTopEntry())
-        {
-            JITDUMP("Failed to unroll loop " FMT_LP ": not top entry\n", lnum);
-            continue;
-        }
-
-        head = loop.lpHead;
-        noway_assert(head != nullptr);
-        top = loop.lpTop;
-        noway_assert(top != nullptr);
-        bottom = loop.lpBottom;
-        noway_assert(bottom != nullptr);
 
         // Get the loop data:
         //  - initial constant
@@ -4075,41 +4156,24 @@ PhaseStatus Compiler::optUnrollLoops()
         //  - increment operation type (i.e. ADD, SUB, etc...)
         //  - loop test type (i.e. GT_GE, GT_LT, etc...)
 
-        initBlock = loop.lpInitBlock;
-        lbeg      = loop.lpConstInit;
-        llim      = loop.lpConstLimit();
-        testOper  = loop.lpTestOper();
+        BasicBlock* initBlock    = iterInfo.InitBlock;
+        int         lbeg         = iterInfo.ConstInitValue;
+        int         llim         = iterInfo.ConstLimit();
+        genTreeOps  testOper     = iterInfo.TestOper();
+        unsigned    lvar         = iterInfo.IterVar;
+        int         iterInc      = iterInfo.IterConst();
+        genTreeOps  iterOper     = iterInfo.IterOper();
+        var_types   iterOperType = iterInfo.IterOperType();
+        bool        unsTest      = (iterInfo.TestTree->gtFlags & GTF_UNSIGNED) != 0;
 
-        lvar     = loop.lpIterVar();
-        iterInc  = loop.lpIterConst();
-        iterOper = loop.lpIterOper();
-
-        iterOperType = loop.lpIterOperType();
-        unsTest      = (loop.lpTestTree->gtFlags & GTF_UNSIGNED) != 0;
-
-        if (lvaTable[lvar].IsAddressExposed())
-        {
-            // If the loop iteration variable is address-exposed then bail
-            JITDUMP("Failed to unroll loop " FMT_LP ": V%02u is address exposed\n", lnum, lvar);
-            continue;
-        }
-        if (lvaTable[lvar].lvIsStructField)
-        {
-            // If the loop iteration variable is a promoted field from a struct then bail
-            JITDUMP("Failed to unroll loop " FMT_LP ": V%02u is a promoted struct field\n", lnum, lvar);
-            continue;
-        }
+        assert(!lvaGetDesc(lvar)->IsAddressExposed());
+        assert(!lvaGetDesc(lvar)->lvIsStructField);
 
         // Locate/initialize the increment/test statements.
         Statement* initStmt = initBlock->lastStmt();
         noway_assert((initStmt != nullptr) && (initStmt->GetNextStmt() == nullptr));
 
-        Statement* testStmt = bottom->lastStmt();
-        noway_assert((testStmt != nullptr) && (testStmt->GetNextStmt() == nullptr));
-
-        Statement* incrStmt = testStmt->GetPrevStmt();
-        noway_assert(incrStmt != nullptr);
-
+        bool dupCond = false;
         if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             // Must be a duplicated loop condition.
@@ -4118,16 +4182,12 @@ PhaseStatus Compiler::optUnrollLoops()
             initStmt = initStmt->GetPrevStmt();
             noway_assert(initStmt != nullptr);
         }
-        else
-        {
-            dupCond = false;
-        }
 
         // Find the number of iterations - the function returns false if not a constant number.
-
+        unsigned totalIter;
         if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest, dupCond, &totalIter))
         {
-            JITDUMP("Failed to unroll loop " FMT_LP ": not a constant iteration count\n", lnum);
+            JITDUMP("Failed to unroll loop " FMT_LP ": not a constant iteration count\n", loop->GetIndex());
             continue;
         }
 
@@ -4135,8 +4195,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
         if (totalIter > iterLimit)
         {
-            JITDUMP("Failed to unroll loop " FMT_LP ": too many iterations (%d > %d) (heuristic)\n", lnum, totalIter,
-                    iterLimit);
+            JITDUMP("Failed to unroll loop " FMT_LP ": too many iterations (%d > %d) (heuristic)\n", loop->GetIndex(),
+                    totalIter, iterLimit);
             continue;
         }
 
@@ -4158,22 +4218,22 @@ PhaseStatus Compiler::optUnrollLoops()
         {
             // We can unroll this
         }
-        else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
+        else if (iterInfo.HasSimdLimit)
         {
             // We can unroll this
         }
         else
         {
-            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
+            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", loop->GetIndex());
             continue;
         }
 
-        GenTree* incr = incrStmt->GetRootNode();
+        GenTree* incr = iterInfo.IterTree;
 
         // Don't unroll loops we don't understand.
         if (!incr->OperIs(GT_STORE_LCL_VAR))
         {
-            JITDUMP("Failed to unroll loop " FMT_LP ": unknown increment op (%s)\n", lnum,
+            JITDUMP("Failed to unroll loop " FMT_LP ": unknown increment op (%s)\n", loop->GetIndex(),
                     GenTree::OpName(incr->gtOper));
             continue;
         }
@@ -4182,6 +4242,8 @@ PhaseStatus Compiler::optUnrollLoops()
         GenTree* init = initStmt->GetRootNode();
 
         // Make sure everything looks ok.
+        assert((iterInfo.TestBlock != nullptr) && iterInfo.TestBlock->KindIs(BBJ_COND));
+
         // clang-format off
         if (!init->OperIs(GT_STORE_LCL_VAR) ||
             (init->AsLclVar()->GetLclNum() != lvar) ||
@@ -4194,7 +4256,8 @@ PhaseStatus Compiler::optUnrollLoops()
             (incr->AsOp()->gtOp2->gtOper != GT_CNS_INT) ||
             (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
 
-            (testStmt->GetRootNode()->gtOper != GT_JTRUE))
+            // TODO-Quirk: This check shouldn't be needed.
+            (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
         {
             noway_assert(!"Bad precondition in Compiler::optUnrollLoops()");
             continue;
@@ -4209,26 +4272,17 @@ PhaseStatus Compiler::optUnrollLoops()
         // Heuristic: Estimated cost in code size of the unrolled loop.
 
         {
-            ClrSafeInt<unsigned>    loopCostSz; // Cost is size of one iteration
-            const BasicBlock* const top = loop.lpTop;
+            ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
 
-            // Besides calculating the loop cost, also ensure that all loop blocks are within the same EH
-            // region, and count the number of BBJ_RETURN blocks in the loop.
-            loopRetCount = 0;
-            for (BasicBlock* const block : loop.LoopBlocks())
-            {
-                if (!BasicBlock::sameEHRegion(block, top))
+            BasicBlockVisit result = loop->VisitLoopBlocksReversePostOrder([=, &loopCostSz](BasicBlock* block) {
+
+                if (!BasicBlock::sameEHRegion(block, loop->GetHeader()))
                 {
                     // Unrolling would require cloning EH regions
                     // Note that only non-funclet model (x86) could actually have a loop including a handler
                     // but not it's corresponding `try`, if its `try` was moved due to being marked "rare".
-                    JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", lnum);
-                    goto DONE_LOOP;
-                }
-
-                if (block->KindIs(BBJ_RETURN))
-                {
-                    ++loopRetCount;
+                    JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", loop->GetIndex());
+                    return BasicBlockVisit::Abort;
                 }
 
                 for (Statement* const stmt : block->Statements())
@@ -4236,16 +4290,27 @@ PhaseStatus Compiler::optUnrollLoops()
                     gtSetStmtInfo(stmt);
                     loopCostSz += stmt->GetCostSz();
                 }
+
+                return BasicBlockVisit::Continue;
+            });
+
+            if (result == BasicBlockVisit::Abort)
+            {
+                continue;
             }
 
-#ifdef JIT32_GCENCODER
-            if ((totalIter > 0) && (fgReturnCount + loopRetCount * (totalIter - 1) > SET_EPILOGCNT_MAX))
-            {
-                // Jit32 GC encoder can't report more than SET_EPILOGCNT_MAX epilogs.
-                JITDUMP("Failed to unroll loop " FMT_LP ": GC encoder max epilog constraint\n", lnum);
-                goto DONE_LOOP;
-            }
-#endif // !JIT32_GCENCODER
+#ifdef DEBUG
+            // With the EH constraint above verified it is not possible for
+            // BBJ_RETURN blocks to be part of the loop; a BBJ_RETURN block can
+            // only be part of the loop if its exceptional flow can reach the
+            // header, but that would require the handler to also be part of
+            // the loop, which guarantees that the loop contains two distinct
+            // EH regions.
+            loop->VisitLoopBlocks([](BasicBlock* block) {
+                assert(!block->KindIs(BBJ_RETURN));
+                return BasicBlockVisit::Continue;
+                });
+#endif
 
             // Compute the estimated increase in code size for the unrolled loop.
 
@@ -4258,20 +4323,44 @@ PhaseStatus Compiler::optUnrollLoops()
 
             if (unrollCostSz.IsOverflow() || (unrollCostSz.Value() > unrollLimitSz))
             {
-                JITDUMP("Failed to unroll loop " FMT_LP ": size constraint (%d > %d) (heuristic)\n", lnum,
+                JITDUMP("Failed to unroll loop " FMT_LP ": size constraint (%d > %d) (heuristic)\n", loop->GetIndex(),
                         unrollCostSz.Value(), unrollLimitSz);
-                goto DONE_LOOP;
+                continue;
             }
 
             // Looks like a good idea to unroll this loop, let's do it!
             CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
-            if (verbose)
+            JITDUMP("\nUnrolling loop " FMT_LP " unrollCostSz = %d\n", loop->GetIndex(), unrollCostSz.Value());
+            loop->VisitLoopBlocksReversePostOrder([](BasicBlock* block) {
+                JITDUMP("  " FMT_BB "\n", block->bbNum);
+                return BasicBlockVisit::Continue;
+            });
+
+            JITDUMP("Entry edges:\n");
+            for (FlowEdge* edge : loop->EntryEdges())
             {
-                printf("\nUnrolling loop ");
-                optPrintLoopInfo(&loop);
-                printf(" over V%02u from %u to %u unrollCostSz = %d\n\n", lvar, lbeg, llim, unrollCostSz);
+                JITDUMP("  " FMT_BB " -> " FMT_BB "\n", edge->getSourceBlock()->bbNum, loop->GetHeader()->bbNum);
+            }
+
+            JITDUMP("Exit edges:\n");
+            for (FlowEdge* edge : loop->ExitEdges())
+            {
+                BasicBlock* exiting = edge->getSourceBlock();
+                BasicBlock* exit = nullptr;
+
+                exiting->VisitRegularSuccs(this, [&](BasicBlock* succ) {
+                    if (fgGetPredForBlock(succ, exiting) == edge)
+                    {
+                        exit = succ;
+                        return BasicBlockVisit::Abort;
+                    }
+
+                    return BasicBlockVisit::Continue;
+                    });
+
+                JITDUMP("  " FMT_BB " -> " FMT_BB "\n", exiting->bbNum, exit->bbNum);
             }
 #endif
         }
@@ -4284,24 +4373,44 @@ PhaseStatus Compiler::optUnrollLoops()
             // entries to represent the new loops. Instead of trying to do this incrementally, in the case where
             // nested loops exist (in any unrolled loop) we rebuild the entire loop table after unrolling.
 
-            BlockToBlockMap        blockMap(getAllocator(CMK_LoopOpt));
+            BlockToBlockMap        blockMap(getAllocator(CMK_LoopUnroll));
+
+            BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
             BasicBlock*            insertAfter                    = bottom;
             BasicBlock* const      tail                           = bottom->Next();
-            BasicBlock::loopNumber newLoopNum                     = loop.lpParent;
+            BasicBlock* prevTestBlock = nullptr;
+            BasicBlock::loopNumber newLoopNum                     = oldLoop->lpParent;
             bool                   anyNestedLoopsUnrolledThisLoop = false;
             int                    lval;
             unsigned               iterToUnroll = totalIter; // The number of iterations left to unroll
 
+            // Find the exit block first. We need to do that here since it may
+            // have implicit fallthrough that we'll change below.
+            BasicBlock* exit = nullptr;
+            for (FlowEdge* exitEdge : loop->ExitEdges())
+            {
+                BasicBlock* exiting = exitEdge->getSourceBlock();
+                if (exiting == iterInfo.TestBlock)
+                {
+                    assert(exiting->KindIs(BBJ_COND));
+                    exit = loop->ContainsBlock(exiting->GetTrueTarget()) ? exiting->GetFalseTarget() : exiting->GetTrueTarget();
+                    break;
+                }
+            }
+
+            assert(exit != nullptr);
+
             for (lval = lbeg; iterToUnroll > 0; iterToUnroll--)
             {
-                // Note: we can't use the loop.LoopBlocks() iterator, as it captures loop.lpBottom->bbNext at the
-                // beginning of iteration, and we insert blocks before that. So we need to evaluate lpBottom->bbNext
-                // every iteration.
-                for (BasicBlock* block = loop.lpTop; !loop.lpBottom->NextIs(block); block = block->Next())
-                {
+                BasicBlock* testBlock = nullptr;
+                BasicBlockVisit result =
+                    loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
+
                     // Don't set a jump target for now.
                     // Compiler::optCopyBlkDest() will fix the jump kind/target in the loop below.
-                    BasicBlock* newBlock = insertAfter = fgNewBBafter(BBJ_ALWAYS, insertAfter, /*extendRegion*/ true);
+                    BasicBlock* newBlock = fgNewBBafter(BBJ_ALWAYS, insertAfter, /*extendRegion*/ true);
+                    insertAfter = newBlock;
+
                     blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
 
                     if (!BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval))
@@ -4311,11 +4420,11 @@ PhaseStatus Compiler::optUnrollLoops()
                         // put the loop blocks back to how they were before we started cloning blocks,
                         // and abort unrolling the loop.
                         bottom->SetNext(tail);
-                        loop.lpFlags |= LPFLG_DONT_UNROLL; // Mark it so we don't try to unroll it again.
+                        oldLoop->lpFlags |= LPFLG_DONT_UNROLL; // Mark it so we don't try to unroll it again.
                         INDEBUG(++unrollFailures);
-                        JITDUMP("Failed to unroll loop " FMT_LP ": block cloning failed on " FMT_BB "\n", lnum,
-                                block->bbNum);
-                        goto DONE_LOOP;
+                        JITDUMP("Failed to unroll loop " FMT_LP ": block cloning failed on " FMT_BB "\n",
+                            loop->GetIndex(), block->bbNum);
+                        return BasicBlockVisit::Abort;
                     }
 
                     // All blocks in the unrolled loop will now be marked with the parent loop number. Note that
@@ -4338,12 +4447,12 @@ PhaseStatus Compiler::optUnrollLoops()
                     assert(newBlock->KindIs(BBJ_ALWAYS));
                     assert(!newBlock->HasInitializedTarget());
 
-                    if (block == bottom)
+                    if (block == iterInfo.TestBlock)
                     {
                         // Remove the test; we're doing a full unroll.
 
                         Statement* testCopyStmt = newBlock->lastStmt();
-                        GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
+                        GenTree* testCopyExpr = testCopyStmt->GetRootNode();
                         assert(testCopyExpr->gtOper == GT_JTRUE);
                         GenTree* sideEffList = nullptr;
                         gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
@@ -4355,14 +4464,50 @@ PhaseStatus Compiler::optUnrollLoops()
                         {
                             testCopyStmt->SetRootNode(sideEffList);
                         }
+
+                        // Save the block so we can special case it when
+                        // redirecting the blocks below; we don't want this one
+                        // to become BBJ_COND, it should stay as BBJ_ALWAYS.
+                        assert(testBlock == nullptr);
+                        testBlock = newBlock;
                     }
+                    else if (block->bbFallsThrough() && !loop->ContainsBlock(block->Next()))
+                    {
+                        assert(block->KindIs(BBJ_COND) && "Cannot handle fallthrough for non BBJ_COND block");
+                        // Handle fallthrough.
+                        // TODO-Quirk: Skip empty blocks and go directly to their destination.
+                        BasicBlock* targetBlk = block->Next();
+                        if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
+                            targetBlk = targetBlk->GetTarget();
+
+                        BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, insertAfter, /* extendRegion */ true, targetBlk);
+                        newRedirBlk->copyEHRegion(insertAfter);
+                        newRedirBlk->bbNatLoopNum = newLoopNum;
+                        newRedirBlk->bbWeight = block->Next()->bbWeight;
+                        newRedirBlk->CopyFlags(block->Next(), BBF_RUN_RARELY | BBF_PROF_WEIGHT);
+                        newRedirBlk->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
+
+                        fgAddRefPred(targetBlk, newRedirBlk);
+                        insertAfter = newRedirBlk;
+                    }
+
+                    return BasicBlockVisit::Continue;
+                        });
+
+                if (result == BasicBlockVisit::Abort)
+                {
+                    goto DONE_LOOP;
                 }
 
+                assert(testBlock != nullptr);
+
                 // Now redirect any branches within the newly-cloned iteration.
-                // Don't include `bottom` in the iteration, since we've already changed the
-                // newBlock->bbKind, above.
-                for (BasicBlock* block = loop.lpTop; block != loop.lpBottom; block = block->Next())
-                {
+                loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {
+                    // Do not include the test block; we will redirect it on
+                    // the next iteration or after the loop.
+                    if (block == iterInfo.TestBlock)
+                        return BasicBlockVisit::Continue;
+
                     // Jump kind/target should not be set yet
                     BasicBlock* newBlock = blockMap[block];
                     assert(!newBlock->HasInitializedTarget());
@@ -4370,25 +4515,44 @@ PhaseStatus Compiler::optUnrollLoops()
                     // Now copy the jump kind/target
                     optCopyBlkDest(block, newBlock);
                     optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
-                }
 
-                // We fall into this unroll iteration from the bottom block (first iteration)
-                // or from the previous unroll clone of the bottom block (subsequent iterations).
-                // After doing this, all the newly cloned blocks now have proper flow and pred lists.
-                //
-                BasicBlock* const clonedTop     = blockMap[loop.lpTop];
-                BasicBlock*       clonedTopPrev = clonedTop->Prev();
-                assert(clonedTopPrev->KindIs(BBJ_ALWAYS, BBJ_COND));
+                    return BasicBlockVisit::Continue;
+                    });
 
-                if (clonedTopPrev->KindIs(BBJ_ALWAYS))
+                // Redirect previous iteration (or entry) to this iteration.
+                if (prevTestBlock != nullptr)
                 {
-                    assert(!clonedTopPrev->HasInitializedTarget());
-                    clonedTopPrev->SetTarget(clonedTop);
+                    // Redirect exit edge from previous iteration to new entry.
+                    assert(prevTestBlock->KindIs(BBJ_ALWAYS));
+                    BasicBlock* newHeader = blockMap[loop->GetHeader()];
+                    prevTestBlock->SetTarget(newHeader);
+                    fgAddRefPred(newHeader, prevTestBlock);
+                }
+                else
+                {
+                    // Redirect all predecessors to the new one.
+                    for (FlowEdge* enterEdge : loop->EntryEdges())
+                    {
+                        BasicBlock* entering = enterEdge->getSourceBlock();
+                        JITDUMP("Redirecting " FMT_BB " -> " FMT_BB "\n", entering->bbNum, blockMap[loop->GetHeader()]->bbNum);
+                        assert(!entering->KindIs(BBJ_COND)); // TODO: Handle fallthrough
+                        // TODO-FIX: optRedirectBlock does not work correctly for BBJ_ALWAYS with BBF_NONE_QUIRK
+                        if (entering->KindIs(BBJ_ALWAYS))
+                        {
+                            fgRemoveRefPred(entering->GetTarget(), entering);
+                            entering->SetTarget(blockMap[loop->GetHeader()]);
+                            fgAddRefPred(blockMap[loop->GetHeader()], entering);
+                        }
+                        else
+                        {
+                            optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
+                        }
+                    }
                 }
 
-                fgAddRefPred(clonedTop, clonedTop->Prev());
+                prevTestBlock = testBlock;
 
-                /* update the new value for the unrolled iterator */
+                // update the new value for the unrolled iterator
 
                 switch (iterOper)
                 {
@@ -4413,11 +4577,84 @@ PhaseStatus Compiler::optUnrollLoops()
 
             // If we get here, we successfully cloned all the blocks in the unrolled loop.
             // Note we may not have done any cloning at all, if the loop iteration count was zero.
-
-            // Gut the old loop body.
-            //
-            for (BasicBlock* const block : loop.LoopBlocks())
+            // Now redirect the last iteration to the real exit of the loop (or
+            // the entry to the exit if we unrolled 0 iterations).
+            if (prevTestBlock != nullptr)
             {
+                assert(prevTestBlock->KindIs(BBJ_ALWAYS));
+                prevTestBlock->SetTarget(exit);
+                fgAddRefPred(exit, prevTestBlock);
+            }
+            else
+            {
+                blockMap.Set(loop->GetHeader(), exit, BlockToBlockMap::Overwrite);
+                for (FlowEdge* entryEdge : loop->EntryEdges())
+                {
+                    BasicBlock* entering = entryEdge->getSourceBlock();
+                    assert(!entering->KindIs(BBJ_COND)); // TODO: Handle fallthrough
+                    // TODO-FIX: optRedirectBlock does not work correctly for BBJ_ALWAYS with BBF_NONE_QUIRK
+                    if (entering->KindIs(BBJ_ALWAYS))
+                    {
+                        fgRemoveRefPred(entering->GetTarget(), entering);
+                        entering->SetTarget(blockMap[loop->GetHeader()]);
+                        fgAddRefPred(blockMap[loop->GetHeader()], entering);
+                    }
+                    else
+                    {
+                        optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
+                    }
+                }
+            }
+
+            // The loop body is unreachable now.
+
+            //// TODO-Quirk and TODO-Cleanup: We shouldn't need to do anything
+            //// else now, leaving a subgraph of blocks unreachable should be
+            //// just fine, but downstream things cannot handle that (in
+            //// particular fgComputeDoms). Link all loop blocks into an empty
+            //// chain of BBJ_ALWAYS.
+            //for (BasicBlock* const block : oldLoop->LoopBlocks())
+            //{
+            //    // Check if the old loop body had any nested loops that got cloned. Note that we need to do this
+            //    // here, and not in the loop above, to handle the special case where totalIter is zero, and the
+            //    // above loop doesn't execute.
+            //    if (block->bbNatLoopNum != lnum)
+            //    {
+            //        anyNestedLoopsUnrolledThisLoop = true;
+            //    }
+
+            //    // Scrub all pred list references to block, except for bottom-> bottom->bbNext.
+            //    //
+            //    for (BasicBlock* succ : block->Succs(this))
+            //    {
+            //        if ((block == bottom) && bottom->NextIs(succ))
+            //        {
+            //            continue;
+            //        }
+
+            //        fgRemoveAllRefPreds(succ, block);
+            //    }
+
+            //    block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
+            //    block->bbStmtList   = nullptr;
+            //    block->bbNatLoopNum = newLoopNum;
+            //    block->bbFlags |= BBF_NONE_QUIRK;
+
+            //    // Remove a few unnecessary flags (this list is not comprehensive).
+            //    block->bbFlags &= ~(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
+            //                        BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
+
+            //    JITDUMP("Scrubbed old loop body block " FMT_BB "\n", block->bbNum);
+            //}
+
+            BasicBlock* prevLoopBlock = nullptr;
+            loop->VisitLoopBlocksLexical([=, &anyNestedLoopsUnrolledThisLoop, &prevLoopBlock](BasicBlock* block) {
+                if (prevLoopBlock != nullptr)
+                {
+                    prevLoopBlock->SetKindAndTarget(BBJ_ALWAYS, block);
+                    fgAddRefPred(block, prevLoopBlock);
+                }
+
                 // Check if the old loop body had any nested loops that got cloned. Note that we need to do this
                 // here, and not in the loop above, to handle the special case where totalIter is zero, and the
                 // above loop doesn't execute.
@@ -4426,7 +4663,9 @@ PhaseStatus Compiler::optUnrollLoops()
                     anyNestedLoopsUnrolledThisLoop = true;
                 }
 
-                // Scrub all pred list references to block, except for bottom-> bottom->bbNext.
+                // Scrub all pred list references to block. Skip bottom if it's
+                // a fallthrough block as we may have inserted new blocks
+                // between it and its actual fallthrough successor.
                 //
                 for (BasicBlock* succ : block->Succs(this))
                 {
@@ -4438,7 +4677,6 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
                 block->bbStmtList   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
                 block->SetFlags(BBF_NONE_QUIRK);
@@ -4447,34 +4685,42 @@ PhaseStatus Compiler::optUnrollLoops()
                 block->RemoveFlags(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
                                    BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
 
+                prevLoopBlock = block;
+
                 JITDUMP("Scrubbed old loop body block " FMT_BB "\n", block->bbNum);
-            }
 
-            // The old loop blocks will form an empty linear chain.
-            // Add back a suitable pred list links.
-            //
-            BasicBlock* oldLoopPred = head;
-            for (BasicBlock* const block : loop.LoopBlocks())
+                return BasicBlockVisit::Continue;
+                });
+
+            // The bottom could have had a fallthrough that we broke when inserting blocks.
+            if (fgGetPredForBlock(insertAfter->Next(), bottom) != nullptr)
+                fgRemoveAllRefPreds(insertAfter->Next(), bottom);
+
+            BasicBlock* top = loop->GetLexicallyTopMostBlock();
+
+            // Redirect the entries to the start of the chain. This is still
+            // part of the quirk.
+            for (FlowEdge* entryEdge : loop->EntryEdges())
             {
-                if (block != top)
-                {
-                    fgAddRefPred(block, oldLoopPred);
-                }
-                oldLoopPred = block;
+                BasicBlock* entering = entryEdge->getSourceBlock();
+                assert(entering->KindIs(BBJ_ALWAYS)); // TODO: Need to handle fallthrough?
+                BasicBlock* firstIterEntry = entering->GetTarget();
+                fgRemoveRefPred(firstIterEntry, entering);
+                entering->SetTarget(top);
+                fgAddRefPred(top, entering);
+                bottom->SetKindAndTarget(BBJ_ALWAYS, firstIterEntry);
+                fgAddRefPred(firstIterEntry, bottom);
             }
 
-            if (anyNestedLoopsUnrolledThisLoop)
-            {
-                anyNestedLoopsUnrolled = true;
-            }
+            anyNestedLoopsUnrolled |= anyNestedLoopsUnrolledThisLoop;
 
-            // Now fix up the exterior flow and pred list entries.
-            //
             // Control will fall through from the initBlock to its successor, which is either
             // the pre-header HEAD (if it exists), or the now empty TOP (if totalIter == 0),
             // or the first cloned top.
             //
             // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_ALWAYS block).
+            //
+            // TODO: Isn't this missing validity checks? This seems dangerous.
             //
             if (initBlock->KindIs(BBJ_COND))
             {
@@ -4497,32 +4743,6 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlock->KindIs(BBJ_ALWAYS));
             }
 
-            // The loop will be removed, so no need to fix up the pre-header.
-            if (loop.lpFlags & LPFLG_HAS_PREHEAD)
-            {
-                assert(head->HasFlag(BBF_LOOP_PREHEADER));
-
-                // For unrolled loops, all the unrolling preconditions require the pre-header block to fall
-                // through into TOP.
-                assert(head->KindIs(BBJ_ALWAYS));
-                assert(head->JumpsToNext());
-            }
-
-            // If we actually unrolled, tail is now reached
-            // by the last cloned bottom, and no longer
-            // reached by bottom.
-            //
-            if (totalIter > 0)
-            {
-                BasicBlock* clonedBottom = blockMap[bottom];
-                assert(clonedBottom->KindIs(BBJ_ALWAYS));
-                assert(!clonedBottom->HasInitializedTarget());
-
-                clonedBottom->SetTarget(tail);
-                fgAddRefPred(tail, clonedBottom);
-                fgRemoveRefPred(tail, bottom);
-            }
-
 #ifdef DEBUG
             if (verbose)
             {
@@ -4530,7 +4750,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 gtDispTree(initStmt->GetRootNode());
                 printf("\n");
-                fgDumpTrees(top, insertAfter);
+                fgDumpTrees(bottom, insertAfter);
 
                 if (anyNestedLoopsUnrolledThisLoop)
                 {
@@ -4542,24 +4762,27 @@ PhaseStatus Compiler::optUnrollLoops()
             // Update loop table.
             optMarkLoopRemoved(lnum);
 
-            // Note if we created new BBJ_RETURNs (or removed some).
-            if (totalIter > 0)
-            {
-                fgReturnCount += loopRetCount * (totalIter - 1);
-            }
-            else
-            {
-                assert(totalIter == 0);
-                assert(fgReturnCount >= loopRetCount);
-                fgReturnCount -= loopRetCount;
-            }
-
             // Remember that something has changed.
             INDEBUG(++unrollCount);
             change = true;
+
+            for (FlowGraphNaturalLoop* ancestor = loop->GetParent(); ancestor != nullptr; ancestor = ancestor->GetParent())
+            {
+                BitVecOps::AddElemD(&loopTraits, loopsWithUnrolledDescendant, ancestor->GetIndex());
+            }
         }
 
     DONE_LOOP:;
+    }
+
+    if (change && !BitVecOps::IsEmpty(&loopTraits, loopsWithUnrolledDescendant))
+    {
+        fgDomsComputed = false;
+        fgRenumberBlocks(); // For proper lexical visit
+        m_dfsTree = fgComputeDfs();
+        optFindNewLoops();
+        passes++;
+        goto RETRY_UNROLL;
     }
 
     if (change)
@@ -4598,6 +4821,8 @@ PhaseStatus Compiler::optUnrollLoops()
         m_dfsTree = fgComputeDfs();
         optFindNewLoops();
 
+        fgDomsComputed = false;
+
         DBEXEC(verbose, fgDispBasicBlocks());
     }
     else
@@ -4619,9 +4844,6 @@ PhaseStatus Compiler::optUnrollLoops()
 
     return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
 {
@@ -6535,15 +6757,6 @@ PhaseStatus Compiler::optHoistLoopCode()
     printf("Doing loop hoisting in %s (0x%x).\n", info.compFullName, methHash);
 #endif // DEBUG
 #endif // 0     -- debugging loop hoisting issues
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In optHoistLoopCode()\n");
-        fgDispHandlerTab();
-        optPrintLoopTable();
-    }
-#endif
 
     optComputeInterestingVarSets();
 
