@@ -26,6 +26,11 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // initialized and set by caller
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we could assume that all proxies are owned by calling thread
+                JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+#endif
+
                 arg_1.ToManaged(out IntPtr entrypointPtr);
                 if (entrypointPtr == IntPtr.Zero)
                 {
@@ -94,6 +99,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_THREADS
+            finally
+            {
+                JSProxyContext.CapturedInstance = null;
+            }
+#endif
         }
 
         public static void LoadLazyAssembly(JSMarshalerArgument* arguments_buffer)
@@ -140,37 +151,23 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2]; // initialized and set by caller
+
             try
             {
-                var gcHandle = arg_1.slot.GCHandle;
-                if (IsGCVHandle(gcHandle))
-                {
-                    if (ThreadJsOwnedHolders.Remove(gcHandle, out PromiseHolder? holder))
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                        holder.Callback!(null);
-                    }
-                }
-                else
-                {
-                    GCHandle handle = (GCHandle)gcHandle;
-                    var target = handle.Target!;
-                    if (target is PromiseHolder holder)
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                        holder.Callback!(null);
-                    }
-                    else
-                    {
-                        ThreadJsOwnedObjects.Remove(target);
-                    }
-                    handle.Free();
-                }
+                // when we arrive here, we assume that all proxies are owned by calling thread
+                var ctx = JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+                ctx.ReleaseJSOwnedObjectByGCHandle(arg_1.slot.GCHandle);
             }
             catch (Exception ex)
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_THREADS
+            finally
+            {
+                JSProxyContext.CapturedInstance = null;
+            }
+#endif
         }
 
         // the marshaled signature is:
@@ -185,6 +182,11 @@ namespace System.Runtime.InteropServices.JavaScript
             // arg_4 set by JS caller when there are arguments
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we could assume that all proxies are owned by calling thread
+                JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+#endif
+
                 GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
                 if (callback_gc_handle.Target is ToManagedCallback callback)
                 {
@@ -200,6 +202,12 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_THREADS
+            finally
+            {
+                JSProxyContext.CapturedInstance = null;
+            }
+#endif
         }
 
         // the marshaled signature is:
@@ -210,39 +218,28 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
             // arg_2 set by caller when this is SetException call
             // arg_3 set by caller when this is SetResult call
+
             try
             {
-                var holderGCHandle = arg_1.slot.GCHandle;
-                if (IsGCVHandle(holderGCHandle))
+                // when we arrive here, we could assume that all proxies are owned by calling thread
+                var ctx = JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+                var holder = ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
+                if (holder != null)
                 {
-                    if (ThreadJsOwnedHolders.Remove(holderGCHandle, out PromiseHolder? holder))
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                        // arg_2, arg_3 are processed by the callback
-                        holder.Callback!(arguments_buffer);
-                    }
-                }
-                else
-                {
-                    GCHandle handle = (GCHandle)holderGCHandle;
-                    var target = handle.Target!;
-                    if (target is PromiseHolder holder)
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                        // arg_2, arg_3 are processed by the callback
-                        holder.Callback!(arguments_buffer);
-                    }
-                    else
-                    {
-                        ThreadJsOwnedObjects.Remove(target);
-                    }
-                    handle.Free();
+                    // arg_2, arg_3 are processed by the callback
+                    holder.Callback!(arguments_buffer);
                 }
             }
             catch (Exception ex)
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_THREADS
+            finally
+            {
+                JSProxyContext.CapturedInstance = null;
+            }
+#endif
         }
 
         // the marshaled signature is:
@@ -254,6 +251,9 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
             try
             {
+                // when we arrive here, we could assume that all proxies are owned by calling thread
+                JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+
                 GCHandle exception_gc_handle = (GCHandle)arg_1.slot.GCHandle;
                 if (exception_gc_handle.Target is Exception exception)
                 {
@@ -268,24 +268,28 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_THREADS
+            finally
+            {
+                JSProxyContext.CapturedInstance = null;
+            }
+#endif
         }
 
 #if FEATURE_WASM_THREADS
 
+        public static void CaptureProxyContext()
+        {
+            JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+        }
+
         // this is here temporarily, until JSWebWorker becomes public API
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.JSWebWorker", "System.Runtime.InteropServices.JavaScript")]
         // the marshaled signature is:
-        // void InstallSynchronizationContext()
-        public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
-            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
-            try
-            {
-                InstallWebWorkerInterop(true);
-            }
-            catch (Exception ex)
-            {
-                arg_exc.ToJS(ex);
-            }
+        // void InstallMainSynchronizationContext()
+        public static void InstallMainSynchronizationContext()
+        {
+            InstallWebWorkerInterop(true);
         }
 
 #endif

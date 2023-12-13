@@ -108,6 +108,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     else if (is_jsv_handle(js_handle)) {
         obj = _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
         _cs_owned_objects_by_jsv_handle[0 - <any>js_handle] = undefined;
+        // see free list in JSHostImplementation.FreeJSVHandle->JSProxyContext
     }
     mono_assert(obj !== undefined && obj !== null, "ObjectDisposedException");
     if (typeof obj[cs_owned_js_handle_symbol] !== "undefined") {

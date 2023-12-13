@@ -348,8 +348,11 @@ export interface JavaScriptExports {
     // the marshaled signature is: Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
     call_entry_point(entry_point: MonoMethod, args?: string[]): Promise<number>;
 
-    // the marshaled signature is: void InstallSynchronizationContext()
-    install_synchronization_context(): void;
+    // the marshaled signature is: void InstallMainSynchronizationContext()
+    install_main_synchronization_context(): void;
+
+    // the marshaled signature is: void InstallMainSynchronizationContext()
+    capture_proxy_context(): void;
 
     // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null

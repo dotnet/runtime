@@ -64,6 +64,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe void Initialize()
         {
             slot.Type = MarshalerType.None;
+#if FEATURE_WASM_THREADS
+            JSProxyContext.CapturedInstance = null;
+#endif
         }
     }
 }

@@ -47,9 +47,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
 #if FEATURE_WASM_THREADS
-                var currentTID = JSSynchronizationContext.CurrentJSSynchronizationContext?.TargetTID;
-                if (jsException.OwnerTID != currentTID)
+                var ctx = JSProxyContext.CurrentInstance;
+                if (ctx == null || jsException.ProxyContext != ctx)
                 {
+                    // if we are on another thread, it would be too expensive and risky to obtain lazy stack trace.
                     return bs;
                 }
 #endif

@@ -21,6 +21,7 @@ namespace Microsoft.Interop.JavaScript
         {
         }
 
+        // TODO order parameters in such way that affinity capturing parameters are emitted first
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
             string argName = context.GetAdditionalIdentifier(info, "js_arg");

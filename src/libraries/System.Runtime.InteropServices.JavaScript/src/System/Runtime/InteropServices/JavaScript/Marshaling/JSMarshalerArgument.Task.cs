@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -17,7 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <typeparam name="T">Type of the marshaled value.</typeparam>
         /// <param name="arg">The low-level argument representation.</param>
         /// <param name="value">The value to be marshaled.</param>
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
 
         /// <summary>
@@ -27,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <typeparam name="T">Type of the marshaled value.</typeparam>
         /// <param name="arg">The low-level argument representation.</param>
         /// <param name="value">The value to be marshaled.</param>
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
 
         /// <summary>
@@ -43,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = GetPromiseHolder(slot.GCHandle);
+            PromiseHolder holder = JSProxyContext.GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource tcs = new TaskCompletionSource(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
@@ -74,8 +76,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        /// <param name="marshaler">The generated callback which marshals the result value of the <see cref="System.Threading.Tasks.Task"/>.</param>
-        /// <typeparam name="T">Type of marshaled result of the <see cref="System.Threading.Tasks.Task"/>.</typeparam>
+        /// <param name="marshaler">The generated callback which marshals the result value of the <see cref="Task"/>.</param>
+        /// <typeparam name="T">Type of marshaled result of the <see cref="Task"/>.</typeparam>
         public unsafe void ToManaged<T>(out Task<T>? value, ArgumentToManagedCallback<T> marshaler)
         {
             // there is no nice way in JS how to check that JS promise is already resolved, to send MarshalerType.TaskRejected, MarshalerType.TaskResolved
@@ -84,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = GetPromiseHolder(slot.GCHandle);
+            PromiseHolder holder = JSProxyContext.GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
@@ -113,23 +115,6 @@ namespace System.Runtime.InteropServices.JavaScript
             value = tcs.Task;
         }
 
-        // TODO unregister and collect pending PromiseHolder also when no C# is awaiting ?
-        private static PromiseHolder GetPromiseHolder(nint gcHandle)
-        {
-            PromiseHolder holder;
-            if (IsGCVHandle(gcHandle))
-            {
-                // this path should only happen when the Promise is passed as argument of JSExport
-                holder = new PromiseHolder(gcHandle);
-                // TODO for MT this must hit the ThreadJsOwnedHolders in the correct thread
-                ThreadJsOwnedHolders.Add(gcHandle, holder);
-            }
-            else
-            {
-                holder = (PromiseHolder)((GCHandle)gcHandle).Target!;
-            }
-            return holder;
-        }
 
         internal void ToJSDynamic(Task? value)
         {
@@ -170,7 +155,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
-                slot.JSHandle = AllocJSVHandle();
+                slot.JSHandle = JSProxyContext.DefaultInstance.AllocJSVHandle();
                 slot.Type = MarshalerType.Task;
             }
             else
@@ -179,7 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // promise and handle is pre-allocated in slot.JSHandle
             }
 
-            var taskHolder = new JSObject(slot.JSHandle);
+            var taskHolder = new JSObject(slot.JSHandle, JSProxyContext.DefaultInstance);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
@@ -248,7 +233,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
-                slot.JSHandle = AllocJSVHandle();
+                slot.JSHandle = JSProxyContext.DefaultInstance.AllocJSVHandle();
                 slot.Type = MarshalerType.Task;
             }
             else
@@ -257,7 +242,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // promise and handle is pre-allocated in slot.JSHandle
             }
 
-            var taskHolder = new JSObject(slot.JSHandle);
+            var taskHolder = new JSObject(slot.JSHandle, JSProxyContext.DefaultInstance);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
@@ -319,7 +304,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
-                slot.JSHandle = AllocJSVHandle();
+                slot.JSHandle = JSProxyContext.DefaultInstance.AllocJSVHandle();
                 slot.Type = MarshalerType.Task;
             }
             else
@@ -328,7 +313,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // promise and handle is pre-allocated in slot.JSHandle
             }
 
-            var taskHolder = new JSObject(slot.JSHandle);
+            var taskHolder = new JSObject(slot.JSHandle, JSProxyContext.DefaultInstance);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());

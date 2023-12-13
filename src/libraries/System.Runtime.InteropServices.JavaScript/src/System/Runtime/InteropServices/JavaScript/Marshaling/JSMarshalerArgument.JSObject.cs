@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            value = JSHostImplementation.CreateCSOwnedProxy(slot.JSHandle);
+            value = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(slot.JSHandle);
         }
 
         /// <summary>
@@ -34,11 +34,19 @@ namespace System.Runtime.InteropServices.JavaScript
             if (value == null)
             {
                 slot.Type = MarshalerType.None;
+                // Note: when null JSObject is passed as argument, it can't be used to capture the target thread in JSProxyContext.CapturedInstance
+                // in case there is no other argument to capture it from, the call will be dispatched according to JSProxyContext.Default
             }
             else
             {
 #if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(value);
+                var parameterContext = value.ProxyContext;
+                var capturedContext = JSProxyContext.CapturedInstance;
+                if (capturedContext != null && parameterContext != capturedContext)
+                {
+                    throw new InvalidOperationException("All JSObject proxies need to have same thread affinity");
+                }
+                JSProxyContext.CapturedInstance = parameterContext;
 #endif
                 ObjectDisposedException.ThrowIf(value.IsDisposed, value);
                 slot.Type = MarshalerType.JSObject;

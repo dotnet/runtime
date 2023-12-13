@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -23,10 +24,17 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
-            holder.SynchronizationContext!.Send(static (JSHostImplementation.PromiseHolder holder) =>
+            if (holder.ProxyContext == JSProxyContext.CurrentInstance)
             {
+                _CancelPromise(holder.GCHandle);
+                return;
+            }
+
+            holder.ProxyContext.SynchronizationContext.Post(static (object? h) =>
+            {
+                var holder = (JSHostImplementation.PromiseHolder)h!;
 #endif
-            _CancelPromise(holder.GCHandle);
+                _CancelPromise(holder.GCHandle);
 #if FEATURE_WASM_THREADS
             }, holder);
 #endif
@@ -44,8 +52,16 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
-            holder.SynchronizationContext!.Send((JSHostImplementation.PromiseHolder holder) =>
+            if (holder.ProxyContext == JSProxyContext.CurrentInstance)
             {
+                _CancelPromise(holder.GCHandle);
+                callback.Invoke(state);
+                return;
+            }
+
+            holder.ProxyContext.SynchronizationContext.Post((object? h) =>
+            {
+                var holder = (JSHostImplementation.PromiseHolder)h!;
 #endif
                 _CancelPromise(holder.GCHandle);
                 callback.Invoke(state);

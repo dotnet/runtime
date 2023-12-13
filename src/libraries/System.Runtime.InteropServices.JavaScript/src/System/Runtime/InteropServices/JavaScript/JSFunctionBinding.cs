@@ -30,9 +30,6 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static volatile uint nextImportHandle = 1;
         internal int ImportHandle;
         internal bool IsAsync;
-#if FEATURE_WASM_THREADS
-        internal bool IsThreadCaptured;
-#endif
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
         internal struct JSBindingHeader
@@ -220,15 +217,14 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
+#if FEATURE_WASM_THREADS
+            JSProxyContext.AssertCurrentContext();
+#endif
+
             if (signature.IsAsync)
             {
                 // pre-allocate the result handle and Task
-#if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
-                var holder = new JSHostImplementation.PromiseHolder(JSSynchronizationContext.CurrentJSSynchronizationContext!);
-#else
-                var holder = new JSHostImplementation.PromiseHolder();
-#endif
+                var holder = new JSHostImplementation.PromiseHolder(JSProxyContext.DefaultInstance);
                 arguments[1].slot.Type = MarshalerType.TaskPreCreated;
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
@@ -256,7 +252,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
 #if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
+            JSProxyContext.AssertCurrentContext();
 #endif
 
             var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);

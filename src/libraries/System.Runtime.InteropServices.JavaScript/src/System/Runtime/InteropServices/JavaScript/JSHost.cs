@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.JavaScript
             get
             {
 #if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
+                JSProxyContext.AssertCurrentContext();
 #endif
                 return JavaScriptImports.GetGlobalThis();
             }
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
             get
             {
 #if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
+                JSProxyContext.AssertCurrentContext();
 #endif
                 return JavaScriptImports.GetDotnetInstance();
             }
@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
 #if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
+            JSProxyContext.AssertCurrentContext();
 #endif
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.JavaScript
             get
             {
 #if FEATURE_WASM_THREADS
-                return JSSynchronizationContext.CurrentJSSynchronizationContext ?? JSSynchronizationContext.MainJSSynchronizationContext!;
+                return (JSProxyContext.CurrentInstance ?? JSProxyContext.MainInstance).SynchronizationContext;
 #else
                 return null!;
 #endif

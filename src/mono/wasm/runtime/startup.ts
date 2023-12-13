@@ -289,7 +289,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         if (MonoWasmThreads) {
-            runtimeHelpers.javaScriptExports.install_synchronization_context();
+            runtimeHelpers.javaScriptExports.install_main_synchronization_context();
             runtimeHelpers.jsSynchronizationContextInstalled = true;
         }
 

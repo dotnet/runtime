@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.JSHandle != IntPtr.Zero)
             {
                 // this is JSException round-trip
-                jsException = JSHostImplementation.CreateCSOwnedProxy(slot.JSHandle);
+                jsException = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(slot.JSHandle);
             }
 
             string? message;
@@ -72,12 +72,21 @@ namespace System.Runtime.InteropServices.JavaScript
                     ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
                     slot.Type = MarshalerType.JSException;
                     slot.JSHandle = jse.jsException.JSHandle;
+#if FEATURE_WASM_THREADS
+                    var parameterContext = jse.jsException.ProxyContext;
+                    var capturedContext = JSProxyContext.CapturedInstance;
+                    if (capturedContext != null && parameterContext != capturedContext)
+                    {
+                        throw new InvalidOperationException("All JSObject proxies need to have same thread affinity");
+                    }
+                    JSProxyContext.CapturedInstance = parameterContext;
+#endif
                 }
                 else
                 {
                     ToJS(cpy.Message);
                     slot.Type = MarshalerType.Exception;
-                    slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cpy);
+                    slot.GCHandle = JSProxyContext.GetJSOwnedObjectGCHandle(cpy);
                 }
             }
         }

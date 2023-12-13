@@ -10,10 +10,10 @@ namespace System.Runtime.InteropServices.JavaScript
     public partial class JSObject
     {
         internal nint JSHandle;
+        internal JSProxyContext ProxyContext;
 
 #if FEATURE_WASM_THREADS
-        private readonly object _thisLock = new object();
-        private SynchronizationContext? m_SynchronizationContext;
+        private readonly object _lockObject = new object();
 #endif
 
         public SynchronizationContext SynchronizationContext
@@ -21,42 +21,30 @@ namespace System.Runtime.InteropServices.JavaScript
             get
             {
 #if FEATURE_WASM_THREADS
-                return m_SynchronizationContext!;
+                return ProxyContext.SynchronizationContext;
 #else
                 throw new PlatformNotSupportedException();
 #endif
             }
         }
 
-#if FEATURE_WASM_THREADS
-        // the JavaScript object could only exist on the single web worker and can't migrate to other workers
-        internal nint OwnerTID;
-#endif
 #if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
 #endif
         private bool _isDisposed;
 
-        internal JSObject(IntPtr jsHandle)
+        internal JSObject(IntPtr jsHandle, JSProxyContext ctx)
         {
+            ProxyContext = ctx;
             JSHandle = jsHandle;
-#if FEATURE_WASM_THREADS
-            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
-            if (ctx == null)
-            {
-                Environment.FailFast("Missing CurrentJSSynchronizationContext");
-            }
-            m_SynchronizationContext = ctx;
-            OwnerTID = ctx!.TargetTID;
-#endif
         }
 
 #if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
-            lock (this)
+            lock (_lockObject)
             {
                 InFlightCounter++;
                 if (InFlightCounter == 1)
@@ -72,7 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
         internal void ReleaseInFlight()
         {
-            lock (this)
+            lock (_lockObject)
             {
                 Debug.Assert(InFlightCounter != 0, "InFlightCounter != 0");
 
@@ -94,19 +82,19 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return;
             }
-            JSSynchronizationContext.AssertWebWorkerContext();
-            var currentTID = JSSynchronizationContext.CurrentJSSynchronizationContext!.TargetTID;
+
+            var currentContext = JSProxyContext.AssertCurrentContext();
 
             if (value is JSObject jsObject)
             {
-                if (jsObject.OwnerTID != currentTID)
+                if (jsObject.ProxyContext != currentContext)
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
             }
             else if (value is JSException jsException)
             {
-                if (jsException.jsException != null && jsException.jsException.OwnerTID != currentTID)
+                if (jsException.jsException != null && jsException.jsException.ProxyContext != currentContext)
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
@@ -123,11 +111,15 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
+        // when we know that JS side already freed the handle
         internal void DisposeLocal()
         {
-            JSHostImplementation.ThreadCsOwnedObjects.Remove(JSHandle);
-            _isDisposed = true;
-            JSHandle = IntPtr.Zero;
+            lock (_lockObject)
+            {
+                ProxyContext.RemoveCSOwnedObject(JSHandle);
+                _isDisposed = true;
+                JSHandle = IntPtr.Zero;
+            }
         }
 
         private void DisposeThis()
@@ -135,31 +127,33 @@ namespace System.Runtime.InteropServices.JavaScript
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
-                if (SynchronizationContext == SynchronizationContext.Current)
+                if (ProxyContext == JSProxyContext.CurrentInstance)
                 {
-                    lock (_thisLock)
+                    lock (_lockObject)
                     {
-                        JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
+                        if (_isDisposed)
+                        {
+                            return;
+                        }
+                        ProxyContext.ReleaseCSOwnedObject(JSHandle);
                         _isDisposed = true;
                         JSHandle = IntPtr.Zero;
-                        m_SynchronizationContext = null;
                     } //lock
                     return;
                 }
 
-                SynchronizationContext.Post(static (object? s) =>
+                ProxyContext.SynchronizationContext.Post(static (object? s) =>
                 {
                     var self = (JSObject)s!;
-                    lock (self._thisLock)
+                    lock (self._lockObject)
                     {
-                        JSHostImplementation.ReleaseCSOwnedObject(self.JSHandle);
+                        self.ProxyContext.ReleaseCSOwnedObject(self.JSHandle);
                         self._isDisposed = true;
                         self.JSHandle = IntPtr.Zero;
-                        self.m_SynchronizationContext = null;
                     } //lock
                 }, this);
 #else
-                JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
+                ProxyContext.ReleaseCSOwnedObject(JSHandle);
                 _isDisposed = true;
                 JSHandle = IntPtr.Zero;
 #endif
