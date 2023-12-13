@@ -32,7 +32,7 @@ namespace System
         // This method is intrinsic. The compiler might replace it with more efficient implementation.
         [DebuggerGuidedStepThrough]
         [Intrinsic]
-        public static unsafe T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        public static unsafe T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
             // Grab the pointer to the default constructor of the type. If T doesn't have a default
             // constructor, the intrinsic returns a marker pointer that we check for.
@@ -103,7 +103,7 @@ namespace System
         // and under no circumstances gets folded.
         private static Guid MissingConstructorMethod() => new Guid(0x68be9718, 0xf787, 0x45ab, 0x84, 0x3b, 0x1f, 0x31, 0xb6, 0x12, 0x65, 0xeb);
         // The constructor of this struct is used when there's no constructor
-        struct StructWithNoConstructor { public StructWithNoConstructor() { } }
+        private struct StructWithNoConstructor { public StructWithNoConstructor() { } }
 
         [DebuggerHidden]
         [DebuggerStepThrough]

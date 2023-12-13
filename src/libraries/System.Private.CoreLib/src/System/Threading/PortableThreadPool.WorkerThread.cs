@@ -80,7 +80,7 @@ namespace System.Threading
             // returns true if the worker is shutting down
             // returns false if we should do another iteration
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static bool ShouldExitWorker (PortableThreadPool threadPoolInstance, LowLevelLock threadAdjustmentLock)
+            private static bool ShouldExitWorker(PortableThreadPool threadPoolInstance, LowLevelLock threadAdjustmentLock)
             {
                 // The thread cannot exit if it has IO pending, otherwise the IO may be canceled
                 if (IsIOPending)

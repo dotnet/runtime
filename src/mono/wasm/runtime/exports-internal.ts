@@ -18,6 +18,8 @@ import { loadLazyAssembly } from "./lazyLoading";
 import { loadSatelliteAssemblies } from "./satelliteAssemblies";
 import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
+import { MonoObject, MonoObjectNull } from "./types/internal";
+import { monoStringToStringUnsafe } from "./strings";
 
 export function export_internal(): any {
     return {
@@ -96,6 +98,10 @@ export function export_internal(): any {
         mono_wasm_gc_lock,
         mono_wasm_gc_unlock,
 
+        // Blazor legacy replacement
+        monoObjectAsBoolOrNullUnsafe,
+        monoStringToStringUnsafe,
+
         loadLazyAssembly,
         loadSatelliteAssemblies
     };
@@ -109,4 +115,19 @@ export function cwraps_internal(internal: any): void {
         mono_wasm_profiler_init_browser: profiler_c_functions.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
     });
+}
+
+/* @deprecated not GC safe, legacy support for Blazor */
+export function monoObjectAsBoolOrNullUnsafe(obj: MonoObject): boolean | null {
+    if (obj === MonoObjectNull) {
+        return null;
+    }
+    const res = cwraps.mono_wasm_read_as_bool_or_null_unsafe(obj);
+    if (res === 0) {
+        return false;
+    }
+    if (res === 1) {
+        return true;
+    }
+    return null;
 }

@@ -8,6 +8,7 @@
 #endif
 
 extern CrashInfo* g_crashInfo;
+extern uint8_t g_debugHeaderCookie[4];
 
 int g_readProcessMemoryErrno = 0;
 
@@ -378,6 +379,27 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                         {
                             TRACE("Found valid single-file runtime info\n");
+                        }
+                    }
+                }
+            }
+        }
+        else if (m_appModel == AppModelType::NativeAOT)
+        {
+            if (PopulateForSymbolLookup(baseAddress))
+            {
+                uint64_t symbolOffset;
+                if (TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+                {
+                    m_coreclrPath = GetDirectory(moduleName);
+                    m_runtimeBaseAddress = baseAddress;
+
+                    uint8_t cookie[sizeof(g_debugHeaderCookie)];
+                    if (ReadMemory((void*)(baseAddress + symbolOffset), cookie, sizeof(cookie)))
+                    {
+                        if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
+                        {
+                            TRACE("Found valid NativeAOT runtime module\n");
                         }
                     }
                 }

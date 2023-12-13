@@ -5,8 +5,8 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
-import cwraps, { init_c_exports } from "./cwraps";
+import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
+import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
@@ -281,7 +281,12 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         bindings_init();
-        jiterpreter_allocate_tables(Module);
+        jiterpreter_allocate_tables();
+        runtimeHelpers.runtimeReady = true;
+
+        if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {
+            Module.runtimeKeepalivePush();
+        }
 
         if (MonoWasmThreads) {
             runtimeHelpers.javaScriptExports.install_synchronization_context();
@@ -328,6 +333,10 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         // create /usr/share folder which is SpecialFolder.CommonApplicationData
         Module["FS_createPath"]("/", "usr", true, true);
         Module["FS_createPath"]("/", "usr/share", true, true);
+
+        if (MonoWasmThreads) {
+            tcwraps.mono_wasm_init_finalizer_thread();
+        }
 
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
@@ -480,7 +489,7 @@ async function instantiate_wasm_module(
 
         if (runtimeHelpers.loadedMemorySnapshotSize) {
             try {
-                const wasmMemory = Module.getMemory();
+                const wasmMemory = runtimeHelpers.getMemory();
 
                 // .grow() takes a delta compared to the previous size
                 wasmMemory.grow((runtimeHelpers.loadedMemorySnapshotSize! - wasmMemory.buffer.byteLength + 65535) >>> 16);
@@ -556,7 +565,7 @@ async function mono_wasm_before_memory_snapshot() {
     endMeasure(mark, MeasuredBlock.memorySnapshot);
 }
 
-async function maybeSaveInterpPgoTable () {
+async function maybeSaveInterpPgoTable() {
     // If the application exited abnormally, don't save the table. It probably doesn't contain useful data,
     //  and saving would overwrite any existing table from a previous successful run.
     // We treat exiting with a code of 0 as equivalent to if the app is still running - it's perfectly fine

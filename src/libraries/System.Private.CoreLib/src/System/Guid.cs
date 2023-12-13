@@ -221,7 +221,7 @@ namespace System
                     ParseFailure.Format_GuidBrace => SR.Format_GuidBrace,
                     ParseFailure.Format_GuidComma => SR.Format_GuidComma,
                     ParseFailure.Format_GuidDashes => SR.Format_GuidDashes,
-                    ParseFailure.Format_GuidEndBrace=> SR.Format_GuidEndBrace,
+                    ParseFailure.Format_GuidEndBrace => SR.Format_GuidEndBrace,
                     ParseFailure.Format_GuidHexPrefix => SR.Format_GuidHexPrefix,
                     ParseFailure.Format_GuidInvalidChar => SR.Format_GuidInvalidChar,
                     ParseFailure.Format_GuidInvLen => SR.Format_GuidInvLen,
@@ -634,7 +634,7 @@ namespace System
             // Read in the number
             if (!TryParseHex(guidString.Slice(numStart, numLen), out result._b, ref overflow) || overflow)
             {
-                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32: ParseFailure.Format_GuidInvalidChar);
+                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32 : ParseFailure.Format_GuidInvalidChar);
                 return false;
             }
 
