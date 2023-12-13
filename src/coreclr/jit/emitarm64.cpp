@@ -9484,7 +9484,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
         case INS_sve_ldnf1sw:
         case INS_sve_ldnf1d:
-            assert(insOptsScalable(opt));
+            assert(opt == INS_OPTS_SCALABLE_D);
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));           
             assert(isGeneralRegister(reg3));
@@ -9494,7 +9494,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
         case INS_sve_ldnf1sh:
         case INS_sve_ldnf1w:
-            assert(insOptsScalable(opt));
+            assert(insOptsScalableWords(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -12765,18 +12765,20 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns true if the specified format can encode the 'dtype' field.
+ *  Returns true if the specified instruction can encode the 'dtype' field.
  */
 
-/*static*/ bool emitter::canEncodeSveElemsize_dtype(insFormat fmt)
+/*static*/ bool emitter::canEncodeSveElemsize_dtype(instruction ins)
 {
-    switch (fmt)
+    switch (ins)
     {
-        case IF_SVE_IH_3A_F:
-        case IF_SVE_IJ_3A_D:
-        case IF_SVE_IJ_3A_E:
-        case IF_SVE_IJ_3A_F:
-        case IF_SVE_IJ_3A_G:
+        case INS_sve_ld1w:
+        case INS_sve_ld1sb:
+        case INS_sve_ld1b:
+        case INS_sve_ld1sh:
+        case INS_sve_ld1h:
+        case INS_sve_ldnf1sh:
+        case INS_sve_ldnf1w:
             return true;
 
         default:
@@ -12787,55 +12789,57 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns the encoding to select the 1/2/4/8/16 byte elemsize for an Arm64 Sve vector instruction
- *  based on the format for the 'dtype' field.
+ *  for the 'dtype' field.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype(insFormat fmt, emitAttr size, code_t code)
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code)
 {
-    assert(canEncodeSveElemsize_dtype(fmt));
+    assert(canEncodeSveElemsize_dtype(ins));
 
     switch (size)
     {
         case EA_1BYTE:
-            switch (fmt)
+            switch (ins)
             {
-                case IF_SVE_IJ_3A_E:
+                case INS_sve_ld1b:
                     return code & ~((1 << 22) | (1 << 21)); // Set bit '22' and '21' to 0.
 
                 default:
-                    assert(!"Invalid format for encoding dtype.");
+                    assert(!"Invalid instruction for encoding dtype.");
             }
             return code;
 
         case EA_2BYTE:
-            switch (fmt)
+            switch (ins)
             {
-                case IF_SVE_IJ_3A_E:
-                case IF_SVE_IJ_3A_G:
+                case INS_sve_ld1b:
+                case INS_sve_ld1h:
                     return code & ~(1 << 22); // Set bit '22' to 0.
 
-                case IF_SVE_IJ_3A_D:
+                case INS_sve_ld1sb:
                     return code | (1 << 22); // Set bit '22' to 1.
 
                 default:
-                    assert(!"Invalid format for encoding dtype.");
+                    assert(!"Invalid instruction for encoding dtype.");
             }
             return code;
 
         case EA_4BYTE:
-            switch (fmt)
+            switch (ins)
             {
-                case IF_SVE_IH_3A_F:
-                case IF_SVE_IJ_3A_E:
-                case IF_SVE_IJ_3A_G:
+                case INS_sve_ld1w:
+                case INS_sve_ld1b:
+                case INS_sve_ld1h:
+                case INS_sve_ldnf1w:
                     return code & ~(1 << 21); // Set bit '21' to 0.
 
-                case IF_SVE_IJ_3A_D:
-                case IF_SVE_IJ_3A_F:
+                case INS_sve_ld1sb:
+                case INS_sve_ld1sh:
+                case INS_sve_ldnf1sh:
                     return code | (1 << 21); // Set bit '21' to 1.
 
                 default:
-                    assert(!"Invalid format for encoding dtype.");
+                    assert(!"Invalid instruction for encoding dtype.");
             }
             return code;
 
@@ -12843,16 +12847,16 @@ void emitter::emitIns_Call(EmitCallType          callType,
             return code; // By default, the instruction already encodes 64-bit.
 
         case EA_16BYTE:
-            switch (fmt)
+            switch (ins)
             {
-                case IF_SVE_IH_3A_F:
+                case INS_sve_ld1w:
                     // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '0' to get the
                     // proper encoding for Q.
                     return (code & ~((1 << 22) | (1 << 21) | (1 << 15))) |
                            (1 << 20); // Set bits '22', '21' and '15' to 0. Set bit '20' to 1.
 
                 default:
-                    assert(!"Invalid format for encoding dtype.");
+                    assert(!"Invalid instruction for encoding dtype.");
             }
             return code;
 
@@ -14960,9 +14964,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
             code |= insEncodeSimm4_19_to_16(imm);          // iiii
 
-            if (canEncodeSveElemsize_dtype(fmt))
+            if (canEncodeSveElemsize_dtype(ins))
             {
-                code = insEncodeSveElemsize_dtype(fmt, optGetSveElemsize(id->idInsOpt()), code);
+                code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
             }
 
             dst += emitOutput_Instr(dst, code);

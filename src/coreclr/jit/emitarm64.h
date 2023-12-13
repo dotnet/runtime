@@ -472,12 +472,12 @@ static code_t insEncodeSveElemsize(insOpts opt);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
-// Returns true if the specified format can encode the 'dtype' field.
-static bool canEncodeSveElemsize_dtype(insFormat fmt);
+// Returns true if the specified instruction can encode the 'dtype' field.
+static bool canEncodeSveElemsize_dtype(instruction ins);
 
 // Returns the encoding to select the 1/2/4/8/16 byte elemsize for an Arm64 Sve vector instruction
-// based on the format for the 'dtype' field.
-static code_t insEncodeSveElemsize_dtype(insFormat fmt, emitAttr size, code_t code);
+// for the 'dtype' field.
+static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code);
 
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 

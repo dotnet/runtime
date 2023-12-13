@@ -10718,6 +10718,10 @@ void CodeGen::genArm64EmitterUnitTests()
 
     // IF_SVE_IL_3A_A
     theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1sh, EA_SCALABLE, REG_V0, REG_P1, REG_R5, 5,
+                                INS_OPTS_SCALABLE_S); // LDNF1SH {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1w, EA_SCALABLE, REG_V0, REG_P2, REG_R4, 5,
+                                INS_OPTS_SCALABLE_S); // LDNF1W  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1sh, EA_SCALABLE, REG_V0, REG_P1, REG_R5, 5,
                                 INS_OPTS_SCALABLE_D); // LDNF1SH {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
     theEmitter->emitIns_R_R_R_I(INS_sve_ldnf1w, EA_SCALABLE, REG_V0, REG_P2, REG_R4, 5,
                                 INS_OPTS_SCALABLE_D); // LDNF1W  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]

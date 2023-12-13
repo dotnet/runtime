@@ -2839,8 +2839,8 @@ INST1(ldnf1sb,           "ldnf1sb",               0,                       IF_SV
 INST1(ldnf1sh,           "ldnf1sh",               0,                       IF_SVE_IL_3A_A,          0xA510A000                                   )
     // LDNF1SH {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_A         101001010001iiii 101gggnnnnnttttt     A510 A000   
 
-INST1(ldnf1w,            "ldnf1w",                0,                       IF_SVE_IL_3A_A,          0xA550A000                                   )
-    // LDNF1W  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_A         101001010101iiii 101gggnnnnnttttt     A550 A000   
+INST1(ldnf1w,            "ldnf1w",                0,                       IF_SVE_IL_3A_A,          0xA570A000                                   )
+    // LDNF1W  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IL_3A_A         101001010111iiii 101gggnnnnnttttt     A570 A000   
 
 
 //    enum               name                     info                                              SVE_IW_4A                                    
