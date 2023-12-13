@@ -1669,8 +1669,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 		regs = g_list_prepend (regs, (gpointer)AMD64_RBP);
 
 	/* We use the callee saved registers for global allocation */
-	regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
 	if (!mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R12);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 	}
@@ -1822,6 +1822,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* Save all callee-saved registers normally (except RBP, if not already used), and restore them when unwinding through an LMF */
 		guint32 iregs_to_save = AMD64_CALLEE_SAVED_REGS & ~(1<<AMD64_RBP);
 		cfg->arch.saved_iregs |= iregs_to_save;
+	}
+
+	if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		cfg->arch.saved_iregs |= AMD64_R12;
+		cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
+		cfg->arch.saved_iregs |= AMD64_R13;
+		cfg->used_int_regs |= (size_t)(1 << AMD64_R13);
 	}
 
 	if (cfg->arch.omit_fp)
