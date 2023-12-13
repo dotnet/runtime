@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             bool wroteValue = false;
 
