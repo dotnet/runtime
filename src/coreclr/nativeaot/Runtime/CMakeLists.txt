@@ -14,7 +14,7 @@ set(COMMON_RUNTIME_SOURCES
     gctoclreventsink.cpp
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
-    gcrhenv.cpp
+    GCToEEInterface.cpp
     gcrhscan.cpp
     GcStressControl.cpp
     HandleTableHelpers.cpp
@@ -24,6 +24,7 @@ set(COMMON_RUNTIME_SOURCES
     ObjectLayout.cpp
     portable.cpp
     RestrictedCallouts.cpp
+    RedhawkGCInterface.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
     StackFrameIterator.cpp

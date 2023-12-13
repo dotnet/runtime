@@ -3,8 +3,15 @@
 #ifndef __SPINLOCK_H__
 #define __SPINLOCK_H__
 
-// defined in gcrhenv.cpp
-bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
+bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
+{
+    if (dwSleepMSec > 0)
+    {
+        PalSleep(dwSleepMSec);
+        return true;
+    }
+    return !!PalSwitchToThread();
+}
 
 // #SwitchToThreadSpinning
 //

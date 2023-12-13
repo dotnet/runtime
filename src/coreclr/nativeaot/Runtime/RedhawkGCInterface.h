@@ -3,15 +3,7 @@
 
 //
 // This header contains the definition of an interface between the GC/HandleTable portions of the Redhawk
-// codebase and the regular Redhawk code. The former has all sorts of legacy environmental requirements (see
-// gcrhenv.h) that we don't wish to pull into the rest of Redhawk.
-//
-// Since this file is included in both worlds it has no dependencies and uses a very simple subset of types
-// etc. so that it will build cleanly in both. The actual implementation of the class defined here is in
-// gcrhenv.cpp, since the implementation needs access to the guts of the GC/HandleTable.
-//
-// This is just an initial stab at the interface.
-//
+// codebase and the regular Redhawk code.
 
 #ifndef __GCRHINTERFACE_INCLUDED
 #define __GCRHINTERFACE_INCLUDED
