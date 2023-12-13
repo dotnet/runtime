@@ -1230,7 +1230,30 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isValidSimm4(emitGetInsSC(id)));    // iiii
+
+#ifdef DEBUG
+            switch (id->idIns())
+            {
+                case INS_sve_ld1rqb:
+                case INS_sve_ld1rqd:
+                case INS_sve_ld1rqh:
+                case INS_sve_ld1rqw:
+                    assert(isValidSimm4_MultipleOf16(emitGetInsSC(id))); // iiii
+                    break;
+
+                case INS_sve_ld1rob:
+                case INS_sve_ld1rod:
+                case INS_sve_ld1roh:
+                case INS_sve_ld1row:
+                    assert(isValidSimm4_MultipleOf32(emitGetInsSC(id))); // iiii
+                    break;
+
+                default:
+                    assert(isValidSimm4(emitGetInsSC(id))); // iiii
+                    break;
+            }
+#endif // DEBUG
+
             assert(isScalableVectorSize(elemsize));
             break;
 
@@ -9521,6 +9544,110 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_IL_3A_C;
             break;
 
+        case INS_sve_ldnt1b:
+        case INS_sve_ldnt1h:
+        case INS_sve_ldnt1w:
+        case INS_sve_ldnt1d:
+            assert(insOptsScalableSimple(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+
+#ifdef DEBUG
+            switch (ins)
+            {
+                case INS_sve_ldnt1b:
+                    assert(opt == INS_OPTS_SCALABLE_B);
+                    break;
+
+                case INS_sve_ldnt1h:
+                    assert(opt == INS_OPTS_SCALABLE_H);
+                    break;
+
+                case INS_sve_ldnt1w:
+                    assert(opt == INS_OPTS_SCALABLE_S);
+                    break;
+
+                case INS_sve_ldnt1d:
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+#endif // DEBUG
+
+            fmt = IF_SVE_IM_3A;
+            break;
+
+        case INS_sve_ld1rqb:
+        case INS_sve_ld1rob:
+        case INS_sve_ld1rqh:
+        case INS_sve_ld1roh:
+        case INS_sve_ld1rqw:
+        case INS_sve_ld1row:
+        case INS_sve_ld1rqd:
+        case INS_sve_ld1rod:
+            assert(insOptsScalableSimple(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+
+#ifdef DEBUG
+            switch (ins)
+            {
+                case INS_sve_ld1rqb:
+                case INS_sve_ld1rqd:
+                case INS_sve_ld1rqh:
+                case INS_sve_ld1rqw:
+                    assert(isValidSimm4_MultipleOf16(imm));
+                    break;
+
+                case INS_sve_ld1rob:
+                case INS_sve_ld1rod:
+                case INS_sve_ld1roh:
+                case INS_sve_ld1row:
+                    assert(isValidSimm4_MultipleOf32(imm));
+                    break;
+
+                default:
+                    assert(isValidSimm4(imm));
+                    break;
+            }
+
+            switch (ins)
+            {
+                case INS_sve_ld1rqb:
+                case INS_sve_ld1rob:
+                    assert(opt == INS_OPTS_SCALABLE_B);
+                    break;
+
+                case INS_sve_ld1rqh:
+                case INS_sve_ld1roh:
+                    assert(opt == INS_OPTS_SCALABLE_H);
+                    break;
+
+                case INS_sve_ld1rqw:
+                case INS_sve_ld1row:
+                    assert(opt == INS_OPTS_SCALABLE_S);
+                    break;
+
+                case INS_sve_ld1rqd:
+                case INS_sve_ld1rod:
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+#endif // DEBUG
+
+            fmt = IF_SVE_IO_3A;
+            break;
+
         default:
             unreached();
             break;
@@ -12885,7 +13012,33 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeSimm4_19_to_16(ssize_t imm)
 {
     assert(isValidSimm4(imm));
+    if (imm < 0)
+    {
+        imm = (imm & 0xF);
+    }
     return (code_t)imm << 16;
+}
+
+/*****************************************************************************
+ *
+ *  TODO
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm)
+{
+    assert(isValidSimm4_MultipleOf16(imm));
+    return insEncodeSimm4_19_to_16(imm / 16);
+}
+
+/*****************************************************************************
+ *
+ *  TODO
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm)
+{
+    assert(isValidSimm4_MultipleOf32(imm));
+    return insEncodeSimm4_19_to_16(imm / 32);
 }
 
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
@@ -14972,7 +15125,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
-            code |= insEncodeSimm4_19_to_16(imm);          // iiii
+
+            switch (ins)
+            {
+                case INS_sve_ld1rqb:
+                case INS_sve_ld1rqd:
+                case INS_sve_ld1rqh:
+                case INS_sve_ld1rqw:
+                    code |= insEncodeSimm4_MultipleOf16_19_to_16(imm); // iiii
+                    break;
+
+                case INS_sve_ld1rob:
+                case INS_sve_ld1rod:
+                case INS_sve_ld1roh:
+                case INS_sve_ld1row:
+                    code |= insEncodeSimm4_MultipleOf32_19_to_16(imm); // iiii
+                    break;
+
+                default:
+                    code |= insEncodeSimm4_19_to_16(imm); // iiii
+                    break;
+            }
 
             if (canEncodeSveElemsize_dtype(ins))
             {
@@ -17358,6 +17531,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), false); // ddddd
             break;
 
+        // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
                              // immediate)
         case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
@@ -17369,7 +17543,6 @@ void emitter::emitDispInsHelp(
         case IF_SVE_IJ_3A_E: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
         case IF_SVE_IJ_3A_F: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
         case IF_SVE_IJ_3A_G: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (scalar plus immediate)
-        // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_IL_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus immediate)
         case IF_SVE_IL_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-fault load (scalar plus
                              // immediate)
@@ -17398,8 +17571,20 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
             if (imm != 0)
             {
-                emitDispImm(emitGetInsSC(id), true); // iiii
-                printf("mul vl");
+                switch (fmt)
+                {
+                    case IF_SVE_IO_3A:
+                        // This does not have to be printed as hex.
+                        // We only do it because the capstone disassembly displays this immediate as hex.
+                        // We could not modify capstone without affecting other cases.
+                        emitDispImm(emitGetInsSC(id), false, /* alwaysHex */ true); // iiii
+                        break;
+
+                    default:
+                        emitDispImm(emitGetInsSC(id), true); // iiii
+                        printf("mul vl");
+                        break;
+                }
             }
             printf("]");
             break;
@@ -19915,6 +20100,55 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                              // immediate)
             result.insThroughput = PERFSCORE_THROUGHPUT_3C;
             result.insLatency    = PERFSCORE_LATENCY_6C;
+            break;
+
+        case IF_SVE_IM_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus
+                           // immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_10C;
+            break;
+
+        case IF_SVE_IO_3A: // ............iiii ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus
+                           // immediate)
+            switch (ins)
+            {
+                case INS_sve_ld1rqb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    result.insLatency    = PERFSCORE_LATENCY_6C;
+                    break;
+                case INS_sve_ld1rob:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_ld1rqh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    result.insLatency    = PERFSCORE_LATENCY_6C;
+                    break;
+                case INS_sve_ld1roh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_ld1rqw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    result.insLatency    = PERFSCORE_LATENCY_6C;
+                    break;
+                case INS_sve_ld1row:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_ld1rqd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    result.insLatency    = PERFSCORE_LATENCY_6C;
+                    break;
+                case INS_sve_ld1rod:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         default:

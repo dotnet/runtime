@@ -481,6 +481,10 @@ static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t 
 
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 
+static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
+
+static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
+
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
 {
@@ -497,6 +501,18 @@ static bool isStackRegister(regNumber reg)
 static bool isValidSimm4(ssize_t value)
 {
     return (-8 <= value) && (value <= 7);
+};
+
+// Returns true if 'value' is a legal signed multiple of 16 immediate 4 bit encoding (such as for LD1RQB).
+static bool isValidSimm4_MultipleOf16(ssize_t value)
+{
+    return (-128 <= value) && (value <= 112) && (value % 16 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 32 immediate 4 bit encoding (such as for LD1ROB).
+static bool isValidSimm4_MultipleOf32(ssize_t value)
+{
+    return (-256 <= value) && (value <= 224) && (value % 32 == 0);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
