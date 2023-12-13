@@ -1141,6 +1141,12 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.IncludeFields is bool includeFields)
                     writer.WriteLine($"IncludeFields = {FormatBool(includeFields)},");
 
+                if (optionsSpec.IndentCharacter is char indentCharacter)
+                    writer.WriteLine($"IndentCharacter = \"{indentCharacter}\",");
+
+                if (optionsSpec.IndentSize is int indentSize)
+                    writer.WriteLine($"IndentSize = {indentSize},");
+
                 if (optionsSpec.MaxDepth is int maxDepth)
                     writer.WriteLine($"MaxDepth = {maxDepth},");
 

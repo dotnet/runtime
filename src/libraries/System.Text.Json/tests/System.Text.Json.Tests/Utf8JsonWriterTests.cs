@@ -2957,6 +2957,48 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void SettingFallbackIndentSizeAndCharacter()
+        {
+            var options = new JsonWriterOptions { Indented = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+
+            Assert.Equal(' ', writer.Options.IndentCharacter);
+            Assert.Equal(2, writer.Options.IndentSize);
+        }
+
+        [Theory]
+        [InlineData('\0')]
+        [InlineData(' ')]
+        [InlineData('\t')]
+        public static void CustomIndentCharacter_ValidCharacter_ShouldSucceed(char indentChar)
+        {
+            var options = new JsonWriterOptions { Indented = true, IndentCharacter = indentChar };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+
+            writer.WriteStartObject();
+            writer.WriteString("property"u8, "value"u8);
+            writer.WriteEndObject();
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(128)]
+        public static void CustomIndentSize_SizeWithinLimit_ShouldSucceed(int indentSize)
+        {
+            var options = new JsonWriterOptions { Indented = true, IndentSize = indentSize };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+
+            writer.WriteStartObject();
+            writer.WriteString("property"u8, "value"u8);
+            writer.WriteEndObject();
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -7512,7 +7554,7 @@ namespace System.Text.Json.Tests
 
             json.WritePropertyName("property1");
 
-            CompensateWhitespaces(prettyPrint, json, streamWriter); 
+            CompensateWhitespaces(prettyPrint, json, streamWriter);
             CompensateNewLine(prettyPrint, json, streamWriter);
             CompensateWhitespaces(prettyPrint, json, streamWriter);
 

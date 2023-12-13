@@ -17,6 +17,7 @@ namespace System.Text.Json
 
         private int _maxDepth;
         private int _optionsMask;
+        private int _indentSize;
 
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
@@ -40,6 +41,48 @@ namespace System.Text.Json
                     _optionsMask |= IndentBit;
                 else
                     _optionsMask &= ~IndentBit;
+            }
+        }
+
+        internal byte IndentByte { get; private set; }
+
+        /// <summary>
+        /// Defines the whitespace character to indent with when <see cref="Indented"/> is set to true, with the default (i.e. '\0') inidicating spaces.
+        /// </summary>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the indent character is set to a non-whitespace character.
+        /// </exception>
+        public char IndentCharacter
+        {
+            readonly get => (char)IndentByte;
+            set
+            {
+                if (value is not ' ' and not '\t' and not '\0')
+                {
+                    throw new ArgumentException(SR.InvalidIndentCharacter);
+                }
+
+                IndentByte = (byte)value;
+            }
+        }
+
+        /// <summary>
+        /// Defines the number of whitespace characters to write per indentation level, with the default (i.e. 0) indicating an indent size of 2.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the indent size is set to a negative value or a value greater than 128.
+        /// </exception>
+        public int IndentSize
+        {
+            readonly get => _indentSize;
+            set
+            {
+                if (value is < 0 or > 128)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.InvalidIndentSize);
+                }
+
+                _indentSize = value;
             }
         }
 

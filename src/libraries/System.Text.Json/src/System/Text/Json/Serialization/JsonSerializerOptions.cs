@@ -83,6 +83,7 @@ namespace System.Text.Json
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
+        private int _indentSize;
         private bool _allowTrailingCommas;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
@@ -90,6 +91,7 @@ namespace System.Text.Json
         private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
+        private char _indentCharacter;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -132,6 +134,7 @@ namespace System.Text.Json
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
+            _indentSize = options._indentSize;
             _allowTrailingCommas = options._allowTrailingCommas;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
@@ -139,6 +142,7 @@ namespace System.Text.Json
             _includeFields = options._includeFields;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
+            _indentCharacter = options._indentCharacter;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -543,6 +547,56 @@ namespace System.Text.Json
         internal int EffectiveMaxDepth { get; private set; } = DefaultMaxDepth;
 
         /// <summary>
+        /// Defines the whitespace character to indent with when <see cref="WriteIndented"/> is set to true, with the default (i.e. '\0') inidicating spaces.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the indent character is set to a non-whitespace character.
+        /// </exception>
+        public char IndentCharacter
+        {
+            get => _indentCharacter;
+            set
+            {
+                VerifyMutable();
+
+                if (value is not ' ' and not '\t' and not '\0')
+                {
+                    throw new ArgumentException(SR.InvalidIndentCharacter);
+                }
+
+                _indentCharacter = value;
+            }
+        }
+
+        /// <summary>
+        /// Defines the number of whitespace characters to write per indentation level when serializing with <see cref="WriteIndented"/> set to <see langword="true"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the indent size is set to a negative value or a value greater than 128.
+        /// </exception>
+        public int IndentSize
+        {
+            get => _indentSize;
+            set
+            {
+                VerifyMutable();
+
+                if (value is < 0 or > 128)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.InvalidIndentSize);
+                }
+
+                _indentSize = value;
+            }
+        }
+
+        /// <summary>
         /// Specifies the policy used to convert a property's name on an object to another format, such as camel-casing.
         /// The resulting property name is expected to match the JSON payload during deserialization, and
         /// will be used when writing the property name during serialization.
@@ -891,6 +945,8 @@ namespace System.Text.Json
             {
                 Encoder = Encoder,
                 Indented = WriteIndented,
+                IndentCharacter = IndentCharacter,
+                IndentSize = IndentSize,
                 MaxDepth = EffectiveMaxDepth,
 #if !DEBUG
                 SkipValidation = true

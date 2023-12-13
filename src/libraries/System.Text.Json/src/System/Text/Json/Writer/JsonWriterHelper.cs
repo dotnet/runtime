@@ -10,25 +10,23 @@ namespace System.Text.Json
 {
     internal static partial class JsonWriterHelper
     {
-        public static void WriteIndentation(Span<byte> buffer, int indent)
+        public static void WriteIndentation(Span<byte> buffer, int indent, byte indentByte)
         {
-            Debug.Assert(indent % JsonConstants.SpacesPerIndent == 0);
+            Debug.Assert(indentByte is JsonConstants.Space or JsonConstants.Tab);
             Debug.Assert(buffer.Length >= indent);
 
             // Based on perf tests, the break-even point where vectorized Fill is faster
             // than explicitly writing the space in a loop is 8.
             if (indent < 8)
             {
-                int i = 0;
-                while (i < indent)
+                for (int i = 0; i < indent; i++)
                 {
-                    buffer[i++] = JsonConstants.Space;
-                    buffer[i++] = JsonConstants.Space;
+                    buffer[i] = indentByte;
                 }
             }
             else
             {
-                buffer.Slice(0, indent).Fill(JsonConstants.Space);
+                buffer.Slice(0, indent).Fill(indentByte);
             }
         }
 

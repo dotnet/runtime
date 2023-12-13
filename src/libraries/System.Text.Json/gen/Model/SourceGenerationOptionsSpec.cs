@@ -32,6 +32,10 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool? IncludeFields { get; init; }
 
+        public required char? IndentCharacter { get; set; }
+
+        public required int? IndentSize { get; set; }
+
         public required int? MaxDepth { get; init; }
 
         public required JsonNumberHandling? NumberHandling { get; init; }

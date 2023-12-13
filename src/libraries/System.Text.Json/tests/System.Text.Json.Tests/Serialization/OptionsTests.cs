@@ -60,6 +60,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(options.DictionaryKeyPolicy);
             Assert.Null(options.Encoder);
             Assert.False(options.IgnoreNullValues);
+            Assert.Equal('\0', options.IndentCharacter);
+            Assert.Equal(0, options.IndentSize);
             Assert.Equal(0, options.MaxDepth);
             Assert.False(options.PropertyNameCaseInsensitive);
             Assert.Null(options.PropertyNamingPolicy);
@@ -77,6 +79,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
             Assert.Throws<InvalidOperationException>(() => options.Encoder = JavaScriptEncoder.Default);
             Assert.Throws<InvalidOperationException>(() => options.IgnoreNullValues = options.IgnoreNullValues);
+            Assert.Throws<InvalidOperationException>(() => options.IndentCharacter = options.IndentCharacter);
+            Assert.Throws<InvalidOperationException>(() => options.IndentSize = options.IndentSize);
             Assert.Throws<InvalidOperationException>(() => options.MaxDepth = options.MaxDepth);
             Assert.Throws<InvalidOperationException>(() => options.PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive);
             Assert.Throws<InvalidOperationException>(() => options.PropertyNamingPolicy = options.PropertyNamingPolicy);
@@ -414,6 +418,26 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.MaxDepth = depth);
+        }
+
+        [Theory]
+        [InlineData('a')]
+        [InlineData('_')]
+        [InlineData('\r')]
+        [InlineData('\n')]
+        public static void TestIndentCharacterInvalid(char indentCharacter)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentException>("value", () => options.IndentCharacter = indentCharacter);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(129)]
+        public static void TestIndentSizeInvalid(int indentSize)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.IndentSize = indentSize);
         }
 
         [Fact]

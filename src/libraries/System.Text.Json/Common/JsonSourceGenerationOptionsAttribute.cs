@@ -81,6 +81,16 @@ namespace System.Text.Json.Serialization
         public bool IncludeFields { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.IndentCharacter"/> when set.
+        /// </summary>
+        public char IndentCharacter { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.IndentSize"/> when set.
+        /// </summary>
+        public int IndentSize { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.MaxDepth"/> when set.
         /// </summary>
         public int MaxDepth { get; set; }

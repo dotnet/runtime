@@ -270,6 +270,8 @@ namespace System.Text.Json.SourceGeneration
                 bool? ignoreReadOnlyFields = null;
                 bool? ignoreReadOnlyProperties = null;
                 bool? includeFields = null;
+                char? indentCharacter = null;
+                int? indentSize = null;
                 int? maxDepth = null;
                 JsonNumberHandling? numberHandling = null;
                 JsonObjectCreationHandling? preferredObjectCreationHandling = null;
@@ -394,6 +396,8 @@ namespace System.Text.Json.SourceGeneration
                     IgnoreReadOnlyFields = ignoreReadOnlyFields,
                     IgnoreReadOnlyProperties = ignoreReadOnlyProperties,
                     IncludeFields = includeFields,
+                    IndentCharacter = indentCharacter,
+                    IndentSize = indentSize,
                     MaxDepth = maxDepth,
                     NumberHandling = numberHandling,
                     PreferredObjectCreationHandling = preferredObjectCreationHandling,

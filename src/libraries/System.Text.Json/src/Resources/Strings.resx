@@ -247,6 +247,12 @@
   <data name="MaxDepthMustBePositive" xml:space="preserve">
     <value>Max depth must be positive.</value>
   </data>
+  <data name="InvalidIndentCharacter" xml:space="preserve">
+    <value>Indent character must be a valid whitespace character.</value>
+  </data>
+  <data name="InvalidIndentSize" xml:space="preserve">
+    <value>Indent size must be a value between 0 and 128.</value>
+  </data>
   <data name="CommentHandlingMustBeValid" xml:space="preserve">
     <value>The JsonCommentHandling enum must be set to one of the supported values.</value>
   </data>
