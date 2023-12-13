@@ -181,8 +181,8 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 > [!NOTE]
 > Ownership isn't the same as supported. See [operating systems](#operating-systems) for details.
 
-| Architecture     | Lead          | Owners (area experts to tag in PRs and issues)        | Description  |
-|------------------|---------------|-------------------------------------------------------|--------------|
+| Architecture     | Lead          | Owners (area experts to tag in PRs and issues)                      | Description  |
+|------------------|---------------|---------------------------------------------------------------------|--------------|
 | arch-loongarch64 | @shushanhf    | @LuckyXu-HF                                                         |              |
 | arch-riscv       | @gbalykov     | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin, @viewizard |              |
 | arch-s390x       | @uweigand     | @uweigand                                                           |              |
