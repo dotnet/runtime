@@ -844,7 +844,7 @@ class SuperPMICollect:
                     if self.coreclr_args.nativeaot:
                         extensions = [".ilc.rsp"]
                     # Skip assemblies in the 'aotsdk' folder when not running 'nativeaot'.
-                    elif "aotsdk" in file.lower():
+                    elif os.path.dirname(file.lower()).endswith("aotsdk"):
                         return False
                     else:
                         extensions = [".dll", ".exe"]
