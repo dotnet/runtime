@@ -301,7 +301,7 @@ namespace System
         /// </exception>
         public static TimeSpan FromDays(int days)
         {
-            return new TimeSpan((long)days * TicksPerDay);
+            return IntervalFromTicks((long)days * TicksPerDay);
         }
 
         /// <summary>
@@ -355,7 +355,7 @@ namespace System
         /// </exception>
         public static TimeSpan FromHours(int hours)
         {
-            return new TimeSpan((long)hours * TicksPerHour);
+            return IntervalFromTicks((long)hours * TicksPerHour);
         }
 
         /// <summary>
@@ -400,6 +400,19 @@ namespace System
             return new TimeSpan((long)ticks);
         }
 
+        private static TimeSpan IntervalFromTicks(long ticks)
+        {
+            if ((ticks > MaxTicks) || (ticks < MinTicks))
+            {
+                ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
+            }
+            if (ticks == MaxTicks)
+            {
+                return MaxValue;
+            }
+            return new TimeSpan((long)ticks);
+        }
+
         public static TimeSpan FromMilliseconds(double value) => Interval(value, TicksPerMillisecond);
 
         /// <summary>
@@ -414,7 +427,7 @@ namespace System
         {
             long totalTicks = milliseconds * TicksPerMillisecond;
 
-            return new TimeSpan(totalTicks) + FromMicroseconds(microseconds);
+            return IntervalFromTicks(totalTicks) + FromMicroseconds(microseconds);
         }
 
         /// <summary>
@@ -448,7 +461,7 @@ namespace System
         /// </exception>
         public static TimeSpan FromMicroseconds(long microseconds)
         {
-            return new TimeSpan(microseconds * TicksPerMicrosecond);
+            return IntervalFromTicks(microseconds * TicksPerMicrosecond);
         }
 
         public static TimeSpan FromMinutes(double value) => Interval(value, TicksPerMinute);
@@ -463,7 +476,7 @@ namespace System
         /// </exception>
         public static TimeSpan FromMinutes(long minutes)
         {
-            return new TimeSpan(minutes * TicksPerMinute);
+            return IntervalFromTicks(minutes * TicksPerMinute);
         }
 
         /// <summary>
@@ -498,7 +511,7 @@ namespace System
         /// </exception>
         public static TimeSpan FromSeconds(long seconds)
         {
-            return new TimeSpan(seconds * TicksPerSecond);
+            return IntervalFromTicks(seconds * TicksPerSecond);
         }
 
         /// <summary>
