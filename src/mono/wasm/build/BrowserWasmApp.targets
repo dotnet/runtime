@@ -10,11 +10,6 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <PrepareInputsForWasmBuildDependsOn>
-      $(PrepareInputsForWasmBuildDependsOn);
-      _ReadEmccProps
-    </PrepareInputsForWasmBuildDependsOn>
-
     <PrepareForWasmBuildNativeDependsOn>
       _CheckToolchainIsExpectedVersion;
       _PrepareForBrowserWasmBuildNative;
@@ -545,33 +540,6 @@
 
     <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'" Text="$(_VersionMismatchMessage)" />
     <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'" Text="$(_VersionMismatchMessage)" />
-  </Target>
-
-  <UsingTask TaskName="ReadEmccProps" AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
-             TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
-    <ParameterGroup>
-      <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-    </ParameterGroup>
-  </UsingTask>
-
-  <Target Name="_ReadEmccProps" Condition="'$(_IsToolchainMissing)' != 'true'">
-    <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
-      <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
-      <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_WasmOptConfigurationFlagsItems" />
-      <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
-      <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName="EmccExportedRuntimeMethod" />
-    </ReadEmccProps>
-
-    <CreateProperty Value="%(_EmccPropItems.Value)">
-      <Output TaskParameter="Value" PropertyName="%(_EmccPropItems.Identity)" />
-    </CreateProperty>
-
-    <CreateProperty Value="%(_WasmOptConfigurationFlagsItems.Value)">
-      <Output TaskParameter="Value" PropertyName="%(_WasmOptConfigurationFlagsItems.Identity)" />
-    </CreateProperty>
   </Target>
 
   <Target Name="_CompleteWasmBuildNative" AfterTargets="WasmLinkDotNet">

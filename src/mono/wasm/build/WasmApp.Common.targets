@@ -376,6 +376,31 @@
     </ItemGroup>
   </Target>
 
+  <UsingTask TaskName="ReadWasmProps" AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
+             TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
+    <ParameterGroup>
+      <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+    </ParameterGroup>
+  </UsingTask>
+
+  <Target Name="_ReadWasmProps" Condition="'$(_IsToolchainMissing)' != 'true'">
+    <ReadWasmProps JsonFilePath="$(_WasmRuntimePackSrcDir)wasm-props.json">
+      <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
+      <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
+      <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName="EmccExportedRuntimeMethod" />
+
+      <!-- shared by browser/wasi -->
+      <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_DefaulWasmOptConfigurationFlags" />
+    </ReadWasmProps>
+
+    <CreateProperty Value="%(_EmccPropItems.Value)" Condition="%(_EmccPropItems.Identity) != ''">
+      <Output TaskParameter="Value" PropertyName="%(_EmccPropItems.Identity)" />
+    </CreateProperty>
+  </Target>
+
   <Target Name="WasmGenerateAppBundle" DependsOnTargets="$(WasmGenerateAppBundleDependsOn)" Condition="'$(WasmGenerateAppBundle)' == 'true'" />
 
   <Target Name="_WasmGenerateRuntimeConfig"
@@ -447,6 +472,17 @@
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
       <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmCommonPrepareForWasmBuildNative" Condition="'$(WasmBuildNative)' == 'true'">
+    <ItemGroup>
+      <WasmOptConfigurationFlags Include="--enable-simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
+      <WasmOptConfigurationFlags Include="--enable-exception-handling" Condition="'$(WasmExceptionHandling)' == 'true'" />
+      <WasmOptConfigurationFlags Include="--strip-dwarf" Condition="'$(WasmNativeStrip)' == 'true'" />
+
+      <!-- WasmOptConfigurationFlags property is set by reading from wasm-props.json -->
+      <WasmOptConfigurationFlags Include="@(_DefaulWasmOptConfigurationFlags)" />
     </ItemGroup>
   </Target>
 
