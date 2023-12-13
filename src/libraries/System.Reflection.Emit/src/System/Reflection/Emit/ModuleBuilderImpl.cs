@@ -171,9 +171,9 @@ namespace System.Reflection.Emit
                 }
 
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
+                WriteProperties(typeBuilder);
                 WriteFields(typeBuilder);
                 WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
-                WriteProperties(typeBuilder);
                 WriteEvents(typeBuilder);
             }
 

@@ -8,10 +8,10 @@ namespace System.Reflection.Emit
 {
     internal sealed class EventBuilderImpl : EventBuilder
     {
-        private string _name;
+        private readonly string _name;
         private EventAttributes _attributes;
-        private TypeBuilderImpl _typeBuilder;
-        private Type _eventType;
+        private readonly TypeBuilderImpl _typeBuilder;
+        private readonly Type _eventType;
 
         internal EventDefinitionHandle _handle;
         internal MethodBuilder? _addOnMethod;
