@@ -843,6 +843,9 @@ class SuperPMICollect:
                 def filter_file(file):
                     if self.coreclr_args.nativeaot:
                         extensions = [".ilc.rsp"]
+                    # Skip assemblies in the 'aotsdk' folder when not running 'nativeaot'.
+                    elif os.path.dirname(file.lower()).endswith("aotsdk"):
+                        return False
                     else:
                         extensions = [".dll", ".exe"]
                     return any(file.endswith(extension) for extension in extensions) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude))
