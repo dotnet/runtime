@@ -1,4 +1,10 @@
 <Project>
+  <PropertyGroup>
+    <!-- Post Wasm MVP features -->
+    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
+  </PropertyGroup>
+
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
@@ -27,9 +33,6 @@
       _WasmGenerateRunV8Script;
     </WasmGenerateAppBundleDependsOn>
 
-    <!-- Post Wasm MVP features -->
-    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
-    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and ( '$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' )">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
@@ -59,6 +62,8 @@
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">-fexceptions</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_WasmDefaultFlags>
+
+    <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -208,15 +213,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
-           So, we need to escape it here, so the paths don't get split up when converting
-           to string[] for passing to Exec task -->
-      <_PathSeparator Condition="'$(OS)' == 'Windows_NT'">%3B</_PathSeparator>
-      <_PathSeparator Condition="'$(OS)' != 'Windows_NT'">:</_PathSeparator>
-
       <_EmscriptenPrependPATHProperty>@(EmscriptenPrependPATH -> '%(Identity)', '$(_PathSeparator)')</_EmscriptenPrependPATHProperty>
     </PropertyGroup>
-
     <ItemGroup>
       <EmscriptenEnvVars Include="PATH=$(_EmscriptenPrependPATHProperty)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
 
@@ -246,6 +244,8 @@
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_WasmDefaultLinkFlagsRsp>
       <!--<_WasmLLVMPathForAOT>$(EmscriptenUpstreamBinPath)</_WasmLLVMPathForAOT>-->
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
+      <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == '' and '$(WasmNativeStrip)' == 'true'">true</WasmRunWasmOpt>
+      <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
@@ -500,16 +500,7 @@
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
     </ItemGroup>
 
-    <ItemGroup>
-      <!-- WasmOptConfigurationFlags property is set by reading from emcc-props.json -->
-      <WasmOptConfigurationFlags Condition="'$(WasmOptConfigurationFlags)' != ''" Include="$(WasmOptConfigurationFlags)" />
-    </ItemGroup>
-
-    <Message Text="Stripping symbols from dotnet.native.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
-    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling @(WasmOptConfigurationFlags, ' ') --strip-dwarf &quot;$(_WasmIntermediateOutputPath)dotnet.native.wasm&quot; -o &quot;$(_WasmIntermediateOutputPath)dotnet.native.wasm&quot;"
-          Condition="'$(WasmNativeStrip)' == 'true'"
-          IgnoreStandardErrorWarningFormat="true"
-          EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <CallTarget Targets="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'" />
 
     <OnError ExecuteTargets="_OnError_WasmLinkDotNet_UndefinedSymbols"
              Condition="'$(WasmAllowUndefinedSymbols)' != 'true' and '$(_EmccLinkStepExitCode)' != '0' and $([System.Text.RegularExpressions.Regex]::IsMatch($(_EmccLinkStepConsoleOutput), 'wasm-ld *: *error *:.*undefined symbol:'))" />

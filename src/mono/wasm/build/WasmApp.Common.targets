@@ -120,6 +120,7 @@
       _SetWasmNativeStripDefault;
       _GetDefaultWasmAssembliesToBundle;
       _WasmGetRuntimeConfigPath;
+      _ReadWasmProps;
     </PrepareInputsForWasmBuildDependsOn>
 
     <WasmGenerateAppBundleDependsOn>
@@ -130,13 +131,14 @@
     <!-- FIXME: TMP: added _PrepareForWasmBuildNative as it used by emsdk cache as beforeTargets -->
     <_WasmBuildNativeCoreDependsOn>
       $(_WasmBuildNativeCoreDependsOn);
-      _PrepareForWasmBuildNative;
+      _WasmCommonPrepareForWasmBuildNative;
       PrepareForWasmBuildNative;
       _ScanAssembliesDecideLightweightMarshaler;
       _WasmAotCompileApp;
       _WasmStripAOTAssemblies;
       _GenerateManagedToNative;
       WasmLinkDotNet;
+      WasmAfterLinkSteps;
     </_WasmBuildNativeCoreDependsOn>
 
     <WasmLinkDotNetDependsOn>
@@ -175,10 +177,20 @@
     <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
 
+    <!-- Post Wasm MVP features -->
+    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
+
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
+
+    <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
+         So, we need to escape it here, so the paths don't get split up when converting
+         to string[] for passing to Exec task -->
+    <_PathSeparator Condition="'$(OS)' == 'Windows_NT'">%3B</_PathSeparator>
+    <_PathSeparator Condition="'$(OS)' != 'Windows_NT'">:</_PathSeparator>
   </PropertyGroup>
 
   <ItemGroup>
@@ -294,6 +306,12 @@
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' != ''">$([System.IO.Path]::GetFileName($(WasmMainAssemblyFileName)))</WasmMainAssemblyFileName>
 
       <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(WasmMainAssemblyFileName)' != '' and '$(_WasmOutputFileName)' == ''">
+      <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasmOutputFileName>
+      <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasmOutputFileName>
+      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasiIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
     </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
@@ -849,5 +867,15 @@
   </Target>
 
   <Target Name="WasmLinkDotNet" DependsOnTargets="$(WasmLinkDotNetDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
-  <Target Name="_PrepareForWasmBuildNative" />
+
+  <Target Name="WasmAfterLinkSteps" DependsOnTargets="$(WasmAfterLinkStepsDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
+
+  <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
+    <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
+
+    <Exec Command="wasm-opt$(_ExeExt) @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="@(WasmToolchainEnvVars)" />
+  </Target>
+
 </Project>
