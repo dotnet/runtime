@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -14,10 +15,10 @@ namespace ILCompiler
     {
         private readonly bool _supportsLazyCctors;
 
-        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy)
+        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, IReadOnlyDictionary<string, bool> featureSwitches)
         {
             _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", throwIfNotFound: false) != null;
-            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy, readOnlyPolicy);
+            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy, readOnlyPolicy, featureSwitches);
         }
 
         /// <summary>
@@ -137,13 +138,15 @@ namespace ILCompiler
             private readonly ILProvider _ilProvider;
             internal readonly TypePreinit.TypePreinitializationPolicy _policy;
             private readonly ReadOnlyFieldPolicy _readOnlyPolicy;
+            private readonly IReadOnlyDictionary<string, bool> _featureSwitches;
 
-            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy)
+            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, IReadOnlyDictionary<string, bool> featureSwitches)
             {
                 _compilationGroup = compilationGroup;
                 _ilProvider = ilProvider;
                 _policy = policy;
                 _readOnlyPolicy = readOnlyPolicy;
+                _featureSwitches = featureSwitches;
             }
 
             protected override bool CompareKeyToValue(MetadataType key, TypePreinit.PreinitializationInfo value) => key == value.Type;
@@ -153,7 +156,7 @@ namespace ILCompiler
 
             protected override TypePreinit.PreinitializationInfo CreateValueFromKey(MetadataType key)
             {
-                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, _readOnlyPolicy, key);
+                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _featureSwitches, key);
 
                 // We either successfully preinitialized or
                 // the type doesn't have a canonical form or

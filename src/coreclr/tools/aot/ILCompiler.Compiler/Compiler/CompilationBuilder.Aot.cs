@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace ILCompiler
 {
@@ -132,7 +133,7 @@ namespace ILCompiler
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
-                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy(), new StaticReadOnlyFieldPolicy());
+                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy(), new StaticReadOnlyFieldPolicy(), new Dictionary<string, bool>());
             return _preinitializationManager;
         }
 

@@ -39,14 +39,16 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
         private readonly Dictionary<TypeDesc, RuntimeTypeValue> _internedTypes = new Dictionary<TypeDesc, RuntimeTypeValue>();
+        private readonly IReadOnlyDictionary<string, bool> _featureSwitches;
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy)
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, IReadOnlyDictionary<string, bool> featureSwitches)
         {
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
             _policy = policy;
             _readOnlyPolicy = readOnlyPolicy;
+            _featureSwitches = featureSwitches;
 
             // Zero initialize all fields we model.
             foreach (var field in owningType.GetFields())
@@ -58,7 +60,7 @@ namespace ILCompiler
             }
         }
 
-        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, MetadataType type)
+        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, IReadOnlyDictionary<string, bool> featureSwitches, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
@@ -85,7 +87,7 @@ namespace ILCompiler
             Status status;
             try
             {
-                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy, readOnlyPolicy);
+                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy, readOnlyPolicy, featureSwitches);
                 int instructions = 0;
                 status = preinit.TryScanMethod(type.GetStaticConstructor(), null, null, ref instructions, out _);
             }
@@ -351,7 +353,7 @@ namespace ILCompiler
                                 && field.OwningType.HasStaticConstructor
                                 && _policy.CanPreinitialize(field.OwningType))
                             {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy);
+                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _featureSwitches);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
 
@@ -466,7 +468,7 @@ namespace ILCompiler
                             }
 
                             Value retVal;
-                            if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, out retVal))
+                            if (!TryHandleIntrinsicCall(method, methodParams, out retVal))
                             {
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
@@ -1886,6 +1888,16 @@ namespace ILCompiler
                         retVal = ValueTypeValue.FromSByte(parameters[0] == parameters[1] ? (sbyte)1 : (sbyte)0);
                         return true;
                     }
+                case "TryGetSwitch" when method.OwningType is MetadataType appContextType
+                    && appContextType.Name == "AppContext" && appContextType.Namespace == "System"
+                    && appContextType.Module == appContextType.Context.SystemModule
+                    && parameters[0] is StringInstance switchName && parameters[1] is ByRefValue switchValueLocation
+                    && _featureSwitches.TryGetValue(switchName.ValueAsString, out bool switchValue):
+                    {
+                        switchValueLocation.WriteAsBool(switchValue);
+                        retVal = ValueTypeValue.FromSByte(1);
+                        return true;
+                    }
             }
 
             return false;
@@ -2623,11 +2635,11 @@ namespace ILCompiler
                 return false;
             }
 
-            private ReadOnlySpan<byte> AsExactByteCount(int count)
+            private Span<byte> AsExactByteCount(int count)
             {
                 if (PointedToOffset + count > PointedToBytes.Length)
                     ThrowHelper.ThrowInvalidProgramException();
-                return new ReadOnlySpan<byte>(PointedToBytes, PointedToOffset, count);
+                return new Span<byte>(PointedToBytes, PointedToOffset, count);
             }
 
             public sbyte DereferenceAsSByte() => (sbyte)AsExactByteCount(1)[0];
@@ -2636,6 +2648,7 @@ namespace ILCompiler
             public long DereferenceAsInt64() => BitConverter.ToInt64(AsExactByteCount(8));
             public float DereferenceAsSingle() => BitConverter.ToSingle(AsExactByteCount(4));
             public double DereferenceAsDouble() => BitConverter.ToDouble(AsExactByteCount(8));
+            public void WriteAsBool(bool value) => BitConverter.TryWriteBytes(AsExactByteCount(1), value);
         }
 
         private abstract class ReferenceTypeValue : Value
@@ -2904,7 +2917,7 @@ namespace ILCompiler
         {
             private readonly byte[] _value;
 
-            private string ValueAsString
+            public string ValueAsString
             {
                 get
                 {

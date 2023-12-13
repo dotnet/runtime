@@ -244,6 +244,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(DirectPInvoke->'--directpinvoke:%(Identity)')" />
       <IlcArg Include="@(DirectPInvokeList->'--directpinvokelist:%(Identity)')" />
+      <IlcArg Include="--feature:System.Resources.UseSystemResourceKeys=false" />
       <IlcArg Include="@(_TrimmerFeatureSettings->'--feature:%(Identity)=%(Value)')" />
       <IlcArg Include="@(RuntimeHostConfigurationOption->'--runtimeknob:%(Identity)=%(Value)')" />
       <IlcArg Include="--runtimeknob:RUNTIME_IDENTIFIER=$(RuntimeIdentifier)" />

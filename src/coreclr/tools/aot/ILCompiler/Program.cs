@@ -436,7 +436,7 @@ namespace ILCompiler
             TypePreinit.TypePreinitializationPolicy preinitPolicy = preinitStatics ?
                 new TypePreinit.TypeLoaderAwarePreinitializationPolicy() : new TypePreinit.DisabledPreinitializationPolicy();
 
-            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy());
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy(), featureSwitches);
             builder
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
@@ -515,7 +515,7 @@ namespace ILCompiler
                 {
                     var readOnlyFieldPolicy = scanResults.GetReadOnlyFieldPolicy();
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy(),
-                        readOnlyFieldPolicy);
+                        readOnlyFieldPolicy, featureSwitches);
                     builder.UsePreinitializationManager(preinitManager)
                         .UseReadOnlyFieldPolicy(readOnlyFieldPolicy);
                 }
