@@ -110,6 +110,13 @@
     </ItemGroup>
   </Target>
 
+  <!--
+      For TestReadyToRun, we need the whole framework to be R2R-compiled besides
+      the actual test assembly. However, this is a very lengthy process and it's
+      unnecessary in this case because we already have an R2R-compiled framework.
+      So, we have to tell the build that we already have these binaries so that it
+      doesn't build them again for each test.
+  -->
   <Target Name="ExcludeExistingR2RBinaries"
           Condition="'$(TestReadyToRun)' == 'true'"
           BeforeTargets="_PrepareForReadyToRunCompilation">
@@ -125,6 +132,14 @@
     </ItemGroup>
   </Target>
 
+  <!--
+      For TestReadyToRun, each crossgen'd assembly needs to reference the whole
+      framework. For this, it looks at the contents of the same list that contains
+      all the assemblies we're going to R2R-compile. However, since we removed those
+      belonging to the framework we have ready to use in the previous target, then
+      the references list generated in _PrepareForReadyToRunCompilation is incomplete.
+      So, we add those missing assemblies only to the references list in this target.
+  -->
   <Target Name="AddExistingR2RBinariesReferencesForCrossgen2"
           Condition="'$(TestReadyToRun)' == 'true'"
           AfterTargets="_PrepareForReadyToRunCompilation">
@@ -133,6 +148,12 @@
     </ItemGroup>
   </Target>
 
+  <!--
+      For TestReadyToRun, debugging binaries bloat the test sizes way too much and
+      makes the Helix machines run out of disk. Since we don't need them for the
+      TestReadyToRun test runs, we remove them from the list that is later on copied
+      to the final location.
+  -->
   <Target Name="RemoveDbgBinsFromTestR2ROutput"
           Condition="'$(TestReadyToRun)' == 'true'"
           BeforeTargets="_CopyFilesMarkedCopyLocal">
@@ -142,6 +163,10 @@
     </ItemGroup>
   </Target>
 
+  <!--
+      Very similarly to the previous target, we need to get rid of the debugging
+      binaries from the publishing directory as well.
+  -->
   <Target Name="RemoveDbgBinsFromTestR2RPublish"
           Condition="'$(TestReadyToRun)' == 'true'"
           BeforeTargets="_CopyResolvedFilesToPublishPreserveNewest">
@@ -151,6 +176,12 @@
     </ItemGroup>
   </Target>
 
+  <!--
+      As explained in Target 'ExcludeExistingR2RBinaries' up above, for TestReadyToRun
+      we need the fully R2R-compiled framework, but we already have it elsewhere. So,
+      once the test's specific stuff is constructed, we copy the R2R-compiled framework
+      to the test's self-contained directory so the test can use it when called.
+  -->
   <Target Name="CopyExistingR2RBinaries"
           Condition="'$(TestReadyToRun)' == 'true'"
           AfterTargets="_CopyResolvedFilesToPublishAlways">
@@ -165,6 +196,10 @@
 
   </Target>
 
+  <!--
+      There are a few tests that need a 'live-ref-pack', which is missing from the
+      publish directory in TestReadyToRun builds. This target copies it there.
+  -->
   <Target Name="CopyLiveRefPackIfPresent"
           Condition="'$(TestReadyToRun)' == 'true'"
           AfterTargets="CopyExistingR2RBinaries">
