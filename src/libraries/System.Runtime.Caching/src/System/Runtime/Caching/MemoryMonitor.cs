@@ -77,7 +77,10 @@ namespace System.Runtime.Caching
         {
             int pressure = GetCurrentPressure();
 
-            _i0 = (_i0 + 1) % HISTORY_COUNT;
+            _i0++;
+            if  (_i0 >= HISTORY_COUNT)
+                _i0 = 0;
+
             _pressureTotal -= _pressureHist[_i0];
             _pressureTotal += pressure;
             _pressureHist[_i0] = pressure;

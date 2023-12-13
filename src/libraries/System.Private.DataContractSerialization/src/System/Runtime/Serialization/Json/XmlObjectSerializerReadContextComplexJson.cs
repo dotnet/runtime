@@ -48,22 +48,28 @@ namespace System.Runtime.Serialization.Json
             int length = memberNames.Length;
             if (length != 0)
             {
-                for (int i = 0, index = (memberIndex + 1) % length; i < length; i++, index = (index + 1) % length)
+                for (int i = 0, index = (memberIndex + 1) % length; i < length; i++)
                 {
                     if (xmlReader.IsStartElement(memberNames[index], XmlDictionaryString.Empty))
                     {
                         return index;
                     }
+                    index++;
+                    if (index >= length)
+                        index = 0;
                 }
                 string? name;
                 if (TryGetJsonLocalName(xmlReader, out name))
                 {
-                    for (int i = 0, index = (memberIndex + 1) % length; i < length; i++, index = (index + 1) % length)
+                    for (int i = 0, index = (memberIndex + 1) % length; i < length; i++)
                     {
                         if (memberNames[index].Value == name)
                         {
                             return index;
                         }
+                        index++;
+                        if (index >= length)
+                            index = 0;
                     }
                 }
             }
