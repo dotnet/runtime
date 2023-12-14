@@ -102,6 +102,7 @@ namespace System.Globalization
         private static volatile CultureInfo? s_userDefaultUICulture;
 
         // The Invariant culture;
+// https://github.com/dotnet/runtime/issues/94225
 #if TARGET_BROWSER
         private static CultureInfo? s_InvariantCultureInfo;
 #else
@@ -466,6 +467,7 @@ namespace System.Globalization
         {
             get
             {
+// https://github.com/dotnet/runtime/issues/94225
 #if TARGET_BROWSER
                 s_InvariantCultureInfo ??= new CultureInfo(CultureData.Invariant, isReadOnly: true);
 #else
