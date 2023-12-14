@@ -481,6 +481,12 @@ static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t 
 
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 
+static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
+
+static code_t insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm);
+
+static code_t insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm);
+
 static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
 
 static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
@@ -501,6 +507,24 @@ static bool isStackRegister(regNumber reg)
 static bool isValidSimm4(ssize_t value)
 {
     return (-8 <= value) && (value <= 7);
+};
+
+// Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
+static bool isValidSimm4_MultipleOf2(ssize_t value)
+{
+    return (-16 <= value) && (value <= 14) && (value % 2 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 3 immediate 4 bit encoding (such as for LD3Q).
+static bool isValidSimm4_MultipleOf3(ssize_t value)
+{
+    return (-24 <= value) && (value <= 21) && (value % 3 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 4 immediate 4 bit encoding (such as for LD4Q).
+static bool isValidSimm4_MultipleOf4(ssize_t value)
+{
+    return (-32 <= value) && (value <= 28) && (value % 4 == 0);
 };
 
 // Returns true if 'value' is a legal signed multiple of 16 immediate 4 bit encoding (such as for LD1RQB).

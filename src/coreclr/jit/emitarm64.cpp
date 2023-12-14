@@ -1234,6 +1234,18 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 #ifdef DEBUG
             switch (id->idIns())
             {
+                case INS_sve_ld2q:
+                    assert(isValidSimm4_MultipleOf2(emitGetInsSC(id))); // iiii
+                    break;
+
+                case INS_sve_ld3q:
+                    assert(isValidSimm4_MultipleOf3(emitGetInsSC(id))); // iiii
+                    break;
+
+                case INS_sve_ld4q:
+                    assert(isValidSimm4_MultipleOf4(emitGetInsSC(id))); // iiii
+                    break;
+
                 case INS_sve_ld1rqb:
                 case INS_sve_ld1rqd:
                 case INS_sve_ld1rqh:
@@ -9613,7 +9625,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                     break;
 
                 default:
-                    assert(isValidSimm4(imm));
+                    assert(!"Invalid instruction");
                     break;
             }
 
@@ -9646,6 +9658,38 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 #endif // DEBUG
 
             fmt = IF_SVE_IO_3A;
+            break;
+
+        case INS_sve_ld2q:
+        case INS_sve_ld3q:
+        case INS_sve_ld4q:
+            assert(opt == INS_OPTS_SCALABLE_Q);
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+
+#ifdef DEBUG
+            switch (ins)
+            {
+                case INS_sve_ld2q:
+                    assert(isValidSimm4_MultipleOf2(imm));
+                    break;
+
+                case INS_sve_ld3q:
+                    assert(isValidSimm4_MultipleOf3(imm));
+                    break;
+
+                case INS_sve_ld4q:
+                    assert(isValidSimm4_MultipleOf4(imm));
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+#endif // DEBUG
+
+            fmt = IF_SVE_IQ_3A;
             break;
 
         default:
@@ -13024,6 +13068,39 @@ void emitter::emitIns_Call(EmitCallType          callType,
  *  TODO
  */
 
+/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm)
+{
+    assert(isValidSimm4_MultipleOf2(imm));
+    return insEncodeSimm4_19_to_16(imm / 2);
+}
+
+/*****************************************************************************
+ *
+ *  TODO
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm)
+{
+    assert(isValidSimm4_MultipleOf3(imm));
+    return insEncodeSimm4_19_to_16(imm / 3);
+}
+
+/*****************************************************************************
+ *
+ *  TODO
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm)
+{
+    assert(isValidSimm4_MultipleOf4(imm));
+    return insEncodeSimm4_19_to_16(imm / 4);
+}
+
+/*****************************************************************************
+ *
+ *  TODO
+ */
+
 /*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm)
 {
     assert(isValidSimm4_MultipleOf16(imm));
@@ -15128,6 +15205,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             switch (ins)
             {
+                case INS_sve_ld2q:
+                    code |= insEncodeSimm4_MultipleOf2_19_to_16(imm); // iiii
+                    break;
+
+                case INS_sve_ld3q:
+                    code |= insEncodeSimm4_MultipleOf3_19_to_16(imm); // iiii
+                    break;
+
+                case INS_sve_ld4q:
+                    code |= insEncodeSimm4_MultipleOf4_19_to_16(imm); // iiii
+                    break;
+
                 case INS_sve_ld1rqb:
                 case INS_sve_ld1rqd:
                 case INS_sve_ld1rqh:
@@ -15717,11 +15806,28 @@ void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts 
     regNumber currReg = firstReg;
 
     printf("{ ");
-    for (unsigned i = 0; i < listSize; i++)
+    if (listSize > 1)
     {
-        const bool notLastRegister = (i != listSize - 1);
-        emitDispSveReg(currReg, opt, notLastRegister);
-        currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+        if ((listSize == 2) || (((unsigned)currReg + listSize - 1) > (unsigned)REG_V31))
+        {
+            for (unsigned i = 0; i < listSize; i++)
+            {
+                const bool notLastRegister = (i != listSize - 1);
+                emitDispSveReg(currReg, opt, notLastRegister);
+                currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+            }
+        }
+        else
+        {
+            // short-hand
+            emitDispSveReg(currReg, opt, false);
+            printf(" - ");
+            emitDispSveReg((regNumber)(currReg + listSize - 1), opt, false);
+        }
+    }
+    else if (listSize == 1)
+    {
+        emitDispSveReg(currReg, opt, false);
     }
     printf(" }");
 
@@ -17552,8 +17658,15 @@ void emitter::emitDispInsHelp(
                              // immediate)
         case IF_SVE_IM_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus
                              // immediate)
+        // { <Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+        // { <Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+        // { <Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+        // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
         case IF_SVE_IO_3A:   // ............iiii ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus
                              // immediate)
+        // { <Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_IQ_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
                            // immediate)
         case IF_SVE_IS_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (scalar plus immediate)
@@ -17565,7 +17678,24 @@ void emitter::emitDispInsHelp(
         case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             imm = emitGetInsSC(id);
-            emitDispSveRegList(id->idReg1(), 1, id->idInsOpt(), true); // ttttt
+            switch (ins)
+            {
+                case INS_sve_ld2q:
+                    emitDispSveRegList(id->idReg1(), 2, id->idInsOpt(), true); // ttttt
+                    break;
+
+                case INS_sve_ld3q:
+                    emitDispSveRegList(id->idReg1(), 3, id->idInsOpt(), true); // ttttt
+                    break;
+
+                case INS_sve_ld4q:
+                    emitDispSveRegList(id->idReg1(), 4, id->idInsOpt(), true); // ttttt
+                    break;
+
+                default:
+                    emitDispSveRegList(id->idReg1(), 1, id->idInsOpt(), true); // ttttt
+                    break;
+            }
             emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, true);  // ggg
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
@@ -17578,6 +17708,14 @@ void emitter::emitDispInsHelp(
                         // We only do it because the capstone disassembly displays this immediate as hex.
                         // We could not modify capstone without affecting other cases.
                         emitDispImm(emitGetInsSC(id), false, /* alwaysHex */ true); // iiii
+                        break;
+
+                    case IF_SVE_IQ_3A:
+                        // This does not have to be printed as hex.
+                        // We only do it because the capstone disassembly displays this immediate as hex.
+                        // We could not modify capstone without affecting other cases.
+                        emitDispImm(emitGetInsSC(id), true, /* alwaysHex */ true); // iiii
+                        printf("mul vl");
                         break;
 
                     default:
@@ -20141,6 +20279,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_6C;
                     break;
                 case INS_sve_ld1rod:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_IQ_3A: // ............iiii ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
+                           // immediate)
+            switch (ins)
+            {
+                case INS_sve_ld2q:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_ld3q:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_ld4q:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
                     result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
                     break;
