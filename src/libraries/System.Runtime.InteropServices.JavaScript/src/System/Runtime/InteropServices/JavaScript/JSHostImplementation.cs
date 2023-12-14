@@ -216,12 +216,19 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 JSProxyContext.MainThreadContext = ctx.ProxyContext;
             }
+            ctx.previousSynchronizationContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(ctx);
+
             ctx.AwaitNewData();
         }
 
         public static void UninstallWebWorkerInterop()
         {
-            JSProxyContext.CurrentThreadContext?.Dispose();
+            var ctx = JSProxyContext.CurrentThreadContext;
+            if (ctx == null) throw new InvalidOperationException();
+            var syncContext = ctx.SynchronizationContext;
+            SynchronizationContext.SetSynchronizationContext(syncContext.previousSynchronizationContext);
+            ctx.Dispose();
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]

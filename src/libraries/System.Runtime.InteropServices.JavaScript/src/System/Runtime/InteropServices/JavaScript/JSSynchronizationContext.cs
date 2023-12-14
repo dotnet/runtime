@@ -41,20 +41,23 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        internal JSSynchronizationContext(bool isMainThread)
+        public JSSynchronizationContext(bool isMainThread)
         {
             ProxyContext = new JSProxyContext(isMainThread, this);
             Queue = Channel.CreateUnbounded<WorkItem>(new UnboundedChannelOptions { SingleWriter = false, SingleReader = true, AllowSynchronousContinuations = true });
             _DataIsAvailable = DataIsAvailable;
+        }
 
-            previousSynchronizationContext = Current;
-            SetSynchronizationContext(this);
+        internal JSSynchronizationContext(JSProxyContext proxyContext, WorkItemQueueType queue, Action dataIsAvailable)
+        {
+            ProxyContext = proxyContext;
+            Queue = queue;
+            _DataIsAvailable = dataIsAvailable;
         }
 
         public override SynchronizationContext CreateCopy()
         {
-            // child thread will inherit this JSSynchronizationContext
-            return this;
+            return new JSSynchronizationContext(ProxyContext, Queue, _DataIsAvailable);
         }
 
         internal void AwaitNewData()
@@ -177,7 +180,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     Queue.Writer.Complete();
                 }
-                SetSynchronizationContext(previousSynchronizationContext);
+                previousSynchronizationContext = null;
                 _isDisposed = true;
             }
         }
