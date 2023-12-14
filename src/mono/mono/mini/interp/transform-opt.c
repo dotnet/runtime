@@ -2528,6 +2528,8 @@ can_cprop_dreg (TransformData *td, InterpInst *mov_ins)
 		return FALSE;
 	if (td->var_values [sreg].def->opcode == MINT_DEF_ARG)
 		return FALSE;
+	if (sreg_val->def->flags & INTERP_INST_FLAG_PROTECTED_NEWOBJ)
+		return FALSE;
 	// reordering moves might break conversions
 	if (td->vars [dreg].mt != td->vars [sreg].mt)
 		return FALSE;
@@ -3561,7 +3563,8 @@ interp_super_instructions (TransformData *td)
 				InterpInst *def = get_var_value_def (td, sreg);
 				if (def && td->var_values [sreg].ref_count == 1) {
 					// The svar is used only for this mov. Try to get the definition to store directly instead
-					if (def->opcode != MINT_DEF_ARG && def->opcode != MINT_PHI && def->opcode != MINT_DEF_TIER_VAR) {
+					if (def->opcode != MINT_DEF_ARG && def->opcode != MINT_PHI && def->opcode != MINT_DEF_TIER_VAR &&
+							!(def->flags & INTERP_INST_FLAG_PROTECTED_NEWOBJ)) {
 						int dreg = ins->dreg;
 						// if var is not ssa or it is a renamed fixed, then we can't replace the dreg
 						// since there can be conflicting liveness, unless the instructions are adjacent
