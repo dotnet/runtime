@@ -5112,7 +5112,7 @@ size_t generation_allocator_efficiency_percent (generation* inst)
     // FPE may occur if we use floating point division because of speculative execution.
     uint64_t free_obj_space = generation_free_obj_space (inst);
     uint64_t free_list_allocated = generation_free_list_allocated (inst);
-    if (free_list_allocated == 0)
+    if ((free_list_allocated + free_obj_space) == 0)
       return 0;
     return (size_t)((100 * free_list_allocated) / (free_list_allocated + free_obj_space));
 }
@@ -5125,7 +5125,7 @@ size_t generation_unusable_fragmentation (generation* inst)
     uint64_t free_obj_space = generation_free_obj_space (inst);
     uint64_t free_list_allocated = generation_free_list_allocated (inst);
     uint64_t free_list_space = generation_free_list_space (inst);
-    if (free_obj_space == 0)
+    if ((free_list_allocated + free_obj_space) == 0)
       return 0;
     return (size_t)(free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
 }
