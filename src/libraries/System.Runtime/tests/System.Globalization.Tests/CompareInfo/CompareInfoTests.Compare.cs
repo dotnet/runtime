@@ -523,7 +523,7 @@ namespace System.Globalization.Tests
 
             // Edge case of the Ignore Width.
             Assert.False(string.Compare("\u3162\u3163", "\uFFDB\uFFDC", CultureInfo.InvariantCulture, CompareOptions.None) == 0, $"Expect '0x3162 0x3163' != '0xFFDB 0xFFDC'");
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalization)
                 Assert.True(string.Compare("\u3162\u3163", "\uFFDB\uFFDC", CultureInfo.InvariantCulture, CompareOptions.IgnoreWidth) == 0, "Expect '0x3162 0x3163' == '0xFFDB 0xFFDC'");
 
             const char hiraganaStart = '\u3041';
@@ -531,6 +531,7 @@ namespace System.Globalization.Tests
             const int hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
 
             // in HybridGlobalization on Browser IgnoreKanaType is supported only for "ja-JP"
+            // in HybridGlobalization on OSX behavior is different for CultureInfo.InvariantCulture
             CultureInfo ignoreKanaTypeTestedCulture = PlatformDetection.IsHybridGlobalization ? new CultureInfo("ja-JP") : CultureInfo.InvariantCulture;
 
             for (Char hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
