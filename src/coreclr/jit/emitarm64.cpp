@@ -1259,6 +1259,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 case INS_sve_ld2w:
                 case INS_sve_ld2d:
                 case INS_sve_ld2q:
+                case INS_sve_st2b:
+                case INS_sve_st2h:
+                case INS_sve_st2w:
+                case INS_sve_st2d:
                 case INS_sve_st2q:
                     assert(isValidSimm4_MultipleOf2(emitGetInsSC(id))); // iiii
                     break;
@@ -1268,6 +1272,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 case INS_sve_ld3w:
                 case INS_sve_ld3d:
                 case INS_sve_ld3q:
+                case INS_sve_st3b:
+                case INS_sve_st3h:
+                case INS_sve_st3w:
+                case INS_sve_st3d:
                 case INS_sve_st3q:
                     assert(isValidSimm4_MultipleOf3(emitGetInsSC(id))); // iiii
                     break;
@@ -1277,6 +1285,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                 case INS_sve_ld4w:
                 case INS_sve_ld4d:
                 case INS_sve_ld4q:
+                case INS_sve_st4b:
+                case INS_sve_st4h:
+                case INS_sve_st4w:
+                case INS_sve_st4d:
                 case INS_sve_st4q:
                     assert(isValidSimm4_MultipleOf4(emitGetInsSC(id))); // iiii
                     break;
@@ -9907,6 +9919,114 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_JM_3A;
             break;
 
+        case INS_sve_st1w:
+        case INS_sve_st1d:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+
+            if (opt == INS_OPTS_SCALABLE_Q && (ins == INS_sve_st1d))
+            {
+                fmt = IF_SVE_JN_3C_D;
+            }
+            else
+            {
+#if DEBUG
+                if (ins == INS_sve_st1w)
+                {
+                    assert(opt == INS_OPTS_SCALABLE_Q);
+                }
+                else
+                {
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                }
+#endif // DEBUG
+                fmt = IF_SVE_JN_3C;
+            }
+            break;
+
+        case INS_sve_st2b:
+        case INS_sve_st3b:
+        case INS_sve_st4b:
+        case INS_sve_st2h:
+        case INS_sve_st3h:
+        case INS_sve_st4h:
+        case INS_sve_st2w:
+        case INS_sve_st3w:
+        case INS_sve_st4w:
+        case INS_sve_st2d:
+        case INS_sve_st3d:
+        case INS_sve_st4d:
+            assert(insOptsScalableSimple(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+
+#ifdef DEBUG
+            switch (ins)
+            {
+                case INS_sve_st2b:
+                case INS_sve_st2h:
+                case INS_sve_st2w:
+                case INS_sve_st2d:
+                    assert(isValidSimm4_MultipleOf2(imm));
+                    break;
+
+                case INS_sve_st3b:
+                case INS_sve_st3h:
+                case INS_sve_st3w:
+                case INS_sve_st3d:
+                    assert(isValidSimm4_MultipleOf3(imm));
+                    break;
+
+                case INS_sve_st4b:
+                case INS_sve_st4h:
+                case INS_sve_st4w:
+                case INS_sve_st4d:
+                    assert(isValidSimm4_MultipleOf4(imm));
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+
+            switch (ins)
+            {
+                case INS_sve_st2b:
+                case INS_sve_st3b:
+                case INS_sve_st4b:
+                    assert(opt == INS_OPTS_SCALABLE_B);
+                    break;
+
+                case INS_sve_st2h:
+                case INS_sve_st3h:
+                case INS_sve_st4h:
+                    assert(opt == INS_OPTS_SCALABLE_H);
+                    break;
+
+                case INS_sve_st2w:
+                case INS_sve_st3w:
+                case INS_sve_st4w:
+                    assert(opt == INS_OPTS_SCALABLE_S);
+                    break;
+
+                case INS_sve_st2d:
+                case INS_sve_st3d:
+                case INS_sve_st4d:
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+#endif // DEBUG
+
+            fmt = IF_SVE_JO_3A;
+            break;
+
         default:
             unreached();
             break;
@@ -15473,6 +15593,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 case INS_sve_ld2w:
                 case INS_sve_ld2d:
                 case INS_sve_ld2q:
+                case INS_sve_st2b:
+                case INS_sve_st2h:
+                case INS_sve_st2w:
+                case INS_sve_st2d:
                 case INS_sve_st2q:
                     code |= insEncodeSimm4_MultipleOf2_19_to_16(imm); // iiii
                     break;
@@ -15482,6 +15606,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 case INS_sve_ld3w:
                 case INS_sve_ld3d:
                 case INS_sve_ld3q:
+                case INS_sve_st3b:
+                case INS_sve_st3h:
+                case INS_sve_st3w:
+                case INS_sve_st3d:
                 case INS_sve_st3q:
                     code |= insEncodeSimm4_MultipleOf3_19_to_16(imm); // iiii
                     break;
@@ -15491,6 +15619,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 case INS_sve_ld4w:
                 case INS_sve_ld4d:
                 case INS_sve_ld4q:
+                case INS_sve_st4b:
+                case INS_sve_st4h:
+                case INS_sve_st4w:
+                case INS_sve_st4d:
                 case INS_sve_st4q:
                     code |= insEncodeSimm4_MultipleOf4_19_to_16(imm); // iiii
                     break;
@@ -17995,8 +18127,22 @@ void emitter::emitDispInsHelp(
         // { <Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JM_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
                            // immediate)
+        // { <Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JN_3C: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
         case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        // { <Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             imm = emitGetInsSC(id);
             switch (ins)
@@ -18006,6 +18152,10 @@ void emitter::emitDispInsHelp(
                 case INS_sve_ld2w:
                 case INS_sve_ld2d:
                 case INS_sve_ld2q:
+                case INS_sve_st2b:
+                case INS_sve_st2h:
+                case INS_sve_st2w:
+                case INS_sve_st2d:
                 case INS_sve_st2q:
                     emitDispSveRegList(id->idReg1(), 2, id->idInsOpt(), true); // ttttt
                     break;
@@ -18015,6 +18165,10 @@ void emitter::emitDispInsHelp(
                 case INS_sve_ld3w:
                 case INS_sve_ld3d:
                 case INS_sve_ld3q:
+                case INS_sve_st3b:
+                case INS_sve_st3h:
+                case INS_sve_st3w:
+                case INS_sve_st3d:
                 case INS_sve_st3q:
                     emitDispSveRegList(id->idReg1(), 3, id->idInsOpt(), true); // ttttt
                     break;
@@ -18024,6 +18178,10 @@ void emitter::emitDispInsHelp(
                 case INS_sve_ld4w:
                 case INS_sve_ld4d:
                 case INS_sve_ld4q:
+                case INS_sve_st4b:
+                case INS_sve_st4h:
+                case INS_sve_st4w:
+                case INS_sve_st4d:
                 case INS_sve_st4q:
                     emitDispSveRegList(id->idReg1(), 4, id->idInsOpt(), true); // ttttt
                     break;
@@ -18034,13 +18192,27 @@ void emitter::emitDispInsHelp(
             }
             switch (ins)
             {
+                case INS_sve_st2b:
+                case INS_sve_st2h:
+                case INS_sve_st2w:
+                case INS_sve_st2d:
                 case INS_sve_st2q:
+                case INS_sve_st3b:
+                case INS_sve_st3h:
+                case INS_sve_st3w:
+                case INS_sve_st3d:
                 case INS_sve_st3q:
+                case INS_sve_st4b:
+                case INS_sve_st4h:
+                case INS_sve_st4w:
+                case INS_sve_st4d:
                 case INS_sve_st4q:
                 case INS_sve_stnt1b:
                 case INS_sve_stnt1h:
                 case INS_sve_stnt1w:
                 case INS_sve_stnt1d:
+                case INS_sve_st1d:
+                case INS_sve_st1w:
                     emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
                     break;
 
@@ -18064,6 +18236,7 @@ void emitter::emitDispInsHelp(
                     case IF_SVE_IQ_3A:
                     case IF_SVE_IS_3A:
                     case IF_SVE_JE_3A:
+                    case IF_SVE_JO_3A:
                         // This does not have to be printed as hex.
                         // We only do it because the capstone disassembly displays this immediate as hex.
                         // We could not modify capstone without affecting other cases.
@@ -20780,6 +20953,74 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                            // immediate)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_JN_3C: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
+            switch (ins)
+            {
+                case INS_sve_st2b:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_sve_st3b:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_7C;
+                    break;
+                case INS_sve_st4b:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_11C;
+                    break;
+                case INS_sve_st2h:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_sve_st3h:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_7C;
+                    break;
+                case INS_sve_st4h:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_11C;
+                    break;
+                case INS_sve_st2w:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_sve_st3w:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_7C;
+                    break;
+                case INS_sve_st4w:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_11C;
+                    break;
+                case INS_sve_st2d:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_sve_st3d:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_7C;
+                    break;
+                case INS_sve_st4d:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                    result.insLatency    = PERFSCORE_LATENCY_11C;
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         default:

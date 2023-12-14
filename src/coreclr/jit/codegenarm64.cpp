@@ -10978,6 +10978,50 @@ void CodeGen::genArm64EmitterUnitTests()
                                 INS_OPTS_SCALABLE_H); // STNT1H  {<Zt>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
     theEmitter->emitIns_R_R_R_I(INS_sve_stnt1w, EA_SCALABLE, REG_V0, REG_P0, REG_R2, -7,
                                 INS_OPTS_SCALABLE_S); // STNT1W  {<Zt>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+
+    // IF_SVE_JN_3C
+    theEmitter->emitIns_R_R_R_I(INS_sve_st1d, EA_SCALABLE, REG_V1, REG_P2, REG_R3, 4,
+                                INS_OPTS_SCALABLE_D); // ST1D    {<Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st1w, EA_SCALABLE, REG_V3, REG_P4, REG_R5, 6,
+                                INS_OPTS_SCALABLE_Q); // ST1W    {<Zt>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+
+    // IF_SVE_JN_3C_D
+    theEmitter->emitIns_R_R_R_I(INS_sve_st1d, EA_SCALABLE, REG_V2, REG_P1, REG_R0, 0,
+                                INS_OPTS_SCALABLE_Q); // ST1D    {<Zt>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+
+    // IF_SVE_JO_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_st2b, EA_SCALABLE, REG_V0, REG_P1, REG_R2, -16,
+                                INS_OPTS_SCALABLE_B); // ST2B    {<Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st2d, EA_SCALABLE, REG_V5, REG_P4, REG_R3, -16,
+                                INS_OPTS_SCALABLE_D); // ST2D    {<Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st2h, EA_SCALABLE, REG_V6, REG_P7, REG_R8, -16,
+                                INS_OPTS_SCALABLE_H); // ST2H    {<Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st2w, EA_SCALABLE, REG_V8, REG_P1, REG_R9, -16,
+                                INS_OPTS_SCALABLE_S); // ST2W    {<Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st3b, EA_SCALABLE, REG_V7, REG_P6, REG_R5, -24,
+                                INS_OPTS_SCALABLE_B); // ST3B    {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>, [<Xn|SP>{, #<imm>,
+                                                      // MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st3d, EA_SCALABLE, REG_V2, REG_P3, REG_R4, -24,
+                                INS_OPTS_SCALABLE_D); // ST3D    {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>, [<Xn|SP>{, #<imm>,
+                                                      // MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st3h, EA_SCALABLE, REG_V1, REG_P2, REG_R3, -24,
+                                INS_OPTS_SCALABLE_H); // ST3H    {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>, [<Xn|SP>{, #<imm>,
+                                                      // MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st3w, EA_SCALABLE, REG_V1, REG_P3, REG_R8, -24,
+                                INS_OPTS_SCALABLE_S); // ST3W    {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>, [<Xn|SP>{, #<imm>,
+                                                      // MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st4b, EA_SCALABLE, REG_V0, REG_P0, REG_R0, -32,
+                                INS_OPTS_SCALABLE_B); // ST4B    {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st4d, EA_SCALABLE, REG_V2, REG_P0, REG_R1, -32,
+                                INS_OPTS_SCALABLE_D); // ST4D    {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st4h, EA_SCALABLE, REG_V3, REG_P5, REG_R2, -32,
+                                INS_OPTS_SCALABLE_H); // ST4H    {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st4w, EA_SCALABLE, REG_V0, REG_P1, REG_R5, 28,
+                                INS_OPTS_SCALABLE_S); // ST4W    {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
