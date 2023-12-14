@@ -24,7 +24,11 @@ namespace System.Runtime.InteropServices.JavaScript
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
 
-#if FEATURE_WASM_THREADS
+#if !FEATURE_WASM_THREADS
+        private JSProxyContext()
+        {
+        }
+#else
         public nint NativeTID;
         public int ManagedTID;
         public bool IsMainThread;
@@ -44,6 +48,15 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             return (int)GetThreadNativeThreadId(Thread.CurrentThread);
         }
+
+        public JSProxyContext(bool isMainThread, JSSynchronizationContext synchronizationContext)
+        {
+            SynchronizationContext = synchronizationContext;
+            Interop.Runtime.InstallWebWorkerInterop();
+            NativeTID = GetNativeThreadId();
+            ManagedTID = Thread.CurrentThread.ManagedThreadId;
+            IsMainThread = isMainThread;
+        }
 #endif
 
         #region Current operation context
@@ -52,8 +65,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static readonly JSProxyContext MainThreadContext = new();
         public static JSProxyContext CurrentThreadContext => MainThreadContext;
         public static JSProxyContext CurrentOperationContext => MainThreadContext;
-
-        public static JSProxyContext PushOperation()
+        public static JSProxyContext PushOperationWithCurrentThreadContext()
         {
             // in single threaded build we don't have to keep stack of operations and the context/thread is always the same
             return MainThreadContext;
@@ -87,7 +99,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static void PushOperationUnknowContext()
+        public static void PushOperationUnknownContext()
         {
             var stack = OperationStack;
             // for SchedulePopOperation()
@@ -212,15 +224,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public JSProxyContext(bool isMainThread, JSSynchronizationContext synchronizationContext)
-        {
-            SynchronizationContext = synchronizationContext;
-            Interop.Runtime.InstallWebWorkerInterop();
-            NativeTID = GetNativeThreadId();
-            ManagedTID = Thread.CurrentThread.ManagedThreadId;
-            IsMainThread = isMainThread;
-        }
-
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -238,7 +241,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             return ctx;
 #else
-            return MainInstance;
+            return MainThreadContext;
 #endif
         }
 
@@ -432,10 +435,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             var ctx = proxy.ProxyContext;
+#if FEATURE_WASM_THREADS
             if (!ctx.IsCurrentThread())
             {
                 throw new InvalidOperationException("ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy");
             }
+#endif
             lock (ctx)
             {
                 if (proxy.IsDisposed)
@@ -460,7 +465,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        #endregion
+#endregion
 
         #region Legacy
 

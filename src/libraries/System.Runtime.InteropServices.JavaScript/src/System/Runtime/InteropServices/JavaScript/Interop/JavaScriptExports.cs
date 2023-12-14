@@ -248,6 +248,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (holder != null)
                 {
                     // arg_2, arg_3 are processed by the callback
+                    // JSProxyContext.PopOperation() is called by the callback
                     holder.Callback!(arguments_buffer);
                 }
             }
