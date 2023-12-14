@@ -224,7 +224,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (signature.IsAsync)
             {
                 // pre-allocate the result handle and Task
-                var holder = new JSHostImplementation.PromiseHolder(JSProxyContext.DefaultInstance);
+                var holder = new JSHostImplementation.PromiseHolder(JSProxyContext.CurrentOperationContext);
                 arguments[1].slot.Type = MarshalerType.TaskPreCreated;
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
@@ -247,6 +247,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     holderHandle.Free();
                 }
             }
+#if FEATURE_WASM_THREADS
+            JSProxyContext.SchedulePopOperation();
+#endif
         }
 
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)

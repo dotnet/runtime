@@ -378,9 +378,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(MarshalObjectArrayCasesThrow))]
-        public unsafe void JsImportObjectArrayThrows(object[]? expected)
+        public void JsImportObjectArrayThrows(object[]? expected)
         {
             Assert.Throws<NotSupportedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
+            // this will make OperationStack unbalanced
+            // because the exceptions is throwed from ToJs() marshaler before the call to JSFunctionBinding.InvokeJS
+            // which is expected until we make operation context part of the code generator
+            JSHost.AssertOperationStack(1);
+            // any subsequent interop operation will fix that
+            JavaScriptTestHelper.echo1_Int32(1);
+            JSHost.AssertOperationStack(0);
         }
 
         [Fact]
@@ -1833,6 +1840,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             Func<int, int> res = JavaScriptTestHelper.backback_FuncIntFuncInt((a) =>
             {
+                JSHost.AssertOperationStack(0);
                 called = a;
                 return a;
             }, 42);
@@ -1849,6 +1857,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             Func<int, int, int> res = JavaScriptTestHelper.backback_FuncIntIntFuncIntInt((a, b) =>
             {
+                JSHost.AssertOperationStack(0);
                 calledA = a;
                 calledB = b;
                 return a + b;
@@ -1868,6 +1877,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             JavaScriptTestHelper.back3_ActionIntInt((a, b) =>
             {
+                JSHost.AssertOperationStack(0);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1882,6 +1892,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionLongLong((a, b) =>
             {
+                JSHost.AssertOperationStack(0);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1896,6 +1907,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionIntLong((a, b) =>
             {
+                JSHost.AssertOperationStack(0);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1910,6 +1922,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Exception expected = new Exception("test!!");
             Exception actual = Assert.Throws<Exception>(() => JavaScriptTestHelper.back3_ActionInt((a) =>
             {
+                JSHost.AssertOperationStack(0);
                 called = a;
                 throw expected;
             }, 42));
@@ -1923,12 +1936,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
+                JSHost.AssertOperationStack(0);
                 called = a;
                 return a;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
 
             Assert.Equal(-1, called);
             var actual = chain(42);
+            JSHost.AssertOperationStack(0);
             Assert.Equal(42, actual);
             Assert.Equal(42, called);
         }
@@ -1940,12 +1955,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var expected = new Exception("test!!");
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
+                JSHost.AssertOperationStack(0);
                 called = a;
                 throw expected;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
 
             Assert.Equal(-1, called);
             var actual = Assert.Throws<Exception>(() => chain(42));
+            JSHost.AssertOperationStack(0);
             Assert.Equal(42, called);
             Assert.Same(expected, actual);
         }

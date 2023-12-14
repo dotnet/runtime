@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = JSProxyContext.DefaultInstance.GetPromiseHolder(slot.GCHandle);
+            PromiseHolder holder = JSProxyContext.CurrentOperationContext.GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource tcs = new TaskCompletionSource(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
@@ -59,10 +59,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (arg_2.slot.Type != MarshalerType.None)
                 {
                     arg_2.ToManaged(out Exception? fail);
+#if FEATURE_WASM_THREADS
+                    JSProxyContext.PopOperation();
+#endif
                     tcs.SetException(fail!);
                 }
                 else
                 {
+#if FEATURE_WASM_THREADS
+                    JSProxyContext.PopOperation();
+#endif
                     tcs.SetResult();
                 }
                 // eventual exception is handled by caller
@@ -86,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = JSProxyContext.DefaultInstance.GetPromiseHolder(slot.GCHandle);
+            PromiseHolder holder = JSProxyContext.CurrentOperationContext.GetPromiseHolder(slot.GCHandle);
             TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
             ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
@@ -101,12 +107,18 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (arg_2.slot.Type != MarshalerType.None)
                 {
                     arg_2.ToManaged(out Exception? fail);
+#if FEATURE_WASM_THREADS
+                    JSProxyContext.PopOperation();
+#endif
                     if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
                     tcs.SetException(fail);
                 }
                 else
                 {
                     marshaler(ref arg_3, out T result);
+#if FEATURE_WASM_THREADS
+                    JSProxyContext.PopOperation();
+#endif
                     tcs.SetResult(result);
                 }
                 // eventual exception is handled by caller
@@ -155,7 +167,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
-                slot.JSHandle = JSProxyContext.DefaultInstance.AllocJSVHandle();
+                slot.JSHandle = JSProxyContext.CurrentOperationContext.AllocJSVHandle();
                 slot.Type = MarshalerType.Task;
             }
             else
@@ -164,7 +176,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // promise and handle is pre-allocated in slot.JSHandle
             }
 
-            var taskHolder = new JSObject(slot.JSHandle, JSProxyContext.DefaultInstance);
+            var taskHolder = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
@@ -233,7 +245,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
-                slot.JSHandle = JSProxyContext.DefaultInstance.AllocJSVHandle();
+                slot.JSHandle = JSProxyContext.CurrentOperationContext.AllocJSVHandle();
                 slot.Type = MarshalerType.Task;
             }
             else
@@ -242,7 +254,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // promise and handle is pre-allocated in slot.JSHandle
             }
 
-            var taskHolder = new JSObject(slot.JSHandle, JSProxyContext.DefaultInstance);
+            var taskHolder = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
@@ -304,7 +316,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.Type != MarshalerType.TaskPreCreated)
             {
                 // this path should only happen when the Task is passed as argument of JSImport
-                slot.JSHandle = JSProxyContext.DefaultInstance.AllocJSVHandle();
+                slot.JSHandle = JSProxyContext.CurrentOperationContext.AllocJSVHandle();
                 slot.Type = MarshalerType.Task;
             }
             else
@@ -313,7 +325,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // promise and handle is pre-allocated in slot.JSHandle
             }
 
-            var taskHolder = new JSObject(slot.JSHandle, JSProxyContext.DefaultInstance);
+            var taskHolder = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(slot.JSHandle);
 
 #if FEATURE_WASM_THREADS
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
@@ -342,6 +354,11 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             holder.AssertNotDisposed();
 
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(holder);
+            JSProxyContext.PushOperationWithContext(holder.ProxyContext);
+#endif
+
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
             ref JSMarshalerArgument res = ref args[1];
@@ -363,11 +380,19 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // order of operations with DisposeImpl matters
             JavaScriptImports.ResolveOrRejectPromise(args);
+
+#if FEATURE_WASM_THREADS
+            JSProxyContext.PopOperation();
+#endif
         }
 
         private static void ResolveVoidPromise(JSObject holder)
         {
             holder.AssertNotDisposed();
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(holder);
+            JSProxyContext.PushOperationWithContext(holder.ProxyContext);
+#endif
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -389,11 +414,19 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // order of operations with DisposeImpl matters
             JavaScriptImports.ResolveOrRejectPromise(args);
+
+#if FEATURE_WASM_THREADS
+            JSProxyContext.PopOperation();
+#endif
         }
 
         private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
         {
             holder.AssertNotDisposed();
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(holder);
+            JSProxyContext.PushOperationWithContext(holder.ProxyContext);
+#endif
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -416,6 +449,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // order of operations with DisposeImpl matters
             JavaScriptImports.ResolveOrRejectPromise(args);
+
+#if FEATURE_WASM_THREADS
+            JSProxyContext.PopOperation();
+#endif
         }
     }
 }

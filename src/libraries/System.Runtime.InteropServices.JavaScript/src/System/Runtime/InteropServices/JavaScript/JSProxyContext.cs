@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal sealed class JSProxyContext : IDisposable
     {
-        private bool _disposedValue;
+        private bool _isDisposed;
 
         // we use this to maintain identity of JSHandle for a JSObject proxy
         private readonly Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects = new();
@@ -24,20 +24,17 @@ namespace System.Runtime.InteropServices.JavaScript
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
 
-#if !FEATURE_WASM_THREADS
-        public static readonly JSProxyContext DefaultInstance = new();
-        public static JSProxyContext CurrentInstance => DefaultInstance;
-        public static JSProxyContext CapturedInstance
-        {
-            get => MainInstance!;
-            set { }
-        }
-        public static JSProxyContext MainInstance => DefaultInstance;
-#else
-        public nint TargetTID;
-        public int ThreadId;
+#if FEATURE_WASM_THREADS
+        public nint NativeTID;
+        public int ManagedTID;
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsCurrentThread()
+        {
+            return ManagedTID == Thread.CurrentThread.ManagedThreadId;
+        }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
         private static extern ref long GetThreadNativeThreadId(Thread @this);
@@ -47,41 +44,176 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             return (int)GetThreadNativeThreadId(Thread.CurrentThread);
         }
+#endif
+
+        #region Current operation context
+
+#if !FEATURE_WASM_THREADS
+        public static readonly JSProxyContext MainThreadContext = new();
+        public static JSProxyContext CurrentThreadContext => MainThreadContext;
+        public static JSProxyContext CurrentOperationContext => MainThreadContext;
+
+        public static JSProxyContext PushOperation()
+        {
+            // in single threaded build we don't have to keep stack of operations and the context/thread is always the same
+            return MainThreadContext;
+        }
+#else
 
         // Context of the main thread
-        private static JSProxyContext? _MainInstance;
-        public static JSProxyContext MainInstance
+        private static JSProxyContext? _MainThreadContext;
+        public static JSProxyContext MainThreadContext
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _MainInstance!;
-            set => _MainInstance = value;
+            get => _MainThreadContext!;
+            set => _MainThreadContext = value;
         }
 
-        // Context captured from parameters of the current operation.
-        // Most of the time, this matches the current thread.
-        // When we pass `JSObject` instance to `JSImport`, it could have thread affinity different than the current thread.
-        // We will use that parameter to capture the target thread to call into.
-        [ThreadStatic]
-        public static JSProxyContext? CapturedInstance;
+        private sealed class PendingOperation
+        {
+            public JSProxyContext? CapturedContext;
+            public bool Called;
+            public bool Multiple;
+        }
 
-        // Context of the current thread. Could be null on threads which don't have JS interop, like managed thread pool threads.
         [ThreadStatic]
-        public static JSProxyContext? CurrentInstance;
+        private static List<PendingOperation>? _OperationStack;
+        private static List<PendingOperation> OperationStack
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return _OperationStack ??= new();
+            }
+        }
+
+        public static void PushOperationUnknowContext()
+        {
+            var stack = OperationStack;
+            // for SchedulePopOperation()
+            if (stack.Count > 0 && stack[stack.Count - 1].Called)
+            {
+                PopOperation();
+            }
+            // because this is called multiple times for each JSImport
+            if (stack.Count > 0 && stack[stack.Count - 1].Multiple)
+            {
+                return;
+            }
+
+            stack.Add(new PendingOperation() { Multiple = true });
+        }
+
+        public static void PushOperationWithContext(JSProxyContext knownContext)
+        {
+            var stack = OperationStack;
+            // for SchedulePopOperation()
+            if (stack.Count > 0 && stack[stack.Count - 1].Called)
+            {
+                PopOperation();
+            }
+            // because this is called multiple times for each JSImport
+            if (stack.Count > 0 && stack[stack.Count - 1].Multiple)
+            {
+                return;
+            }
+
+            stack.Add(new PendingOperation() { CapturedContext = knownContext, Multiple = true });
+        }
+
+        public static JSProxyContext PushOperationWithCurrentThreadContext()
+        {
+            var stack = OperationStack;
+            // for SchedulePopOperation()
+            if (stack.Count > 0 && stack[stack.Count - 1].Called)
+            {
+                PopOperation();
+            }
+
+            var current = AssertCurrentContext();
+            stack.Add(new PendingOperation { CapturedContext = current });
+            return current;
+        }
+
+        public static void PopOperation()
+        {
+            var stack = OperationStack;
+            stack.RemoveAt(stack.Count - 1);
+        }
+
+        // this is here until we change the code generator and the API to Push/Pop the context
+        // we have no way how to Pop from the after marshaling the result
+        public static void SchedulePopOperation()
+        {
+            var stack = OperationStack;
+            stack[stack.Count - 1].Called = true;
+        }
+
+        public static void AssertOperationStack(int expected)
+        {
+            var stack = OperationStack;
+            if (stack.Count > 0 && stack[stack.Count - 1].Called)
+            {
+                PopOperation();
+            }
+            var actual = stack.Count;
+            var multiple = stack.Count > 0 ? stack[stack.Count - 1].Multiple : false;
+            var called = stack.Count > 0 ? stack[stack.Count - 1].Called : false;
+            if (expected == 0)
+            {
+                stack.Clear();
+            }
+            // TODO Environment.FailFast
+            if (actual != expected) throw new InvalidOperationException($"Unexpected OperationStack size expected: {expected} actual: {actual} called:{called} multiple:{multiple}");
+        }
+
+        // TODO: sort generated ToJS() calls to make the capture context before we need to use it
+        public static void CaptureContextFromParameter(JSProxyContext parameterContext)
+        {
+            var stack = OperationStack;
+            var pendingOperation = stack[stack.Count - 1];
+            var capturedContext = pendingOperation.CapturedContext;
+            if (capturedContext != null && parameterContext != capturedContext)
+            {
+                throw new InvalidOperationException("All JSObject proxies need to have same thread affinity");
+            }
+            pendingOperation.CapturedContext = capturedContext;
+        }
+
+        // Context of the current thread or async task. Could be null on threads which don't have JS interop, like managed thread pool threads.
+        // TODO flow it also with ExecutionContext to child threads ?
+        private static readonly AsyncLocal<JSProxyContext?> _currentThreadContext = new AsyncLocal<JSProxyContext?>();
+        public static JSProxyContext? CurrentThreadContext
+        {
+            get => _currentThreadContext.Value;
+            set => _currentThreadContext.Value = value;
+        }
 
         // This is context to dispatch into. In order of preference
         // - captured context by arguments of current/pending JSImport call
         // - current thread context, for calls from JSWebWorker threads with the interop installed
         // - main thread, for calls from any other thread, like managed thread pool or `new Thread`
-        public static JSProxyContext DefaultInstance
+        public static JSProxyContext CurrentOperationContext
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                // until we set CapturedInstance in the generated code of JSImport/JSExport, we need to fallback to CurrentInstance to find target thread
-                // because maybe it was not captured by the other parameters yet
-                // after capture is solid, we could drop DefaultInstance and use CapturedInstance instead
-                // TODO: sort generated ToJS() calls to make the capture first
-                return CapturedInstance ?? CurrentInstance ?? MainInstance;
+                var stack = OperationStack;
+                if (stack.Count < 1) throw new Exception("CurrentOperationContext could be only used during pending operation.");
+                var pendingOperation = stack[stack.Count - 1];
+                if (pendingOperation.CapturedContext != null)
+                {
+                    return pendingOperation.CapturedContext;
+                }
+                // it could happen that we are in operation, in which we didn't capture target thread/context
+                var currentThreadContext = CurrentThreadContext;
+                if (currentThreadContext != null)
+                {
+                    // we could will call JS on the current thread, if it has the JS interop installed
+                    return currentThreadContext;
+                }
+                // otherwise we will call JS on the main thread, which always has JS interop
+                return MainThreadContext;
             }
         }
 
@@ -89,32 +221,35 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             SynchronizationContext = synchronizationContext;
             Interop.Runtime.InstallWebWorkerInterop();
-            TargetTID = GetNativeThreadId();
-            ThreadId = Thread.CurrentThread.ManagedThreadId;
+            NativeTID = GetNativeThreadId();
+            ManagedTID = Thread.CurrentThread.ManagedThreadId;
             IsMainThread = isMainThread;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsCurrentThread()
-        {
-            return ThreadId == Thread.CurrentThread.ManagedThreadId;
-        }
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JSProxyContext AssertCurrentContext()
         {
 #if FEATURE_WASM_THREADS
-            var ctx = CurrentInstance;
-            if (ctx == null || ctx._disposedValue)
+            var ctx = CurrentThreadContext;
+            if (ctx == null)
             {
                 throw new InvalidOperationException($"Please use dedicated worker for working with JavaScript interop, ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}. See https://aka.ms/dotnet-JS-interop-threads");
+            }
+            if (ctx._isDisposed)
+            {
+                ObjectDisposedException.ThrowIf(ctx._isDisposed, ctx);
             }
             return ctx;
 #else
             return MainInstance;
 #endif
         }
+
+        #endregion
+
+        #region Handles
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsJSVHandle(nint jsHandle)
@@ -134,7 +269,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (JSVHandleFreeList.Count > 0)
                 {
-                    var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count];
+                    var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count - 1];
                     JSVHandleFreeList.RemoveAt(JSVHandleFreeList.Count - 1);
                     return jsvHandle;
                 }
@@ -211,6 +346,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         holder.GCHandle = IntPtr.Zero;
                     }
+                    else
+                    {
+                        throw new InvalidOperationException("ReleaseJSOwnedObjectByGCHandle expected in ThreadJsOwnedHolders");
+                    }
                 }
                 else
                 {
@@ -223,7 +362,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     else
                     {
-                        ThreadJsOwnedObjects.Remove(target);
+                        if (!ThreadJsOwnedObjects.Remove(target))
+                        {
+                            throw new InvalidOperationException("ReleaseJSOwnedObjectByGCHandle expected in ThreadJsOwnedObjects");
+                        }
                     }
                     handle.Free();
                 }
@@ -245,6 +387,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         holder.GCHandle = IntPtr.Zero;
                     }
+                    else
+                    {
+                        throw new InvalidOperationException("ReleasePromiseHolder expected to find handle in ThreadJsOwnedHolders");
+                    }
                 }
                 else
                 {
@@ -257,7 +403,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     else
                     {
-                        ThreadJsOwnedObjects.Remove(target);
+                        if (!ThreadJsOwnedObjects.Remove(target))
+                        {
+                            throw new InvalidOperationException("ReleasePromiseHolder expected to find handle in ThreadJsOwnedObjects");
+                        }
                     }
                     handle.Free();
                 }
@@ -283,37 +432,40 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void ReleaseCSOwnedObject(JSObject proxy, bool skipJS)
         {
-            if (!proxy.IsDisposed)
+            if (proxy.IsDisposed)
             {
-                var ctx = proxy.ProxyContext;
-                if (!ctx.IsCurrentThread())
+                return;
+            }
+            var ctx = proxy.ProxyContext;
+            if (!ctx.IsCurrentThread())
+            {
+                throw new InvalidOperationException("ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy");
+            }
+            lock (ctx)
+            {
+                if (proxy.IsDisposed)
                 {
-                    Environment.FailFast("ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy");
+                    return;
                 }
-                lock (ctx)
+                proxy._isDisposed = true;
+                GC.SuppressFinalize(proxy);
+                var jsHandle = proxy.JSHandle;
+                if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
-                    if (proxy.IsDisposed)
-                    {
-                        return;
-                    }
-                    proxy._isDisposed = true;
-                    GC.SuppressFinalize(proxy);
-                    var jsHandle = proxy.JSHandle;
-                    if (ctx.ThreadCsOwnedObjects.Remove(jsHandle))
-                    {
-                        Environment.FailFast("ReleaseCSOwnedObject expected to find registration");
-                    };
-                    if (!skipJS)
-                    {
-                        Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
-                    }
-                    if (IsJSVHandle(jsHandle))
-                    {
-                        ctx.FreeJSVHandle(jsHandle);
-                    }
+                    throw new InvalidOperationException("ReleaseCSOwnedObject expected to find registration for" + jsHandle);
+                };
+                if (!skipJS)
+                {
+                    Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+                }
+                if (IsJSVHandle(jsHandle))
+                {
+                    ctx.FreeJSVHandle(jsHandle);
                 }
             }
         }
+
+        #endregion
 
         #region Legacy
 
@@ -357,7 +509,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #pragma warning disable CS0612 // Type or member is obsolete
                     res = mappedType switch
                     {
-                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle, JSProxyContext.MainInstance),
+                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle, JSProxyContext.MainThreadContext),
                         LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
                         LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
                         LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
@@ -384,10 +536,12 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             lock (this)
             {
-                if (!_disposedValue)
+                if (!_isDisposed)
                 {
 #if FEATURE_WASM_THREADS
-                    if (!IsCurrentThread()) Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it.");
+                    if (!IsCurrentThread()) throw new InvalidOperationException("JSProxyContext must be disposed on the thread which owns it.");
+                    AssertOperationStack(0);
+                    _OperationStack = null;
 #endif
 
                     // TODO: free unmanaged resources (unmanaged objects) and override finalizer
@@ -426,7 +580,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         SynchronizationContext.Dispose();
 #endif
                     }
-                    _disposedValue = true;
+                    _isDisposed = true;
                 }
             }
         }

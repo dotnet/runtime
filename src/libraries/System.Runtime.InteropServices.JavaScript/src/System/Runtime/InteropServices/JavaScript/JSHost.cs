@@ -65,11 +65,18 @@ namespace System.Runtime.InteropServices.JavaScript
             get
             {
 #if FEATURE_WASM_THREADS
-                return (JSProxyContext.CurrentInstance ?? JSProxyContext.MainInstance).SynchronizationContext;
+                return (JSProxyContext.CurrentThreadContext ?? JSProxyContext.MainThreadContext).SynchronizationContext;
 #else
                 return null!;
 #endif
             }
         }
+
+#if FEATURE_WASM_THREADS
+        public static void AssertOperationStack(int expected)
+        {
+            JSProxyContext.AssertOperationStack(expected);
+        }
+#endif
     }
 }

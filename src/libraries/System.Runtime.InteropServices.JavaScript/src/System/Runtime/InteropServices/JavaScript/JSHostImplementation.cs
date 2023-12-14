@@ -77,6 +77,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             arg.ToManaged(out Exception? ex);
 
+#if FEATURE_WASM_THREADS
+            JSProxyContext.PopOperation();
+#endif
             if (ex != null)
             {
                 throw ex;
@@ -208,17 +211,17 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void InstallWebWorkerInterop(bool isMainThread)
         {
             var ctx = new JSSynchronizationContext(isMainThread);
-            JSProxyContext.CurrentInstance = ctx.ProxyContext;
+            JSProxyContext.CurrentThreadContext = ctx.ProxyContext;
             if (isMainThread)
             {
-                JSProxyContext.MainInstance = ctx.ProxyContext;
+                JSProxyContext.MainThreadContext = ctx.ProxyContext;
             }
             ctx.AwaitNewData();
         }
 
         public static void UninstallWebWorkerInterop()
         {
-            JSProxyContext.CurrentInstance?.Dispose();
+            JSProxyContext.CurrentThreadContext?.Dispose();
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]

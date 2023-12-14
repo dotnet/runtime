@@ -317,7 +317,7 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 slot.Type = MarshalerType.Object;
-                slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(value);
+                slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(value);
             }
         }
 

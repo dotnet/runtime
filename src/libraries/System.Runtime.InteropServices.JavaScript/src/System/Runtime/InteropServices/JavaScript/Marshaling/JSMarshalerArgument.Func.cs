@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public ActionJS(IntPtr jsHandle)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
             }
 
             public void InvokeJS()
@@ -21,6 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -30,6 +31,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_return.Initialize();
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
+
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
             }
 
         }
@@ -41,7 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public ActionJS(IntPtr jsHandle, ArgumentToJSCallback<T> arg1Marshaler)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
                 Arg1Marshaler = arg1Marshaler;
             }
 
@@ -49,6 +54,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -61,6 +67,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg1Marshaler(ref args_arg1, arg1);
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
             }
         }
 
@@ -72,7 +81,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public ActionJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
             }
@@ -81,6 +90,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -95,6 +105,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg2Marshaler(ref args_arg2, arg2);
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
             }
         }
 
@@ -107,7 +120,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public ActionJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
                 Arg3Marshaler = arg3Marshaler;
@@ -117,6 +130,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
@@ -133,6 +147,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg3Marshaler(ref args_arg3, arg3);
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
             }
         }
 
@@ -219,7 +236,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public FuncJS(IntPtr jsHandle, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
                 ResMarshaler = resMarshaler;
             }
 
@@ -227,6 +244,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
@@ -241,6 +259,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
                 return res;
             }
 
@@ -254,7 +275,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public FuncJS(IntPtr jsHandle, ArgumentToJSCallback<T> arg1Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
                 Arg1Marshaler = arg1Marshaler;
                 ResMarshaler = resMarshaler;
             }
@@ -263,6 +284,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -277,6 +299,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
                 return res;
             }
         }
@@ -290,7 +315,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public FuncJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
                 ResMarshaler = resMarshaler;
@@ -300,6 +325,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -316,6 +342,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
                 return res;
             }
         }
@@ -330,7 +359,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public FuncJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSProxyContext.DefaultInstance.CreateCSOwnedProxy(jsHandle);
+                JSObject = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(jsHandle);
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
                 Arg3Marshaler = arg3Marshaler;
@@ -341,6 +370,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(JSObject);
+                JSProxyContext.PushOperationWithContext(JSObject.ProxyContext);
 #endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
@@ -357,8 +387,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg3Marshaler(ref args_arg3, arg3);
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
-
                 ResMarshaler(ref args_return, out TResult res);
+
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
+
                 return res;
             }
         }
@@ -463,7 +497,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -484,7 +518,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -509,7 +543,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -538,7 +572,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -559,7 +593,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -584,7 +618,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -613,7 +647,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -646,7 +680,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSProxyContext.DefaultInstance.GetJSOwnedObjectGCHandle(cb);
+            slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cb);
         }
     }
 }

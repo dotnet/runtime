@@ -47,11 +47,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
 #if FEATURE_WASM_THREADS
-                var ctx = JSProxyContext.CurrentInstance;
+                var ctx = JSProxyContext.CurrentThreadContext;
                 if (ctx == null || jsException.ProxyContext != ctx)
                 {
                     // if we are on another thread, it would be too expensive and risky to obtain lazy stack trace.
-                    return bs;
+                    return bs + Environment.NewLine + "... omitted JavaScript stack trace from another thread.";
                 }
 #endif
                 string? jsStackTrace = jsException.GetPropertyAsString("stack");

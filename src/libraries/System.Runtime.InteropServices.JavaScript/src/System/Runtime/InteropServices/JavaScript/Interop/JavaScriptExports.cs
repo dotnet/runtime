@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 // when we arrive here, we could assume that all proxies are owned by calling thread
-                JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+                JSProxyContext.PushOperationWithCurrentThreadContext();
 #endif
 
                 arg_1.ToManaged(out IntPtr entrypointPtr);
@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             finally
             {
-                JSProxyContext.CapturedInstance = null;
+                JSProxyContext.PopOperation();
             }
 #endif
         }
@@ -114,6 +114,10 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we could assume that all proxies are owned by calling thread
+                JSProxyContext.PushOperationWithCurrentThreadContext();
+#endif
                 arg_1.ToManaged(out byte[]? dllBytes);
                 arg_2.ToManaged(out byte[]? pdbBytes);
 
@@ -124,6 +128,12 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_THREADS
+            finally
+            {
+                JSProxyContext.PopOperation();
+            }
+#endif
         }
 
         public static void LoadSatelliteAssembly(JSMarshalerArgument* arguments_buffer)
@@ -132,6 +142,10 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we could assume that all proxies are owned by calling thread
+                JSProxyContext.PushOperationWithCurrentThreadContext();
+#endif
                 arg_1.ToManaged(out byte[]? dllBytes);
 
                 if (dllBytes != null)
@@ -141,6 +155,12 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_THREADS
+            finally
+            {
+                JSProxyContext.PopOperation();
+            }
+#endif
         }
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
@@ -155,7 +175,7 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 // when we arrive here, we assume that all proxies are owned by calling thread
-                var ctx = JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+                var ctx = JSProxyContext.PushOperationWithCurrentThreadContext();
                 ctx.ReleaseJSOwnedObjectByGCHandle(arg_1.slot.GCHandle);
             }
             catch (Exception ex)
@@ -165,7 +185,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             finally
             {
-                JSProxyContext.CapturedInstance = null;
+                JSProxyContext.PopOperation();
             }
 #endif
         }
@@ -184,7 +204,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_THREADS
                 // when we arrive here, we could assume that all proxies are owned by calling thread
-                JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+                JSProxyContext.PushOperationWithCurrentThreadContext();
 #endif
 
                 GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
@@ -205,7 +225,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             finally
             {
-                JSProxyContext.CapturedInstance = null;
+                JSProxyContext.PopOperation();
             }
 #endif
         }
@@ -222,7 +242,8 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 // when we arrive here, we could assume that all proxies are owned by calling thread
-                var ctx = JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+                var ctx = JSProxyContext.PushOperationWithCurrentThreadContext();
+
                 var holder = ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
                 if (holder != null)
                 {
@@ -232,14 +253,14 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                arg_exc.ToJS(ex);
-            }
 #if FEATURE_WASM_THREADS
-            finally
-            {
-                JSProxyContext.CapturedInstance = null;
-            }
+                var ctx = JSProxyContext.PushOperationWithCurrentThreadContext();
 #endif
+                arg_exc.ToJS(ex);
+#if FEATURE_WASM_THREADS
+                JSProxyContext.PopOperation();
+#endif
+            }
         }
 
         // the marshaled signature is:
@@ -252,7 +273,7 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 // when we arrive here, we could assume that all proxies are owned by calling thread
-                JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+                JSProxyContext.PushOperationWithCurrentThreadContext();
 
                 GCHandle exception_gc_handle = (GCHandle)arg_1.slot.GCHandle;
                 if (exception_gc_handle.Target is Exception exception)
@@ -271,16 +292,21 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             finally
             {
-                JSProxyContext.CapturedInstance = null;
+                JSProxyContext.PopOperation();
             }
 #endif
         }
 
 #if FEATURE_WASM_THREADS
 
-        public static void CaptureProxyContext()
+        public static void PushOperation()
         {
-            JSProxyContext.CapturedInstance = JSProxyContext.AssertCurrentContext();
+            JSProxyContext.PushOperationWithCurrentThreadContext();
+        }
+
+        public static void PopOperation()
+        {
+            JSProxyContext.PopOperation();
         }
 
         // this is here temporarily, until JSWebWorker becomes public API

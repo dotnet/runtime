@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            result = JSProxyContext.MainInstance.GetCSOwnedObjectByJSHandle(jsHandle, shouldAddInflight);
+            result = JSProxyContext.MainThreadContext.GetCSOwnedObjectByJSHandle(jsHandle, shouldAddInflight);
         }
 
         public static IntPtr GetCSOwnedObjectJSHandleRef(in JSObject jsObject, int shouldAddInflight)
@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            jsObject = JSProxyContext.MainInstance.CreateCSOwnedProxy(jsHandle, mappedType, shouldAddInflight);
+            jsObject = JSProxyContext.MainThreadContext.CreateCSOwnedProxy(jsHandle, mappedType, shouldAddInflight);
         }
 
         public static void GetJSOwnedObjectByGCHandleRef(int gcHandle, out object result)
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr GetJSOwnedObjectGCHandleRef(in object obj)
         {
-            return JSProxyContext.MainInstance.GetJSOwnedObjectGCHandle(obj, GCHandleType.Normal);
+            return JSProxyContext.MainThreadContext.GetJSOwnedObjectGCHandle(obj, GCHandleType.Normal);
         }
 
         public static IntPtr CreateTaskSource()

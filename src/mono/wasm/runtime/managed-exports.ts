@@ -24,8 +24,10 @@ export function init_managed_exports(): void {
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
-    const capture_proxy_context = MonoWasmThreads ? get_method("CaptureProxyContext") : undefined;
-    mono_assert(!MonoWasmThreads || capture_proxy_context, "Can't find CaptureProxyContext method");
+    const push_operation = MonoWasmThreads ? get_method("PushOperation") : undefined;
+    mono_assert(!MonoWasmThreads || push_operation, "Can't find PushOperation method");
+    const pop_operation = MonoWasmThreads ? get_method("PopOperation") : undefined;
+    mono_assert(!MonoWasmThreads || pop_operation, "Can't find PopOperation method");
     const install_main_synchronization_context = MonoWasmThreads ? get_method("InstallMainSynchronizationContext") : undefined;
     mono_assert(!MonoWasmThreads || install_main_synchronization_context, "Can't find InstallMainSynchronizationContext method");
     const call_entry_point = get_method("CallEntrypoint");
@@ -61,7 +63,7 @@ export function init_managed_exports(): void {
             // because this is async, we could pre-allocate the promise
             let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
-            invoke_method_and_handle_exception(call_entry_point, args);
+            invoke_method_and_handle_exception(call_entry_point, args, true);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -83,7 +85,7 @@ export function init_managed_exports(): void {
             const arg1 = get_arg(args, 2);
             set_arg_type(arg1, MarshalerType.Array);
             marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
-            invoke_method_and_handle_exception(load_satellite_assembly_method, args);
+            invoke_method_and_handle_exception(load_satellite_assembly_method, args, true);
         } finally {
             Module.stackRestore(sp);
         }
@@ -98,7 +100,7 @@ export function init_managed_exports(): void {
             set_arg_type(arg2, MarshalerType.Array);
             marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
             marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
-            invoke_method_and_handle_exception(load_lazy_assembly_method, args);
+            invoke_method_and_handle_exception(load_lazy_assembly_method, args, true);
         } finally {
             Module.stackRestore(sp);
         }
@@ -112,7 +114,7 @@ export function init_managed_exports(): void {
             const arg1 = get_arg(args, 2);
             set_arg_type(arg1, MarshalerType.Object);
             set_gc_handle(arg1, gc_handle);
-            invoke_method_and_handle_exception(release_js_owned_object_by_gc_handle_method, args);
+            invoke_method_and_handle_exception(release_js_owned_object_by_gc_handle_method, args, true);
         } finally {
             Module.stackRestore(sp);
         }
@@ -134,7 +136,7 @@ export function init_managed_exports(): void {
                 mono_assert(res_converter, "res_converter missing");
                 res_converter(arg3, data);
             }
-            invoke_method_and_handle_exception(complete_task_method, args);
+            invoke_method_and_handle_exception(complete_task_method, args, true);
         } finally {
             Module.stackRestore(sp);
         }
@@ -163,7 +165,7 @@ export function init_managed_exports(): void {
                 arg3_converter(arg4, arg3_js);
             }
 
-            invoke_method_and_handle_exception(call_delegate_method, args);
+            invoke_method_and_handle_exception(call_delegate_method, args, true);
 
             if (res_converter) {
                 const res = get_arg(args, 1);
@@ -183,15 +185,18 @@ export function init_managed_exports(): void {
             set_arg_type(arg1, MarshalerType.Exception);
             set_gc_handle(arg1, exception_gc_handle);
 
-            invoke_method_and_handle_exception(get_managed_stack_trace_method, args);
+            invoke_method_and_handle_exception(get_managed_stack_trace_method, args, true);
             const res = get_arg(args, 1);
             return marshal_string_to_js(res);
         } finally {
             Module.stackRestore(sp);
         }
     };
-    if (MonoWasmThreads && capture_proxy_context) {
-        runtimeHelpers.javaScriptExports.capture_proxy_context = () => invoke_method_raw(capture_proxy_context);
+    if (MonoWasmThreads && push_operation) {
+        runtimeHelpers.javaScriptExports.push_operation = () => invoke_method_raw(push_operation);
+    }
+    if (MonoWasmThreads && pop_operation) {
+        runtimeHelpers.javaScriptExports.pop_operation = () => invoke_method_raw(pop_operation);
     }
     if (MonoWasmThreads && install_main_synchronization_context) {
         runtimeHelpers.javaScriptExports.install_main_synchronization_context = () => invoke_method_raw(install_main_synchronization_context);

@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
-                if (ProxyContext == JSProxyContext.CurrentInstance)
+                if (ProxyContext == JSProxyContext.CurrentThreadContext)
                 {
                     JSProxyContext.ReleaseCSOwnedObject(this, skipJS);
                     return;

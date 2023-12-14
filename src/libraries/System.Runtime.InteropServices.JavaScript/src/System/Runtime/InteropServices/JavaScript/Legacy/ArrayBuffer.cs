@@ -11,19 +11,19 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="length">Length.</param>
         public ArrayBuffer(int length)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(ArrayBuffer), new object[] { length }), JSProxyContext.MainInstance)
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(ArrayBuffer), new object[] { length }), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            JSProxyContext.MainInstance.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
         /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        internal ArrayBuffer(IntPtr jsHandle) : base(jsHandle, JSProxyContext.MainInstance)
+        internal ArrayBuffer(IntPtr jsHandle) : base(jsHandle, JSProxyContext.MainThreadContext)
         { }
 
         /// <summary>

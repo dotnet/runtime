@@ -16,19 +16,19 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="_params">Parameters.</param>
         public Array(params object[] _params)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Array), _params), JSProxyContext.MainInstance)
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Array), _params), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            JSProxyContext.MainInstance.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
         /// Initializes a new instance of the Array/> class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        internal Array(IntPtr jsHandle) : base(jsHandle, JSProxyContext.MainInstance)
+        internal Array(IntPtr jsHandle) : base(jsHandle, JSProxyContext.MainThreadContext)
         { }
 
         /// <summary>

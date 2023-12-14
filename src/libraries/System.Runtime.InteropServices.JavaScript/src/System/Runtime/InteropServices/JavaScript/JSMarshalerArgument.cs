@@ -65,7 +65,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             slot.Type = MarshalerType.None;
 #if FEATURE_WASM_THREADS
-            JSProxyContext.CapturedInstance = null;
+            // we know that this is at the start of some JSImport call, but we don't know yet what would be the target thread
+            // also this is called multiple times
+            JSProxyContext.PushOperationUnknowContext();
 #endif
         }
     }
