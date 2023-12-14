@@ -10920,6 +10920,54 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_sve_ld2q, EA_SCALABLE, REG_V31, REG_P1, REG_R2, -16,
                                 INS_OPTS_SCALABLE_Q); // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
                                                       // VL}]
+
+    // IF_SVE_IS_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld2b, EA_SCALABLE, REG_V0, REG_P1, REG_R2, -16,
+                                INS_OPTS_SCALABLE_B); // LD2B    {<Zt1>.B, <Zt2>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
+                                                      // VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld2d, EA_SCALABLE, REG_V4, REG_P5, REG_R7, 14,
+                                INS_OPTS_SCALABLE_D); // LD2D    {<Zt1>.D, <Zt2>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
+                                                      // VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld2h, EA_SCALABLE, REG_V6, REG_P5, REG_R4, 8,
+                                INS_OPTS_SCALABLE_H); // LD2H    {<Zt1>.H, <Zt2>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
+                                                      // VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld2w, EA_SCALABLE, REG_V0, REG_P0, REG_R1, 2,
+                                INS_OPTS_SCALABLE_S); // LD2W    {<Zt1>.S, <Zt2>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
+                                                      // VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld3b, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 21,
+                                INS_OPTS_SCALABLE_B); // LD3B    {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>/Z, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld3d, EA_SCALABLE, REG_V0, REG_P0, REG_R0, -24,
+                                INS_OPTS_SCALABLE_D); // LD3D    {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>/Z, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld3h, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 21,
+                                INS_OPTS_SCALABLE_H); // LD3H    {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>/Z, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld3w, EA_SCALABLE, REG_V0, REG_P0, REG_R0, -24,
+                                INS_OPTS_SCALABLE_S); // LD3W    {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>/Z, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld4b, EA_SCALABLE, REG_V31, REG_P2, REG_R1, -32,
+                                INS_OPTS_SCALABLE_B); // LD4B    {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>/Z,
+                                                      // [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld4d, EA_SCALABLE, REG_V8, REG_P0, REG_R0, 28,
+                                INS_OPTS_SCALABLE_D); // LD4D    {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>/Z,
+                                                      // [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld4h, EA_SCALABLE, REG_V5, REG_P4, REG_R3, -32,
+                                INS_OPTS_SCALABLE_H); // LD4H    {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>/Z,
+                                                      // [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld4w, EA_SCALABLE, REG_V0, REG_P1, REG_R2, 28,
+                                INS_OPTS_SCALABLE_S); // LD4W    {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>/Z,
+                                                      // [<Xn|SP>{, #<imm>, MUL VL}]
+
+    // IF_SVE_JE_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_st2q, EA_SCALABLE, REG_V0, REG_P3, REG_R0, -16,
+                                INS_OPTS_SCALABLE_Q); // ST2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st3q, EA_SCALABLE, REG_V2, REG_P3, REG_R4, 21,
+                                INS_OPTS_SCALABLE_Q); // ST3Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>, [<Xn|SP>{, #<imm>,
+                                                      // MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_st4q, EA_SCALABLE, REG_V7, REG_P6, REG_R5, 28,
+                                INS_OPTS_SCALABLE_Q); // ST4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>, [<Xn|SP>{,
+                                                      // #<imm>, MUL VL}]
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
