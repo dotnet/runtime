@@ -112,8 +112,101 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 gpointer
 mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x37);
+	guint8 *code;
+	guint8* start;
+	int i, size, offset, gregs_offset, fregs_offset, ctx_offset, num_fregs, frame_size;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	size = 768;
+	start = code = mono_global_codeman_reserve (size);
+
+	/* Compute stack frame size and offsets */
+	offset = 0;
+	/* ra & fp */
+	offset += 2 * sizeof (host_mgreg_t);
+
+	/* gregs */
+	offset += RISCV_N_GREGS * sizeof (host_mgreg_t);
+	gregs_offset = offset;
+
+	/* fregs */
+	offset += RISCV_N_FREGS * sizeof (host_mgreg_t);
+	fregs_offset = offset;
+
+	/* ctx */
+	offset += sizeof (host_mgreg_t);
+	ctx_offset = offset;
+	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/*
+	 * We are being called from C code, ctx is in a0, the address to call is in a1.
+	 * We need to save state, restore ctx, make the call, then restore the previous state,
+	 * returning the value returned by the call.
+	 */
+
+	MINI_BEGIN_CODEGEN ();
+
+	// riscv_ebreak (code);
+
+	/* Setup a frame */
+	g_assert (RISCV_VALID_I_IMM (-frame_size));
+	riscv_addi (code, RISCV_SP, RISCV_SP, -frame_size);
+	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, frame_size - sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, frame_size - 2 * sizeof (host_mgreg_t), 0);
+	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
+
+
+	/* Save ctx */
+	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_FP, -ctx_offset, 0);
+	/* Save gregs */
+	code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS | (1 << RISCV_FP), RISCV_FP, -gregs_offset, FALSE);
+	/* Save fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+
+	/* Load regs from ctx */
+	code = mono_riscv_emit_load_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
+
+	/* Load fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_load_regarray (code, 0xffffffff, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, fregs), TRUE);
+
+	/* Load fp */
+	code = mono_riscv_emit_load (code, RISCV_FP, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, gregs) + (RISCV_FP * sizeof (host_mgreg_t)), 0);
+
+	/* Make the call */
+	riscv_jalr (code, RISCV_RA, RISCV_A1, 0);
+	/* For filters, the result is in R0 */
+
+	/* Restore fp */
+	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
+
+	/* Load ctx */
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -ctx_offset, 0);
+	/* Save registers back to ctx */
+	/* This isn't strictly necessary since we don't allocate variables used in eh clauses to registers */
+	code = mono_riscv_emit_store_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_T0, MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
+
+	/* Restore regs */
+	code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS | (1 << RISCV_FP), RISCV_FP, -gregs_offset, FALSE);
+	/* Restore fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_load_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+
+	/* Destroy frame */
+	code = mono_riscv_emit_destroy_frame(code);
+
+	riscv_jalr (code, RISCV_X0, RISCV_RA, 0);
+
+	g_assert ((code - start) < size);
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
+	if (info)
+		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
+
+	return MINI_ADDR_TO_FTNPTR (start);
 }
 
 static gpointer
@@ -121,7 +214,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	guint8 *start, *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int i, offset, gregs_offset, fregs_offset, frame_size, num_fregs;
+	int offset, gregs_offset, fregs_offset, frame_size, num_fregs;
 
 	code = start = mono_global_codeman_reserve (size);
 

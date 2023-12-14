@@ -1878,11 +1878,14 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_OVF_I4_UN:
 	case OP_LCONV_TO_OVF_U4:
 	case OP_LCONV_TO_OVF_U4_UN:
+	case OP_ICONV_TO_OVF_U8:
 	case OP_LCONV_TO_OVF_U8:
 
 	case OP_LADD_OVF:
 	case OP_LADD_OVF_UN:
+	case OP_LSUB_OVF:
 	case OP_IMUL_OVF:
+	case OP_LMUL_OVF:
 	case OP_LMUL_OVF_UN:
 	case OP_LMUL_OVF_UN_OOM:
 
@@ -2833,17 +2836,22 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			// convert OP_{I|L}SUB_IMM to their corresponding ADD_IMM
 			ins->opcode -= 1;
 			goto loop_start;
+		case OP_SUBCC:
 		case OP_ISUBCC:
+		case OP_LSUBCC:
 			/**
 			 * sub rd, rs1, rs2
 			 * slti t1, x0, rs2
 			 * slt t2, rd, rs1
 			 * bne t1, t2, overflow
 			*/
-			ins->opcode = OP_ISUB;
+			if (ins->opcode == OP_LSUBCC)
+				ins->opcode = OP_LSUB;
+			else
+				ins->opcode = OP_ISUB;
 			MonoInst *branch_ins = ins->next;
 			if (branch_ins) {
-				if (ins->next->opcode == OP_COND_EXC_IOV){
+				if (branch_ins->opcode == OP_COND_EXC_OV || ins->next->opcode == OP_COND_EXC_IOV){
 					// bne t1, t2, overflow
 					branch_ins->opcode = OP_RISCV_EXC_BNE;
 					branch_ins->sreg1 = mono_alloc_ireg (cfg);
