@@ -146,7 +146,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            return GetCondition(obj).Wait(millisecondsTimeout);
+            return GetCondition(obj).Wait(millisecondsTimeout, obj);
         }
 
         public static void Pulse(object obj)

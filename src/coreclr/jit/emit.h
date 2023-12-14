@@ -1871,10 +1871,16 @@ protected:
         // beginning of the function -- of the target instruction of the jump, used to
         // determine if this jump needs to be patched.
         unsigned idjOffs :
-#if defined(TARGET_XARCH)
-            29;
-        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+#if defined(TARGET_AMD64)
+            28;
+        // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+        // Indicates the jump follows a call instruction and precedes an OS epilog.
+        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
+        unsigned idjIsAfterCallBeforeEpilog : 1;
+#elif defined(TARGET_X86)
+            29;
         unsigned idjIsRemovableJmpCandidate : 1;
 #else
             30;

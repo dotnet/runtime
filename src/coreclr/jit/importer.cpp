@@ -2953,128 +2953,151 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     }
                 }
 
-                const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
-
-                switch (nextCodeAddr[0])
+                const BYTE*  nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
+                const OPCODE nextOpcode   = impGetNonPrefixOpcode(nextCodeAddr, codeEndp);
+                switch (nextOpcode)
                 {
                     // box + isinst + br_true/false
                     case CEE_BRTRUE:
                     case CEE_BRTRUE_S:
                     case CEE_BRFALSE:
                     case CEE_BRFALSE_S:
-                        if ((nextCodeAddr + ((nextCodeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
+                    case CEE_LDNULL:
+                    {
+                        // "ldnull + cgt_un" is used when BOX+ISINST is not fed into a branch, e.g.:
+                        //
+                        //   if (obj is string) {        <--- box + isinst + br_true
+                        //
+                        //   bool b = obj is string;     <--- box + isinst + ldnull + cgt_un
+                        //
+                        //   bool b = obj is not string; <--- box + isinst + ldnull + cgt_un + ldc.i4.0 + ceq
+                        //
+
+                        // For br_true/false, we'll only replace "box + isinst" to a boolean
+                        int returnToken = 1 + sizeof(mdToken);
+                        if (nextOpcode == CEE_LDNULL)
                         {
-                            if (opts == BoxPatterns::MakeInlineObservation)
+                            // for ldnull case, we'll replace the whole "box + isinst + ldnull + cgt_un" sequence
+                            returnToken = 4 + sizeof(mdToken);
+                            if ((opts == BoxPatterns::IsByRefLike) ||
+                                (impGetNonPrefixOpcode(nextCodeAddr + 1, codeEndp) != CEE_CGT_UN))
                             {
-                                compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
-                                return 1 + sizeof(mdToken);
-                            }
-
-                            CorInfoHelpFunc foldAsHelper;
-                            if (opts == BoxPatterns::IsByRefLike)
-                            {
-                                // Treat ByRefLike types as if they were regular boxing operations
-                                // so they can be elided.
-                                foldAsHelper = CORINFO_HELP_BOX;
-                            }
-                            else
-                            {
-                                foldAsHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
-                            }
-
-                            if (foldAsHelper == CORINFO_HELP_BOX)
-                            {
-                                CORINFO_RESOLVED_TOKEN isInstResolvedToken;
-
-                                impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
-
-                                TypeCompareState castResult =
-                                    info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
-                                                                          isInstResolvedToken.hClass);
-
-                                if (castResult != TypeCompareState::May)
-                                {
-                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
-
-                                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
-                                    impPopStack();
-                                    impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
-                                                   typeInfo(TYP_INT));
-                                    return 1 + sizeof(mdToken);
-                                }
-                            }
-                            else if ((foldAsHelper == CORINFO_HELP_BOX_NULLABLE) &&
-                                     ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
-                            {
-                                // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
-                                // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
-                                // the target type.
-                                CORINFO_RESOLVED_TOKEN isInstResolvedToken;
-                                impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
-
-                                CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
-                                CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
-
-                                TypeCompareState castResult =
-                                    info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
-
-                                if (castResult == TypeCompareState::Must)
-                                {
-                                    GenTree* objToBox = impPopStack().val;
-
-                                    // Spill struct to get its address (to access hasValue field)
-                                    // TODO-Bug?: verify if flags matter here
-                                    GenTreeFlags indirFlags = GTF_EMPTY;
-                                    objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
-
-                                    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                    impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
-
-                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
-                                    return 1 + sizeof(mdToken);
-                                }
-                                else if (castResult == TypeCompareState::MustNot)
-                                {
-                                    impPopStack();
-                                    impPushOnStack(gtNewIconNode(0), typeInfo(TYP_INT));
-                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
-                                    return 1 + sizeof(mdToken);
-                                }
+                                break;
                             }
                         }
-                        break;
+
+                        if (opts == BoxPatterns::MakeInlineObservation)
+                        {
+                            compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                            return returnToken;
+                        }
+
+                        CorInfoHelpFunc foldAsHelper;
+                        if (opts == BoxPatterns::IsByRefLike)
+                        {
+                            // Treat ByRefLike types as if they were regular boxing operations
+                            // so they can be elided.
+                            foldAsHelper = CORINFO_HELP_BOX;
+                        }
+                        else
+                        {
+                            foldAsHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                        }
+
+                        if (foldAsHelper == CORINFO_HELP_BOX)
+                        {
+                            CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+                            impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                            TypeCompareState castResult =
+                                info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
+                                                                      isInstResolvedToken.hClass);
+
+                            if (castResult != TypeCompareState::May)
+                            {
+                                JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
+
+                                impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                                impPopStack();
+                                impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
+                                               typeInfo(TYP_INT));
+                                return returnToken;
+                            }
+                        }
+                        else if ((foldAsHelper == CORINFO_HELP_BOX_NULLABLE) &&
+                                 ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
+                        {
+                            // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
+                            // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
+                            // the target type.
+                            CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+                            impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                            CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
+                            CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
+
+                            TypeCompareState castResult =
+                                info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
+
+                            if (castResult == TypeCompareState::Must)
+                            {
+                                GenTree* objToBox = impPopStack().val;
+
+                                // Spill struct to get its address (to access hasValue field)
+                                // TODO-Bug?: verify if flags matter here
+                                GenTreeFlags indirFlags = GTF_EMPTY;
+                                objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
+
+                                static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
+
+                                JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
+                                return returnToken;
+                            }
+                            else if (castResult == TypeCompareState::MustNot)
+                            {
+                                impPopStack();
+                                impPushOnStack(gtNewIconNode(0), typeInfo(TYP_INT));
+                                JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
+                                return returnToken;
+                            }
+                        }
+                    }
+                    break;
 
                     // box + isinst + unbox.any
                     case CEE_UNBOX_ANY:
-                        if ((nextCodeAddr + 1 + sizeof(mdToken)) <= codeEndp)
+                    {
+                        if (opts == BoxPatterns::MakeInlineObservation)
                         {
-                            if (opts == BoxPatterns::MakeInlineObservation)
-                            {
-                                compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
-                                return 2 + sizeof(mdToken) * 2;
-                            }
+                            compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                            return 2 + sizeof(mdToken) * 2;
+                        }
 
-                            // See if the resolved tokens in box, isinst and unbox.any describe types that are equal.
-                            CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
-                            impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
+                        // See if the resolved tokens in box, isinst and unbox.any describe types that are equal.
+                        CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
+                        impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
 
-                            if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                        if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                                                                      pResolvedToken->hClass) == TypeCompareState::Must)
+                        {
+                            CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+                            impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                            // If so, box + isinst + unbox.any is a nop.
+                            if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
                                                                           pResolvedToken->hClass) ==
                                 TypeCompareState::Must)
                             {
-                                CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
-                                impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
-
-                                // If so, box + isinst + unbox.any is a nop.
-                                if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
-                                                                              pResolvedToken->hClass) ==
-                                    TypeCompareState::Must)
-                                {
-                                    JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
-                                    return 2 + sizeof(mdToken) * 2;
-                                }
+                                JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
+                                return 2 + sizeof(mdToken) * 2;
                             }
                         }
+                    }
+                    break;
+
+                    default:
                         break;
                 }
             }
@@ -3869,6 +3892,10 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 {
                     // Keep class handle attached to the helper call since it's difficult to restore it.
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
+                    if (pFieldInfo->useEnclosingTypeOnly)
+                    {
+                        op1->AsCall()->SetArgNeedsEnclosingType();
+                    }
                 }
 
                 op1->gtFlags |= callFlags;

@@ -4737,6 +4737,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgStress64RsltMul();
 #endif // DEBUG
 
+    if (opts.OptimizationEnabled())
+    {
+        // Build post-order that morph will use, and remove dead blocks
+        //
+        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+    }
+
     // Morph the trees in all the blocks of the method
     //
     unsigned const preMorphBBCount = fgBBcount;
@@ -4939,23 +4946,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
+            else
+            {
+                // DFS tree is always invalid after this point.
+                //
+                fgInvalidateDfsTree();
+            }
 
             if (doCse)
             {
                 // Remove common sub-expressions
                 //
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
-            }
-
-            // Assertion prop can do arbitrary statement remorphing, which
-            // can clone code and disrupt our simpleminded SSA accounting.
-            //
-            // So, disable the ssa checks.
-            //
-            if (fgSsaValid)
-            {
-                JITDUMP("Marking SSA as invalid before assertion prop\n");
-                fgSsaValid = false;
             }
 
             if (doAssertionProp)
@@ -5765,6 +5767,9 @@ void Compiler::RecomputeLoopInfo()
     optSetBlockWeights();
     // Rebuild the loop tree annotations themselves
     optFindLoops();
+
+    m_dfsTree = fgComputeDfs();
+    optFindNewLoops();
 }
 
 /*****************************************************************************/
