@@ -14069,7 +14069,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         //
         for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
-            BasicBlock* const block = m_dfsTree->GetPostOrder()[i - 1];
+            BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
             fgMorphBlock(block);
         }
         assert(bbNumMax == fgBBNumMax);

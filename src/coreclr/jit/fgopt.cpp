@@ -1091,8 +1091,6 @@ void Compiler::fgComputeDoms()
         }
     }
 
-    fgCompDominatedByExceptionalEntryBlocks();
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -1328,6 +1326,59 @@ BlockSet_ValRet_T Compiler::fgGetDominatorSet(BasicBlock* block)
     } while (block != nullptr);
 
     return domSet;
+}
+
+//-------------------------------------------------------------
+// fgComputeDominators: Compute new dominators
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgComputeDominators()
+{
+    assert(m_dfsTree != nullptr);
+    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+
+    bool anyHandlers = false;
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        if (HBtab->HasFilter())
+        {
+            BasicBlock* filter = HBtab->ebdFilter;
+            if (m_dfsTree->Contains(filter))
+            {
+                filter->SetDominatedByExceptionalEntryFlag();
+                anyHandlers = true;
+            }
+        }
+
+        BasicBlock* handler = HBtab->ebdHndBeg;
+        if (m_dfsTree->Contains(handler))
+        {
+            handler->SetDominatedByExceptionalEntryFlag();
+            anyHandlers = true;
+        }
+    }
+
+    if (anyHandlers)
+    {
+        assert(m_dfsTree->GetPostOrder(m_dfsTree->GetPostOrderCount() - 1) == fgFirstBB);
+        // Now propagate dominator flag in reverse post-order, skipping first BB.
+        // (This could walk the dominator tree instead, but this linear order
+        // is more efficient to visit and still guarantees we see the
+        // dominators before the dominated blocks).
+        for (unsigned i = m_dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+        {
+            BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
+            assert(block->bbIDom != nullptr);
+            if (block->bbIDom->IsDominatedByExceptionalEntryFlag())
+            {
+                block->SetDominatedByExceptionalEntryFlag();
+            }
+        }
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
@@ -6607,33 +6658,6 @@ unsigned Compiler::fgMeasureIR()
 }
 
 #endif // FEATURE_JIT_METHOD_PERF
-
-//------------------------------------------------------------------------
-// fgCompDominatedByExceptionalEntryBlocks: compute blocks that are
-// dominated by not normal entry.
-//
-void Compiler::fgCompDominatedByExceptionalEntryBlocks()
-{
-    assert(fgEnterBlksSetValid);
-    if (BlockSetOps::Count(this, fgEnterBlks) != 1) // There are exception entries.
-    {
-        for (unsigned i = 1; i <= fgBBNumMax; ++i)
-        {
-            BasicBlock* block = fgBBReversePostorder[i];
-            if (BlockSetOps::IsMember(this, fgEnterBlks, block->bbNum))
-            {
-                if (fgFirstBB != block) // skip the normal entry.
-                {
-                    block->SetDominatedByExceptionalEntryFlag();
-                }
-            }
-            else if (block->bbIDom->IsDominatedByExceptionalEntryFlag())
-            {
-                block->SetDominatedByExceptionalEntryFlag();
-            }
-        }
-    }
-}
 
 //------------------------------------------------------------------------
 // fgHeadTailMerge: merge common sequences of statements in block predecessors/successors

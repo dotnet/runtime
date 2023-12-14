@@ -744,11 +744,8 @@ void CodeGen::genCodeForBBlist()
                     break;
                 }
 #ifdef TARGET_XARCH
-                // If a block was selected to place an alignment instruction because it ended
-                // with a jump, do not remove jumps from such blocks.
                 // Do not remove a jump between hot and cold regions.
-                bool isRemovableJmpCandidate =
-                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetTarget());
+                bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetTarget());
 
                 inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
 #else
