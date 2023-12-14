@@ -275,12 +275,13 @@ typedef enum {
 } MonoTypeKind;
 
 typedef enum {
-	/* MonoClass is alocated, but not inited */
+	/* MonoClass is alocated, but not inited. image, type_token, namespace and name are usable.
+	 */
 	MONO_CLASS_READY_BAREBONES = 0,
-	/* We've started to preload the assemblies for the parent type and instantiations */
-	MONO_CLASS_READY_PRELOAD_STARTED = 1,
-	/* We have aproximate parent info: we preloaded the parent gtd and its instantiations, but
-         * haven't formed a GINST yet
+	/* We have aproximate parent info: we preloaded the parent and interface gtds and their
+         * instantiations, but haven't filled in the MonoClass:parent and MonoClass:interfaces
+         * fields yet, or checked for cycles.  After this, we should not need to load any additional
+         * assemblies in order to get the exact parent and interaces.
 	 */
 	MONO_CLASS_READY_APPROX_PARENT = 2,
 	/* At this point we need to take the loader lock to record the gclass instantiations (to

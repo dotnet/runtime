@@ -88,11 +88,9 @@ preload_done_visiting (MonoClass *klass)
  * What we do now is we allocate a MonoClass in the MONO_CLASS_READY_BAREBONES state and then try to
  * pre-load its parent and interfaces, without holding the loader lock.  However we need to avoid
  * cycles (both invalid IL like: class SubClass : SubClass; and also valid IL like class SubClass :
- * ParentClass<SubClass>).  So we use the readiness levels as a depth first search visited bit.  We
- * first put the class into MONO_CLASS_READY_PRELOAD_STARTED then visit its parent and interfaces
- * and if we ever see PRELOAD_STARTED again, we just return, avoiding a cycle.  When we're done
- * preloading a class we put it into the MONO_CLASS_READY_APPROX_PARENT state to signal that it has
- * been fully pre-loaded.
+ * ParentClass<SubClass>).  So we use a thread-local visited hash.  When we're done preloading a
+ * class we put it into the MONO_CLASS_READY_APPROX_PARENT state to signal that it has been fully
+ * pre-loaded.
  *
  * At that point we can take the global loader lock and proceed with normal initialization, without
  * triggering assembly loading callbacks.
@@ -155,7 +153,6 @@ mono_class_preload_class (MonoClass *klass)
            we have a loop, we don't want both threads to wait for each other and deadlock.  Simplest
            approach is just to let both threads explore everything and use a thread-local visiting
            table to avoid looping in any one thread. */
-	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_PRELOAD_STARTED);
 	preload_begin_visiting (klass);
 
 	preload_visit_parent (klass);
