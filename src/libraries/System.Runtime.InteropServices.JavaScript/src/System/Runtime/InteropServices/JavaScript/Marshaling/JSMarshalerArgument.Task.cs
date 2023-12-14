@@ -358,9 +358,11 @@ namespace System.Runtime.InteropServices.JavaScript
             // should fail it with exception
             arg_value.ToJS(ex);
 
-            JavaScriptImports.ResolveOrRejectPromise(args);
+            // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
+            holder.DisposeImpl(true);
 
-            holder.DisposeLocal();
+            // order of operations with DisposeImpl matters
+            JavaScriptImports.ResolveOrRejectPromise(args);
         }
 
         private static void ResolveVoidPromise(JSObject holder)
@@ -382,9 +384,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
             arg_value.slot.Type = MarshalerType.Void;
 
-            JavaScriptImports.ResolveOrRejectPromise(args);
+            // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
+            holder.DisposeImpl(true);
 
-            holder.DisposeLocal();
+            // order of operations with DisposeImpl matters
+            JavaScriptImports.ResolveOrRejectPromise(args);
         }
 
         private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
@@ -407,9 +411,11 @@ namespace System.Runtime.InteropServices.JavaScript
             // and resolve it with value
             marshaler(ref arg_value, value);
 
-            JavaScriptImports.ResolveOrRejectPromise(args);
+            // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
+            holder.DisposeImpl(true);
 
-            holder.DisposeLocal();
+            // order of operations with DisposeImpl matters
+            JavaScriptImports.ResolveOrRejectPromise(args);
         }
     }
 }

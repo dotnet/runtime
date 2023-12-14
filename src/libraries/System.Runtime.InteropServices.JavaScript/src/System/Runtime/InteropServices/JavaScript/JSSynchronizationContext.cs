@@ -104,7 +104,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            if (ProxyContext.IsTargetThread())
+            if (ProxyContext.IsCurrentThread())
             {
                 d(state);
                 return;

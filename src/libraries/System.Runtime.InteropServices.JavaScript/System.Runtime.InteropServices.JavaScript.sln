@@ -1,8 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.8.34004.107
-MinimumVisualStudioVersion = 10.0.40219.1
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{ED86AB26-1CFB-457D-BF87-B7A0D8FAF272}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections", "..\System.Collections\ref\System.Collections.csproj", "{8B1D80E9-AE0D-4E3C-9F91-E6862B49AEF3}"
@@ -54,8 +50,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{32CDDDCD-5319-494C-AB41-42B87C467F04}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{F92020A9-28BE-4398-86FF-5CFE44C94882}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Client", "..\System.Net.WebSockets.Client\src\System.Net.WebSockets.Client.csproj", "{8B0D5A81-3E35-4391-8FB5-A44ABA356A07}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -135,10 +129,6 @@ Global
 		{008873D5-9028-4FF3-8354-71F713748625}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{008873D5-9028-4FF3-8354-71F713748625}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{008873D5-9028-4FF3-8354-71F713748625}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8B0D5A81-3E35-4391-8FB5-A44ABA356A07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8B0D5A81-3E35-4391-8FB5-A44ABA356A07}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8B0D5A81-3E35-4391-8FB5-A44ABA356A07}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8B0D5A81-3E35-4391-8FB5-A44ABA356A07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -165,7 +155,6 @@ Global
 		{39B30F44-B141-44E9-B7A7-B1A9EDB1A61C} = {F92020A9-28BE-4398-86FF-5CFE44C94882}
 		{D819DEB6-6F6B-484B-9F0F-BDBCEDC83A1A} = {F92020A9-28BE-4398-86FF-5CFE44C94882}
 		{32CDDDCD-5319-494C-AB41-42B87C467F04} = {F92020A9-28BE-4398-86FF-5CFE44C94882}
-		{8B0D5A81-3E35-4391-8FB5-A44ABA356A07} = {67F3A00A-AE6C-434C-927D-E5D38DE2DA2C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3FE64246-4AFA-424A-AE5D-7007E20451B5}

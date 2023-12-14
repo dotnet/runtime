@@ -12,10 +12,6 @@ namespace System.Runtime.InteropServices.JavaScript
         internal nint JSHandle;
         internal JSProxyContext ProxyContext;
 
-#if FEATURE_WASM_THREADS
-        private readonly object _lockObject = new object();
-#endif
-
         public SynchronizationContext SynchronizationContext
         {
             get
@@ -32,7 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal GCHandle? InFlight;
         internal int InFlightCounter;
 #endif
-        private bool _isDisposed;
+        internal bool _isDisposed;
 
         internal JSObject(IntPtr jsHandle, JSProxyContext ctx)
         {
@@ -44,9 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
-#if FEATURE_WASM_THREADS
-            lock (_lockObject)
-#endif
+            lock (ProxyContext)
             {
                 InFlightCounter++;
                 if (InFlightCounter == 1)
@@ -62,9 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
         internal void ReleaseInFlight()
         {
-#if FEATURE_WASM_THREADS
-            lock (_lockObject)
-#endif
+            lock (ProxyContext)
             {
                 Debug.Assert(InFlightCounter != 0, "InFlightCounter != 0");
 
@@ -115,53 +107,22 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
-        // when we know that JS side already freed the handle
-        internal void DisposeLocal()
-        {
-#if FEATURE_WASM_THREADS
-            lock (_lockObject)
-#endif
-            {
-                ProxyContext.RemoveCSOwnedObject(JSHandle);
-                _isDisposed = true;
-                JSHandle = IntPtr.Zero;
-            }
-        }
-
-        private void DisposeThis()
+        internal void DisposeImpl(bool skipJS)
         {
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
                 if (ProxyContext == JSProxyContext.CurrentInstance)
                 {
-                    lock (_lockObject)
-                    {
-                        if (_isDisposed)
-                        {
-                            return;
-                        }
-                        ProxyContext.ReleaseCSOwnedObject(JSHandle);
-                        _isDisposed = true;
-                        JSHandle = IntPtr.Zero;
-                    } //lock
+                    JSProxyContext.ReleaseCSOwnedObject(this, skipJS);
                     return;
                 }
 
                 ProxyContext.SynchronizationContext.Post(static (object? s) =>
                 {
-                    var self = (JSObject)s!;
-                    lock (self._lockObject)
-                    {
-                        if (self._isDisposed)
-                        {
-                            return;
-                        }
-                        self.ProxyContext.ReleaseCSOwnedObject(self.JSHandle);
-                        self._isDisposed = true;
-                        self.JSHandle = IntPtr.Zero;
-                    } //lock
-                }, this);
+                    var x = ((JSObject self, bool skipJS))s!;
+                    JSProxyContext.ReleaseCSOwnedObject(x.self, x.skipJS);
+                }, (this, skipJS));
 #else
                 ProxyContext.ReleaseCSOwnedObject(JSHandle);
                 _isDisposed = true;
@@ -172,7 +133,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         ~JSObject()
         {
-            DisposeThis();
+            DisposeImpl(false);
         }
 
         /// <summary>
@@ -180,8 +141,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         public void Dispose()
         {
-            DisposeThis();
-            GC.SuppressFinalize(this);
+            DisposeImpl(false);
         }
     }
 }

@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsTargetThread()
+        public bool IsCurrentThread()
         {
             return ThreadId == Thread.CurrentThread.ManagedThreadId;
         }
@@ -281,36 +281,35 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public void RemoveCSOwnedObject(nint jsHandle)
+        public static void ReleaseCSOwnedObject(JSObject proxy, bool skipJS)
         {
-            lock (this)
+            if (!proxy.IsDisposed)
             {
-                ThreadCsOwnedObjects.Remove(jsHandle);
-            }
-        }
-
-        public void ReleaseCSOwnedObject(nint jsHandle)
-        {
-            if (jsHandle != IntPtr.Zero)
-            {
-                // TODO could this be called from wrong thread ?
-                lock (this)
+                var ctx = proxy.ProxyContext;
+                if (!ctx.IsCurrentThread())
                 {
-#if FEATURE_WASM_THREADS && DEBUG
-                    if (ThreadCsOwnedObjects.Remove(jsHandle, out WeakReference<JSObject>? weak))
+                    Environment.FailFast("ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy");
+                }
+                lock (ctx)
+                {
+                    if (proxy.IsDisposed)
                     {
-                        if (weak.TryGetTarget(out JSObject? obj) && obj.ProxyContext != this)
-                        {
-                            Environment.FailFast("ReleaseCSOwnedObject must be called on the thread that JSObject belongs into.");
-                        }
+                        return;
+                    }
+                    proxy._isDisposed = true;
+                    GC.SuppressFinalize(proxy);
+                    var jsHandle = proxy.JSHandle;
+                    if (ctx.ThreadCsOwnedObjects.Remove(jsHandle))
+                    {
+                        Environment.FailFast("ReleaseCSOwnedObject expected to find registration");
                     };
-#else
-                    ThreadCsOwnedObjects.Remove(jsHandle);
-#endif
-                    Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+                    if (!skipJS)
+                    {
+                        Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+                    }
                     if (IsJSVHandle(jsHandle))
                     {
-                        FreeJSVHandle(jsHandle);
+                        ctx.FreeJSVHandle(jsHandle);
                     }
                 }
             }
@@ -388,7 +387,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (!_disposedValue)
                 {
 #if FEATURE_WASM_THREADS
-                    if (!IsTargetThread()) Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it.");
+                    if (!IsCurrentThread()) Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it.");
 #endif
 
                     // TODO: free unmanaged resources (unmanaged objects) and override finalizer
