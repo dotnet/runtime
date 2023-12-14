@@ -12366,8 +12366,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         {
             if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
-                // TODO: Do this for R2R as well
-                if (call->IsArgNeedsEnclosingType())
+                if (call->IsArgNeedsEnclosingType() && useNewFeature)
                 {
                     useEnclosingTypeAsArg0 = true;
                     assert((call->gtInitClsHnd != NO_CLASS_HANDLE) && ((ssize_t)call->gtInitClsHnd != 0xcccccccc));

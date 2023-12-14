@@ -2396,6 +2396,7 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 
 void Compiler::compInitOptions(JitFlags* jitFlags)
 {
+    useNewFeature = false;
     opts = {};
 
     if (compIsForInlining())
