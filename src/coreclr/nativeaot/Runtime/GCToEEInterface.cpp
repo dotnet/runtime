@@ -114,12 +114,12 @@ void GCToEEInterface::GcScanRoots(ScanFunc* fn, int condemned, int max_gen, Scan
             while (pRoot != NULL)
             {
                 STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p inline thread statics root %p. \n", pThread, pRoot);
-                RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)&pRoot->m_threadStaticsBase, GCRK_Object, fn, sc);
+                RedhawkGCInterface::EnumGcRef(&pRoot->m_threadStaticsBase, GCRK_Object, fn, sc);
                 pRoot = pRoot->m_next;
             }
 
             STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p thread statics root. \n", pThread);
-            RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)pThread->GetThreadStaticStorage(), GCRK_Object, fn, sc);
+            RedhawkGCInterface::EnumGcRef(pThread->GetThreadStaticStorage(), GCRK_Object, fn, sc);
 
             STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p\n", pThread);
             sc->thread_under_crawl = pThread;

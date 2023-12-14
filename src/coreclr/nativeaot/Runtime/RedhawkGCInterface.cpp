@@ -292,8 +292,8 @@ void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppU
 }
 
 // static
-void RedhawkGCInterface::EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowerBound,
-                                                          PTR_RtuObjectRef pUpperBound,
+void RedhawkGCInterface::EnumGcRefsInRegionConservatively(PTR_OBJECTREF pLowerBound,
+                                                          PTR_OBJECTREF pUpperBound,
                                                           ScanFunc* pfnEnumCallback,
                                                           ScanContext* pvCallbackData)
 {
@@ -317,7 +317,7 @@ void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, ScanFunc* fnGcEnumRef, S
 }
 
 // static
-void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, ScanFunc* fnGcEnumRef, ScanContext* pSc)
+void RedhawkGCInterface::EnumGcRef(PTR_OBJECTREF pRef, GCRefKind kind, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     ASSERT((GCRK_Object == kind) || (GCRK_Byref == kind));
 
@@ -332,7 +332,7 @@ void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, ScanFu
 }
 
 // static
-void RedhawkGCInterface::EnumGcRefConservatively(PTR_RtuObjectRef pRef, ScanFunc* fnGcEnumRef, ScanContext* pSc)
+void RedhawkGCInterface::EnumGcRefConservatively(PTR_OBJECTREF pRef, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     // Only report potential references in the promotion phase. Since we report everything as pinned there
     // should be no work to do in the relocation phase.

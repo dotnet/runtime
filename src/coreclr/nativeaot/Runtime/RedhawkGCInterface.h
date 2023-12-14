@@ -51,8 +51,8 @@ public:
 
     static void WaitForGCCompletion();
 
-    static void EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
-    static void EnumGcRefConservatively(PTR_RtuObjectRef pRef, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
+    static void EnumGcRef(PTR_OBJECTREF pRef, GCRefKind kind, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
+    static void EnumGcRefConservatively(PTR_OBJECTREF pRef, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
 
     static void EnumGcRefs(ICodeManager * pCodeManager,
                            MethodInfo * pMethodInfo,
@@ -62,8 +62,8 @@ public:
                            ScanContext* pvCallbackData,
                            bool   isActiveStackFrame);
 
-    static void EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowerBound,
-                                                 PTR_RtuObjectRef pUpperBound,
+    static void EnumGcRefsInRegionConservatively(PTR_OBJECTREF pLowerBound,
+                                                 PTR_OBJECTREF pUpperBound,
                                                  ScanFunc* pfnEnumCallback,
                                                  ScanContext* pvCallbackData);
 

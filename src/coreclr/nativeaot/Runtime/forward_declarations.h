@@ -48,8 +48,8 @@ namespace rh {
 // inc
 FWD_DECL(MethodTable)
 
-typedef Object* RtuObjectRef;
-typedef DPTR(RtuObjectRef) PTR_RtuObjectRef;
+typedef Object* OBJECTREF;
+typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 
 struct gc_alloc_context;
 struct ScanContext;

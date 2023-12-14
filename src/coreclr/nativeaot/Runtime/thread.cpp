@@ -391,8 +391,8 @@ gc_alloc_context* Thread::GetAllocContext()
 }
 
 #ifdef HOST_WASM
-extern RtuObjectRef * t_pShadowStackTop;
-extern RtuObjectRef * t_pShadowStackBottom;
+extern OBJECTREF * t_pShadowStackTop;
+extern OBJECTREF * t_pShadowStackBottom;
 
 void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
 {
@@ -417,7 +417,7 @@ void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackDat
 
 #ifdef DACCESS_COMPILE
 // A trivial wrapper that unpacks the DacScanCallbackData and calls the callback provided to GcScanRoots
-void GcScanRootsCallbackWrapper(PTR_RtuObjectRef ppObject, DacScanCallbackData* callbackData, uint32_t flags)
+void GcScanRootsCallbackWrapper(PTR_OBJECTREF ppObject, DacScanCallbackData* callbackData, uint32_t flags)
 {
     Thread::GcScanRootsCallbackFunc * pfnUserCallback = (Thread::GcScanRootsCallbackFunc *)callbackData->pfnUserCallback;
     pfnUserCallback(ppObject, callbackData->token, flags);
@@ -452,7 +452,7 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
-    PTR_RtuObjectRef pHijackedReturnValue = NULL;
+    PTR_OBJECTREF    pHijackedReturnValue = NULL;
     GCRefKind        returnValueKind      = GCRK_Unknown;
 
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
@@ -491,7 +491,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                 (
                     [&](size_t* pRef)
                     {
-                        RedhawkGCInterface::EnumGcRefConservatively((PTR_RtuObjectRef)pRef, pfnEnumCallback, pvCallbackData);
+                        RedhawkGCInterface::EnumGcRefConservatively((PTR_OBJECTREF)pRef, pfnEnumCallback, pvCallbackData);
                     }
                 );
             }
@@ -502,8 +502,8 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             PTR_VOID pUpperBound = m_pStackHigh;
 
             RedhawkGCInterface::EnumGcRefsInRegionConservatively(
-                dac_cast<PTR_RtuObjectRef>(pLowerBound),
-                dac_cast<PTR_RtuObjectRef>(pUpperBound),
+                dac_cast<PTR_OBJECTREF>(pLowerBound),
+                dac_cast<PTR_OBJECTREF>(pUpperBound),
                 pfnEnumCallback,
                 pvCallbackData);
         }
@@ -541,8 +541,8 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             // callsite of the type described above.
             if (frameIterator.HasStackRangeToReportConservatively())
             {
-                PTR_RtuObjectRef pLowerBound;
-                PTR_RtuObjectRef pUpperBound;
+                PTR_OBJECTREF pLowerBound;
+                PTR_OBJECTREF pUpperBound;
                 frameIterator.GetStackRangeToReportConservatively(&pLowerBound, &pUpperBound);
                 RedhawkGCInterface::EnumGcRefsInRegionConservatively(pLowerBound,
                                                                      pUpperBound,
@@ -562,7 +562,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
     // add to a dump file during FailFast.
     for (PTR_ExInfo curExInfo = GetCurExInfo(); curExInfo != NULL; curExInfo = curExInfo->m_pPrevExInfo)
     {
-        PTR_RtuObjectRef pExceptionObj = dac_cast<PTR_RtuObjectRef>(&curExInfo->m_exception);
+        PTR_OBJECTREF pExceptionObj = dac_cast<PTR_OBJECTREF>(&curExInfo->m_exception);
         RedhawkGCInterface::EnumGcRef(pExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
     }
 
@@ -572,13 +572,13 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
         for (uint32_t i = 0; i < pCurGCFrame->m_numObjRefs; i++)
         {
-            RedhawkGCInterface::EnumGcRef(dac_cast<PTR_RtuObjectRef>(pCurGCFrame->m_pObjRefs + i),
+            RedhawkGCInterface::EnumGcRef(dac_cast<PTR_OBJECTREF>(pCurGCFrame->m_pObjRefs + i),
                 pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
         }
     }
 
     // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
-    PTR_RtuObjectRef pThreadAbortExceptionObj = dac_cast<PTR_RtuObjectRef>(&m_threadAbortException);
+    PTR_OBJECTREF pThreadAbortExceptionObj = dac_cast<PTR_OBJECTREF>(&m_threadAbortException);
     RedhawkGCInterface::EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
 }
 
