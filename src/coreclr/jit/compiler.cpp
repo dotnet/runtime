@@ -5476,7 +5476,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
+        // If there is an unconditional jump (which is not part of callf/always pair)
         if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
