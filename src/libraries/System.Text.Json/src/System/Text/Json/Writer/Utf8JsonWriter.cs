@@ -114,23 +114,7 @@ namespace System.Text.Json
             _output = bufferWriter;
             _options = options;
 
-            if (_options.MaxDepth == 0)
-            {
-                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
-            }
-
-            if (_options.Indented)
-            {
-                if (_options.IndentSize == 0)
-                {
-                    _options.IndentSize = JsonConstants.DefaultIndentSize; // If indent size is not set, revert to the default.
-                }
-
-                if (_options.IndentByte == 0)
-                {
-                    _options.IndentCharacter = (char)JsonConstants.Space; // If indent character is not set revert to the default.
-                }
-            }
+            SetFallbackOptions();
         }
 
         /// <summary>
@@ -156,23 +140,7 @@ namespace System.Text.Json
             _stream = utf8Json;
             _options = options;
 
-            if (_options.MaxDepth == 0)
-            {
-                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
-            }
-
-            if (_options.Indented)
-            {
-                if (_options.IndentSize == 0)
-                {
-                    _options.IndentSize = JsonConstants.DefaultIndentSize; // If indent size is not set, revert to the default.
-                }
-
-                if (_options.IndentByte == 0)
-                {
-                    _options.IndentCharacter = (char)JsonConstants.Space; // If indent character is not set revert to the default.
-                }
-            }
+            SetFallbackOptions();
 
             _arrayBufferWriter = new ArrayBufferWriter<byte>();
         }
@@ -272,10 +240,8 @@ namespace System.Text.Json
 
             _output = bufferWriter;
             _options = options;
-            if (_options.MaxDepth == 0)
-            {
-                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
-            }
+
+            SetFallbackOptions();
         }
 
         internal static Utf8JsonWriter CreateEmptyInstanceForCaching() => new Utf8JsonWriter();
@@ -292,6 +258,24 @@ namespace System.Text.Json
             _currentDepth = default;
 
             _bitStack = default;
+        }
+
+        private void SetFallbackOptions()
+        {
+            if (_options.MaxDepth == 0)
+            {
+                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
+            }
+
+            if (_options.IndentByte == 0)
+            {
+                _options.IndentCharacter = (char)JsonConstants.Space; // If indent character is not set, revert to the default.
+            }
+
+            if (_options.IndentSize == 0)
+            {
+                _options.IndentSize = JsonConstants.DefaultIndentSize; // If indent size is not set, revert to the default.
+            }
         }
 
         private void CheckNotDisposed()
