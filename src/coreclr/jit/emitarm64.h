@@ -340,6 +340,9 @@ static code_t insEncodeReg_V_21_to_17(regNumber reg);
 // Return an encoding for the specified 'R' register used in '21' thru '17' position.
 static code_t insEncodeReg_R_21_to_17(regNumber reg);
 
+// Return an encoding for the specified 'R' register used in '20' thru '16' position.
+static code_t insEncodeReg_R_20_to_16(regNumber reg);
+
 // Return an encoding for the specified 'R' register used in '9' thru '5' position.
 static code_t insEncodeReg_R_9_to_5(regNumber reg);
 
@@ -474,6 +477,10 @@ static code_t insEncodeSveElemsize(emitAttr size);
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+
+// Returns the encoding to select the 4/8-byte width specifier <R> at bit location 22
+// for an Arm64 Sve instruction.
+static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
@@ -982,6 +989,8 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 
 public:
 void emitIns(instruction ins);
+
+void emitInsSve_SetFFR();
 
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
