@@ -7,6 +7,9 @@
 
 #include <mono/metadata/class.h>
 
+MonoClass *
+mono_class_create_from_typedef_full (MonoImage *image, guint32 type_token, int8_t max_ready_level, MonoError *error);
+
 void
 mono_class_setup_interface_id_nolock (MonoClass *klass);
 
@@ -29,6 +32,9 @@ mono_class_setup_need_stelemref_method (MonoClass *klass);
 
 gboolean
 mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *method);
+
+void
+mono_class_preload_init (void);
 
 /*
  * Get the class and all its parents and interfaces to at least the

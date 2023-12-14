@@ -477,6 +477,12 @@ mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char
 MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error)
 {
+	return mono_class_create_from_typedef_full (image, type_token, MONO_CLASS_READY_INITED, error);
+}
+
+MonoClass *
+mono_class_create_from_typedef_full (MonoImage *image, guint32 type_token, int8_t max_ready_level, MonoError *error)
+{
 	MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 	MonoClass *klass, *parent = NULL;
 	guint32 cols [MONO_TYPEDEF_SIZE];
@@ -499,14 +505,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	mono_image_lock (image);
 
-	gboolean need_insert = TRUE;
+	gboolean allocate_class = TRUE;
 	if ((klass = (MonoClass *)mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
 		if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT)) {
 			mono_image_unlock (image);
 			return klass;
 		}
 		/* class is already in the class cache, but it isn't initialized enough, we will initialize it */
-		need_insert = FALSE;
+		allocate_class = FALSE;
 	}
 
 	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
@@ -514,16 +520,18 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
-	if (!klass && mono_metadata_has_generic_params (image, type_token)) {
-		klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassGtd));
-		klass->class_kind = MONO_CLASS_GTD;
-		UnlockedAdd (&classes_size, sizeof (MonoClassGtd));
-		++class_gtd_count;
-	} else if (!klass) {
-		klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassDef));
-		klass->class_kind = MONO_CLASS_DEF;
-		UnlockedAdd (&classes_size, sizeof (MonoClassDef));
-		++class_def_count;
+	if (allocate_class) {
+		if (mono_metadata_has_generic_params (image, type_token)) {
+			klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassGtd));
+			klass->class_kind = MONO_CLASS_GTD;
+			UnlockedAdd (&classes_size, sizeof (MonoClassGtd));
+			++class_gtd_count;
+		} else {
+			klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassDef));
+			klass->class_kind = MONO_CLASS_DEF;
+			UnlockedAdd (&classes_size, sizeof (MonoClassDef));
+			++class_def_count;
+		}
 	}
 	g_assert (klass);
 
@@ -534,15 +542,35 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	klass->type_token = type_token;
 	mono_class_set_flags (klass, cols [MONO_TYPEDEF_FLAGS]);
 
-	if (need_insert)
+	if (allocate_class && mono_class_is_gtd (klass)) {
+		/*
+		 * Check whether we're a generic type definition.
+		 */
+		if (mono_class_is_gtd (klass)) {
+			MonoGenericContainer *generic_container = mono_metadata_load_generic_params (image, klass->type_token, NULL, klass);
+			context = &generic_container->context;
+			mono_class_set_generic_container (klass, generic_container);
+			MonoType *canonical_inst = &((MonoClassGtd*)klass)->canonical_inst;
+			canonical_inst->type = MONO_TYPE_GENERICINST;
+			canonical_inst->data.generic_class = mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE);
+		}
+	}
+
+	if (allocate_class)
 		mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
 
 	mono_image_unlock(image);
+
+	if (m_class_ready_level_at_least (klass, max_ready_level))
+		return klass;
 	/*
 	 * At this point class is in the barebones state, at least.  Run the preloading code to
          * trigger all the assembly loading up front, without holding any locks.
 	 */ 
 	mono_class_preload_class (klass);
+
+	if (m_class_ready_level_at_least (klass, max_ready_level))
+		return klass;
 
 	mono_loader_lock();
 
@@ -556,16 +584,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	}
 	MONO_PROFILER_RAISE (class_loading, (klass));
 
-	/*
-	 * Check whether we're a generic type definition.
-	 */
 	if (mono_class_is_gtd (klass)) {
-		MonoGenericContainer *generic_container = mono_metadata_load_generic_params (image, klass->type_token, NULL, klass);
-		context = &generic_container->context;
-		mono_class_set_generic_container (klass, generic_container);
-		MonoType *canonical_inst = &((MonoClassGtd*)klass)->canonical_inst;
-		canonical_inst->type = MONO_TYPE_GENERICINST;
-		canonical_inst->data.generic_class = mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE);
 		enable_gclass_recording ();
 	}
 
@@ -4296,6 +4315,9 @@ mono_classes_init (void)
 
 	mono_native_tls_alloc (&setup_fields_tls_id, NULL);
 	mono_native_tls_alloc (&init_pending_tls_id, NULL);
+
+	mono_class_preload_init ();
+
 
 	mono_counters_register ("MonoClassDef count",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_def_count);
