@@ -1142,7 +1142,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($"IncludeFields = {FormatBool(includeFields)},");
 
                 if (optionsSpec.IndentCharacter is char indentCharacter)
-                    writer.WriteLine($"IndentCharacter = \"{indentCharacter}\",");
+                    writer.WriteLine($"IndentCharacter = {FormatIndentCharacter(indentCharacter)},");
 
                 if (optionsSpec.IndentSize is int indentSize)
                     writer.WriteLine($"IndentSize = {indentSize},");
@@ -1366,6 +1366,16 @@ namespace System.Text.Json.SourceGeneration
                     { IsValueTuple: true } => $"() => default({typeSpec.TypeRef.FullyQualifiedName})",
                     { ConstructionStrategy: ObjectConstructionStrategy.ParameterlessConstructor } => $"() => new {typeSpec.TypeRef.FullyQualifiedName}()",
                     _ => "null",
+                };
+            }
+
+            private static string FormatIndentCharacter(char value)
+            {
+                return value switch
+                {
+                    '\0' => "'\\0'",
+                    '\t' => "'\\t'",
+                    _ => $"'{value}'",
                 };
             }
 
