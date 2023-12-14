@@ -159,8 +159,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var actual = stack.Count;
             var multiple = stack.Count > 0 ? stack[stack.Count - 1].Multiple : false;
             var called = stack.Count > 0 ? stack[stack.Count - 1].Called : false;
-            // TODO Environment.FailFast
-            if (actual != expected) throw new InvalidOperationException($"Unexpected OperationStack size expected: {expected} actual: {actual} called:{called} multiple:{multiple}");
+            if (actual != expected) Environment.FailFast($"Unexpected OperationStack size expected: {expected} actual: {actual} called:{called} multiple:{multiple}");
         }
 
         // TODO: sort generated ToJS() calls to make the capture context before we need to use it
