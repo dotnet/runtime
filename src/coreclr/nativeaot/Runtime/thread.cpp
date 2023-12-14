@@ -346,9 +346,9 @@ void Thread::FreeSignalAlternateStack()
         if ((st == 0) && (oss.ss_flags != SS_DISABLE))
         {
             // Make sure this altstack is this PAL's before freeing.
-            if (oss.ss_sp == altstack)
+            if ((void*)((uint8_t*)oss.ss_sp - PalOsPageSize()) == altstack)
             {
-                int st = munmap((void*)((uint8_t*)oss.ss_sp - PalOsPageSize()), oss.ss_size + PalOsPageSize());
+                int st = munmap(altstack, oss.ss_size + PalOsPageSize());
                 _ASSERTE(st == 0);
             }
         }
@@ -377,16 +377,17 @@ bool Thread::EnsureSignalAlternateStack()
 #ifdef MAP_STACK
         flags |= MAP_STACK;
 #endif
+        // Allocate stack+guard page
         void* altStack = mmap(NULL, altStackSize + PalOsPageSize(), PROT_READ | PROT_WRITE, flags, -1, 0);
         if (altStack != MAP_FAILED)
         {
-            // create a guard page for the alternate stack
+            // Create a guard page for the alternate stack
             st = mprotect(altStack, PalOsPageSize(), PROT_NONE);
             if (st == 0)
             {
                 stack_t ss;
                 ss.ss_sp = (uint8_t*)altStack + PalOsPageSize();
-                ss.ss_size = altStackSize - PalOsPageSize();
+                ss.ss_size = altStackSize;
                 ss.ss_flags = 0;
                 st = sigaltstack(&ss, NULL);
             }
