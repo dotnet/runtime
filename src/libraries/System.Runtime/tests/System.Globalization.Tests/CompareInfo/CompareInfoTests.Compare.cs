@@ -59,10 +59,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "'", validIgnoreKanaTypeOption, -1 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase, 0 };
             // PlatformDetection.IsHybridGlobalizationOnBrowser does not support IgnoreWidth
-            if (!PlatformDetection.IsHybridGlobalization)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_invariantCompare, "\u3042", "\uFF71", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 0 };
-                yield return new object[] { s_invariantCompare, "'\u3000'", "' '", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 0 };
+                yield return new object[] { s_invariantCompare, "'\u3000'", "' '", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, PlatformDetection,IsHybridGlobalizationOnOSX ? 1 : 0 };
             }
             
             yield return new object[] { s_invariantCompare, "\u6FA4", "\u6CA2", CompareOptions.None, 1 };
@@ -219,10 +219,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreCaseIgnoreNonSpaceOptions, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreNonSpaceOption, -1 };
 
-            yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.IgnoreCase, -1 };
-            yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", supportedIgnoreNonSpaceOption, 0 };
             yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnBrowser ? 1 : 0 };
+            yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.None, -1 };
 
             // In HybridGlobalization mode on OSX IgnoreSymbols is not supported
             if (!PlatformDetection.IsHybridGlobalizationOnOSX)
