@@ -206,8 +206,12 @@ ASMCONSTANTS_C_ASSERT(MethodTable_m_dwFlags == offsetof(MethodTable, m_dwFlags))
 #define MethodTable_m_pInterfaceMap     DBG_FRE(0x28, 0x24)
 ASMCONSTANTS_C_ASSERT(MethodTable_m_pInterfaceMap == offsetof(MethodTable, m_pMultipurposeSlot2))
 
+#if defined(FEATURE_UNITY_METHODTABLE_USER_DATA)
+#define SIZEOF_MethodTable              DBG_FRE(0x30, 0x2C)
+#else
 #define SIZEOF_MethodTable              DBG_FRE(0x2C, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF_MethodTable == sizeof(MethodTable))
+#endif
 
 #define SIZEOF_InterfaceInfo_t          0x4
 ASMCONSTANTS_C_ASSERT(SIZEOF_InterfaceInfo_t == sizeof(InterfaceInfo_t))

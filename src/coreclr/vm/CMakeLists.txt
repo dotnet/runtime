@@ -982,6 +982,10 @@ target_precompile_headers(cee_dac PRIVATE [["common.h"]])
 
 add_subdirectory(wks)
 
+if(FEATURE_UNITY_EMBEDDING_INTERFACE)
+    add_subdirectory(mono)
+endif(FEATURE_UNITY_EMBEDDING_INTERFACE)
+
 if(FEATURE_PERFTRACING)
     add_subdirectory(eventing)
 endif(FEATURE_PERFTRACING)

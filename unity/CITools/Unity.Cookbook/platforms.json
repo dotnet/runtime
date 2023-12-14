@@ -1,7 +1,7 @@
 {
     "windows": {
         "agent": {
-            "image": "platform-foundation/coreclr-windows:v0.0.1-1276296",
+            "image": "burst/burst-base:1.0.16-1315771",
             "flavor": "b1.xlarge",
             "resource": "Unity::VM"
         },

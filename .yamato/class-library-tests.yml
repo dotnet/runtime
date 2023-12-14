@@ -98,7 +98,7 @@ test_-_class_library_-_osx_x64_release:
 test_-_class_library_-_windows_arm64_debug:
   name: Test - Class Library - Windows arm64 Debug
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -112,7 +112,7 @@ test_-_class_library_-_windows_arm64_debug:
 test_-_class_library_-_windows_arm64_release:
   name: Test - Class Library - Windows arm64 Release
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -126,7 +126,7 @@ test_-_class_library_-_windows_arm64_release:
 test_-_class_library_-_windows_x64_debug:
   name: Test - Class Library - Windows x64 Debug
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -139,7 +139,7 @@ test_-_class_library_-_windows_x64_debug:
 test_-_class_library_-_windows_x64_release:
   name: Test - Class Library - Windows x64 Release
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -152,7 +152,7 @@ test_-_class_library_-_windows_x64_release:
 test_-_class_library_-_windows_x86_debug:
   name: Test - Class Library - Windows x86 Debug
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -165,7 +165,7 @@ test_-_class_library_-_windows_x86_debug:
 test_-_class_library_-_windows_x86_release:
   name: Test - Class Library - Windows x86 Release
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:

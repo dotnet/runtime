@@ -149,7 +149,7 @@ build_osx_x64_release:
 build_windows_arm64_debug:
   name: Build Windows arm64 Debug
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -170,7 +170,7 @@ build_windows_arm64_debug:
 build_windows_arm64_release:
   name: Build Windows arm64 Release
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -191,7 +191,7 @@ build_windows_arm64_release:
 build_windows_x64_debug:
   name: Build Windows x64 Debug
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -212,7 +212,7 @@ build_windows_x64_debug:
 build_windows_x64_release:
   name: Build Windows x64 Release
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -233,7 +233,7 @@ build_windows_x64_release:
 build_windows_x86_debug:
   name: Build Windows x86 Debug
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:
@@ -254,7 +254,7 @@ build_windows_x86_debug:
 build_windows_x86_release:
   name: Build Windows x86 Release
   agent:
-    image: platform-foundation/coreclr-windows:v0.0.1-1276296
+    image: burst/burst-base:1.0.16-1315771
     type: Unity::VM
     flavor: b1.xlarge
   commands:

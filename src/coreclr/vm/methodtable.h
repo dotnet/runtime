@@ -1417,7 +1417,11 @@ public:
         return pMTParent == NULL ? 0 : pMTParent->GetNumVirtuals();
     }
 
+#ifdef FEATURE_UNITY_METHODTABLE_USER_DATA
+    #define SIZEOF__MethodTable_ (0x10 + (7 INDEBUG(+1)) * TARGET_POINTER_SIZE)
+#else
     #define SIZEOF__MethodTable_ (0x10 + (6 INDEBUG(+1)) * TARGET_POINTER_SIZE)
+#endif
 
     static inline DWORD GetVtableOffset()
     {
@@ -3592,6 +3596,10 @@ private:
         PTR_InterfaceInfo   m_pInterfaceMap;
         TADDR               m_pMultipurposeSlot2;
     };
+
+#ifdef FEATURE_UNITY_METHODTABLE_USER_DATA
+    void* m_pUserData;
+#endif
 
     // VTable and Non-Virtual slots go here
 
