@@ -105,6 +105,8 @@ extern DWORD g_fEEShutDown;
 extern Volatile<LONG> g_ShutdownCrstUsageCount;
 extern Volatile<LONG> g_fForbidEnterEE;
 
+class PendingTypeLoadTable;
+
 // The CRST.
 class CrstBase
 {
@@ -134,9 +136,9 @@ friend class Crst;
     friend class DbgTransportLock;
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
-    // PendingTypeLoadEntry acquires the lock during construction before anybody has a chance to see it to avoid
+    // PendingTypeLoadTable::Entry acquires the lock during construction before anybody has a chance to see it to avoid
     // level violations.
-    friend class PendingTypeLoadEntry;
+    friend class PendingTypeLoadTable;
 
 public:
 #ifdef _DEBUG
