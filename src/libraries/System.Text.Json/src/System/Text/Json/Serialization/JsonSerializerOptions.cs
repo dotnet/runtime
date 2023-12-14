@@ -564,7 +564,7 @@ namespace System.Text.Json
 
                 if (value is not ' ' and not '\t' and not '\0')
                 {
-                    throw new ArgumentException(SR.InvalidIndentCharacter);
+                    throw new ArgumentException(SR.InvalidIndentCharacter, nameof(value));
                 }
 
                 _indentCharacter = value;

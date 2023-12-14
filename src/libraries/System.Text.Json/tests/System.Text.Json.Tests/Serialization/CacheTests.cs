@@ -365,6 +365,8 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyProperties)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyFields)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IncludeFields)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.IndentCharacter)), '\t');
+                yield return (GetProp(nameof(JsonSerializerOptions.IndentSize)), 1);
                 yield return (GetProp(nameof(JsonSerializerOptions.MaxDepth)), 11);
                 yield return (GetProp(nameof(JsonSerializerOptions.PropertyNamingPolicy)), JsonNamingPolicy.CamelCase);
                 yield return (GetProp(nameof(JsonSerializerOptions.PropertyNameCaseInsensitive)), true);
