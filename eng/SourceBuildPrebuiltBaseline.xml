@@ -3,8 +3,6 @@
 
 <UsageData>
   <IgnorePatterns>
-    <UsagePattern IdentityGlob="Microsoft.SourceBuild.Intermediate.*" />
-
     <!-- Allowed due to https://github.com/dotnet/source-build-reference-packages/pull/721 -->
     <UsagePattern IdentityGlob="System.Composition*/*6.*" />
     <UsagePattern IdentityGlob="System.Composition*/*7.*" />

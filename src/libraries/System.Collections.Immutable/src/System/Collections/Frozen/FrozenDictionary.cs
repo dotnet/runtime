@@ -161,10 +161,12 @@ namespace System.Collections.Frozen
 
                 // Calculate the minimum and maximum lengths of the strings in the dictionary. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
+                ulong lengthFilter = 0;
                 foreach (string key in keys)
                 {
                     if (key.Length < minLength) minLength = key.Length;
                     if (key.Length > maxLength) maxLength = key.Length;
+                    lengthFilter |= (1UL << (key.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
@@ -215,12 +217,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter)
+                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                     else
                     {
-                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                 }
 

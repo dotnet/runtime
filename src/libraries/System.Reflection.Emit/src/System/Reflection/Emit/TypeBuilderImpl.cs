@@ -30,11 +30,13 @@ namespace System.Reflection.Emit
         internal int _firstFieldToken;
         internal int _firstMethodToken;
         internal int _firstPropertyToken;
+        internal int _firstEventToken;
         internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
         internal readonly List<FieldBuilderImpl> _fieldDefinitions = new();
         internal readonly List<ConstructorBuilderImpl> _constructorDefinitions = new();
         internal List<Type>? _interfaces;
         internal readonly List<PropertyBuilderImpl> _propertyDefinitions = new();
+        internal readonly List<EventBuilderImpl> _eventDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal Dictionary<Type, List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>>? _interfaceMappings;
 
@@ -299,7 +301,15 @@ namespace System.Reflection.Emit
             return constBuilder;
         }
 
-        protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
+        protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)
+        {
+            ArgumentNullException.ThrowIfNull(eventtype);
+            ThrowIfCreated();
+
+            EventBuilderImpl eventBuilder = new EventBuilderImpl(name, attributes, eventtype, this);
+            _eventDefinitions.Add(eventBuilder);
+            return eventBuilder;
+        }
 
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {

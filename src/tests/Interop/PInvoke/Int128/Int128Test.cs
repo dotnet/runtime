@@ -99,8 +99,11 @@ unsafe partial class Int128Native
     public static extern Int128 AddInt128s(in Int128 pValues, int count);
 }
 
-unsafe partial class Int128Native
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public unsafe partial class Int128Native
 {
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69399", TestRuntimes.Mono)]
     public static void TestInt128FieldLayout()
     {
         // This test checks that the alignment rules of Int128 structs match the native compiler
@@ -133,7 +136,10 @@ unsafe partial class Int128Native
         Assert.Throws<System.Runtime.InteropServices.MarshalDirectiveException>(() => GetInt128Lower_S(default(StructJustInt128)));
     }
 
-    private static void TestInt128()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74209")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69531", TestRuntimes.Mono)]
+    public static void TestInt128()
     {
         Int128 value1 = Int128Native.GetInt128(1, 2);
         Assert.Equal(new Int128(1, 2), value1);

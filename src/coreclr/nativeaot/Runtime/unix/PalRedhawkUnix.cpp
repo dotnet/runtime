@@ -56,8 +56,7 @@
 #endif
 
 #ifdef TARGET_APPLE
-#include <minipal/getexepath.h>
-#include <mach-o/getsect.h>
+#include <mach/mach.h>
 #endif
 
 using std::nullptr_t;
@@ -516,59 +515,61 @@ extern "C" bool PalDetachThread(void* thread)
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
-#ifdef TARGET_APPLE
-static const struct section_64 *thunks_section;
-static const struct section_64 *thunks_data_section;
-#endif
-
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
 #ifdef TARGET_APPLE
-    int f;
-    Dl_info info;
+    vm_address_t addr, taddr;
+    vm_prot_t prot, max_prot;
+    kern_return_t ret;
 
-    int st = dladdr((const void*)hTemplateModule, &info);
-    if (st == 0)
+    // Allocate two contiguous ranges of memory: the first range will contain the trampolines
+    // and the second range will contain their data.
+    do
+    {
+        ret = vm_allocate(mach_task_self(), &addr, templateSize * 2, VM_FLAGS_ANYWHERE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
     {
         return UInt32_FALSE;
     }
 
-    f = open(info.dli_fname, O_RDONLY);
-    if (f < 0)
+    do
     {
+        ret = vm_remap(
+            mach_task_self(), &addr, templateSize, 0, VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE,
+            mach_task_self(), ((vm_address_t)hTemplateModule + templateRva), FALSE, &prot, &max_prot, VM_INHERIT_SHARE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
+    {
+        do
+        {
+            ret = vm_deallocate(mach_task_self(), addr, templateSize * 2);
+        } while (ret == KERN_ABORTED);
+
         return UInt32_FALSE;
     }
 
-    // NOTE: We ignore templateRva since we would need to convert it to file offset
-    // and templateSize is useless too. Instead we read the sections from the
-    // executable and determine the size from them.
-    if (thunks_section == NULL)
-    {
-        const struct mach_header_64 *hdr = (const struct mach_header_64 *)hTemplateModule;
-        thunks_section = getsectbynamefromheader_64(hdr, "__THUNKS", "__thunks");
-        thunks_data_section = getsectbynamefromheader_64(hdr, "__THUNKS_DATA", "__thunks");
-    }
+    *newThunksOut = (void*)addr;
 
-    *newThunksOut = mmap(
-        NULL,
-        thunks_section->size + thunks_data_section->size,
-        PROT_READ | PROT_EXEC,
-        MAP_PRIVATE,
-        f,
-        thunks_section->offset);
-    close(f);
-
-    return *newThunksOut == NULL ? UInt32_FALSE : UInt32_TRUE;
+    return UInt32_TRUE;
 #else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
 {
 #ifdef TARGET_APPLE
-    int ret = munmap(pBaseAddress, thunks_section->size + thunks_data_section->size);
-    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
+    kern_return_t ret;
+
+    do
+    {
+        ret = vm_deallocate(mach_task_self(), (vm_address_t)pBaseAddress, templateSize * 2);
+    } while (ret == KERN_ABORTED);
+
+    return ret == KERN_SUCCESS ? UInt32_TRUE : UInt32_FALSE;
 #else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif

@@ -190,7 +190,7 @@ export function normalizeConfig() {
 
     if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
         // ActiveIssue https://github.com/dotnet/runtime/issues/91538
-        config.pthreadPoolSize = 40;
+        config.pthreadPoolSize = 5;
     }
 
     // Default values (when WasmDebugLevel is not set)
@@ -219,6 +219,9 @@ export function normalizeConfig() {
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
+
+    loaderHelpers.maxParallelDownloads = config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
+    loaderHelpers.enableDownloadRetry = config.enableDownloadRetry !== undefined ? config.enableDownloadRetry : loaderHelpers.enableDownloadRetry;
 }
 
 let configLoaded = false;
