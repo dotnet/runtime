@@ -1840,7 +1840,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             Func<int, int> res = JavaScriptTestHelper.backback_FuncIntFuncInt((a) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(2);
                 called = a;
                 return a;
             }, 42);
@@ -1857,7 +1857,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             Func<int, int, int> res = JavaScriptTestHelper.backback_FuncIntIntFuncIntInt((a, b) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
                 return a + b;
@@ -1877,7 +1877,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             JavaScriptTestHelper.back3_ActionIntInt((a, b) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1892,7 +1892,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionLongLong((a, b) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1907,7 +1907,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionIntLong((a, b) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1922,7 +1922,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Exception expected = new Exception("test!!");
             Exception actual = Assert.Throws<Exception>(() => JavaScriptTestHelper.back3_ActionInt((a) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(2);
                 called = a;
                 throw expected;
             }, 42));
@@ -1936,7 +1936,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(4);
                 called = a;
                 return a;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
@@ -1955,7 +1955,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var expected = new Exception("test!!");
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
-                JSHost.AssertOperationStack(0);
+                JSHost.AssertOperationStack(4);
                 called = a;
                 throw expected;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));

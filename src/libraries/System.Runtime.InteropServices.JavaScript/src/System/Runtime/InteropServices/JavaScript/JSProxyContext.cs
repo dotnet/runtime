@@ -159,10 +159,6 @@ namespace System.Runtime.InteropServices.JavaScript
             var actual = stack.Count;
             var multiple = stack.Count > 0 ? stack[stack.Count - 1].Multiple : false;
             var called = stack.Count > 0 ? stack[stack.Count - 1].Called : false;
-            if (expected == 0)
-            {
-                stack.Clear();
-            }
             // TODO Environment.FailFast
             if (actual != expected) throw new InvalidOperationException($"Unexpected OperationStack size expected: {expected} actual: {actual} called:{called} multiple:{multiple}");
         }
