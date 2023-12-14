@@ -217,7 +217,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        # - normal // https://github.com/dotnet/runtime/issues/95981
+        - normal
         - WasmTestOnBrowser
         - WasmTestOnNodeJS
 
@@ -234,7 +234,7 @@ jobs:
   #     isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
   #     alwaysRun: true
   #     scenarios:
-  #       - normal // https://github.com/dotnet/runtime/issues/95981
+  #       - normal
   #       - WasmTestOnBrowser
   #       - WasmTestOnNodeJS
 
