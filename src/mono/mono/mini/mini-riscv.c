@@ -2891,7 +2891,14 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * slt t4,t0,t1
 			 * bne t3, t4, overflow
 			 */
-			ins->opcode = OP_IADD;
+			 
+#ifdef TARGET_RISCV64
+			if (ins->opcode == OP_ADDCC)
+				ins->opcode = OP_LADD;
+			else
+#endif
+				ins->opcode = OP_IADD;
+
 			MonoInst *branch_ins = ins->next;
 			if (branch_ins) {
 				if (branch_ins->opcode == OP_COND_EXC_C || branch_ins->opcode == OP_COND_EXC_OV || branch_ins->opcode == OP_COND_EXC_IOV) {
