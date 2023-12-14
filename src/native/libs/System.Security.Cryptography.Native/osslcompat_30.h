@@ -17,9 +17,6 @@
 #define OSSL_MAC_PARAM_XOF    "xof"
 #define OSSL_MAC_PARAM_SIZE   "size"
 
-
-typedef struct evp_mac_st EVP_MAC;
-typedef struct evp_mac_ctx_st EVP_MAC_CTX;
 typedef struct ossl_provider_st OSSL_PROVIDER;
 typedef struct ossl_lib_ctx_st OSSL_LIB_CTX;
 typedef struct ossl_param_st OSSL_PARAM;

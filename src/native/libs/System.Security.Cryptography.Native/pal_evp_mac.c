@@ -18,12 +18,17 @@ EVP_MAC* CryptoNative_EvpMacFetch(const char* algorithm, int32_t* haveFeature)
         ERR_clear_error();
         return EVP_MAC_fetch(NULL, algorithm, NULL);
     }
+#else
+    (void)algorithm;
+    (void)haveFeature;
 #endif
 
     *haveFeature = 0;
     return NULL;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 void CryptoNative_EvpMacFree(EVP_MAC *mac)
 {
 #ifdef NEED_OPENSSL_3_0
@@ -33,10 +38,13 @@ void CryptoNative_EvpMacFree(EVP_MAC *mac)
         EVP_MAC_free(mac);
         return;
     }
+#else
+    (void)mac;
 #endif
 
     assert(0 && "Inconsistent EVP_MAC API availability.");
 }
+#pragma clang diagnostic pop
 
 EVP_MAC_CTX* CryptoNative_EvpMacCtxNew(EVP_MAC* mac)
 {
@@ -54,6 +62,8 @@ EVP_MAC_CTX* CryptoNative_EvpMacCtxNew(EVP_MAC* mac)
     return NULL;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 void CryptoNative_EvpMacCtxFree(EVP_MAC_CTX* ctx)
 {
 #ifdef NEED_OPENSSL_3_0
@@ -62,10 +72,13 @@ void CryptoNative_EvpMacCtxFree(EVP_MAC_CTX* ctx)
         EVP_MAC_CTX_free(ctx);
         return;
     }
+#else
+    (void)ctx;
 #endif
 
     assert(0 && "Inconsistent EVP_MAC API availability.");
 }
+#pragma clang diagnostic pop
 
 int32_t CryptoNative_EvpMacInit(EVP_MAC_CTX* ctx,
                                 uint8_t* key,
@@ -111,6 +124,13 @@ int32_t CryptoNative_EvpMacInit(EVP_MAC_CTX* ctx,
 
         return 1;
     }
+#else
+    (void)ctx;
+    (void)key;
+    (void)keyLength;
+    (void)customizationString;
+    (void)customizationStringLength;
+    (void)xof;
 #endif
 
     assert(0 && "Inconsistent EVP_MAC API availability.");
@@ -144,7 +164,7 @@ int32_t CryptoNative_EvpMacReset(EVP_MAC_CTX* ctx)
 
 int32_t CryptoNative_EvpMacUpdate(EVP_MAC_CTX* ctx, uint8_t* data, int32_t dataLength)
 {
-    if ((data == NULL && dataLength > 0) || dataLength < 0)
+    if (ctx == NULL || (data == NULL && dataLength > 0) || dataLength < 0)
     {
         return -1;
     }
@@ -174,7 +194,7 @@ int32_t CryptoNative_EvpMacUpdate(EVP_MAC_CTX* ctx, uint8_t* data, int32_t dataL
 
 int32_t CryptoNative_EvpMacFinal(EVP_MAC_CTX* ctx, uint8_t* mac, int32_t macLength)
 {
-    if ((mac == NULL && macLength > 0) || macLength < 0)
+    if (ctx == NULL || (mac == NULL && macLength > 0) || macLength < 0)
     {
         return -1;
     }
@@ -241,6 +261,10 @@ int32_t CryptoNative_EvpMacCurrent(EVP_MAC_CTX* ctx, uint8_t* mac, int32_t macLe
         EVP_MAC_CTX_free(dup);
         return ret;
     }
+#else
+    (void)ctx;
+    (void)mac;
+    (void)macLength;
 #endif
 
     assert(0 && "Inconsistent EVP_MAC API availability.");
@@ -340,6 +364,17 @@ int32_t CryptoNative_EvpMacOneShot(EVP_MAC* mac,
 
         return (int32_t)written;
     }
+#else
+    (void)mac;
+    (void)key;
+    (void)keyLength;
+    (void)customizationString;
+    (void)customizationStringLength;
+    (void)data;
+    (void)dataLength;
+    (void)destination;
+    (void)destinationLength;
+    (void)xof;
 #endif
 
     return -2;
