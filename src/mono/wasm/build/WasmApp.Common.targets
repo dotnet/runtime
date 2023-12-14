@@ -117,7 +117,6 @@
       $(PrepareInputsForWasmBuildDependsOn);
       _SetupToolchain;
       _SetWasmBuildNativeDefaults;
-      _SetWasmNativeStripDefault;
       _GetDefaultWasmAssembliesToBundle;
       _WasmGetRuntimeConfigPath;
       _ReadWasmProps;
@@ -516,7 +515,6 @@
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
 
     <!-- When Publishing -->
@@ -531,15 +529,20 @@
 
       <!-- default to relinking in Release config -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+    </PropertyGroup>
 
+    <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
-  </Target>
 
-  <Target Name="_SetWasmNativeStripDefault" Condition="'$(WasmNativeStrip)' == ''">
+    <!-- Default with nothing set: Build+relink+config=debug -->
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+      <WasmNativeStrip>false</WasmNativeStrip>
+    </PropertyGroup>
+
     <PropertyGroup>
-      <!-- Build+relink+config=debug -->
-      <WasmNativeStrip Condition="'$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">false</WasmNativeStrip>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     </PropertyGroup>
   </Target>
