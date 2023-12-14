@@ -10968,6 +10968,16 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R_I(INS_sve_st4q, EA_SCALABLE, REG_V7, REG_P6, REG_R5, 28,
                                 INS_OPTS_SCALABLE_Q); // ST4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>, [<Xn|SP>{,
                                                       // #<imm>, MUL VL}]
+
+    // IF_SVE_JM_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_stnt1b, EA_SCALABLE, REG_V1, REG_P2, REG_R3, 4,
+                                INS_OPTS_SCALABLE_B); // STNT1B  {<Zt>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_stnt1d, EA_SCALABLE, REG_V8, REG_P7, REG_R6, 5,
+                                INS_OPTS_SCALABLE_D); // STNT1D  {<Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_stnt1h, EA_SCALABLE, REG_V9, REG_P1, REG_R0, -5,
+                                INS_OPTS_SCALABLE_H); // STNT1H  {<Zt>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_stnt1w, EA_SCALABLE, REG_V0, REG_P0, REG_R2, -7,
+                                INS_OPTS_SCALABLE_S); // STNT1W  {<Zt>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS

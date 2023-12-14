@@ -9869,6 +9869,44 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_JE_3A;
             break;
 
+        case INS_sve_stnt1b:
+        case INS_sve_stnt1h:
+        case INS_sve_stnt1w:
+        case INS_sve_stnt1d:
+            assert(insOptsScalableSimple(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+
+#ifdef DEBUG
+            switch (ins)
+            {
+                case INS_sve_stnt1b:
+                    assert(opt == INS_OPTS_SCALABLE_B);
+                    break;
+
+                case INS_sve_stnt1h:
+                    assert(opt == INS_OPTS_SCALABLE_H);
+                    break;
+
+                case INS_sve_stnt1w:
+                    assert(opt == INS_OPTS_SCALABLE_S);
+                    break;
+
+                case INS_sve_stnt1d:
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+#endif // DEBUG
+
+            fmt = IF_SVE_JM_3A;
+            break;
+
         default:
             unreached();
             break;
@@ -17951,6 +17989,10 @@ void emitter::emitDispInsHelp(
         // { <Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JE_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (quadwords, scalar plus
                            // immediate)
+        // { <Zt>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt>.S }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        // { <Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JM_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
                            // immediate)
         case IF_SVE_JN_3C: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
@@ -17995,6 +18037,10 @@ void emitter::emitDispInsHelp(
                 case INS_sve_st2q:
                 case INS_sve_st3q:
                 case INS_sve_st4q:
+                case INS_sve_stnt1b:
+                case INS_sve_stnt1h:
+                case INS_sve_stnt1w:
+                case INS_sve_stnt1d:
                     emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
                     break;
 
@@ -20728,6 +20774,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
+
+        case IF_SVE_JM_3A: // ............iiii ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
+                           // immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         default:
