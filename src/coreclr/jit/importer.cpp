@@ -7617,7 +7617,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(block->KindIs(BBJ_ALWAYS));
-                        assert(block->HasFlag(BBF_NONE_QUIRK));
+                        assert(block->JumpsToNext());
                     }
 
                     if (op1->gtFlags & GTF_GLOB_EFFECT)
