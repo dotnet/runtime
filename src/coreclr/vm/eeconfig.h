@@ -390,7 +390,6 @@ public:
 
     int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT; return iGCconcurrent; }
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
-    DWORD   GetGCLOHThreshold()             const {LIMITED_METHOD_CONTRACT; return iGCLOHThreshold;}
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
@@ -581,7 +580,6 @@ private: //----------------------------------------------------------------
 
     int  iGCconcurrent;
     int  iGCHoardVM;
-    DWORD iGCLOHThreshold;
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool iGCConservative;
