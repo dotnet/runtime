@@ -364,7 +364,7 @@ int32_t CryptoNative_EvpMacOneShot(EVP_MAC* mac,
             return -3;
         }
 
-        return (int32_t)written;
+        return 1;
     }
 #else
     (void)mac;
