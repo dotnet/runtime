@@ -62,7 +62,7 @@ namespace System.Globalization.Tests
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_invariantCompare, "\u3042", "\uFF71", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 0 };
-                yield return new object[] { s_invariantCompare, "'\u3000'", "' '", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, PlatformDetection,IsHybridGlobalizationOnOSX ? 1 : 0 };
+                yield return new object[] { s_invariantCompare, "'\u3000'", "' '", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnOSX ? 1 : 0 };
             }
             
             yield return new object[] { s_invariantCompare, "\u6FA4", "\u6CA2", CompareOptions.None, 1 };
