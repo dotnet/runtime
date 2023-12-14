@@ -248,7 +248,7 @@ void MethodTable::InitializeAsGcFreeType()
 
 #endif // !DACCESS_COMPILE
 
-void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, promote_func* fnGcEnumRef, ScanContext* pSc)
+void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     //
     // Sanity check that the flags contain only these values
@@ -274,7 +274,7 @@ void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, promote_func* fnGcEnum
 // real reference is interior or not and interior is the more conservative choice that will work for both and
 // (b) because it might not be a real GC reference at all and in that case falsely listing the reference as
 // non-interior will cause the GC to make assumptions and crash quite quickly.
-void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, promote_func* fnGcEnumRef, ScanContext* pSc)
+void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     // Only report potential references in the promotion phase. Since we report everything as pinned there
     // should be no work to do in the relocation phase.
@@ -294,13 +294,13 @@ void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppU
 // static
 void RedhawkGCInterface::EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowerBound,
                                                           PTR_RtuObjectRef pUpperBound,
-                                                          void * pfnEnumCallback,
-                                                          void * pvCallbackData)
+                                                          ScanFunc* pfnEnumCallback,
+                                                          ScanContext* pvCallbackData)
 {
-    GcEnumObjectsConservatively((PTR_OBJECTREF)pLowerBound, (PTR_OBJECTREF)pUpperBound, (promote_func *)pfnEnumCallback, (ScanContext *)pvCallbackData);
+    GcEnumObjectsConservatively(pLowerBound, pUpperBound, pfnEnumCallback, pvCallbackData);
 }
 
-void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, promote_func* fnGcEnumRef, ScanContext* pSc)
+void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     //
     // Sanity check that the flags contain only these values
@@ -317,7 +317,7 @@ void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, promote_func* fnGcEnumRe
 }
 
 // static
-void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void * pfnEnumCallback, void * pvCallbackData)
+void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     ASSERT((GCRK_Object == kind) || (GCRK_Byref == kind));
 
@@ -328,10 +328,11 @@ void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void *
         flags |= GC_CALL_INTERIOR;
     }
 
-    GcEnumObject((PTR_OBJECTREF)pRef, flags, (promote_func *)pfnEnumCallback, (ScanContext *)pvCallbackData);
+    GcEnumObject(pRef, flags, fnGcEnumRef, pSc);
 }
 
-void GcEnumObjectConservatively(PTR_PTR_Object ppObj, promote_func* fnGcEnumRef, ScanContext* pSc)
+// static
+void RedhawkGCInterface::EnumGcRefConservatively(PTR_RtuObjectRef pRef, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     // Only report potential references in the promotion phase. Since we report everything as pinned there
     // should be no work to do in the relocation phase.
@@ -339,21 +340,15 @@ void GcEnumObjectConservatively(PTR_PTR_Object ppObj, promote_func* fnGcEnumRef,
     {
         // Only report values that lie in the GC heap range. This doesn't conclusively guarantee that the
         // value is a GC heap reference but it's a cheap check that weeds out a lot of spurious values.
-        PTR_Object pObj = *ppObj;
+        PTR_Object pObj = *pRef;
         if (((PTR_UInt8)pObj >= g_lowest_address) && ((PTR_UInt8)pObj <= g_highest_address))
-            PromoteCarefully(ppObj, GC_CALL_INTERIOR | GC_CALL_PINNED, fnGcEnumRef, pSc);
+            PromoteCarefully(pRef, GC_CALL_INTERIOR | GC_CALL_PINNED, fnGcEnumRef, pSc);
     }
-}
-
-// static
-void RedhawkGCInterface::EnumGcRefConservatively(PTR_RtuObjectRef pRef, void* pfnEnumCallback, void* pvCallbackData)
-{
-    GcEnumObjectConservatively((PTR_OBJECTREF)pRef, (promote_func*)pfnEnumCallback, (ScanContext*)pvCallbackData);
 }
 
 struct EnumGcRefContext : GCEnumContext
 {
-    promote_func* f;
+    ScanFunc* f;
     ScanContext* sc;
 };
 
@@ -369,14 +364,14 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager* pCodeManager,
     MethodInfo* pMethodInfo,
     PTR_VOID safePointAddress,
     REGDISPLAY* pRegisterSet,
-    void* pfnEnumCallback,
-    void* pvCallbackData,
+    ScanFunc* pfnEnumCallback,
+    ScanContext* pvCallbackData,
     bool   isActiveStackFrame)
 {
     EnumGcRefContext ctx;
     ctx.pCallback = EnumGcRefsCallback;
-    ctx.f = (promote_func*)pfnEnumCallback;
-    ctx.sc = (ScanContext*)pvCallbackData;
+    ctx.f = pfnEnumCallback;
+    ctx.sc = pvCallbackData;
     ctx.sc->stack_limit = pRegisterSet->GetSP();
 
     pCodeManager->EnumGcRefs(pMethodInfo,

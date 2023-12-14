@@ -8,6 +8,8 @@
 #ifndef __RedhawkGCInterface_h__
 #define __RedhawkGCInterface_h__
 
+#include "forward_declarations.h"
+
 #ifndef DACCESS_COMPILE
 // Global data cells exported by the GC.
 extern "C" unsigned char *g_ephemeral_low;
@@ -16,38 +18,10 @@ extern "C" unsigned char *g_lowest_address;
 extern "C" unsigned char *g_highest_address;
 #endif
 
-struct gc_alloc_context;
 class MethodInfo;
 struct REGDISPLAY;
-class Thread;
 enum GCRefKind : unsigned char;
 class ICodeManager;
-class MethodTable;
-
-// -----------------------------------------------------------------------------------------------------------
-// RtuObjectRef
-// -----------------------------------------------------------------------------------------------------------
-//
-// READ THIS!
-//
-// This struct exists for type description purposes, but you must never directly refer to the object
-// reference.  The only code allowed to do this is the code inherited directly from the CLR, which all
-// includes gcrhenv.h.  If your code is outside the namespace of gcrhenv.h, direct object reference
-// manipulation is prohibited--use C# instead.
-//
-// To enforce this, we declare RtuObjectRef as a class with no public members.
-//
-class RtuObjectRef
-{
-#ifndef DACCESS_COMPILE
-private:
-#else
-public:
-#endif
-    TADDR pvObject;
-};
-
-typedef DPTR(RtuObjectRef) PTR_RtuObjectRef;
 
 typedef void * GcSegmentHandle;
 
@@ -77,21 +51,21 @@ public:
 
     static void WaitForGCCompletion();
 
-    static void EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void * pfnEnumCallback, void * pvCallbackData);
-    static void EnumGcRefConservatively(PTR_RtuObjectRef pRef, void* pfnEnumCallback, void* pvCallbackData);
+    static void EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
+    static void EnumGcRefConservatively(PTR_RtuObjectRef pRef, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
 
     static void EnumGcRefs(ICodeManager * pCodeManager,
                            MethodInfo * pMethodInfo,
                            PTR_VOID safePointAddress,
                            REGDISPLAY * pRegisterSet,
-                           void * pfnEnumCallback,
-                           void * pvCallbackData,
+                           ScanFunc* pfnEnumCallback,
+                           ScanContext* pvCallbackData,
                            bool   isActiveStackFrame);
 
     static void EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowerBound,
                                                  PTR_RtuObjectRef pUpperBound,
-                                                 void * pfnEnumCallback,
-                                                 void * pvCallbackData);
+                                                 ScanFunc* pfnEnumCallback,
+                                                 ScanContext* pvCallbackData);
 
     static GcSegmentHandle RegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize);
     static void UpdateFrozenSegment(GcSegmentHandle seg, uint8_t* allocated, uint8_t* committed);

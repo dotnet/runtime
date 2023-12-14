@@ -401,7 +401,7 @@ void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
 }
 #endif
 
-void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)
+void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData)
 {
     this->CrossThreadUnhijack();
 
@@ -450,7 +450,7 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
-void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & frameIterator)
+void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_RtuObjectRef pHijackedReturnValue = NULL;
     GCRefKind        returnValueKind      = GCRK_Unknown;

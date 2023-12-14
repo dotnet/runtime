@@ -90,7 +90,7 @@ void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_conc
 #endif
 }
 
-void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+void GCToEEInterface::GcScanRoots(ScanFunc* fn, int condemned, int max_gen, ScanContext* sc)
 {
     // STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Phase = %s\n", sc->promotion ? "promote" : "relocate");
 
@@ -114,19 +114,19 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
             while (pRoot != NULL)
             {
                 STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p inline thread statics root %p. \n", pThread, pRoot);
-                RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)&pRoot->m_threadStaticsBase, GCRK_Object, (void*)fn, sc);
+                RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)&pRoot->m_threadStaticsBase, GCRK_Object, fn, sc);
                 pRoot = pRoot->m_next;
             }
 
             STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p thread statics root. \n", pThread);
-            RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)pThread->GetThreadStaticStorage(), GCRK_Object, (void*)fn, sc);
+            RedhawkGCInterface::EnumGcRef((PTR_RtuObjectRef)pThread->GetThreadStaticStorage(), GCRK_Object, fn, sc);
 
             STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p\n", pThread);
             sc->thread_under_crawl = pThread;
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
             sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif
-            pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
+            pThread->GcScanRoots(fn, sc);
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
             sc->dwEtwRootKind = kEtwGCRootKindOther;
@@ -603,7 +603,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 }
 
 // NativeAOT does not use async pinned handles
-void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
+void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, ScanFunc* callback)
 {
     UNREFERENCED_PARAMETER(object);
     UNREFERENCED_PARAMETER(sc);
