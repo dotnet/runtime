@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Post Wasm MVP features -->
-    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
+    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
   </PropertyGroup>
 
