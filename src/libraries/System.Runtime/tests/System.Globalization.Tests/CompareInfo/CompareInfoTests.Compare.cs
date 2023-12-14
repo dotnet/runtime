@@ -221,13 +221,12 @@ namespace System.Globalization.Tests
 
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", supportedIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnBrowser ? 1 : 0 };
 
             // In HybridGlobalization mode on OSX IgnoreSymbols is not supported
             if (!PlatformDetection.IsHybridGlobalizationOnOSX)
             {
-                yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", supportedIgnoreNonSpaceOption, 0 };
-                yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnBrowser ? 1 : 0 };//
-
                 yield return new object[] { s_invariantCompare, "\u0021", "\uFF01", CompareOptions.IgnoreSymbols, 0 };
                 yield return new object[] { s_invariantCompare, "\uFF65", "\u30FB", CompareOptions.IgnoreSymbols, 0 };
                 // some symbols e.g. currencies are not ignored correctly in HybridGlobalization
@@ -560,12 +559,30 @@ namespace System.Globalization.Tests
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
                     CompareOptions.Ordinal,
                     CompareOptions.OrdinalIgnoreCase,
+                } : PlatformDetection.IsHybridGlobalizationOnOSX ?
+                new[] {
+                    CompareOptions.None,
+                    CompareOptions.IgnoreCase,
+                    CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreKanaType,
+                    CompareOptions.IgnoreWidth,
+                    CompareOptions.Ordinal,
+                    CompareOptions.OrdinalIgnoreCase,
+                    CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase,
+                    CompareOptions.IgnoreKanaType | CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase,
+                    CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase,
+                    CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
                 } :
                 new[] {
                     CompareOptions.None,
                     CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreNonSpace,
-                    //CompareOptions.IgnoreSymbols,
+                    CompareOptions.IgnoreSymbols,
                     CompareOptions.IgnoreKanaType,
                     CompareOptions.IgnoreWidth,
                     CompareOptions.Ordinal,

@@ -343,7 +343,7 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 
 - `IgnoreSymbols` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
 
-- `IgnoreKanaType`
+- `IgnoreKanaType` is implemented using [`kCFStringTransformHiraganaKatakana`](https://developer.apple.com/documentation/corefoundation/kcfstringtransformhiraganakatakana?language=objc) then comparing strings.
 
 
 - `None`:

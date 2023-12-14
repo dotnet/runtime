@@ -79,19 +79,6 @@ NSString *ConvertToKatakana(NSString *input)
     return mutableString;
 }
 
-static NSString* RemoveWeightlessCharacters(NSString* source)
-{
-    NSError *error = nil;
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[\u200B-\u200D\uFEFF\0]" options:NSRegularExpressionCaseInsensitive error:&error];
-
-    if (error != nil)
-        return source;
-
-    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
-
-    return modifiedString;
-}
-
 /*
 Function:
 CompareString
@@ -105,8 +92,8 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-        NSString *targetString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
         NSString *sourceStrPrecomposed = sourceString.precomposedStringWithCanonicalMapping;
+        NSString *targetString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
         NSString *targetStrPrecomposed = targetString.precomposedStringWithCanonicalMapping;
 
         if (comparisonOptions & IgnoreKanaType)
@@ -120,18 +107,28 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
             NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, false);
             sourceStrPrecomposed = [sourceStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
             targetStrPrecomposed = [targetStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
-            return [sourceStrPrecomposed compare:targetStrPrecomposed options:options | NSLiteralSearch range:NSMakeRange(0, sourceStrPrecomposed.length) locale:currentLocale];
         }
-        else
-        {
-            NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
-            NSRange comparisonRange = NSMakeRange(0, sourceStrPrecomposed.length);
-            return [sourceStrPrecomposed compare:targetStrPrecomposed
-                                         options:options
-                                         range:comparisonRange
-                                         locale:currentLocale];
-        }
+
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
+        NSRange comparisonRange = NSMakeRange(0, sourceStrPrecomposed.length);
+        return [sourceStrPrecomposed compare:targetStrPrecomposed
+                                     options:options
+                                     range:comparisonRange
+                                     locale:currentLocale];
     }
+}
+
+static NSString* RemoveWeightlessCharacters(NSString* source)
+{
+    NSError *error = nil;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[\u200B-\u200D\uFEFF\0]" options:NSRegularExpressionCaseInsensitive error:&error];
+
+    if (error != nil)
+        return source;
+
+    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
+
+    return modifiedString;
 }
 
 static int32_t IsIndexFound(int32_t fromBeginning, int32_t foundLocation, int32_t newLocation)
@@ -162,7 +159,6 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             return result;
         }
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
-        
         NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
         NSString *searchStrCleaned = RemoveWeightlessCharacters(searchString);
         NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
@@ -175,8 +171,8 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
 
         if (sourceStrCleaned.length == 0 || searchStrCleaned.length == 0)
         {
-        result.location = fromBeginning ? 0 : sourceString.length;
-        return result;
+            result.location = fromBeginning ? 0 : sourceString.length;
+            return result;
         }
 
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
@@ -274,7 +270,6 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
         if (!IsComparisonOptionSupported(comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
-
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: cwPrefixLength];
         NSString *prefixStrComposed = RemoveWeightlessCharacters(prefixString.precomposedStringWithCanonicalMapping);
@@ -307,7 +302,6 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
         if (!IsComparisonOptionSupported(comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
-
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: cwSuffixLength];
         NSString *suffixStrComposed = RemoveWeightlessCharacters(suffixString.precomposedStringWithCanonicalMapping);
@@ -342,7 +336,6 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         if (!IsComparisonOptionSupported(options))
             return 0;
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: cwStrLength];
-        // in case of CompareOptions.IgnoreKanaType convert to Katakana
         if (options & IgnoreKanaType)
         {
             sourceString = ConvertToKatakana(sourceString);
