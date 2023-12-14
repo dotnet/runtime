@@ -56,6 +56,8 @@ EVP_MAC_CTX* CryptoNative_EvpMacCtxNew(EVP_MAC* mac)
         ERR_clear_error();
         return EVP_MAC_CTX_new(mac);
     }
+#else
+    (void)mac;
 #endif
 
     assert(0 && "Inconsistent EVP_MAC API availability.");
