@@ -554,10 +554,9 @@ namespace System.Reflection.Runtime.General
         //
         public static bool IsCustomAttributeOfType(this CustomAttributeHandle customAttributeHandle,
                                                    MetadataReader reader,
-                                                   string ns,
+                                                   ReadOnlySpan<string> namespaceParts,
                                                    string name)
         {
-            string[] namespaceParts = ns.Split('.');
             Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
             HandleType handleType = typeHandle.HandleType;
             if (handleType == HandleType.TypeDefinition)

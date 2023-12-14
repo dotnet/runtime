@@ -156,7 +156,21 @@ void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppU
             // value is a GC heap reference but it's a cheap check that weeds out a lot of spurious values.
             PTR_Object pObj = *ppObj;
             if (((PTR_UInt8)pObj >= g_lowest_address) && ((PTR_UInt8)pObj <= g_highest_address))
-                fnGcEnumRef(ppObj, pSc, GC_CALL_INTERIOR|GC_CALL_PINNED);
+                PromoteCarefully(ppObj, GC_CALL_INTERIOR | GC_CALL_PINNED, fnGcEnumRef, pSc);
         }
+    }
+}
+
+void GcEnumObjectConservatively(PTR_PTR_Object ppObj, EnumGcRefCallbackFunc* fnGcEnumRef, EnumGcRefScanContext* pSc)
+{
+    // Only report potential references in the promotion phase. Since we report everything as pinned there
+    // should be no work to do in the relocation phase.
+    if (pSc->promotion)
+    {
+        // Only report values that lie in the GC heap range. This doesn't conclusively guarantee that the
+        // value is a GC heap reference but it's a cheap check that weeds out a lot of spurious values.
+        PTR_Object pObj = *ppObj;
+        if (((PTR_UInt8)pObj >= g_lowest_address) && ((PTR_UInt8)pObj <= g_highest_address))
+            PromoteCarefully(ppObj, GC_CALL_INTERIOR | GC_CALL_PINNED, fnGcEnumRef, pSc);
     }
 }

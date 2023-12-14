@@ -576,7 +576,7 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-    unsigned char lvVolatileHint : 1; // hint for AssertionProp
+    unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
 #ifndef TARGET_64BIT
     unsigned char lvStructDoubleAlign : 1; // Must we double align this struct?
@@ -1993,6 +1993,12 @@ public:
         return m_postOrderCount;
     }
 
+    BasicBlock* GetPostOrder(unsigned index) const
+    {
+        assert(index < m_postOrderCount);
+        return m_postOrder[index];
+    }
+
     BitVecTraits PostOrderTraits() const
     {
         return BitVecTraits(m_postOrderCount, m_comp);
@@ -2244,7 +2250,7 @@ class FlowGraphNaturalLoops
 
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
-    static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, jitstd::list<BasicBlock*>& worklist);
+    static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
 public:
     const FlowGraphDfsTree* GetDfsTree()
     {
@@ -4204,7 +4210,7 @@ protected:
 
     void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute);
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
-    void SetVolatileHint(LclVarDsc* varDsc);
+    void SetHasExceptionalUsesHint(LclVarDsc* varDsc);
 
     // Keeps the mapping from SSA #'s to VN's for the implicit memory variables.
     SsaDefArray<SsaMemDef> lvMemoryPerSsaData;
@@ -4965,7 +4971,7 @@ public:
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
-    FlowGraphDominatorTree* fgSsaDomTree;
+    FlowGraphDominatorTree* m_domTree;
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -5102,7 +5108,8 @@ public:
     bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
-    bool fgCanonicalizedFirstBB; // Quirk: did we end up canonicalizing first BB?
+    bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
+    bool fgCompactRenumberQuirk; // TODO-Quirk: Should fgCompactBlocks renumber BBs above fgDomBBcount?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
@@ -5763,8 +5770,6 @@ protected:
     // Compute immediate dominators, the dominator tree and and its pre/post-order travsersal numbers.
     void fgComputeDoms();
 
-    void fgCompDominatedByExceptionalEntryBlocks();
-
     BlockSet_ValRet_T fgGetDominatorSet(BasicBlock* block); // Returns a set of blocks that dominate the given block.
     // Note: this is relatively slow compared to calling fgDominate(),
     // especially if dealing with a single block versus block check.
@@ -5780,6 +5785,8 @@ protected:
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
     PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
+
+    PhaseStatus fgComputeDominators(); // Compute (new) dominators
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
@@ -6800,10 +6807,6 @@ protected:
     //   VNPhi's connect VN's to the SSA definition, so we can know if the SSA def occurs in the loop.
     bool optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* recordedVNs);
 
-    // If "blk" is the entry block of a natural loop, returns true and sets "*pLnum" to the index of the loop
-    // in the loop table.
-    bool optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum);
-
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
@@ -7105,8 +7108,6 @@ public:
                        BasicBlock*   bottom,
                        BasicBlock*   exit,
                        unsigned char exitCnt);
-
-    PhaseStatus optClearLoopIterInfo();
 
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
@@ -11057,8 +11058,8 @@ protected:
     // Clear annotations produced during optimizations; to be used between iterations when repeating opts.
     void ResetOptAnnotations();
 
-    // Regenerate loop descriptors; to be used between iterations when repeating opts.
-    void RecomputeLoopInfo();
+    // Regenerate flow graph annotations; to be used between iterations when repeating opts.
+    void RecomputeFlowGraphAnnotations();
 
 #ifdef PROFILING_SUPPORTED
     // Data required for generating profiler Enter/Leave/TailCall hooks

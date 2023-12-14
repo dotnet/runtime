@@ -13193,8 +13193,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* Unmark the loop if we are removing a backwards branch */
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
-                if (block->GetTrueTarget()->isLoopHead() && (block->GetTrueTarget()->bbNum <= block->bbNum) &&
-                    fgReachable(block->GetTrueTarget(), block))
+                if (optLoopTableValid && block->GetTrueTarget()->isLoopHead() &&
+                    (block->GetTrueTarget()->bbNum <= block->bbNum) && fgReachable(block->GetTrueTarget(), block))
                 {
                     optUnmarkLoopBlocks(block->GetTrueTarget(), block);
                 }
@@ -14069,7 +14069,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         //
         for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
-            BasicBlock* const block = m_dfsTree->GetPostOrder()[i - 1];
+            BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
             fgMorphBlock(block);
         }
         assert(bbNumMax == fgBBNumMax);

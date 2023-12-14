@@ -381,15 +381,15 @@ void OptIfConversionDsc::IfConvertDump()
 {
     assert(m_startBlock != nullptr);
     m_comp->fgDumpBlock(m_startBlock);
-    for (BasicBlock* dumpBlock = m_startBlock->Next(); dumpBlock != m_finalBlock;
-         dumpBlock             = dumpBlock->GetUniqueSucc())
+    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->Next();
+    for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
     {
         m_comp->fgDumpBlock(dumpBlock);
     }
     if (m_doElseConversion)
     {
-        for (BasicBlock* dumpBlock = m_startBlock->GetTrueTarget(); dumpBlock != m_finalBlock;
-             dumpBlock             = dumpBlock->GetUniqueSucc())
+        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
+        for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
         {
             m_comp->fgDumpBlock(dumpBlock);
         }

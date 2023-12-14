@@ -4763,14 +4763,13 @@ void Compiler::fgDebugCheckSsa()
     }
 
     assert(fgSsaPassesCompleted > 0);
-    assert(fgDomsComputed);
 
     // Visit the blocks that SSA initially renamed
     //
     SsaCheckVisitor scv(this);
     for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
     {
-        BasicBlock* block = m_dfsTree->GetPostOrder()[i];
+        BasicBlock* block = m_dfsTree->GetPostOrder(i);
         scv.SetBlock(block);
 
         for (Statement* const stmt : block->Statements())
@@ -5220,7 +5219,7 @@ void Compiler::fgDebugCheckDfsTree()
         fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
                  [=](BasicBlock* block, unsigned postorderNum) {
                      assert(block->bbNewPostorderNum == postorderNum);
-                     assert(m_dfsTree->GetPostOrder()[postorderNum] == block);
+                     assert(m_dfsTree->GetPostOrder(postorderNum) == block);
                  });
 
     assert(m_dfsTree->GetPostOrderCount() == count);

@@ -131,11 +131,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             if (UseWebcil)
             {
-                var tmpWebcil = Path.GetTempFileName();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
+                using TempFileName tmpWebcil = new();
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil.Path, logger: Log);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
-                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
@@ -229,11 +229,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             Directory.CreateDirectory(cultureDirectory);
             if (UseWebcil)
             {
-                var tmpWebcil = Path.GetTempFileName();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil, logger: Log);
+                using TempFileName tmpWebcil = new();
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil.Path, logger: Log);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(cultureDirectory, Path.ChangeExtension(name, Utils.WebcilInWasmExtension));
-                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
@@ -371,8 +371,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             };
         }
 
-        string tmpMonoConfigPath = Path.GetTempFileName();
-        using (var sw = File.CreateText(tmpMonoConfigPath))
+        using TempFileName tmpMonoConfigPath = new();
+        using (var sw = File.CreateText(tmpMonoConfigPath.Path))
         {
             helper.ComputeResourcesHash(bootConfig);
 
@@ -381,7 +381,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         }
 
         string monoConfigPath = Path.Combine(runtimeAssetsPath, "blazor.boot.json"); // TODO: Unify with Wasm SDK
-        Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
+        Utils.CopyIfDifferent(tmpMonoConfigPath.Path, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
         foreach (ITaskItem item in ExtraFilesToDeploy!)

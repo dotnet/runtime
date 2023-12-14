@@ -5016,7 +5016,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
         //                     = headPreOrderIndex - index
         unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
@@ -5044,7 +5044,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
         unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;

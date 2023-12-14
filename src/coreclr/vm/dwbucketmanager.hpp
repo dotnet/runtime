@@ -961,7 +961,7 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
         if (!succeeded)
         {
             const SString& modulePath = pPEAssembly->GetPath();
-            _ASSERTE(modulePath.IsNormalized());
+            _ASSERTE(modulePath.IsEmpty() || modulePath.IsNormalized());
             succeeded = !modulePath.IsEmpty() && SUCCEEDED(DwGetFileVersionInfo(modulePath.GetUnicode(), major, minor, build, revision));
         }
     }
