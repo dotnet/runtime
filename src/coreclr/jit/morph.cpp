@@ -429,7 +429,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     //GenTree* saturate_min = gtNewSimdMaxNode(TYP_SIMD16, min_val, retNode, fieldType, 16);
                     //GenTree* saturate_max = gtNewSimdMinNode(TYP_SIMD16, retNode, max_val, fieldType, 16);
                     GenTree* saturated_val = gtNewSimdHWIntrinsicNode(srcType, retNode, NI_Vector128_ToScalar, fieldType, 16);
-                    GenTree* saturated_val_clone = impCloneExpr(saturated_val, &saturated_val_clone, CHECK_SPILL_ALL,
+                    GenTree* saturated_val_clone = impCloneExpr(retNode, &saturated_val_clone, CHECK_SPILL_ALL,
                                         nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
                     //saturate end
 
@@ -443,9 +443,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     tree->SetSaturatedConversion();
 
                     //vucomisd xmm0, qword ptr [reloc @RWD00]
-                    GenTree* ret1 = gtNewSimdHWIntrinsicNode(srcType, saturated_val_clone, gtNewDconNodeD(static_cast<double>(INT64_MAX)), 
+                    GenTree* ret1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, saturated_val_clone, max_val, 
                                                              NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual, fieldType, 16);
-
+                    // GenTree* ret1 = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturated_val_clone, max_val, fieldType, 16);
+                    // GenTree* compareEntryStateToZero =
+                    //     gtNewOperNode(GT_GE, srcType, saturated_val_clone, max_node);
+                    // GenTree* jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, ret1);
                     //cmovb    rax, rcx
                     // Create a select node.
                     GenTreeConditional* select = gtNewConditionalNode(GT_SELECT, ret1, 
