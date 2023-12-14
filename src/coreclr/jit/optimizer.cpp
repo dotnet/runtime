@@ -6437,7 +6437,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
     {
 
         // What is the depth of the loop "lnum"?
-        ssize_t depth = optLoopDepth((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable));
+        ssize_t depth = loop->GetDepth();
 
         NodeToTestDataMap* testData = GetNodeTestData();
 
@@ -6570,7 +6570,7 @@ PhaseStatus Compiler::optHoistLoopCode()
 #ifdef DEBUG
     // Test Data stuff..
     //
-    if (m_nodeTestData == nullptr)
+    if (m_nodeTestData != nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
         for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
