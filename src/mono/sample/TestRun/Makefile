@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/core/linq/csharp/aggregate/bin/Debug/net8.0/aggregate.dll
+ANY_PATH= /home/wuxinlong/workspace/samples/csharp/roslyn-sdk/SemanticQuickStart/bin/Debug/net8.0/SemanticQuickStart.dll
 
 GitHubKey=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
 
@@ -17,7 +17,7 @@ GitHubKey=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
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
 MONO_ENV_DEBUG_OPTIONS = "-v --trace=all"
-MONO_ENV_RUN_OPTIONS = ""
+MONO_ENV_RUN_OPTIONS = "-v --trace=all"
 
 build: TestRun.cs
 	@mcs TestRun.cs
@@ -106,6 +106,21 @@ debug-any-baseline:
 
 clean:
 	rm -f *.exe *.exe.mdb
+
+# Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxListBuilder:ToListNode
+# 829 
+# c 87
+# 0x4002c1abf8
+
+# Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken:Create
+# 831
+# +0x848
+# c 5
+
+# Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken/SyntaxTokenWithTrivia:.ctor
+# 0xe8
+# Microsoft.CodeAnalysis.GreenNode:AdjustFlagsAndWidth
+# 0xd4
 
 # COMPlus_DebugWriteToStdErr="1" MONO_LOG_LEVEL="debug" MONO_LOG_MASK="all" COREHOST_TRACE="1" COREHOST_TRACE_VERBOSITY="4" MONO_ENV_OPTIONS="--compile-all --trace=all" qemu-riscv64 -L ../../../..//.tools/rootfs/riscv64/ -g 12345 ../../../../artifacts/bin/testhost/net8.0-Linux-Debug-riscv64/dotnet TestRun.exe
 
