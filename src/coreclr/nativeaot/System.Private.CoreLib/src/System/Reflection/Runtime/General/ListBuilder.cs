@@ -2,24 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Reflection.Runtime.General
 {
-    // Helper to build arrays. Special cased to avoid allocations for arrays of one element.
+    //
+    // Struct-based list builder that's special cased to avoid allocations for lists of one element.
+    //
     internal struct ListBuilder<T> where T : class
     {
-        private T[]? _items;
-        private T _item;
-        private int _count;
-        private int _capacity;
-
         public ListBuilder(int capacity)
         {
             _items = null;
-            _item = null!;
+            _item = null;
             _count = 0;
             _capacity = capacity;
+#if DEBUG
+            _toArrayAlreadyCalled = false;
+#endif // DEBUG
         }
 
         public T this[int index]
@@ -33,28 +32,23 @@ namespace System.Reflection
 
         public T[] ToArray()
         {
+#if DEBUG
+            // ListBuilder does not always allocate a new array, though the ToArray() name connotates that it does (and in fact, we do pass the results
+            // of this method across api boundaries.) The minimizing of allocations is desirable, however, so instead, we restrict you to one call per ListBuilder.
+            Debug.Assert(!_toArrayAlreadyCalled, "Cannot call ListBuilder.ToArray() a second time. Copy the one you already got.");
+#endif // DEBUG
             if (_count == 0)
-                return [];
-
+                return Array.Empty<T>();
             if (_count == 1)
-                return [_item];
+                return new T[1] { _item };
 
-            if (_count == _items!.Length)
-                return _items;
+            Array.Resize(ref _items, _count);
 
-            return _items.AsSpan(0, _count).ToArray();
-        }
+#if DEBUG
+            _toArrayAlreadyCalled = true;
+#endif // DEBUG
 
-        [UnscopedRef]
-        public readonly ReadOnlySpan<T> AsSpan()
-        {
-            if (_count == 0)
-                return default;
-
-            if (_count == 1)
-                return new ReadOnlySpan<T>(in _item);
-
-            return _items.AsSpan(0, _count);
+            return _items;
         }
 
         public void CopyTo(object[] array, int index)
@@ -68,10 +62,16 @@ namespace System.Reflection
                 return;
             }
 
-            Array.Copy(_items!, 0, array, index, _count);
+            Array.Copy(_items, 0, array, index, _count);
         }
 
-        public int Count => _count;
+        public int Count
+        {
+            get
+            {
+                return _count;
+            }
+        }
 
         public void Add(T item)
         {
@@ -85,7 +85,6 @@ namespace System.Reflection
                 {
                     if (_capacity < 2)
                         _capacity = 4;
-
                     _items = new T[_capacity];
                     _items[0] = _item;
                 }
@@ -96,10 +95,17 @@ namespace System.Reflection
                     _capacity = newCapacity;
                 }
 
-                _items![_count] = item;
+                _items[_count] = item;
             }
-
             _count++;
         }
+
+        private T[] _items;
+        private T _item;
+        private int _count;
+        private int _capacity;
+#if DEBUG
+        private bool _toArrayAlreadyCalled;
+#endif // DEBUG
     }
 }

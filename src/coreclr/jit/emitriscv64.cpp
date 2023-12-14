@@ -2138,19 +2138,13 @@ AGAIN:
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    BYTE*       dstRW  = *dp + writeableOffset;
-    BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
-    code_t      code   = 0;
-    instruction ins;
-    size_t      sz; // = emitSizeOfInsDsc(id);
-
-#ifdef DEBUG
-#if DUMP_GC_TABLES
-    bool dspOffs = emitComp->opts.dspGCtbls;
-#else
-    bool dspOffs = !emitComp->opts.disDiffable;
-#endif
-#endif // DEBUG
+    BYTE*             dstRW  = *dp + writeableOffset;
+    BYTE*             dstRW2 = dstRW + 4; // addr for updating gc info if needed.
+    const BYTE* const odstRW = dstRW;
+    const BYTE* const odst   = *dp;
+    code_t            code   = 0;
+    instruction       ins;
+    size_t            sz; // = emitSizeOfInsDsc(id);
 
     assert(REG_NA == (int)REG_NA);
 
@@ -2879,12 +2873,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     if (emitComp->opts.disAsm || emitComp->verbose)
     {
-        code_t* cp = (code_t*)(*dp + writeableOffset);
-        while ((BYTE*)cp != dstRW)
-        {
-            emitDisInsName(*cp, (BYTE*)cp, id);
-            cp++;
-        }
+#if DUMP_GC_TABLES
+        bool dspOffs = emitComp->opts.dspGCtbls;
+#else  // !DUMP_GC_TABLES
+        bool dspOffs = !emitComp->opts.disDiffable;
+#endif // !DUMP_GC_TABLES
+        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
     }
 
     if (emitComp->compDebugBreak)
@@ -2896,7 +2890,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(!"JitBreakEmitOutputInstr reached");
         }
     }
-#endif
+#else  // !DEBUG
+    if (emitComp->opts.disAsm)
+    {
+        emitDispIns(id, false, false, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
+    }
+#endif // !DEBUG
 
     /* All instructions are expected to generate code */
 
@@ -2910,8 +2909,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 /*****************************************************************************/
 /*****************************************************************************/
 
-#ifdef DEBUG
-
 // clang-format off
 static const char* const RegNames[] =
 {
@@ -2922,39 +2919,32 @@ static const char* const RegNames[] =
 
 //----------------------------------------------------------------------------------------
 // Disassemble the given instruction.
-// The `emitter::emitDisInsName` is focused on the most important for debugging.
+// The `emitter::emitDispInsName` is focused on the most important for debugging.
 // So it implemented as far as simply and independently which is very useful for
 // porting easily to the release mode.
 //
 // Arguments:
 //    code - The instruction's encoding.
 //    addr - The address of the code.
+//    doffs - Flag informing whether the instruction's offset should be displayed.
+//    insOffset - The instruction's offset.
 //    id   - The instrDesc of the code if needed.
 //
 // Note:
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
+void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id)
 {
     const BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
     assert((opcode & 0x3) == 0x3);
 
-    bool disOpcode = !emitComp->opts.disDiffable;
-    bool disAddr   = emitComp->opts.disAddr;
-    if (disAddr)
-    {
-        printf("  0x%llx", insAdr);
-    }
+    emitDispInsAddr(insAdr);
+    emitDispInsOffs(insOffset, doffs);
 
-    printf("  ");
-
-    if (disOpcode)
-    {
-        printf("%08X  ", code);
-    }
+    printf("      ");
 
     switch (opcode)
     {
@@ -3915,14 +3905,37 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+void emitter::emitDispInsInstrNum(const instrDesc* id) const
+{
+#ifdef DEBUG
+    if (!emitComp->verbose)
+        return;
+
+    printf("IN%04x: ", id->idDebugOnlyInfo()->idNum);
+#endif // DEBUG
+}
+
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    // RISCV64 implements this similar by `emitter::emitDisInsName`.
-    // For RISCV64 maybe the `emitDispIns` is over complicate.
-    // The `emitter::emitDisInsName` is focused on the most important for debugging.
-    NYI_RISCV64("RISCV64 not used the emitter::emitDispIns");
+    if (pCode == nullptr)
+        return;
+
+    emitDispInsInstrNum(id);
+
+    const BYTE* instr = pCode + writeableOffset;
+    size_t      instrSize;
+    for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
+    {
+        // TODO-RISCV64: support different size instructions
+        instrSize = sizeof(code_t);
+        code_t instruction;
+        memcpy(&instruction, instr, instrSize);
+        emitDispInsName(instruction, instr, doffs, offset, id);
+    }
 }
+
+#ifdef DEBUG
 
 /*****************************************************************************
  *

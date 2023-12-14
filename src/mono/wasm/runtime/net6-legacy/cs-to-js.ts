@@ -10,13 +10,12 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
 import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
-import { monoStringToString } from "../strings";
+import { monoStringToString, monoStringToStringUnsafe } from "../strings";
 import { legacyManagedExports } from "./corebindings";
 import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { assert_legacy_interop, mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 import { createPromiseController } from "../globals";
-import { monoStringToStringUnsafe } from "./strings";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 

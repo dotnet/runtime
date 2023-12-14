@@ -3,10 +3,8 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 using Wasm.Build.Tests;
 
 #nullable enable

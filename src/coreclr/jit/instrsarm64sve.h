@@ -343,7 +343,7 @@ INST6(st1b,              "st1b",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_AM_2A        SVE_AN_3A        SVE_AO_3A        SVE_BF_2A        SVE_BG_3A        
-INST5(asr,               "asr",                   0,                       IF_SVE_5A,               0x04008000,      0x04108000,      0x04188000,      0x04209000,      0x04208000       )
+INST5(asr,               "asr",                   RSH,                     IF_SVE_5A,               0x04008000,      0x04108000,      0x04188000,      0x04209000,      0x04208000       )
     // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>                                    SVE_AM_2A           00000100xx000000 100gggxxiiiddddd     0400 8000   
     // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AN_3A           00000100xx010000 100gggmmmmmddddd     0410 8000   
     // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D                                      SVE_AO_3A           00000100xx011000 100gggmmmmmddddd     0418 8000   
@@ -357,7 +357,7 @@ INST5(lsl,               "lsl",                   0,                       IF_SV
     // LSL     <Zd>.<T>, <Zn>.<T>, #<const>                                              SVE_BF_2A           00000100xx1xxiii 100111nnnnnddddd     0420 9C00   
     // LSL     <Zd>.<T>, <Zn>.<T>, <Zm>.D                                                SVE_BG_3A           00000100xx1mmmmm 100011nnnnnddddd     0420 8C00   
 
-INST5(lsr,               "lsr",                   0,                       IF_SVE_5A,               0x04018000,      0x04118000,      0x04198000,      0x04209400,      0x04208400       )
+INST5(lsr,               "lsr",                   RSH,                     IF_SVE_5A,               0x04018000,      0x04118000,      0x04198000,      0x04209400,      0x04208400       )
     // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>                                    SVE_AM_2A           00000100xx000001 100gggxxiiiddddd     0401 8000   
     // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AN_3A           00000100xx010001 100gggmmmmmddddd     0411 8000   
     // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D                                      SVE_AO_3A           00000100xx011001 100gggmmmmmddddd     0419 8000   
@@ -1726,7 +1726,7 @@ INST1(usra,              "usra",                  RSH,                     IF_SV
 
 
 //    enum               name                     info                                              SVE_AM_2A                                    
-INST1(asrd,              "asrd",                  0,                       IF_SVE_AM_2A,            0x04048000                                   )
+INST1(asrd,              "asrd",                  RSH,                     IF_SVE_AM_2A,            0x04048000                                   )
     // ASRD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>                                    SVE_AM_2A           00000100xx000100 100gggxxiiiddddd     0404 8000   
 
 INST1(sqshlu,            "sqshlu",                0,                       IF_SVE_AM_2A,            0x040F8000                                   )
@@ -2115,13 +2115,13 @@ INST1(uminqv,            "uminqv",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_AN_3A                                    
-INST1(asrr,              "asrr",                  0,                       IF_SVE_AN_3A,            0x04148000                                   )
+INST1(asrr,              "asrr",                  RSH,                     IF_SVE_AN_3A,            0x04148000                                   )
     // ASRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AN_3A           00000100xx010100 100gggmmmmmddddd     0414 8000   
 
-INST1(lslr,              "lslr",                  0,                       IF_SVE_AN_3A,            0x04178000                                   )
+INST1(lslr,              "lslr",                  RSH,                     IF_SVE_AN_3A,            0x04178000                                   )
     // LSLR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AN_3A           00000100xx010111 100gggmmmmmddddd     0417 8000   
 
-INST1(lsrr,              "lsrr",                  0,                       IF_SVE_AN_3A,            0x04158000                                   )
+INST1(lsrr,              "lsrr",                  RSH,                     IF_SVE_AN_3A,            0x04158000                                   )
     // LSRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AN_3A           00000100xx010101 100gggmmmmmddddd     0415 8000   
 
 

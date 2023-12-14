@@ -461,7 +461,9 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     Thread* pThread = ThreadStore::GetCurrentThread();
 
     // While doing the GC, much code assumes & asserts the thread doing the GC is in
-    // cooperative mode.
+    // cooperative mode (but DisablePreemptiveMode cannot be used until a valid deferred
+    // transition frame is put into place).
+    pThread->SetDeferredTransitionFrameForNativeHelperThread();
     pThread->DisablePreemptiveMode();
 
     hr = GCHeapUtilities::GetGCHeap()->GarbageCollect(

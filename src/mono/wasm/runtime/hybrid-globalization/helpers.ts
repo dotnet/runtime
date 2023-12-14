@@ -25,3 +25,12 @@ export function normalizeLocale(locale: string | null)
         throw new Error(`Get culture info failed for culture = ${locale} with error: ${ex}`);
     }
 }
+
+export function normalizeSpaces(pattern: string)
+{
+    if (!pattern.includes("\u202F"))
+        return pattern;
+
+    // if U+202F present, replace them with spaces
+    return pattern.replace("\u202F", "\u0020");
+}
