@@ -106,13 +106,6 @@ struct LoaderHeapBlock
     PTR_LoaderHeapBlock     pNext;
     PTR_VOID                pVirtualAddress;
     size_t                  dwVirtualSize;
-
-    // Allocation pointer in block
-    PTR_BYTE                m_pAllocPtr; // Accessed and modified from lock-free code
-
-    // Points to the end of the committed region in the block
-    PTR_BYTE                m_pPtrToEndOfCommittedRegion; // Accessed from lock-free code
-
     BOOL                    m_fReleaseMemory;
 
 #ifndef DACCESS_COMPILE
@@ -144,35 +137,6 @@ struct LoaderHeapBlock
         WRAPPER_NO_CONTRACT;
         Init(NULL, 0, FALSE);
     }
-
-    // Call this when the LoaderHeapBlock is becoming not the current block to prevent any future lock-free
-    // allocations from the block
-    void AllocRemainingCommittedMemory(PTR_BYTE* pAllocatedMemory, size_t *pAllocatedMemorySize)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (this == NULL)
-        {
-            *pAllocatedMemory = NULL;
-            *pAllocatedMemorySize = 0;
-            return;
-        }
-        PTR_BYTE pAllocPtr;
-        do
-        {
-            pAllocPtr = VolatileLoadWithoutBarrier(&m_pAllocPtr);
-            if (pAllocPtr >= m_pPtrToEndOfCommittedRegion)
-            {
-                *pAllocatedMemory = m_pPtrToEndOfCommittedRegion;
-                *pAllocatedMemorySize = 0;
-            }
-            else
-            {
-                *pAllocatedMemory = pAllocPtr;
-                *pAllocatedMemorySize = m_pPtrToEndOfCommittedRegion - *pAllocatedMemory;
-            }
-        } while (InterlockedCompareExchange((size_t*)&m_pAllocPtr, (size_t)m_pPtrToEndOfCommittedRegion, (size_t)pAllocPtr) != (size_t)pAllocPtr);
-    }
-
 #else
     // No ctors in DAC builds
     LoaderHeapBlock() {}
@@ -260,8 +224,8 @@ class UnlockedLoaderHeap
 {
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
-#endif
     friend struct LoaderHeapFreeBlock;
+#endif
 
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -277,13 +241,14 @@ public:
     };
 
 private:
-    // Linked list of ClrVirtualAlloc'd pages. This is read from lock free code, and writes must use a barrier
+    // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
 
+    // Allocation pointer in current block
+    PTR_BYTE            m_pAllocPtr;
 
-    // Amount of memory in free list. This is read from lock-free code, but writes do not need to be protected, as the reads are merely driving a heuristic
-    size_t              m_cbMemoryInFreeList;
-
+    // Points to the end of the committed region in the current block
+    PTR_BYTE            m_pPtrToEndOfCommittedRegion;
     PTR_BYTE            m_pEndReservedRegion;
 
     // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
@@ -338,8 +303,7 @@ public:
     size_t DebugGetWastedBytes()
     {
         WRAPPER_NO_CONTRACT;
-        PTR_LoaderHeapBlock pActiveLoaderHeapBlock = GetActiveLoaderHeapBlock();
-        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion(pActiveLoaderHeapBlock, UnlockedGetAllocPtr(pActiveLoaderHeapBlock));
+        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
     }
 #endif
 
@@ -380,42 +344,34 @@ protected:
 #endif
 
 private:
-    size_t GetBytesAvailCommittedRegion(PTR_LoaderHeapBlock pLoaderHeapBlock, PTR_BYTE pAllocPtr);
+    size_t GetBytesAvailCommittedRegion();
     size_t GetBytesAvailReservedRegion();
-    size_t GetMinSizeGivenAlignment(PTR_BYTE result, size_t dwRequestedSize, size_t alignment, size_t *pdwExtra);
+
 protected:
     // number of bytes available in region
     size_t UnlockedGetReservedBytesFree()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pEndReservedRegion - UnlockedGetAllocPtr(GetActiveLoaderHeapBlock());
+        return m_pEndReservedRegion - m_pAllocPtr;
     }
 
-    PTR_LoaderHeapBlock GetActiveLoaderHeapBlock()
-    {
-        return VolatileLoadWithoutBarrier(&m_pFirstBlock);
-    }
-
-    PTR_BYTE UnlockedGetAllocPtr(PTR_LoaderHeapBlock pLoaderHeapBlock)
+    PTR_BYTE UnlockedGetAllocPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        if (pLoaderHeapBlock == NULL)
-            return NULL;
-
-        return VolatileLoadWithoutBarrier(&pLoaderHeapBlock->m_pAllocPtr);
+        return m_pAllocPtr;
     }
 
 private:
     // Get some more committed pages - either commit some more in the current reserved region, or, if it
     // has run out, reserve another set of pages
-    PTR_BYTE GetMoreCommittedPages(const size_t dwSizeToAlloc, const size_t alignment, size_t *pExtra);
+    BOOL GetMoreCommittedPages(size_t dwMinSize);
 
     // Commit memory pages starting at the specified adress
     BOOL CommitPages(void* pData, size_t dwSizeToCommitPart);
 
 protected:
     // Reserve some pages at any address
-    PTR_BYTE UnlockedReservePages(const size_t dwSizeToAlloc, const size_t alignment, size_t *pExtra);
+    BOOL UnlockedReservePages(size_t dwCommitBlockSize);
 
 protected:
     // In debug mode, allocate an extra LOADER_HEAP_DEBUG_BOUNDARY bytes and fill it with invalid data.  The reason we
@@ -436,15 +392,6 @@ protected:
 #endif
                                    );
 
-
-    // In debug mode, allocate an extra LOADER_HEAP_DEBUG_BOUNDARY bytes and fill it with invalid data.  The reason we
-    // do this is that when we're allocating vtables out of the heap, it is very easy for code to
-    // get careless, and end up reading from memory that it doesn't own - but since it will be
-    // reading some other allocation's vtable, no crash will occur.  By keeping a gap between
-    // allocations, it is more likely that these errors will be encountered.
-#ifndef _DEBUG
-    void *UnlockedAllocMem_LockFree_NoThrow(size_t dwSize);
-#endif
 
 
 
@@ -786,19 +733,13 @@ private:
         void *pResult;
         TaggedMemAllocPtr tmap;
 
-#ifndef _DEBUG
-        pResult = UnlockedAllocMem_LockFree_NoThrow(dwSize);
-        if (pResult == NULL)
-#endif // _DEBUG
-        {
-            CRITSEC_Holder csh(m_CriticalSection);
-            pResult = UnlockedAllocMem(dwSize
+        CRITSEC_Holder csh(m_CriticalSection);
+        pResult = UnlockedAllocMem(dwSize
 #ifdef _DEBUG
-                                    , szFile
-                                    , lineNum
+                                 , szFile
+                                 , lineNum
 #endif
-                                    );
-        }
+                                 );
         tmap.m_pMem             = pResult;
         tmap.m_dwRequestedSize  = dwSize;
         tmap.m_pHeap            = this;
@@ -823,20 +764,15 @@ private:
         void *pResult;
         TaggedMemAllocPtr tmap;
 
-#ifndef _DEBUG
-        pResult = UnlockedAllocMem_LockFree_NoThrow(dwSize);
-        if (pResult == NULL)
-#endif // _DEBUG
-        {
-            CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh(m_CriticalSection);
 
-            pResult = UnlockedAllocMem_NoThrow(dwSize
+        pResult = UnlockedAllocMem_NoThrow(dwSize
 #ifdef _DEBUG
-                                            , szFile
-                                            , lineNum
+                                           , szFile
+                                           , lineNum
 #endif
-                                            );
-        }
+                                           );
+
         tmap.m_pMem             = pResult;
         tmap.m_dwRequestedSize  = dwSize;
         tmap.m_pHeap            = this;
