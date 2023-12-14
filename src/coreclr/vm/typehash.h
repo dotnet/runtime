@@ -26,7 +26,7 @@
 //
 //========================================================================================
 
-DWORD HashTypeKey(TypeKey* pKey);
+DWORD HashTypeKey(const TypeKey* pKey);
 
 // One of these is present for each element in the table
 // It simply chains together (hash,data) pairs

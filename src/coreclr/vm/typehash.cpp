@@ -239,7 +239,7 @@ static DWORD HashTypeHandle(TypeHandle t)
 }
 
 // Calculate hash value from key
-DWORD HashTypeKey(TypeKey* pKey)
+DWORD HashTypeKey(const TypeKey* pKey)
 {
     CONTRACTL
     {

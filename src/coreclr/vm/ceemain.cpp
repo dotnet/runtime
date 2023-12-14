@@ -162,6 +162,7 @@
 #include "disassembler.h"
 #include "jithost.h"
 #include "pgo.h"
+#include "pendingload.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -622,6 +623,8 @@ void EEStartupHelper()
         // Initialize global configuration settings based on startup flags
         // This needs to be done before the EE has started
         InitializeStartupFlags();
+
+        PendingTypeLoadTable::Init();
 
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 

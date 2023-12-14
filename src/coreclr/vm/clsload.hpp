@@ -30,7 +30,6 @@ class SystemDomain;
 class Assembly;
 class ClassLoader;
 class TypeKey;
-class PendingTypeLoadEntry;
 class PendingTypeLoadTable;
 class EEClass;
 class Thread;
@@ -466,7 +465,7 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(AccessCheckContext* pContext,
 //
 class ClassLoader
 {
-    friend class PendingTypeLoadEntry;
+    friend class PendingTypeLoadTable;
     friend class MethodTableBuilder;
     friend class AppDomain;
     friend class Assembly;
@@ -478,10 +477,6 @@ class ClassLoader
     friend class COMModule;
 
 private:
-    // Classes for which load is in progress
-    PendingTypeLoadTable  * m_pUnresolvedClassHash;
-    CrstExplicitInit        m_UnresolvedClassLock;
-
     // Protects addition of elements to module's m_pAvailableClasses.
     // (indeed thus protects addition of elements to any m_pAvailableClasses in any
     // of the modules managed by this loader)
