@@ -227,7 +227,10 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = JSProxyContext.CurrentThreadContext;
             if (ctx == null) throw new InvalidOperationException();
             var syncContext = ctx.SynchronizationContext;
-            SynchronizationContext.SetSynchronizationContext(syncContext.previousSynchronizationContext);
+            if (SynchronizationContext.Current == syncContext)
+            {
+                SynchronizationContext.SetSynchronizationContext(syncContext.previousSynchronizationContext);
+            }
             ctx.Dispose();
         }
 

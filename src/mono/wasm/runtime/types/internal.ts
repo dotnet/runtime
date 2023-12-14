@@ -351,10 +351,10 @@ export interface JavaScriptExports {
     // the marshaled signature is: void InstallMainSynchronizationContext()
     install_main_synchronization_context(): void;
 
-    // the marshaled signature is: void InstallMainSynchronizationContext()
+    // the marshaled signature is: void PushOperation()
     push_operation(): void;
 
-    // the marshaled signature is: void InstallMainSynchronizationContext()
+    // the marshaled signature is: void PopOperation()
     pop_operation(): void;
 
     // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)

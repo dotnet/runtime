@@ -150,6 +150,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void PopOperation()
         {
             var stack = OperationStack;
+            if (stack.Count < 1) Environment.FailFast("Unbalanced PopOperation");// there is no recovery
             stack.RemoveAt(stack.Count - 1);
         }
 
@@ -158,7 +159,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void SchedulePopOperation()
         {
             var stack = OperationStack;
-            stack[stack.Count - 1].Called = true;
+            var op = stack[stack.Count - 1];
+            if (op.Called) Environment.FailFast("SchedulePopOperation called twice");
+            op.Called = true;
         }
 
         public static void AssertOperationStack(int expected)

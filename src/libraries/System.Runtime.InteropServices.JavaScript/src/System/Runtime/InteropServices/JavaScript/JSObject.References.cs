@@ -124,7 +124,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     JSProxyContext.ReleaseCSOwnedObject(x.self, x.skipJS);
                 }, (this, skipJS));
 #else
-                ProxyContext.ReleaseCSOwnedObject(JSHandle);
+                JSProxyContext.ReleaseCSOwnedObject(this, skipJS);
                 _isDisposed = true;
                 JSHandle = IntPtr.Zero;
 #endif
