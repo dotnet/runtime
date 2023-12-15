@@ -2257,6 +2257,34 @@ static void assertCodeLength(unsigned code, uint8_t size)
 }
 
 /*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 J-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  J-Type layout:
+ *  31-------30--------21----20---19----------12-11----7-6------------0
+ *  |imm[20]| imm[10:1]  |imm[11]|  imm[19:12]  |  rd   |   opcode    |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21)
+{
+    static constexpr unsigned kSectionMask = 0x3ff; // 0b1111111111
+    static constexpr unsigned kBitMask = 0x01;
+
+    assertCodeLength(opcode, 7);
+    assertCodeLength(rd, 5);
+    assertCodeLength(imm21, 21);
+    unsigned imm20 = imm21 >> 1;
+    unsigned imm20HiSection = imm20 & kSectionMask;
+    unsigned imm20HiBit = (imm20 >> 19) & kBitMask;
+    unsigned imm20LoSection = (imm20 >> 11) & kSection;
+    unsigned imm20LoBit = (imm20 >> 10) & kBitMask;
+
+    return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) | (imm20HiBit << 31);
+}
+
+/*****************************************************************************
 *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
