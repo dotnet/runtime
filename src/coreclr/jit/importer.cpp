@@ -3865,8 +3865,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                     op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
 
                     // Create a GT_COMMA to invoke the lazyCtor
-                    GenTreeCall* lazyCtorCall =
-                        gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GCSTATIC_BASE, TYP_BYREF);
+                    GenTreeCall* lazyCtorCall = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GCSTATIC_BASE, TYP_BYREF);
                     if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF)
                     {
                         m_preferredInitCctor = pFieldInfo->helper;

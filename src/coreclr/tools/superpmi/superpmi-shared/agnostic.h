@@ -539,9 +539,6 @@ struct Agnostic_GetThreadStaticInfo_NativeAOT
     Agnostic_CORINFO_CONST_LOOKUP tlsRootObject;
     Agnostic_CORINFO_CONST_LOOKUP tlsIndexObject;
     Agnostic_CORINFO_CONST_LOOKUP threadStaticBaseSlow;
-    DWORD classCtorContextSize;
-    Agnostic_CORINFO_CONST_LOOKUP lazyCtorRunHelper;
-    Agnostic_CORINFO_CONST_LOOKUP lazyCtorTargetSymbol;
 };
 
 struct Agnostic_GetClassCtorInitializationInfo

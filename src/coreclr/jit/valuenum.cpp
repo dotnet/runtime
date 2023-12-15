@@ -12413,7 +12413,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // added this arg, so we do not need to use EntryPointAddrAsArg0
         // because the indirection cell itself allows us to disambiguate.
         useEntryPointAddrAsArg0 = false;
-        useEnclosingTypeAsArg0 = false;
+        useEnclosingTypeAsArg0  = false;
     }
 
     CallArg* curArg = args->Args().begin().GetArg();

@@ -3656,14 +3656,11 @@ void MethodContext::dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG             
                                                           const Agnostic_GetThreadStaticInfo_NativeAOT& value)
 {
     printf("GetThreadLocalStaticInfo_NativeAOT key %016" PRIX64 ", tlsRootObject-%s, tlsIndexObject-%s,  offsetOfThreadLocalStoragePointer-%u, "
-           "threadStaticBaseSlow-%s, lazyCtorRunHelper-%s, lazyCtorTargetSymbol-%s, classCtorContextSize-%u",
+           "threadStaticBaseSlow-%s",
            key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsRootObject).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndexObject).c_str(),
            value.offsetOfThreadLocalStoragePointer,
-           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.threadStaticBaseSlow).c_str(),
-           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.lazyCtorRunHelper).c_str(),
-           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.lazyCtorTargetSymbol).c_str(),
-           value.classCtorContextSize);
+           SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.threadStaticBaseSlow).c_str());
 }
 
 void MethodContext::repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)

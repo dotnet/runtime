@@ -585,7 +585,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         fgAddRefPred(block, fallbackBb);
         fgAddRefPred(block, fastPathBb);
 
-        tlsRootNullCondBB->SetJumpDest(fastPathBb);
+        tlsRootNullCondBB->SetTarget(fastPathBb);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
@@ -597,7 +597,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         fgRemoveRefPred(block, prevBb);
         fgAddRefPred(tlsRootNullCondBB, prevBb);
-        prevBb->SetJumpDest(tlsRootNullCondBB);
+        prevBb->SetTarget(tlsRootNullCondBB);
 
         //
         // Update loop info if loop table is known to be valid
