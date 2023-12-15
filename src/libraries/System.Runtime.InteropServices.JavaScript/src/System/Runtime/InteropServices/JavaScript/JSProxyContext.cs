@@ -181,6 +181,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void CaptureContextFromParameter(JSProxyContext parameterContext)
         {
             var stack = OperationStack;
+            if (stack.Count < 1) Environment.FailFast("CaptureContextFromParameter could be only used during pending operation.");
             var pendingOperation = stack[stack.Count - 1];
             var capturedContext = pendingOperation.CapturedContext;
             if (capturedContext != null && parameterContext != capturedContext)

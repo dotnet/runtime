@@ -32,8 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static async Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
-            // TODO remove main thread condition later
-            if (Thread.CurrentThread.ManagedThreadId == 1)
+            if (JSProxyContext.MainThreadContext.IsCurrentThread())
             {
                 await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
             }
@@ -42,8 +41,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static async Task RunAsync(Func<Task> body, CancellationToken cancellationToken)
         {
-            // TODO remove main thread condition later
-            if (Thread.CurrentThread.ManagedThreadId == 1)
+            if (JSProxyContext.MainThreadContext.IsCurrentThread())
             {
                 await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
             }

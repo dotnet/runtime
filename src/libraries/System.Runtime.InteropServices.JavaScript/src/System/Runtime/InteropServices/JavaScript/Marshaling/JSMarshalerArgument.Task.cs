@@ -376,7 +376,7 @@ namespace System.Runtime.InteropServices.JavaScript
             arg_value.ToJS(ex);
 
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
-            holder.DisposeImpl(true);
+            holder.DisposeImpl(skipJsCleanup: true);
 
             // order of operations with DisposeImpl matters
             JavaScriptImports.ResolveOrRejectPromise(args);
@@ -410,7 +410,7 @@ namespace System.Runtime.InteropServices.JavaScript
             arg_value.slot.Type = MarshalerType.Void;
 
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
-            holder.DisposeImpl(true);
+            holder.DisposeImpl(skipJsCleanup: true);
 
             // order of operations with DisposeImpl matters
             JavaScriptImports.ResolveOrRejectPromise(args);
@@ -445,7 +445,7 @@ namespace System.Runtime.InteropServices.JavaScript
             marshaler(ref arg_value, value);
 
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
-            holder.DisposeImpl(true);
+            holder.DisposeImpl(skipJsCleanup: true);
 
             // order of operations with DisposeImpl matters
             JavaScriptImports.ResolveOrRejectPromise(args);

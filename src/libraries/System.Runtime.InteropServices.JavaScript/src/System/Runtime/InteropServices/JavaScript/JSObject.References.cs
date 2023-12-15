@@ -105,14 +105,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
-        internal void DisposeImpl(bool skipJS)
+        internal void DisposeImpl(bool skipJsCleanup = false)
         {
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
                 if (ProxyContext.IsCurrentThread())
                 {
-                    JSProxyContext.ReleaseCSOwnedObject(this, skipJS);
+                    JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
                     return;
                 }
 
@@ -120,9 +120,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     var x = ((JSObject self, bool skipJS))s!;
                     JSProxyContext.ReleaseCSOwnedObject(x.self, x.skipJS);
-                }, (this, skipJS));
+                }, (this, skipJsCleanup));
 #else
-                JSProxyContext.ReleaseCSOwnedObject(this, skipJS);
+                JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
                 _isDisposed = true;
                 JSHandle = IntPtr.Zero;
 #endif
@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         ~JSObject()
         {
-            DisposeImpl(false);
+            DisposeImpl();
         }
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         public void Dispose()
         {
-            DisposeImpl(false);
+            DisposeImpl();
         }
     }
 }
