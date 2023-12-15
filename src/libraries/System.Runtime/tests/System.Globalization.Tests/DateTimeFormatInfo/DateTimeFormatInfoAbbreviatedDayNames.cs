@@ -37,10 +37,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "bn-BD", new string[] { "রবি", "সোম", "মঙ্গল", "বুধ", "বৃহস্পতি", "শুক্র", "শনি" } };
             yield return new object[] { "ca-AD", new string[] { "dg.", "dl.", "dt.", "dc.", "dj.", "dv.", "ds." } };
             yield return new object[] { "cs-CZ", new string[] { "ne", "po", "út", "st", "čt", "pá", "so" } };
-            var danishDays = PlatformDetection.IsNodeJSOnWindows ?
-                new string[] { "søn", "man", "tir", "ons", "tor", "fre", "lør" } :
-                new string[] { "søn.", "man.", "tirs.", "ons.", "tors.", "fre.", "lør." }; // like ICU
-            yield return new object[] { "da-DK", danishDays };
+            yield return new object[] { "da-DK", new string[] { "søn.", "man.", "tirs.", "ons.", "tors.", "fre.", "lør." } };
             yield return new object[] { "de-DE", new string[] { "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa" } };
             yield return new object[] { "el-GR", new string[] { "Κυρ", "Δευ", "Τρί", "Τετ", "Πέμ", "Παρ", "Σάβ" } };
             yield return new object[] { "en-CA", new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" } }; // should be with dots
