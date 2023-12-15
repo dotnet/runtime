@@ -3635,8 +3635,7 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
 
-void MethodContext::recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
-    CORINFO_CLASS_HANDLE                   cls)
+void MethodContext::recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
 {
     if (GetThreadLocalStaticInfo_NativeAOT == nullptr)
         GetThreadLocalStaticInfo_NativeAOT = new LightWeightMap<DWORDLONG, Agnostic_GetThreadStaticInfo_NativeAOT>();
@@ -3647,11 +3646,8 @@ void MethodContext::recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_
     value.tlsIndexObject      = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndexObject);
     value.offsetOfThreadLocalStoragePointer       = pInfo->offsetOfThreadLocalStoragePointer;
     value.threadStaticBaseSlow       = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->threadStaticBaseSlow);
-    value.lazyCtorRunHelper    = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->lazyCtorRunHelper);
-    value.lazyCtorTargetSymbol = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->lazyCtorTargetSymbol);
-    value.classCtorContextSize = pInfo->classCtorContextSize;
 
-    DWORDLONG key = CastHandle(cls);
+    DWORDLONG key = 1;
 
     GetThreadLocalStaticInfo_NativeAOT->Add(key, value);
     DEBUG_REC(dmpGetThreadLocalStaticInfo_NativeAOT(key, result));
@@ -3670,10 +3666,9 @@ void MethodContext::dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG             
            value.classCtorContextSize);
 }
 
-void MethodContext::repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
-    CORINFO_CLASS_HANDLE                   cls)
+void MethodContext::repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
 {
-    DWORDLONG                               key = CastHandle(cls);
+    DWORDLONG                              key = 1;
     Agnostic_GetThreadStaticInfo_NativeAOT value =
         LookupByKeyOrMiss(GetThreadLocalStaticInfo_NativeAOT, key, ": key %016" PRIX64 "", key);
 
@@ -3683,9 +3678,6 @@ void MethodContext::repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_
     pInfo->tlsIndexObject                    = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsIndexObject);
     pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
     pInfo->threadStaticBaseSlow              = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.threadStaticBaseSlow);
-    pInfo->lazyCtorRunHelper                 = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.lazyCtorRunHelper);
-    pInfo->lazyCtorTargetSymbol              = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.lazyCtorTargetSymbol);
-    pInfo->classCtorContextSize              = value.classCtorContextSize;
 }
 
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,

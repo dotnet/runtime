@@ -1749,9 +1749,6 @@ struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
     CORINFO_CONST_LOOKUP tlsRootObject;
     CORINFO_CONST_LOOKUP tlsIndexObject;
     CORINFO_CONST_LOOKUP threadStaticBaseSlow;
-    uint32_t classCtorContextSize;
-    CORINFO_CONST_LOOKUP lazyCtorRunHelper;
-    CORINFO_CONST_LOOKUP lazyCtorTargetSymbol;
 };
 
 //----------------------------------------------------------------------------
@@ -2835,8 +2832,7 @@ public:
             ) = 0;
 
     virtual void getThreadLocalStaticInfo_NativeAOT(
-            CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
-            CORINFO_CLASS_HANDLE cls
+            CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo
             ) = 0;
 
     // Returns true iff "fldHnd" represents a static field.

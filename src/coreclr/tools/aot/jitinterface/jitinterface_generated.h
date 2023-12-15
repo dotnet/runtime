@@ -106,7 +106,7 @@ struct JitInterfaceCallbacks
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
     uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool isGCtype);
     void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
-    void (* getThreadLocalStaticInfo_NativeAOT)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo, CORINFO_CLASS_HANDLE cls);
+    void (* getThreadLocalStaticInfo_NativeAOT)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
@@ -1127,11 +1127,10 @@ public:
 }
 
     virtual void getThreadLocalStaticInfo_NativeAOT(
-          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
-          CORINFO_CLASS_HANDLE cls)
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getThreadLocalStaticInfo_NativeAOT(_thisHandle, &pException, pInfo, cls);
+    _callbacks->getThreadLocalStaticInfo_NativeAOT(_thisHandle, &pException, pInfo);
     if (pException != nullptr) throw pException;
 }
 

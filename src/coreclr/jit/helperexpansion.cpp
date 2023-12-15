@@ -480,7 +480,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     CORINFO_THREAD_STATIC_INFO_NATIVEAOT threadStaticInfo;
     memset(&threadStaticInfo, 0, sizeof(CORINFO_THREAD_STATIC_INFO_NATIVEAOT));
 
-    info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo, call->gtInitClsHnd);
+    info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo);
 
     JITDUMP("tlsRootObject= %p\n", dspPtr(threadStaticInfo.tlsRootObject.addr));
     JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticInfo.tlsIndexObject.addr));

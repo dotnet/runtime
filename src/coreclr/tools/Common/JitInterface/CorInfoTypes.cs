@@ -1169,9 +1169,6 @@ namespace Internal.JitInterface
         public CORINFO_CONST_LOOKUP tlsRootObject;
         public CORINFO_CONST_LOOKUP tlsIndexObject;
         public CORINFO_CONST_LOOKUP threadStaticBaseSlow;
-        public uint classCtorContextSize;
-        public CORINFO_CONST_LOOKUP classCtorRunHelper;
-        public CORINFO_CONST_LOOKUP lazyCtorTargetSymbol;
     };
 
     // System V struct passing

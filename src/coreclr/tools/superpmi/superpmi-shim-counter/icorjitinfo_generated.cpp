@@ -771,11 +771,10 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
 }
 
 void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(
-          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo,
-          CORINFO_CLASS_HANDLE cls)
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
 {
     mcs->AddCall("getThreadLocalStaticInfo_NativeAOT");
-    original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo, cls);
+    original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo);
 }
 
 bool interceptor_ICJI::isFieldStatic(

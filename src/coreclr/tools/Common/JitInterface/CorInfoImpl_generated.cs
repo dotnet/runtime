@@ -1419,12 +1419,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _getThreadLocalStaticInfo_NativeAOT(IntPtr thisHandle, IntPtr* ppException, CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo, CORINFO_CLASS_STRUCT_* cls)
+        private static void _getThreadLocalStaticInfo_NativeAOT(IntPtr thisHandle, IntPtr* ppException, CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getThreadLocalStaticInfo_NativeAOT(pInfo, cls);
+                _this.getThreadLocalStaticInfo_NativeAOT(pInfo);
             }
             catch (Exception ex)
             {
@@ -2633,7 +2633,7 @@ namespace Internal.JitInterface
             callbacks[92] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_ACCESS_FLAGS, CORINFO_FIELD_INFO*, void>)&_getFieldInfo;
             callbacks[93] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte, uint>)&_getThreadLocalFieldInfo;
             callbacks[94] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, byte, void>)&_getThreadLocalStaticBlocksInfo;
-            callbacks[95] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_THREAD_STATIC_INFO_NATIVEAOT*, CORINFO_CLASS_STRUCT_*, void>)&_getThreadLocalStaticInfo_NativeAOT;
+            callbacks[95] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_THREAD_STATIC_INFO_NATIVEAOT*, void>)&_getThreadLocalStaticInfo_NativeAOT;
             callbacks[96] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte>)&_isFieldStatic;
             callbacks[97] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int>)&_getArrayOrStringLength;
             callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, uint**, BoundaryTypes*, void>)&_getBoundaries;
