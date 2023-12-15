@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
- <PropertyGroup>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="InternalMethodImplTest.cs" />
   </ItemGroup>

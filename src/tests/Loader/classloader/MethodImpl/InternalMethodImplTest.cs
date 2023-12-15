@@ -7,7 +7,7 @@ using Xunit;
 
 public class InternalMethodImplTest
 {
-    [Fact]
+    [Fact, SkipOnMono("the error message is specific to coreclr")]
     public static int TypeLoadExceptionMessageContainsMethodNameWhenInternalCallOnlyMethodIsCalled()
     {
         try
