@@ -4753,6 +4753,28 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_R3, REG_P6, REG_V9,
                               INS_OPTS_SCALABLE_D_WITH_SCALAR); /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
 
+    // IF_SVE_CX_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmpeq, EA_SCALABLE, REG_P15, REG_P0, REG_V0, REG_V10,
+                                INS_OPTS_SCALABLE_B); /* CMPEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmpge, EA_SCALABLE, REG_P14, REG_P1, REG_V10, REG_V23,
+                                INS_OPTS_SCALABLE_H); /* CMPGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmpgt, EA_SCALABLE, REG_P13, REG_P2, REG_V20, REG_V24,
+                                INS_OPTS_SCALABLE_S); /* CMPGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmphi, EA_SCALABLE, REG_P12, REG_P3, REG_V30, REG_V25,
+                                INS_OPTS_SCALABLE_D); /* CMPHI   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmphs, EA_SCALABLE, REG_P11, REG_P4, REG_V1, REG_V26,
+                                INS_OPTS_SCALABLE_B); /* CMPHS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmple, EA_SCALABLE, REG_P10, REG_P5, REG_V11, REG_V27,
+                                INS_OPTS_SCALABLE_H); /* CMPLE   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmplo, EA_SCALABLE, REG_P11, REG_P6, REG_V12, REG_V28,
+                                INS_OPTS_SCALABLE_S); /* CMPLO   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmpls, EA_SCALABLE, REG_P0, REG_P7, REG_V13, REG_V29,
+                                INS_OPTS_SCALABLE_D); /* CMPLS   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmplt, EA_SCALABLE, REG_P2, REG_P0, REG_V14, REG_V30,
+                                INS_OPTS_SCALABLE_B); /* CMPLT   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+    theEmitter->emitIns_R_R_R_R(INS_sve_cmpne, EA_SCALABLE, REG_P3, REG_P1, REG_V15, REG_V20,
+                                INS_OPTS_SCALABLE_H); /* CMPNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+
     // IF_SVE_EP_3A
     theEmitter->emitIns_R_R_R(INS_sve_shadd, EA_SCALABLE, REG_V15, REG_P0, REG_V10,
                               INS_OPTS_SCALABLE_B); /* SHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
