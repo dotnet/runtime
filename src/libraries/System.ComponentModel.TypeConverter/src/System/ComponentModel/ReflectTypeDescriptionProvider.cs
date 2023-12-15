@@ -196,7 +196,7 @@ namespace System.ComponentModel
                     [typeof(Enum)] = new IntrinsicTypeConverterData((type) => CreateEnumConverter(type), cacheConverterInstance: false),
                     [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => CreateNullableConverter(type), cacheConverterInstance: false),
                     [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
-               });
+                });
             }
         }
 

@@ -111,11 +111,12 @@ namespace Sample
         internal static Task TestHelloWebWorker()
         {
             Console.WriteLine($"smoke: TestHelloWebWorker 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-            Task t = WebWorker.RunAsync(() =>
+            Task t = JSWebWorker.RunAsync(() =>
             {
                 Console.WriteLine($"smoke: TestHelloWebWorker 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 GlobalThisConsoleLog($"smoke: TestHelloWebWorker 3 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 Console.WriteLine($"smoke: TestHelloWebWorker 4 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
+                return Task.CompletedTask;
             });
             Console.WriteLine($"smoke: TestHelloWebWorker 5 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             return t.ContinueWith(Gogo);
@@ -154,7 +155,7 @@ namespace Sample
         internal static void StartTimerFromWorker()
         {
             Console.WriteLine("smoke: StartTimerFromWorker 1 utc {0}", DateTime.UtcNow.ToUniversalTime());
-            WebWorker.RunAsync(async () =>
+            JSWebWorker.RunAsync(async () =>
             {
                 while (!_timerDone)
                 {
@@ -169,7 +170,7 @@ namespace Sample
         internal static void StartAllocatorFromWorker()
         {
             Console.WriteLine("smoke: StartAllocatorFromWorker 1 utc {0}", DateTime.UtcNow.ToUniversalTime());
-            WebWorker.RunAsync(async () =>
+            JSWebWorker.RunAsync(async () =>
             {
                 while (!_timerDone)
                 {
@@ -196,7 +197,7 @@ namespace Sample
         [JSExport]
         public static async Task TestCallSetTimeoutOnWorker()
         {
-            await WebWorker.RunAsync(() => TimeOutThenComplete());
+            await JSWebWorker.RunAsync(() => TimeOutThenComplete());
             Console.WriteLine($"XYZ: Main Thread caught task tid:{Thread.CurrentThread.ManagedThreadId}");
         }
 
@@ -220,7 +221,7 @@ namespace Sample
         [JSExport]
         public static Task<string> HttpClientWorker(string url)
         {
-            return WebWorker.RunAsync(() =>
+            return JSWebWorker.RunAsync(() =>
             {
                 return HttpClientGet("HttpClientWorker", url);
             });
@@ -270,7 +271,7 @@ namespace Sample
         public static async Task<string> FetchBackground(string url)
         {
             Console.WriteLine($"smoke: FetchBackground 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-            var t = WebWorker.RunAsync(async () =>
+            var t = JSWebWorker.RunAsync(async () =>
             {
                 var ctx = SynchronizationContext.Current;
 
@@ -310,7 +311,7 @@ namespace Sample
         {
             Console.WriteLine($"smoke {meaning}: TestTLS 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             meaning = 40;
-            await WebWorker.RunAsync(async () =>
+            await JSWebWorker.RunAsync(async () =>
             {
                 Console.WriteLine($"smoke {meaning}: TestTLS 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 meaning = 41;

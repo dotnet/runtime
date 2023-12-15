@@ -347,7 +347,7 @@ namespace System.Diagnostics
                                 sb.Append(' ');
                                 sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
                             }
-                            catch (InvalidOperationException) {}
+                            catch (InvalidOperationException) { }
                         }
                     }
 

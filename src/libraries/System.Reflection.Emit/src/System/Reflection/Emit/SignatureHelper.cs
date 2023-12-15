@@ -16,7 +16,7 @@ namespace System.Reflection.Emit
             BlobBuilder localSignature = new();
             LocalVariablesEncoder encoder = new BlobEncoder(localSignature).LocalVariableSignature(locals.Count);
 
-            foreach(LocalBuilder local in locals)
+            foreach (LocalBuilder local in locals)
             {
                 WriteSignatureForType(encoder.AddVariable().Type(local.LocalType.IsByRef, local.IsPinned),
                     local.LocalType.IsByRef ? local.LocalType.GetElementType()! : local.LocalType, module);

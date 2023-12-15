@@ -452,7 +452,6 @@ DEFINE_METASIG_T(IM(Exception_RetVoid, C(EXCEPTION), v))
 
 DEFINE_METASIG(IM(IntPtr_RetObj, I, j))
 DEFINE_METASIG(IM(IntPtr_RetVoid, I, v))
-DEFINE_METASIG(IM(IntPtr_PtrVoid_RetVoid, I P(v), v))
 DEFINE_METASIG_T(IM(RefGuid_RetIntPtr, r(g(GUID)), I))
 
 DEFINE_METASIG(IM(Obj_RetInt, j, i))
@@ -517,6 +516,7 @@ DEFINE_METASIG_T(SM(RuntimeTypeHandle_RetType, g(RT_TYPE_HANDLE), C(TYPE)))
 DEFINE_METASIG_T(SM(RuntimeTypeHandle_RetIntPtr, g(RT_TYPE_HANDLE), I))
 DEFINE_METASIG_T(SM(RuntimeMethodHandle_RetIntPtr, g(METHOD_HANDLE), I))
 DEFINE_METASIG_T(SM(IntPtr_Type_RetDelegate, I C(TYPE), C(DELEGATE)))
+DEFINE_METASIG_T(SM(IntPtr_RuntimeType_RetDelegate, I C(CLASS), C(DELEGATE)))
 
 DEFINE_METASIG(IM(RetRefByte, _, r(b)))
 DEFINE_METASIG_T(IM(Type_RetArrObj, C(TYPE) F, a(j)))

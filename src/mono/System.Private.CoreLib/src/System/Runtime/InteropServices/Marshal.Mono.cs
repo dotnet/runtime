@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
             if (obj == null || obj is string)
                 return true;
             var type = (obj.GetType() as RuntimeType)!;
-            return !RuntimeTypeHandle.HasReferences (type);
+            return !RuntimeTypeHandle.HasReferences(type);
         }
 
         private static void PrelinkCore(MethodInfo m)
@@ -71,11 +71,10 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
 
-        private static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
+        private static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
         {
-            RuntimeType rttype = (RuntimeType)t;
             Delegate? res = null;
-            GetDelegateForFunctionPointerInternal(new QCallTypeHandle(ref rttype), ptr, ObjectHandleOnStack.Create(ref res));
+            GetDelegateForFunctionPointerInternal(new QCallTypeHandle(ref t), ptr, ObjectHandleOnStack.Create(ref res));
             return res!;
         }
 

@@ -2599,7 +2599,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value, actual);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings()
     {
@@ -2660,7 +2660,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(actual6 == dateTime);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
     public static void DCJS_VerifyDateTimeForDateTimeFormat()
     {
         var jsonTypes = new JsonTypes();

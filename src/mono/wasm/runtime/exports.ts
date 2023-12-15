@@ -101,9 +101,11 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
                 }
             });
         };
-        globalThisAny.MONO = globals.mono;
-        globalThisAny.BINDING = globals.binding;
-        globalThisAny.INTERNAL = globals.internal;
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
+            globalThisAny.MONO = globals.mono;
+            globalThisAny.BINDING = globals.binding;
+            globalThisAny.INTERNAL = globals.internal;
+        }
         globalThisAny.Module = module;
 
         // Blazor back compat

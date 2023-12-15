@@ -27,7 +27,9 @@ namespace System
     public abstract partial class Array : ICollection, IEnumerable, IList, IStructuralComparable, IStructuralEquatable, ICloneable
     {
         // CS0169: The field 'Array._numComponents' is never used
+        // CA1823: Unused field '_numComponents'
 #pragma warning disable 0169
+#pragma warning disable CA1823
         // This field should be the first field in Array as the runtime/compilers depend on it
         [NonSerialized]
         private int _numComponents;
