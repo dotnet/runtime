@@ -2154,6 +2154,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
     assertCodeLength(funct7, 7);
+
     return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (funct7 << 25);
 }
 
@@ -2175,6 +2176,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(rd, 5);
     assertCodeLength(funct3, 3);
     assertCodeLength(imm12, 12);
+
     return opcode | (rd << 7) | (funct3 << 12) | (imm12 << 15);
 }
 
@@ -2203,6 +2205,26 @@ static void assertCodeLength(unsigned code, uint8_t size)
     unsigned imm12Hi = (imm12 >> 5) & kHiMask;
 
     return opcode | (imm12Lo << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (imm12Hi << 25);
+}
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 U-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  U-Type layout:
+ *  31---------------------------------12-11-----------7-6------------0
+ *  |             imm[31:12]             |      rd      |   opcode    |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20)
+{
+    assertCodeLength(opcode, 7);
+    assertCodeLength(rd, 5);
+    assertCodeLength(imm20, 20);
+
+    return opcode | (rd << 7) | (imm20 << (12 + 12));
 }
 
 /*****************************************************************************
