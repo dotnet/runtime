@@ -1169,7 +1169,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($"WriteIndented = {FormatBool(writeIndented)},");
 
                 if (optionsSpec.IndentCharacter is char indentCharacter)
-                    writer.WriteLine($"IndentCharacter = {FormatChar(indentCharacter)},");
+                    writer.WriteLine($"IndentCharacter = {FormatIndentChar(indentCharacter)},");
 
                 if (optionsSpec.IndentSize is int indentSize)
                     writer.WriteLine($"IndentSize = {indentSize},");
@@ -1350,7 +1350,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatBool(bool value) => value ? "true" : "false";
             private static string FormatStringLiteral(string? value) => value is null ? "null" : $"\"{value}\"";
-            private static string FormatChar(char value) => $"'{value}'";
+            private static string FormatIndentChar(char value) => value is '\t' ? "'\\t'" : $"'{value}'";
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance

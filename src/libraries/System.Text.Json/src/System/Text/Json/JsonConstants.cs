@@ -47,8 +47,6 @@ namespace System.Text.Json
         // Explicitly skipping ReverseSolidus since that is handled separately
         public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
 
-        public static ReadOnlySpan<byte> ValidIndentChars => " \t"u8;
-
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.

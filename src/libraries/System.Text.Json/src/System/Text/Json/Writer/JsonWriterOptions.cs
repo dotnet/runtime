@@ -17,8 +17,10 @@ namespace System.Text.Json
 
         private int _maxDepth;
         private int _optionsMask;
-        private char? _indentCharacter;
+        private byte? _indentByte;
         private int? _indentSize;
+
+        internal readonly byte IndentByte => _indentByte ?? JsonConstants.Space;
 
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
@@ -52,11 +54,11 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
         public char IndentCharacter
         {
-            readonly get => _indentCharacter ?? JsonConstants.DefaultIndentCharacter;
+            readonly get => (char)IndentByte;
             set
             {
                 JsonWriterHelper.ValidateIndentCharacter(value);
-                _indentCharacter = value;
+                _indentByte = (byte)value;
             }
         }
 

@@ -999,7 +999,7 @@ namespace System.Text.Json
                     indent -= IndentLength;
                 }
 
-                Debug.Assert(indent <= 2 * _options.MaxDepth);
+                Debug.Assert(indent <= _options.IndentSize * _options.MaxDepth);
                 Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.None);
 
                 int maxRequired = indent + 3; // 1 end token, 1-2 bytes for new line
@@ -1033,7 +1033,7 @@ namespace System.Text.Json
 
         private void WriteIndentation(Span<byte> buffer, int indent)
         {
-            JsonWriterHelper.WriteIndentation(buffer, indent, (byte)_options.IndentCharacter);
+            JsonWriterHelper.WriteIndentation(buffer, indent, _options.IndentByte);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
