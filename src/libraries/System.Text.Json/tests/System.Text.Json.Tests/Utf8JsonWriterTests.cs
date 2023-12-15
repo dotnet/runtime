@@ -2983,6 +2983,7 @@ namespace System.Text.Json.Tests
             writer.WriteStartObject();
             writer.WriteString("property"u8, "value"u8);
             writer.WriteEndObject();
+            writer.Flush();
 
             string indentation = new string(effectiveIndentChar, 2);
             string expected = $$"""
@@ -3010,6 +3011,7 @@ namespace System.Text.Json.Tests
             writer.WriteStartObject();
             writer.WriteString("property"u8, "value"u8);
             writer.WriteEndObject();
+            writer.Flush();
 
             string indentation = new string(' ', effectiveIndentSize);
             string expected = $$"""
