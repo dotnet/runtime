@@ -2971,7 +2971,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 if(IsMiInternalCall(dwImplFlags))
                 {
-                    BuildMethodTableThrowException(BFA_INTERNAL_METHOD_WITH_RVA);
+                    bmtError->resIDWhy = BFA_INTERNAL_METHOD_WITH_RVA;
+                    bmtError->dMethodDefInError = tok;
+                    bmtError->szMethodNameForError = NULL;
+                    bmtError->cl = GetCl();
+                    BuildMethodTableThrowException(BFA_INTERNAL_METHOD_WITH_RVA, *bmtError);
                 }
             }
 

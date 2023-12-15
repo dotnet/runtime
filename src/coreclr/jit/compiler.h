@@ -2205,6 +2205,8 @@ public:
         return m_exitEdges[index];
     }
 
+    unsigned GetDepth() const;
+
     bool ContainsBlock(BasicBlock* block);
     bool ContainsLoop(FlowGraphNaturalLoop* childLoop);
 
@@ -5196,6 +5198,8 @@ public:
 
     PhaseStatus fgImport();
 
+    PhaseStatus fgUpdateCallFinally();
+
     PhaseStatus fgTransformIndirectCalls();
 
     PhaseStatus fgTransformPatchpoints();
@@ -5981,7 +5985,9 @@ public:
 
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
-    void fgRemoveBlock(BasicBlock* block, bool unreachable);
+    BasicBlock* fgRemoveBlock(BasicBlock* block, bool unreachable);
+
+    void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
     bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
@@ -7199,10 +7205,6 @@ protected:
 
     // Adds "elemType" to the set of modified array element types of "loop" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemType);
-
-    // Requires that "from" and "to" have the same "bbKind" (perhaps because "to" is a clone
-    // of "from".)  Copies the jump destination from "from" to "to".
-    void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
 
     // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
     bool optIsLoopEntry(BasicBlock* block) const;

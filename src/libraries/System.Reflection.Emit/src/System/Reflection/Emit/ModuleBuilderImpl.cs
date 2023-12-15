@@ -28,6 +28,7 @@ namespace System.Reflection.Emit
         private int _nextFieldDefRowId = 1;
         private int _nextParameterRowId = 1;
         private int _nextPropertyRowId = 1;
+        private int _nextEventRowId = 1;
         private bool _coreTypesFullyPopulated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
@@ -173,6 +174,7 @@ namespace System.Reflection.Emit
                 WriteProperties(typeBuilder);
                 WriteFields(typeBuilder);
                 WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
+                WriteEvents(typeBuilder);
             }
 
             // Now write all generic parameters in order
@@ -187,6 +189,44 @@ namespace System.Reflection.Emit
             foreach (GenericTypeParameterBuilderImpl param in genericParams)
             {
                 AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
+            }
+        }
+
+        private void WriteEvents(TypeBuilderImpl typeBuilder)
+        {
+            if (typeBuilder._eventDefinitions.Count == 0)
+            {
+                return;
+            }
+
+            AddEventMap(typeBuilder._handle, typeBuilder._firstEventToken);
+            foreach (EventBuilderImpl eventBuilder in typeBuilder._eventDefinitions)
+            {
+                EventDefinitionHandle eventHandle = AddEventDefinition(eventBuilder, GetTypeHandle(eventBuilder.EventType));
+                WriteCustomAttributes(eventBuilder._customAttributes, eventHandle);
+
+                if (eventBuilder._addOnMethod is MethodBuilderImpl aMb)
+                {
+                    AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Adder, aMb._handle);
+                }
+
+                if (eventBuilder._raiseMethod is MethodBuilderImpl rMb)
+                {
+                    AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Raiser, rMb._handle);
+                }
+
+                if (eventBuilder._removeMethod is MethodBuilderImpl remMb)
+                {
+                    AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Remover, remMb._handle);
+                }
+
+                if (eventBuilder._otherMethods != null)
+                {
+                    foreach (MethodBuilderImpl method in eventBuilder._otherMethods)
+                    {
+                        AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Other, method._handle);
+                    }
+                }
             }
         }
 
@@ -252,15 +292,25 @@ namespace System.Reflection.Emit
             }
         }
 
+        private void PopulateEventDefinitionHandles(List<EventBuilderImpl> eventDefinitions)
+        {
+            foreach (EventBuilderImpl eventBuilder in eventDefinitions)
+            {
+                eventBuilder._handle = MetadataTokens.EventDefinitionHandle(_nextEventRowId++);
+            }
+        }
+
         internal void PopulateTypeAndItsMembersTokens(TypeBuilderImpl typeBuilder)
         {
             typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
             typeBuilder._firstMethodToken = _nextMethodDefRowId;
             typeBuilder._firstFieldToken = _nextFieldDefRowId;
             typeBuilder._firstPropertyToken = _nextPropertyRowId;
+            typeBuilder._firstEventToken = _nextEventRowId;
             PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
             PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
             PopulatePropertyDefinitionHandles(typeBuilder._propertyDefinitions);
+            PopulateEventDefinitionHandles(typeBuilder._eventDefinitions);
         }
 
         private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
@@ -527,6 +577,17 @@ namespace System.Reflection.Emit
                 attributes: property.Attributes,
                 name: _metadataBuilder.GetOrAddString(property.Name),
                 signature: _metadataBuilder.GetOrAddBlob(signature));
+
+        private EventDefinitionHandle AddEventDefinition(EventBuilderImpl eventBuilder, EntityHandle eventType) =>
+            _metadataBuilder.AddEvent(
+                attributes: eventBuilder.Attributes,
+                name: _metadataBuilder.GetOrAddString(eventBuilder.Name),
+                type: eventType);
+
+        private void AddEventMap(TypeDefinitionHandle typeHandle, int firstEventToken) =>
+            _metadataBuilder.AddEventMap(
+                declaringType: typeHandle,
+                eventList: MetadataTokens.EventDefinitionHandle(firstEventToken));
 
         private void AddPropertyMap(TypeDefinitionHandle typeHandle, int firstPropertyToken) =>
             _metadataBuilder.AddPropertyMap(

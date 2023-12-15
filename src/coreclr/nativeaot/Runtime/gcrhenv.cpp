@@ -169,7 +169,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
         ASSERT(numElements == 0);
     }
 
-    if (cbSize >= RH_LARGE_OBJECT_SIZE)
+    if ((cbSize >= RH_LARGE_OBJECT_SIZE) && (cbSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold()))
     {
         uFlags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
