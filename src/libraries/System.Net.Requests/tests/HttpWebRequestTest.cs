@@ -2166,8 +2166,10 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = true;
                     request.ContinueTimeout = 30000;
-                    Stream requestStream = await request.GetRequestStreamAsync();
-                    requestStream.Write("aaaa\r\n\r\n"u8);
+                    using (Stream requestStream = await request.GetRequestStreamAsync())
+                    {
+                        requestStream.Write("aaaa\r\n\r\n"u8);
+                    }
                     await request.GetResponseAsync();
                 },
                 async (server) =>
@@ -2195,8 +2197,10 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = expect100Continue;
                     request.ContinueTimeout = continueTimeout;
-                    Stream requestStream = await request.GetRequestStreamAsync();
-                    requestStream.Write("aaaa\r\n\r\n"u8);
+                    using (Stream requestStream = await request.GetRequestStreamAsync())
+                    {
+                        requestStream.Write("aaaa\r\n\r\n"u8);
+                    }
                     await request.GetResponseAsync();
                 },
                 async (server) =>
