@@ -1194,9 +1194,6 @@ namespace System.Net
                 request.Headers.ConnectionClose = true;
             }
 
-            _httpClient ??= GetCachedOrCreateHttpClient(async, out _disposeRequired);
-
-
             request.Version = ProtocolVersion;
             HttpCompletionOption completionOption = _allowReadStreamBuffering ?
                             HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
@@ -1223,13 +1220,6 @@ namespace System.Net
                     null,
                     WebExceptionStatus.ProtocolError,
                     response);
-            }
-
-            if (_disposeRequired)
-            {
-                _httpClient?.Dispose();
-                _httpClient = null;
-                _requestStream = null;
             }
 
             return response;
