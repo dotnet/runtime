@@ -3766,7 +3766,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 					mono_error_set_invalid_program (error, "SwiftError argument must be a reference.");
 					return FALSE;
 				} else if (klass == swift_error_ptr) {
-					swift_self_args++;
+					swift_error_args++;
 				} else if (klass == swift_self) {
 					swift_self_args++;
 				}
