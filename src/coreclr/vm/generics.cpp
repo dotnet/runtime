@@ -240,7 +240,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (wNumInterfaces != 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
 
-    // NonVirtualSlots, DispatchMap and ModuleOverride multipurpose slots are used
+    // NonVirtualSlots, and DispatchMap multipurpose slots are used
     // from the canonical methodtable, so we do not need to store them here.
 
     // We need space for the optional members.
@@ -284,15 +284,13 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Copy of GC
     memcpy((BYTE*)pMT - cbGC, (BYTE*) pOldMT - cbGC, cbGC);
 
-    // Allocate the private data block ("private" during runtime in the ngen'ed case)
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    // Note: Memory allocated on loader heap is zero filled
-    pMT->SetWriteableData(pMTWriteableData);
+    // Allocate the private data block
+    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker);
+    pMT->SetModule(pOldMT->GetModule());
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
-    pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetWriteableDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     // <TODO> this is incredibly fragile.  We should just construct the MT all over agin. </TODO>
     pMT->CopyFlags(pOldMT);
@@ -425,9 +423,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
             pMT->SetInterfaceDeclaredOnClass(i);
     }
 
-    pMT->SetLoaderModule(pLoaderModule);
     pMT->SetLoaderAllocator(pAllocator);
-
 
 #ifdef _DEBUG
     // Name for debugging
@@ -496,7 +492,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
 
-    pMTWriteableData->SetIsRestoredForBuildMethodTable();
+    pMT->GetWriteableDataForWrite()->SetIsRestoredForBuildMethodTable();
 
     RETURN(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation

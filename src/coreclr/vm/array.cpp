@@ -293,8 +293,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
     if (pCanonMT == NULL)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasNonVirtualSlots;
-    if (this != elemTypeHnd.GetModule())
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasModuleOverride;
 
     // Allocate space for optional members
     // We always have a non-virtual slot array, see assert at end
@@ -351,13 +349,13 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    pMT->SetWriteableData(pMTWriteableData);
+    pMT->AllocateWriteableData(pAllocator, this, pamTracker);
+    pMT->SetLoaderAllocator(pAllocator);
+    pMT->SetModule(elemTypeHnd.GetModule());
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
-    pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetWriteableDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     // Fill in pClass
     if (pClass != NULL)
@@ -412,9 +410,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     _ASSERTE(FitsIn<WORD>(dwComponentSize));
     pMT->SetComponentSize(static_cast<WORD>(dwComponentSize));
 
-    pMT->SetLoaderModule(this);
-    pMT->SetLoaderAllocator(pAllocator);
-
     pMT->SetModule(elemTypeHnd.GetModule());
 
     if (elemTypeHnd.ContainsGenericVariables())
@@ -461,7 +456,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
-    pMTWriteableData->SetIsRestoredForBuildArrayMethodTable();
+    pMT->GetWriteableDataForWrite()->SetIsRestoredForBuildArrayMethodTable();
 
     {
         // Fill out the vtable indirection slots

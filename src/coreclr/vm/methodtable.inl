@@ -82,7 +82,7 @@ inline BOOL MethodTable::IsClassPointerValid()
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pLoaderModule;
+    return GetWriteableData()->GetLoaderModule();
 }
 
 inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
@@ -91,15 +91,8 @@ inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
     return GetLoaderModule()->GetLoaderAllocator();
 }
 
-
-
 #ifndef DACCESS_COMPILE
 //==========================================================================================
-inline void MethodTable::SetLoaderModule(Module* pModule)
-{
-    WRAPPER_NO_CONTRACT;
-    m_pLoaderModule = pModule;
-}
 
 inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
 {

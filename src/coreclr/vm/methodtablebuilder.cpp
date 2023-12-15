@@ -10260,8 +10260,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasDispatchMapSlot;
     if (dwNonVirtualSlots != 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasNonVirtualSlots;
-    if (pLoaderModule != GetModule())
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasModuleOverride;
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
@@ -10326,14 +10324,11 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    // Note: Memory allocated on loader heap is zero filled
-    pMT->SetWriteableData(pMTWriteableData);
+    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker);
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
-    pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetWriteableDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
 #ifdef _DEBUG
     pClassLoader->m_dwGCSize += dwGCSize;
@@ -10588,9 +10583,7 @@ MethodTableBuilder::SetupMethodTable2(
     CONSISTENCY_CHECK(pMT->HasInstantiation() == bmtGenerics->HasInstantiation());
     CONSISTENCY_CHECK(pMT->HasInstantiation() == !pMT->GetInstantiation().IsEmpty());
 
-    pMT->SetLoaderModule(pLoaderModule);
     pMT->SetLoaderAllocator(bmtAllocator);
-
     pMT->SetModule(GetModule());
 
     pMT->SetInternalCorElementType (ELEMENT_TYPE_CLASS);
