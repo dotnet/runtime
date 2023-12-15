@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseReadOnlyTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void IsReadOnly_Set()
         {
             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(10);

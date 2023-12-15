@@ -619,7 +619,7 @@ void CodeGen::genCodeForBBlist()
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
-                switch (block->GetJumpKind())
+                switch (block->GetKind())
                 {
                     case BBJ_ALWAYS:
                         // We might skip generating the jump via a peephole optimization.
@@ -644,7 +644,7 @@ void CodeGen::genCodeForBBlist()
                     // These can't have a call as the last instruction!
 
                     default:
-                        noway_assert(!"Unexpected bbJumpKind");
+                        noway_assert(!"Unexpected bbKind");
                         break;
                 }
             }
@@ -653,7 +653,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_RETURN:
                 genExitCode(block);
@@ -744,21 +744,14 @@ void CodeGen::genCodeForBBlist()
                     break;
                 }
 #ifdef TARGET_XARCH
-                // If a block was selected to place an alignment instruction because it ended
-                // with a jump, do not remove jumps from such blocks.
                 // Do not remove a jump between hot and cold regions.
-                bool isRemovableJmpCandidate =
-                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetJumpDest());
+                bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetTarget());
 
-                inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
+                inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
 #else
-                inst_JMP(EJ_jmp, block->GetJumpDest());
+                inst_JMP(EJ_jmp, block->GetTarget());
 #endif // TARGET_XARCH
             }
-
-                FALLTHROUGH;
-
-            case BBJ_COND:
 
 #if FEATURE_LOOP_ALIGN
                 // This is the last place where we operate on blocks and after this, we operate
@@ -769,14 +762,30 @@ void CodeGen::genCodeForBBlist()
                 // During emitter, this information will be used to calculate the loop size.
                 // Depending on the loop size, decision of whether to align a loop or not will be taken.
                 //
-                // In the emitter, we need to calculate the loop size from `block->bbJumpDest` through
+                // In the emitter, we need to calculate the loop size from `block->bbTarget` through
                 // `block` (inclusive). Thus, we need to ensure there is a label on the lexical fall-through
                 // block, even if one is not otherwise needed, to be able to calculate the size of this
                 // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
 
-                if (block->GetJumpDest()->isLoopAlign())
+                if (block->GetTarget()->isLoopAlign())
                 {
-                    GetEmitter()->emitSetLoopBackEdge(block->GetJumpDest());
+                    GetEmitter()->emitSetLoopBackEdge(block->GetTarget());
+
+                    if (!block->IsLast())
+                    {
+                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
+                        block->Next()->SetFlags(BBF_HAS_LABEL);
+                    }
+                }
+#endif // FEATURE_LOOP_ALIGN
+                break;
+
+            case BBJ_COND:
+
+#if FEATURE_LOOP_ALIGN
+                if (block->GetTrueTarget()->isLoopAlign())
+                {
+                    GetEmitter()->emitSetLoopBackEdge(block->GetTrueTarget());
 
                     if (!block->IsLast())
                     {
@@ -789,7 +798,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 
@@ -2617,7 +2626,7 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
-    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetJumpDest());
+    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
 }
 
 //------------------------------------------------------------------------
