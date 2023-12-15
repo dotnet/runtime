@@ -29,7 +29,7 @@ internal class StartupHook
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseDependency()
     {
-        Console.WriteLine($"SharedLibrary.Value: {SharedLibrary.SharedType.Value}");
+        Console.WriteLine($"SharedLibrary.SharedType.Value = {SharedLibrary.SharedType.Value}");
     }
 
     private static Assembly OnResolving(AssemblyLoadContext context, AssemblyName assemblyName)

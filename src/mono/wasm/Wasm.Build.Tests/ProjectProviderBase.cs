@@ -283,6 +283,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             Path.Combine(paths.BinDir, "publish", $"{buildArgs.ProjectName}.dll"),
             Path.Combine(paths.ObjWasmDir, "driver.o"),
+            Path.Combine(paths.ObjWasmDir, "runtime.o"),
             Path.Combine(paths.ObjWasmDir, "corebindings.o"),
             Path.Combine(paths.ObjWasmDir, "pinvoke.o"),
 

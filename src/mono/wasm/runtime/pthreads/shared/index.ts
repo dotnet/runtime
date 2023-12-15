@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { Module, mono_assert, runtimeHelpers } from "../../globals";
+import { ENVIRONMENT_IS_PTHREAD, Module, mono_assert, runtimeHelpers } from "../../globals";
 import { MonoConfig } from "../../types";
 import { pthreadPtr } from "./types";
 import { mono_log_debug } from "../../logging";
@@ -33,6 +33,7 @@ export function getBrowserThreadID(): pthreadPtr {
 }
 
 const enum WorkerMonoCommandType {
+    enabledInterop = "notify_enabled_interop",
     channelCreated = "channel_created",
     preload = "preload",
 }
@@ -79,30 +80,41 @@ export const monoSymbol = "__mono_message_please_dont_collide__"; //Symbol("mono
 /// Messages sent from the main thread using Worker.postMessage or from the worker using DedicatedWorkerGlobalScope.postMessage
 /// should use this interface.  The message event is also used by emscripten internals (and possibly by 3rd party libraries targeting Emscripten).
 /// We should just use this to establish a dedicated MessagePort for Mono's uses.
-export interface MonoWorkerMessage<TPort> {
+export interface MonoWorkerMessage {
     [monoSymbol]: {
         monoCmd: WorkerMonoCommandType;
-        port: TPort;
+    };
+}
+export type MonoWorkerMessagePort = MonoWorkerMessage & {
+    [monoSymbol]: {
+        port: MessagePort;
     };
 }
 
 /// The message sent early during pthread creation to set up a dedicated MessagePort for Mono between the main thread and the pthread.
-export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessage<TPort> {
+export interface MonoWorkerMessageChannelCreated extends MonoWorkerMessage {
     [monoSymbol]: {
         monoCmd: WorkerMonoCommandType.channelCreated;
         threadId: pthreadPtr;
-        port: TPort;
+        port: MessagePort;
     };
 }
 
-export interface MonoWorkerMessagePreload<TPort> extends MonoWorkerMessage<TPort> {
+export interface MonoWorkerMessageEnabledInterop extends MonoWorkerMessage {
+    [monoSymbol]: {
+        monoCmd: WorkerMonoCommandType.enabledInterop;
+        threadId: pthreadPtr;
+    };
+}
+
+export interface MonoWorkerMessagePreload extends MonoWorkerMessagePort {
     [monoSymbol]: {
         monoCmd: WorkerMonoCommandType.preload;
-        port: TPort;
+        port: MessagePort;
     };
 }
 
-export function makeChannelCreatedMonoMessage<TPort>(threadId: pthreadPtr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
+export function makeChannelCreatedMonoMessage(threadId: pthreadPtr, port: MessagePort): MonoWorkerMessageChannelCreated {
     return {
         [monoSymbol]: {
             monoCmd: WorkerMonoCommandType.channelCreated,
@@ -111,12 +123,20 @@ export function makeChannelCreatedMonoMessage<TPort>(threadId: pthreadPtr, port:
         }
     };
 }
+export function makeEnabledInteropMonoMessage(threadId: pthreadPtr): MonoWorkerMessageEnabledInterop {
+    return {
+        [monoSymbol]: {
+            monoCmd: WorkerMonoCommandType.enabledInterop,
+            threadId: threadId,
+        }
+    };
+}
 
-export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMessage<any> {
+export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMessage {
     return message !== undefined && typeof message === "object" && message !== null && monoSymbol in message;
 }
 
-export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessageChannelCreated<TPort> {
+export function isMonoWorkerMessageChannelCreated(message: MonoWorkerMessage): message is MonoWorkerMessageChannelCreated {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
         if (monoMessage.monoCmd === WorkerMonoCommandType.channelCreated) {
@@ -126,7 +146,17 @@ export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMess
     return false;
 }
 
-export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessagePreload<TPort> {
+export function isMonoWorkerMessageEnabledInterop(message: MonoWorkerMessage): message is MonoWorkerMessageEnabledInterop {
+    if (isMonoWorkerMessage(message)) {
+        const monoMessage = message[monoSymbol];
+        if (monoMessage.monoCmd === WorkerMonoCommandType.enabledInterop) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function isMonoWorkerMessagePreload(message: MonoWorkerMessage): message is MonoWorkerMessagePreload {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
         if (monoMessage.monoCmd === WorkerMonoCommandType.preload) {
@@ -144,6 +174,9 @@ export function mono_wasm_install_js_worker_interop(): void {
         mono_log_debug("Installed JSSynchronizationContext");
     }
     Module.runtimeKeepalivePush();
+    if (ENVIRONMENT_IS_PTHREAD) {
+        self.postMessage(makeEnabledInteropMonoMessage(pthread_self.pthreadId), []);
+    }
 
     set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, true, true);
 }

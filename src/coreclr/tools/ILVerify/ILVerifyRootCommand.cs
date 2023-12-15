@@ -13,7 +13,7 @@ namespace ILVerify
         public CliArgument<Dictionary<string, string>> InputFilePath { get; } =
             new("input-file-path") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = "Input file(s)", Arity = ArgumentArity.OneOrMore };
         public CliOption<Dictionary<string, string>> Reference { get; } =
-            new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = "Reference metadata from the specified assembly" };
+            new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = "Reference metadata from the specified assembly" };
         public CliOption<string> SystemModule { get; } =
             new("--system-module", "-s") { Description = "System module name (default: mscorlib)" };
         public CliOption<bool> SanityChecks { get; } =

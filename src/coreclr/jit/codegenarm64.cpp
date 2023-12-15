@@ -2158,7 +2158,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R0, REG_SPBASE, /* canSkip */ false);
     }
-    GetEmitter()->emitIns_J(INS_bl_local, block->GetJumpDest());
+    GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
 
     BasicBlock* const nextBlock = block->Next();
 
@@ -2181,7 +2181,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
+        BasicBlock* const jumpDest = nextBlock->GetTarget();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -2201,7 +2201,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
+    // jump target using bbTarget - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
     if (!block->HasFlag(BBF_RETLESS_CALL))
@@ -2216,7 +2216,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 {
     // For long address (default): `adrp + add` will be emitted.
     // For short address (proven later): `adr` will be emitted.
-    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -3752,8 +3752,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -4654,7 +4654,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
-    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->GetJumpDest(), reg);
+    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->GetTrueTarget(), reg);
 }
 
 //------------------------------------------------------------------------
@@ -4872,7 +4872,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
         instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_tbz : INS_tbnz;
         int         imm = genLog2((size_t)compareImm);
 
-        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->GetJumpDest(), reg, imm);
+        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->GetTrueTarget(), reg, imm);
     }
     else
     {
@@ -4880,7 +4880,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
         instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_cbz : INS_cbnz;
 
-        GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->GetJumpDest(), reg);
+        GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->GetTrueTarget(), reg);
     }
 }
 
@@ -10164,6 +10164,96 @@ void CodeGen::genArm64EmitterUnitTests()
                               INS_OPTS_SCALABLE_S); /* SMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
     theEmitter->emitIns_R_R_R(INS_sve_umulh, EA_SCALABLE, REG_V12, REG_P2, REG_V24,
                               INS_OPTS_SCALABLE_B); /* UMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+
+    // IF_SVE_AH_3A
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V13, REG_P0, REG_V31,
+                              INS_OPTS_SCALABLE_B); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V14, REG_P1, REG_V0,
+                              INS_OPTS_SCALABLE_H); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V13, REG_P2, REG_V1,
+                              INS_OPTS_SCALABLE_S); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V15, REG_P3, REG_V2,
+                              INS_OPTS_SCALABLE_D); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V16, REG_P4, REG_V3,
+                              INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V17, REG_P5, REG_V12,
+                              INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V0, REG_P6, REG_V13,
+                              INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V31, REG_P7, REG_V22,
+                              INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE); // MOVPRFX <Zd>.<T>, <Pg>/<ZM>, <Zn>.<T>
+
+    // IF_SVE_AM_2A : right shifts
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V0, REG_P0, 1,
+                              INS_OPTS_SCALABLE_B); // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V1, REG_P1, 2,
+                              INS_OPTS_SCALABLE_B); // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V2, REG_P2, 3,
+                              INS_OPTS_SCALABLE_B); // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V3, REG_P3, 7,
+                              INS_OPTS_SCALABLE_B); // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asr, EA_SCALABLE, REG_V4, REG_P7, 8,
+                              INS_OPTS_SCALABLE_B); // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asrd, EA_SCALABLE, REG_V5, REG_P0, 1,
+                              INS_OPTS_SCALABLE_H); // ASRD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asrd, EA_SCALABLE, REG_V6, REG_P4, 8,
+                              INS_OPTS_SCALABLE_H); // ASRD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asrd, EA_SCALABLE, REG_V7, REG_P7, 15,
+                              INS_OPTS_SCALABLE_H); // ASRD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_asrd, EA_SCALABLE, REG_V31, REG_P6, 16,
+                              INS_OPTS_SCALABLE_H); // ASRD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V8, REG_P5, 1,
+                              INS_OPTS_SCALABLE_S); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V9, REG_P6, 5,
+                              INS_OPTS_SCALABLE_S); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V31, REG_P7, 17,
+                              INS_OPTS_SCALABLE_S); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_P0, 31,
+                              INS_OPTS_SCALABLE_S); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_lsr, EA_SCALABLE, REG_V5, REG_P1, 32,
+                              INS_OPTS_SCALABLE_S); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_srshr, EA_SCALABLE, REG_V6, REG_P3, 1,
+                              INS_OPTS_SCALABLE_D); // SRSHR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_srshr, EA_SCALABLE, REG_V7, REG_P4, 3,
+                              INS_OPTS_SCALABLE_D); // SRSHR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_srshr, EA_SCALABLE, REG_V21, REG_P5, 21,
+                              INS_OPTS_SCALABLE_D); // SRSHR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_srshr, EA_SCALABLE, REG_V22, REG_P6, 63,
+                              INS_OPTS_SCALABLE_D); // SRSHR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_urshr, EA_SCALABLE, REG_V31, REG_P7, 64,
+                              INS_OPTS_SCALABLE_D); // URSHR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+
+    // IF_SVE_AM_2A : left shifts
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V1, REG_P0, 0,
+                              INS_OPTS_SCALABLE_B); // LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V3, REG_P1, 1,
+                              INS_OPTS_SCALABLE_B); // LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_lsl, EA_SCALABLE, REG_V5, REG_P2, 7,
+                              INS_OPTS_SCALABLE_B); // LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshl, EA_SCALABLE, REG_V7, REG_P3, 0,
+                              INS_OPTS_SCALABLE_H); // SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshl, EA_SCALABLE, REG_V9, REG_P4, 7,
+                              INS_OPTS_SCALABLE_H); // SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshl, EA_SCALABLE, REG_V11, REG_P0, 9,
+                              INS_OPTS_SCALABLE_H); // SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshl, EA_SCALABLE, REG_V13, REG_P7, 15,
+                              INS_OPTS_SCALABLE_H); // SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshlu, EA_SCALABLE, REG_V14, REG_P6, 0,
+                              INS_OPTS_SCALABLE_S); // SQSHLU  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshlu, EA_SCALABLE, REG_V15, REG_P0, 12,
+                              INS_OPTS_SCALABLE_S); // SQSHLU  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshlu, EA_SCALABLE, REG_V16, REG_P1, 15,
+                              INS_OPTS_SCALABLE_S); // SQSHLU  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqshlu, EA_SCALABLE, REG_V0, REG_P2, 31,
+                              INS_OPTS_SCALABLE_S); // SQSHLU  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_uqshl, EA_SCALABLE, REG_V17, REG_P7, 0,
+                              INS_OPTS_SCALABLE_D); // UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_uqshl, EA_SCALABLE, REG_V18, REG_P0, 18,
+                              INS_OPTS_SCALABLE_D); // UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_uqshl, EA_SCALABLE, REG_V19, REG_P3, 32,
+                              INS_OPTS_SCALABLE_D); // UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_uqshl, EA_SCALABLE, REG_V0, REG_P2, 63,
+                              INS_OPTS_SCALABLE_D); // UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
 
     // IF_SVE_AN_3A
     theEmitter->emitIns_R_R_R(INS_sve_asr, EA_SCALABLE, REG_V5, REG_P0, REG_V21,
