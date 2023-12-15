@@ -10,6 +10,11 @@ public class InternalMethodImplTest
     [Fact, SkipOnMono("the error message is specific to coreclr")]
     public static int TypeLoadExceptionMessageContainsMethodNameWhenInternalCallOnlyMethodIsCalled()
     {
+        if (TestLibrary.Utilities.IsNativeAot)
+        {
+            return 100; // unsupported on NativeAOT
+        }
+
         try
         {
             new F1();
