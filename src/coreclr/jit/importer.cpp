@@ -3860,30 +3860,23 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 }
                 else if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY)
                 {
-
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
                     op1->gtFlags |= callFlags;
                     op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
 
-                    if (useNewFeature)
+                    // Create a GT_COMMA to invoke the lazyCtor
+                    GenTreeCall* lazyCtorCall =
+                        gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GCSTATIC_BASE, TYP_BYREF);
+                    if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF)
                     {
-                        GenTreeCall* lazyCtorCall =
-                            gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GCSTATIC_BASE, TYP_BYREF);
-                        if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF)
-                        {
-                            m_preferredInitCctor = pFieldInfo->helper;
-                        }
-                        lazyCtorCall->setEntryPoint(pFieldInfo->fieldLookup);
-                        lazyCtorCall->gtInitClsHnd = pResolvedToken->hClass;
-                        lazyCtorCall->gtFlags |= callFlags;
-                        lazyCtorCall->SetArgNeedsEnclosingType();
+                        m_preferredInitCctor = pFieldInfo->helper;
+                    }
+                    lazyCtorCall->setEntryPoint(pFieldInfo->fieldLookup);
+                    lazyCtorCall->gtInitClsHnd = pResolvedToken->hClass;
+                    lazyCtorCall->gtFlags |= callFlags;
+                    lazyCtorCall->SetArgNeedsEnclosingType();
 
-                        op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtUnusedValNode(lazyCtorCall), op1);
-                    }
-                    else
-                    {
-                        op1->AsCall()->SetExpTLSFieldAccessLazyCtor();
-                    }
+                    op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtUnusedValNode(lazyCtorCall), op1);
 
                     op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
                     break;

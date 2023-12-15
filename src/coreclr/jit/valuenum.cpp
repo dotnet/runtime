@@ -12366,7 +12366,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         {
             if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
-                if (call->IsArgNeedsEnclosingType() && useNewFeature)
+                if (call->IsArgNeedsEnclosingType())
                 {
                     useEnclosingTypeAsArg0 = true;
                     assert((call->gtInitClsHnd != NO_CLASS_HANDLE) && ((ssize_t)call->gtInitClsHnd != 0xcccccccc));
