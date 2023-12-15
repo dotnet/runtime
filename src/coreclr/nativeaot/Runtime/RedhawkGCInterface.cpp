@@ -14,7 +14,7 @@
 
 #include "regdisplay.h"
 
-void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, ScanFunc* fnGcEnumRef, ScanContext* pSc)
+static void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     //
     // Sanity check that the flags contain only these values
@@ -40,7 +40,7 @@ void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, ScanFunc* fnGcEnumRef,
 // real reference is interior or not and interior is the more conservative choice that will work for both and
 // (b) because it might not be a real GC reference at all and in that case falsely listing the reference as
 // non-interior will cause the GC to make assumptions and crash quite quickly.
-void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, ScanFunc* fnGcEnumRef, ScanContext* pSc)
+static void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     // Only report potential references in the promotion phase. Since we report everything as pinned there
     // should be no work to do in the relocation phase.
@@ -66,7 +66,7 @@ void RedhawkGCInterface::EnumGcRefsInRegionConservatively(PTR_OBJECTREF pLowerBo
     GcEnumObjectsConservatively(pLowerBound, pUpperBound, pfnEnumCallback, pvCallbackData);
 }
 
-void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, ScanFunc* fnGcEnumRef, ScanContext* pSc)
+static void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     //
     // Sanity check that the flags contain only these values

@@ -41,7 +41,7 @@ bool RhInitializeFinalization();
 // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcrhenv.
 // The boolean parameter should be true if a server GC is required and false for workstation. Returns true on
 // success or false if a subsystem failed to initialize.
-static bool InitializeSubsystems()
+bool InitializeSubsystems()
 {
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
