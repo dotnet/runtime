@@ -4573,37 +4573,6 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
 #endif // FEATURE_SIMD
 
-/*****************************************************************************
- * Unit testing of the LOONGARCH64 emitter: generate a bunch of instructions into the prolog
- * (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
- * disassembler thinks the instructions as the same as we do.
- */
-
-// Uncomment "#define ALL_LOONGARCH64_EMITTER_UNIT_TESTS" to run all the unit tests here.
-// After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
-//#define ALL_LOONGARCH64_EMITTER_UNIT_TESTS
-
-#if defined(DEBUG)
-void CodeGen::genLoongArch64EmitterUnitTests()
-{
-    if (!verbose)
-    {
-        return;
-    }
-
-    if (!compiler->opts.altJit)
-    {
-        // No point doing this in a "real" JIT.
-        return;
-    }
-
-    // Mark the "fake" instructions in the output.
-    printf("*************** In genLoongArch64EmitterUnitTests()\n");
-
-    printf("*************** End of genLoongArch64EmitterUnitTests()\n");
-}
-#endif // defined(DEBUG)
-
 //------------------------------------------------------------------------
 // genStackPointerConstantAdjustment: add a specified constant value to the stack pointer.
 // No probe is done.

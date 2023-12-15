@@ -152,7 +152,7 @@
 
   <Target Name="GenerateEmccPropsAndRspFiles">
 
-    <!-- Generate emcc-props.json -->
+    <!-- Generate wasm-props.json -->
 
     <RunWithEmSdkEnv Command="$(EmccCmd) --version"
           ConsoleToMsBuild="true"
@@ -275,7 +275,7 @@
       <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
-      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
@@ -312,7 +312,6 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmOptConfigurationFlags>@(WasmOptConfigurationFlags, '%3B ') </_WasmOptConfigurationFlags>
       <_EmccPropsJson>
 <![CDATA[
 {
@@ -322,9 +321,7 @@
       { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
       { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
     ],
-    "WasmOptConfigurationFlags": [
-      { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
-    ],
+    "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')]
   }
@@ -333,7 +330,7 @@
       </_EmccPropsJson>
     </PropertyGroup>
 
-    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
+    <WriteLinesToFile File="$(NativeBinDir)src\wasm-props.json"
                       Lines="$(_EmccPropsJson)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
@@ -427,7 +424,9 @@
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/driver.c;
+    <Copy SourceFiles="runtime/runtime.h;
+                       runtime/runtime.c;
+                       runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;"
           DestinationFolder="$(NativeBinDir)src"
@@ -447,7 +446,7 @@
                       Lines="@(_WasmImportedMethodNames)"
                       Overwrite="false" />
 
-    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
+    <Copy SourceFiles="runtime\runtime.h;runtime\pinvoke.h;runtime\gc-common.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
@@ -469,7 +468,7 @@
                              $(_EmccDefaultsRspPath);
                              $(_EmccCompileRspPath);
                              $(_EmccLinkRspPath);
-                             $(NativeBinDir)src\emcc-props.json" />
+                             $(NativeBinDir)src\wasm-props.json" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>

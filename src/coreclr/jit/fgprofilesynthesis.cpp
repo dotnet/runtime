@@ -1002,7 +1002,7 @@ void ProfileSynthesis::ComputeBlockWeights()
 
     for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
-        BasicBlock* block = m_dfsTree->GetPostOrder()[i - 1];
+        BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
         ComputeBlockWeight(block);
     }
 }

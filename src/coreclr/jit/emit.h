@@ -2122,7 +2122,7 @@ protected:
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
-    void emitDispInsAddr(BYTE* code);
+    void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);

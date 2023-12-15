@@ -15,8 +15,8 @@
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\ILLink.Substitutions.*.xml" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\ILLink.Descriptors.*.xml" TargetPath="Sdk" />
 
-    <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.props" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\BrowserWasmApp.props" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\BrowserWasmApp.targets" TargetPath="Sdk" />
 
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.Common.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.Common.targets" TargetPath="Sdk" />

@@ -520,29 +520,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
     }
 }
 
-//------------------------------------------------------------------------
-// optClearLoopIterInfo: Clear the info related to LPFLG_ITER loops in the loop table.
-// The various fields related to iterators is known to be valid for loop cloning and unrolling,
-// but becomes invalid afterwards. Clear the info that might be used incorrectly afterwards
-// in JitDump or by subsequent phases.
-//
-PhaseStatus Compiler::optClearLoopIterInfo()
-{
-    for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
-    {
-        LoopDsc& loop = optLoopTable[lnum];
-        loop.lpFlags &= ~(LPFLG_ITER | LPFLG_CONST_INIT | LPFLG_SIMD_LIMIT | LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT |
-                          LPFLG_ARRLEN_LIMIT);
-
-        loop.lpIterTree  = nullptr;
-        loop.lpInitBlock = nullptr;
-        loop.lpConstInit = -1;
-        loop.lpTestTree  = nullptr;
-    }
-
-    return PhaseStatus::MODIFIED_NOTHING;
-}
-
 #ifdef DEBUG
 
 /*****************************************************************************
@@ -5543,6 +5520,11 @@ void Compiler::optFindNewLoops()
     // edges, so be conservative here.
     fgMightHaveNaturalLoops = (m_loops->NumLoops() > 0) || m_loops->HaveNonNaturalLoopCycles();
 
+    for (BasicBlock* block : Blocks())
+    {
+        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+    }
+
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         BasicBlock* head = loop->GetHeader();
@@ -6455,7 +6437,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
     {
 
         // What is the depth of the loop "lnum"?
-        ssize_t depth = optLoopDepth((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable));
+        ssize_t depth = loop->GetDepth();
 
         NodeToTestDataMap* testData = GetNodeTestData();
 
@@ -6588,7 +6570,7 @@ PhaseStatus Compiler::optHoistLoopCode()
 #ifdef DEBUG
     // Test Data stuff..
     //
-    if (m_nodeTestData == nullptr)
+    if (m_nodeTestData != nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
         for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
@@ -6785,7 +6767,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
         {
-            if (fgSsaDomTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))
+            if (m_domTree->Dominates(childPreHead, loop->ExitEdges()[0]->getSourceBlock()))
             {
                 // If the child loop pre-header dominates the exit, it will get added in the dominator tree
                 // loop below.
@@ -6969,14 +6951,6 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
                 dspTreeID(tree), memoryVN);
         return;
     }
-
-    // TODO-Quirk: Remove
-    if (m_newToOldLoop[updateLoop->GetIndex()] == nullptr)
-    {
-        return;
-    }
-
-    assert(!m_newToOldLoop[updateLoop->GetIndex()]->lpIsRemoved());
 
     // If the update block is not the header of a loop containing
     // block, we can also ignore the update.
@@ -8349,23 +8323,6 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     return true;
 }
 
-bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)
-{
-    for (unsigned lnum = blk->bbNatLoopNum; lnum != BasicBlock::NOT_IN_LOOP; lnum = optLoopTable[lnum].lpParent)
-    {
-        if (optLoopTable[lnum].lpIsRemoved())
-        {
-            continue;
-        }
-        if (optLoopTable[lnum].lpEntry == blk)
-        {
-            *pLnum = lnum;
-            return true;
-        }
-    }
-    return false;
-}
-
 LoopSideEffects::LoopSideEffects() : VarInOut(VarSetOps::UninitVal()), VarUseDef(VarSetOps::UninitVal())
 {
     for (MemoryKind mk : allMemoryKinds())
@@ -8400,17 +8357,8 @@ void Compiler::optComputeLoopSideEffects()
         // limited treatment assignments it has seen the value of.
         loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* loopBlock) {
             FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(loopBlock);
-
-            // TODO-Quirk: Remove
-            while ((loop != nullptr) && (m_newToOldLoop[loop->GetIndex()] == nullptr))
-            {
-                loop = loop->GetParent();
-            }
-
-            if (loop != nullptr)
-            {
-                optComputeLoopSideEffectsOfBlock(loopBlock, loop);
-            }
+            assert(loop != nullptr);
+            optComputeLoopSideEffectsOfBlock(loopBlock, loop);
 
             return BasicBlockVisit::Continue;
         });
