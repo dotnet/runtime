@@ -300,7 +300,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             if (!varTypeIsFloating(tree->TypeGet()) &&
                 !((exceptions & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None &&
-                  (divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_R0)))
+                  (divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_ZERO)))
             {
                 bool needTemp = false;
                 if (divisorOp->isContainedIntOrIImmed())
