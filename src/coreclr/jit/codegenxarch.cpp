@@ -9027,43 +9027,22 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     regSet.verifyRegistersUsed(killMask);
 }
 
+#if defined(DEBUG) && defined(TARGET_AMD64)
+
 /*****************************************************************************
-* Unit testing of the XArch emitter: generate a bunch of instructions into the prolog
-* (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
-* disassembler thinks the instructions as the same as we do.
-*/
+ * Unit tests for the SSE2 instructions.
+ */
 
-// Uncomment "#define ALL_ARM64_EMITTER_UNIT_TESTS" to run all the unit tests here.
-// After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
-//#define ALL_XARCH_EMITTER_UNIT_TESTS
-
-#if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
-void CodeGen::genAmd64EmitterUnitTests()
+void CodeGen::genAmd64EmitterUnitTestsSse2()
 {
-    if (!verbose)
-    {
-        return;
-    }
-
-    if (!compiler->opts.altJit)
-    {
-        // No point doing this in a "real" JIT.
-        return;
-    }
-
-    // Mark the "fake" instructions in the output.
-    printf("*************** In genAmd64EmitterUnitTests()\n");
-
-    // We use this:
-    //      genDefineTempLabel(genCreateTempLabel());
-    // to create artificial labels to help separate groups of tests.
+    assert(verbose);
+    emitter* theEmitter = GetEmitter();
 
     //
     // Loads
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef ALL_XARCH_EMITTER_UNIT_TESTS
     genDefineTempLabel(genCreateTempLabel());
 
     // vhaddpd     ymm0,ymm1,ymm2
@@ -9133,11 +9112,9 @@ void CodeGen::genAmd64EmitterUnitTests()
     GetEmitter()->emitIns_R_R_R(INS_cvtss2sd, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vdivsd      xmm0,xmm1,xmm2
     GetEmitter()->emitIns_R_R_R(INS_cvtsd2ss, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
-#endif // ALL_XARCH_EMITTER_UNIT_TESTS
-    printf("*************** End of genAmd64EmitterUnitTests()\n");
 }
 
-#endif // defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
+#endif // defined(DEBUG) && defined(TARGET_AMD64)
 
 #ifdef PROFILING_SUPPORTED
 

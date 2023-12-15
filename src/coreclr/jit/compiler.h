@@ -2205,6 +2205,8 @@ public:
         return m_exitEdges[index];
     }
 
+    unsigned GetDepth() const;
+
     bool ContainsBlock(BasicBlock* block);
     bool ContainsLoop(FlowGraphNaturalLoop* childLoop);
 
