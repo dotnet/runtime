@@ -435,7 +435,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 
             JITDUMP("Converting BBF_DONT_REMOVE block " FMT_BB " to BBJ_THROW\n", block->bbNum);
 
-            // If the CALLFINALLY is being replace by a throw, then the CALLFINALLYRET is unreachable.
+            // If the CALLFINALLY is being replaced by a throw, then the CALLFINALLYRET is unreachable.
             if (block->isBBCallFinallyPair())
             {
                 BasicBlock* const leaveBlock = block->Next();
