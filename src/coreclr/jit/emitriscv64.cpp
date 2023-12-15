@@ -2130,7 +2130,7 @@ AGAIN:
 static void assertCodeLength(unsigned code, uint8_t size)
 {
 #ifdef DEBUG
-    assert(code < (1u << size));
+    assert((code >> size) == 0);
 #endif // DEBUG
 }
 
@@ -2225,6 +2225,35 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(imm20, 20);
 
     return opcode | (rd << 7) | (imm20 << (12 + 12));
+}
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 B-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  B-Type layout:
+ *  31-------30-----25-24-20-19-15-14--12-11-------8----7----6--------0
+ *  |imm[12]|imm[10:5]| rs2 | rs1 |funct3|  imm[4:1]|imm[11]| opcode  |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13)
+{
+    static constexpr unsigned kLoMask = 0x0f; // 0b00001111
+    static constexpr unsigned kHiMask = 0x3f; // 0b00111111
+    static constexpr unsigned kBitMask = 0x01;
+
+    assertCodeLength(opcode, 7);
+    assertCodeLength(funct3, 3);
+    assertCodeLength(rs1, 5);
+    assertCodeLength(rs2, 5);
+    assertCodeLength(imm13, 13);
+    imm13 >>= 1;
+    unsigned imm13Lo = ((imm13 & kLoMask) << 1) | ((imm13 >> 10) & kBitMask);
+    unsigned imm13Hi = ((imm13 >> 4) & kHiMask) | (((imm13 >> 11) & kBitMask) << 6);
+
+    return opcode | (imm13Lo << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (imm13Hi << 25);
 }
 
 /*****************************************************************************
