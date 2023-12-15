@@ -2179,6 +2179,33 @@ static void assertCodeLength(unsigned code, uint8_t size)
 }
 
 /*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 S-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  S-Type layout:
+ *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
+ *  |imm[11:5] |  rs2  | rs1  |  funct3  |   imm[4:0]   |   opcode    |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12)
+{
+    static constexpr unsigned kLoMask = 0x1f; // 0b00011111
+    static constexpr unsigned kHiMask = 0x7f; // 0b01111111
+
+    assertCodeLength(opcode, 7);
+    assertCodeLength(funct3, 3);
+    assertCodeLength(rs1, 5);
+    assertCodeLength(rs2, 5);
+    assertCodeLength(imm12, 12);
+    unsigned imm12Lo = imm12 & kLoMask;
+    unsigned imm12Hi = (imm12 >> 5) & kHiMask;
+
+    return opcode | (imm12Lo << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (imm12Hi << 25);
+}
+
+/*****************************************************************************
 *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
