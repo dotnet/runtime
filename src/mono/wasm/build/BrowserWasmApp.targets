@@ -31,7 +31,6 @@
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and ( '$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' )">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
@@ -288,7 +287,7 @@
 
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
-      <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+      <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                       Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
@@ -317,11 +316,12 @@
       <_EmccCFlags Include="-emit-llvm" />
 
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
+      <_EmccCFlags Include="-g"                                Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(WasmLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
-      <_EmccLDFlags Include="-s EXPORT_ES6=1" />
+      <_EmccLDFlags Include="-s EXPORT_ES6=1 -lexports.js" />
       <_EmccLDFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'" Include="-s EXPORT_EXCEPTION_HANDLING_HELPERS=1"   />
 
       <_RuntimeCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />

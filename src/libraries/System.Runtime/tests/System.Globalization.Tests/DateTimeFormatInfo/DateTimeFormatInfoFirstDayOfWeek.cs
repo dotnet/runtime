@@ -41,7 +41,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-AI", DayOfWeek.Monday };
             yield return new object[] { "en-AS", DayOfWeek.Sunday };
             yield return new object[] { "en-AT", DayOfWeek.Monday };
-            yield return new object[] { "en-AU", PlatformDetection.IsNodeJSOnWindows ? DayOfWeek.Sunday : DayOfWeek.Monday }; // originally in ICU: Sunday, even though ISO 8601 states: Monday
+            yield return new object[] { "en-AU", DayOfWeek.Monday }; // originally in ICU: Sunday, even though ISO 8601 states: Monday
             yield return new object[] { "en-BB", DayOfWeek.Monday };
             yield return new object[] { "en-BE", DayOfWeek.Monday };
             yield return new object[] { "en-BI", DayOfWeek.Monday };
@@ -193,13 +193,13 @@ namespace System.Globalization.Tests
             yield return new object[] { "ta-LK", DayOfWeek.Monday };
             yield return new object[] { "ta-MY", DayOfWeek.Monday };
             yield return new object[] { "ta-SG", DayOfWeek.Sunday };
-            yield return new object[] { "te-IN", PlatformDetection.IsNodeJSOnWindows ? DayOfWeek.Monday : DayOfWeek.Sunday };
+            yield return new object[] { "te-IN", DayOfWeek.Sunday };
             yield return new object[] { "th-TH", DayOfWeek.Sunday };
             yield return new object[] { "tr-CY", DayOfWeek.Monday };
             yield return new object[] { "tr-TR", DayOfWeek.Monday };
             yield return new object[] { "uk-UA", DayOfWeek.Monday };
             yield return new object[] { "vi-VN", DayOfWeek.Monday };
-            yield return new object[] { "zh-CN", PlatformDetection.IsNodeJSOnWindows ? DayOfWeek.Sunday : DayOfWeek.Monday };
+            yield return new object[] { "zh-CN", DayOfWeek.Monday };
             yield return new object[] { "zh-Hans-HK", DayOfWeek.Sunday };
             yield return new object[] { "zh-SG", DayOfWeek.Sunday };
             yield return new object[] { "zh-HK", DayOfWeek.Sunday };

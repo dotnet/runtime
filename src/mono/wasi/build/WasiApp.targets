@@ -190,6 +190,8 @@
       <_WasiClangCFlags Include="&quot;-I%(_WasmCommonIncludePaths.Identity)&quot;" />
       <_WasiClangCFlags Include="-I&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir.Replace('\', '/'))include&quot;" />
 
+      <_WasiClangCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+
       <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedDeclarations)' != ''"
                          Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;@(WasiAfterRuntimeLoadedDeclarations, ' ')&quot;" />
       <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedCalls)' != ''"

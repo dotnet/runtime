@@ -4079,6 +4079,23 @@ FlowGraphNaturalLoop::FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, Basi
 }
 
 //------------------------------------------------------------------------
+// GetDepth: Get the depth of the loop.
+//
+// Returns:
+//   The number of ancestors (0 for a top-most loop).
+//
+unsigned FlowGraphNaturalLoop::GetDepth() const
+{
+    unsigned depth = 0;
+    for (FlowGraphNaturalLoop* ancestor = GetParent(); ancestor != nullptr; ancestor = ancestor->GetParent())
+    {
+        depth++;
+    }
+
+    return depth;
+}
+
+//------------------------------------------------------------------------
 // LoopBlockBitVecIndex: Convert a basic block to an index into the bit vector
 // used to store the set of loop blocks.
 //
