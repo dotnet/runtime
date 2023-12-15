@@ -14,7 +14,7 @@ set(COMMON_RUNTIME_SOURCES
     gctoclreventsink.cpp
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
-    GCToEEInterface.cpp
+    gcenv.ee.cpp
     GcStressControl.cpp
     HandleTableHelpers.cpp
     MathHelpers.cpp
