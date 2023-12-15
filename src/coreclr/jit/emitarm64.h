@@ -488,16 +488,22 @@ static bool canEncodeSveElemsize_dtype(instruction ins);
 // for the 'dtype' field.
 static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code);
 
+// Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
