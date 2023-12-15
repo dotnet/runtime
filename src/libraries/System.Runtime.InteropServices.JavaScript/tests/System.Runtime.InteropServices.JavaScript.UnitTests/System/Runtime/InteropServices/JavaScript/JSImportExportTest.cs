@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
+using System.Diagnostics.CodeAnalysis;
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -384,10 +385,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // this will make OperationStack unbalanced
             // because the exceptions is throwed from ToJs() marshaler before the call to JSFunctionBinding.InvokeJS
             // which is expected until we make operation context part of the code generator
-            JSHost.AssertOperationStack(1);
+            AssertOperationStack(1);
             // any subsequent interop operation will fix that
             JavaScriptTestHelper.echo1_Int32(1);
-            JSHost.AssertOperationStack(0);
+            AssertOperationStack(0);
         }
 
         [Fact]
@@ -1840,7 +1841,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             Func<int, int> res = JavaScriptTestHelper.backback_FuncIntFuncInt((a) =>
             {
-                JSHost.AssertOperationStack(2);
+                AssertOperationStack(2);
                 called = a;
                 return a;
             }, 42);
@@ -1857,7 +1858,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             Func<int, int, int> res = JavaScriptTestHelper.backback_FuncIntIntFuncIntInt((a, b) =>
             {
-                JSHost.AssertOperationStack(2);
+                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
                 return a + b;
@@ -1877,7 +1878,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             JavaScriptTestHelper.back3_ActionIntInt((a, b) =>
             {
-                JSHost.AssertOperationStack(2);
+                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1892,7 +1893,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionLongLong((a, b) =>
             {
-                JSHost.AssertOperationStack(2);
+                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1907,7 +1908,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionIntLong((a, b) =>
             {
-                JSHost.AssertOperationStack(2);
+                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1922,7 +1923,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Exception expected = new Exception("test!!");
             Exception actual = Assert.Throws<Exception>(() => JavaScriptTestHelper.back3_ActionInt((a) =>
             {
-                JSHost.AssertOperationStack(2);
+                AssertOperationStack(2);
                 called = a;
                 throw expected;
             }, 42));
@@ -1936,14 +1937,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
-                JSHost.AssertOperationStack(4);
+                AssertOperationStack(4);
                 called = a;
                 return a;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
 
             Assert.Equal(-1, called);
             var actual = chain(42);
-            JSHost.AssertOperationStack(0);
+            AssertOperationStack(0);
             Assert.Equal(42, actual);
             Assert.Equal(42, called);
         }
@@ -1955,14 +1956,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var expected = new Exception("test!!");
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
-                JSHost.AssertOperationStack(4);
+                AssertOperationStack(4);
                 called = a;
                 throw expected;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
 
             Assert.Equal(-1, called);
             var actual = Assert.Throws<Exception>(() => chain(42));
-            JSHost.AssertOperationStack(0);
+            AssertOperationStack(0);
             Assert.Equal(42, called);
             Assert.Same(expected, actual);
         }
@@ -1976,15 +1977,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #endregion
 
-        private void JsExportTest<T>(T value
+        private void JsExportTest<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
         , Func<T, string, T> invoke, string echoName, string jsType, string? jsClass = null)
         {
             T res;
             res = invoke(value, echoName);
-            Assert.Equal(value, res);
+            Assert.Equal<T>(value, res);
         }
 
-        private void JsImportTest<T>(T value
+        private void JsImportTest<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
             , Action<T> store1
             , Func<T> retrieve1
             , Func<T, T> echo1
@@ -2138,6 +2139,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static DateTimeOffset TrimNano(DateTimeOffset date)
         {
             return new DateTime(date.Ticks - (date.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Utc);
+        }
+
+        private static void AssertOperationStack(int cnt)
+        {
+#if FEATURE_WASM_THREADS
+            JSHost.AssertOperationStack(cnt);
+#endif
         }
     }
 }
