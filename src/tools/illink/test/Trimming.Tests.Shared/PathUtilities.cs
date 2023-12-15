@@ -10,7 +10,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public static class PathUtilities
 	{
-#if NET8_0
+#if NET9_0
+		public const string TFMDirectoryName = "net9.0";
+#elif NET8_0
 		public const string TFMDirectoryName = "net8.0";
 #elif NET7_0
 		public const string TFMDirectoryName = "net7.0";
