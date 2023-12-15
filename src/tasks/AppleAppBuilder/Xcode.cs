@@ -638,7 +638,7 @@ internal sealed class Xcode
         string config = optimized ? "Release" : "Debug";
         args.Append(" -configuration ").Append(config);
 
-        Utils.RunProcess(Logger, "xcodebuild", args.ToString(), workingDir: Path.GetDirectoryName(xcodePrjPath), silent: false);
+        Utils.RunProcess(Logger, "xcodebuild", args.ToString(), workingDir: Path.GetDirectoryName(xcodePrjPath));
 
         string appDirectory = Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk);
         if (!Directory.Exists(appDirectory))
