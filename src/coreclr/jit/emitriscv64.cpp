@@ -2124,14 +2124,29 @@ ssize_t emitter::emitOutputInstrJumpSize(BYTE const* const         destination,
                                          insGroup const* const     instructionGroup,
                                          instrDescJmp const* const jumpDescription)
 {
-    UNATIVE_OFFSET sourceOffset  = emitCurCodeOffs(source);
-    BYTE const*    sourceAddress = emitOffsetToPtr(sourceOffset);
+    UNATIVE_OFFSET    sourceOffset  = emitCurCodeOffs(source);
+    BYTE const* const sourceAddress = emitOffsetToPtr(sourceOffset);
 
     assert(!jumpDescription->idAddr()->iiaHasInstrCount()); // not used by riscv64 impl
 
-    UNATIVE_OFFSET distanceOffset  = jumpDescription->idAddr()->iiaIGlabel->igOffs;
-    BYTE const*    distanceAddress = emitOffsetToPtr(distanceOffset);
-    return static_cast<ssize_t>(distanceAddress - sourceAddress);
+    UNATIVE_OFFSET    destinationOffset  = jumpDescription->idAddr()->iiaIGlabel->igOffs;
+    BYTE const* const destinationAddress = emitOffsetToPtr(destinationOffset);
+    ssize_t           jumpSize           = static_cast<ssize_t>(destinationAddress - sourceAddress);
+
+    if (destinationOffset <= sourceOffset)
+    {
+        if (!emitJumpCrossHotColdBoundary(sourceOffset, destinationOffset))
+        {
+            jumpSize -= emitOffsAdj;
+            destinationOffset -= emitOffsAdj;
+        }
+        jumpDescription->idjOffs = destinationOffset;
+        if (jumpDescription->idjOffs != destinationOffset)
+        {
+            IMPL_LIMITATION("Method is too large");
+        }
+    }
+    return jumpSize;
 }
 
 /*****************************************************************************
