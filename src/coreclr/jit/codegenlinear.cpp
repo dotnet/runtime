@@ -2665,30 +2665,9 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
 }
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-#if defined(DEBUG) && defined(LATE_DISASM)
-
-/*****************************************************************************
- * Unit testing of the ARM64 emitter: If JitDumpEmitUnitTests is set, generate
- * a bunch of instructions into the prolog (it's as good a place as any), then:
- * Use DOTNET_JitLateDisasm=* to see if the late disassembler thinks the instructions as the same as we do.
- * Or, use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and dissassemble the output file.
- *
- * Possible values for JitDumpEmitUnitTests:
- * all, general, advsimd, sve
- */
-
-// Unit testing of the emitter: generate a bunch of instructions into the last block
-// (it's as good as any, but better than the prologue, which can only be a single instruction
-// group) then use DOTNET_JitLateDisasm=* to see if the late disassembler
-// thinks the instructions are the same as we do.
-&&defined(LATE_DISASM) genAmd64EmitterUnitTests();
-
-genArm64EmitterUnitTests();
-#endif // TARGET_ARM64
-
 /*****************************************************************************
  * Unit testing of the emitter: If JitDumpEmitUnitTests is set, generate
- * a bunch of instructions into the prolog (it's as good a place as any), then:
+ * a bunch of instructions, then:
  * Use DOTNET_JitLateDisasm=* to see if the late disassembler thinks the instructions as the same as we do.
  * Or, use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and dissassemble the output file.
  *
