@@ -13,6 +13,9 @@ namespace System.Text.Json
         public const int StackallocCharThreshold = StackallocByteThreshold / 2;
 
         // Two space characters is the default indentation.
-        public const string DefaultIndent = "  ";
+        public const char DefaultIndentCharacter = ' ';
+        public const int DefaultIndentSize = 2;
+        public const int MinimumIndentSize = 0;
+        public const int MaximumIndentSize = 127;
     }
 }

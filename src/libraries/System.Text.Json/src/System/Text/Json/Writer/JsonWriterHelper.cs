@@ -10,6 +10,41 @@ namespace System.Text.Json
 {
     internal static partial class JsonWriterHelper
     {
+        public static void WriteIndentation(Span<byte> buffer, int indent, byte indentByte)
+        {
+            Debug.Assert(buffer.Length >= indent);
+
+            // Based on perf tests, the break-even point where vectorized Fill is faster
+            // than explicitly writing the space in a loop is 8.
+            if (indent is 2 or 4 or 6)
+            {
+                int i = 0;
+                while (i < indent)
+                {
+                    buffer[i++] = indentByte;
+                    buffer[i++] = indentByte;
+                }
+            }
+            else if (indent is not 0)
+            {
+                buffer.Slice(0, indent).Fill(indentByte);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateIndentCharacter(char value)
+        {
+            if ((byte)value is not JsonConstants.Space and not JsonConstants.Tab)
+                ThrowHelper.ThrowArgumentOutOfRangeException_IndentCharacter(nameof(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateIndentSize(int value)
+        {
+            if (value is < JsonConstants.MinimumIndentSize or > JsonConstants.MaximumIndentSize)
+                ThrowHelper.ThrowArgumentOutOfRangeException_IndentSize(nameof(value), JsonConstants.MinimumIndentSize, JsonConstants.MaximumIndentSize);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateProperty(ReadOnlySpan<byte> propertyName)
         {

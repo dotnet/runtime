@@ -75,7 +75,8 @@ namespace System.Text.Json
         private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
-        private string _indentText = JsonConstants.DefaultIndent;
+        private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
+        private int _indentSize = JsonConstants.DefaultIndentSize;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -125,11 +126,11 @@ namespace System.Text.Json
             _includeFields = options._includeFields;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
-            _indentText = options._indentText;
+            _indentCharacter = options._indentCharacter;
+            _indentSize = options._indentSize;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
-            IndentData = options.IndentData;
 
             TrackOptionsInstance(this);
         }
@@ -649,29 +650,48 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Defines the indentation string being used when <see cref="WriteIndented" /> is enabled. Defaults to two space characters.
+        /// Defines the indentation character being used when <see cref="WriteIndented" /> is enabled. Defaults to the space character.
         /// </summary>
         /// <remarks>Allowed characters are space and horizontal tab.</remarks>
-        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
-        public string IndentText
+        public char IndentCharacter
         {
             get
             {
-                return _indentText;
+                return _indentCharacter;
             }
             set
             {
+                JsonWriterHelper.ValidateIndentCharacter(value);
                 VerifyMutable();
-                IndentData = JsonWriterIndentationData.FromString(value);
-                _indentText = value;
+                _indentCharacter = value;
             }
         }
 
-        internal JsonWriterIndentationData IndentData { get; private set; }
+        /// <summary>
+        /// Defines the indentation size being used when <see cref="WriteIndented" /> is enabled. Defaults to two.
+        /// </summary>
+        /// <remarks>Allowed values are all integers between 0 and 127.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public int IndentSize
+        {
+            get
+            {
+                return _indentSize;
+            }
+            set
+            {
+                JsonWriterHelper.ValidateIndentSize(value);
+                VerifyMutable();
+                _indentSize = value;
+            }
+        }
 
         /// <summary>
         /// Configures how object references are handled when reading and writing JSON.
@@ -904,8 +924,8 @@ namespace System.Text.Json
             {
                 Encoder = Encoder,
                 Indented = WriteIndented,
-                IndentText = IndentText,
-                IndentData = IndentData,
+                IndentCharacter = IndentCharacter,
+                IndentSize = IndentSize,
                 MaxDepth = EffectiveMaxDepth,
 #if !DEBUG
                 SkipValidation = true

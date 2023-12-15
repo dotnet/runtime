@@ -13,6 +13,18 @@ namespace System.Text.Json
         public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
 
         [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_IndentCharacter(string parameterName)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.InvalidIndentCharacter);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_IndentSize(string parameterName, int minimumSize, int maximumSize)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.Format(SR.InvalidIndentSize, minimumSize, maximumSize));
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(string parameterName)
         {
             throw GetArgumentOutOfRangeException(parameterName, SR.MaxDepthMustBePositive);

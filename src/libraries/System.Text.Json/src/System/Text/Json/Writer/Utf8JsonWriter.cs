@@ -80,7 +80,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonWriterOptions Options => _options;
 
-        private int IndentLength => _options.IndentData.Length;
+        private int IndentLength => _options.IndentSize;
 
         private int Indentation => CurrentDepth * IndentLength;
 
@@ -1031,11 +1031,9 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.LineFeed;
         }
 
-        private void WriteIndentation(Span<byte> buffer, int indentation)
+        private void WriteIndentation(Span<byte> buffer, int indent)
         {
-            Debug.Assert(_options.Indented);
-
-            _options.IndentData.Write(buffer, indentation);
+            JsonWriterHelper.WriteIndentation(buffer, indent, (byte)_options.IndentCharacter);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

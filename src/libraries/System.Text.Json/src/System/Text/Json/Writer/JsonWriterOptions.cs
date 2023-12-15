@@ -17,7 +17,8 @@ namespace System.Text.Json
 
         private int _maxDepth;
         private int _optionsMask;
-        private string _indentText;
+        private char? _indentCharacter;
+        private int? _indentSize;
 
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
@@ -45,22 +46,34 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Defines the indentation string used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to two space characters.
+        /// Defines the indentation character used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to the space character.
         /// </summary>
         /// <remarks>Allowed characters are space and horizontal tab.</remarks>
-        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
-        public string IndentText
+        public char IndentCharacter
         {
-            readonly get => _indentText ?? JsonConstants.DefaultIndent;
+            readonly get => _indentCharacter ?? JsonConstants.DefaultIndentCharacter;
             set
             {
-                IndentData = JsonWriterIndentationData.FromString(value);
-                _indentText = value;
+                JsonWriterHelper.ValidateIndentCharacter(value);
+                _indentCharacter = value;
             }
         }
 
-        internal JsonWriterIndentationData IndentData { get; set; }
+        /// <summary>
+        /// Defines the indentation size used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to two.
+        /// </summary>
+        /// <remarks>Allowed values are integers between 0 and 127.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
+        public int IndentSize
+        {
+            readonly get => _indentSize ?? JsonConstants.DefaultIndentSize;
+            set
+            {
+                JsonWriterHelper.ValidateIndentSize(value);
+                _indentSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the maximum depth allowed when writing JSON, with the default (i.e. 0) indicating a max depth of 1000.

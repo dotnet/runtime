@@ -78,7 +78,8 @@ namespace System.Text.Json.SourceGeneration.Tests
                 UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode,
                 UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
                 WriteIndented = true,
-                IndentText = "\t",
+                IndentCharacter = '\t',
+                IndentSize = 1,
 
                 TypeInfoResolver = ContextWithAllOptionsSet.Default,
             };
@@ -106,7 +107,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
             WriteIndented = true,
-            IndentText = "\t")]
+            IndentCharacter = '\t',
+            IndentSize = 1)]
         [JsonSerializable(typeof(PersonStruct))]
         public partial class ContextWithAllOptionsSet : JsonSerializerContext
         { }

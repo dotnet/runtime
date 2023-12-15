@@ -36,22 +36,24 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(true, "\t", true, 0)]
-        [InlineData(true, " ", false, 1)]
-        [InlineData(false, "", true, 1024)]
-        [InlineData(false, "\t ", false, 1024 * 1024)]
-        public static void JsonWriterOptions(bool indented, string indentText, bool skipValidation, int maxDepth)
+        [InlineData(true, '\t', 1, true, 0)]
+        [InlineData(true, ' ', 1, false, 1)]
+        [InlineData(false, ' ', 0, true, 1024)]
+        [InlineData(false, ' ', 4, false, 1024 * 1024)]
+        public static void JsonWriterOptions(bool indented, char indentCharacter, int indentSize, bool skipValidation, int maxDepth)
         {
             var options = new JsonWriterOptions();
             options.Indented = indented;
-            options.IndentText = indentText;
+            options.IndentCharacter = indentCharacter;
+            options.IndentSize = indentSize;
             options.SkipValidation = skipValidation;
             options.MaxDepth = maxDepth;
 
             var expectedOption = new JsonWriterOptions
             {
                 Indented = indented,
-                IndentText = indentText,
+                IndentCharacter = indentCharacter,
+                IndentSize = indentSize,
                 SkipValidation = skipValidation,
                 MaxDepth = maxDepth,
             };
@@ -67,26 +69,27 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxDepth = maxDepth);
         }
 
-        [Fact]
-        public static void JsonWriterOptions_IndentText_InvalidParameters()
+        [Theory]
+        [InlineData('\f')]
+        [InlineData('\n')]
+        [InlineData('\r')]
+        [InlineData('\0')]
+        [InlineData('a')]
+        public static void JsonWriterOptions_IndentCharacter_InvalidCharacter(char character)
         {
             var options = new JsonWriterOptions();
-            Assert.Throws<ArgumentNullException>(() => options.IndentText = null);
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentCharacter = character);
         }
 
         [Theory]
-        [InlineData("\f")]
-        [InlineData("\t\f")]
-        [InlineData("\n")]
-        [InlineData("\r")]
-        [InlineData("\r\n")]
-        [InlineData("a")]
-        [InlineData("a ")]
-        [InlineData("abc")]
-        public static void JsonWriterOptions_IndentText_InvalidCharacters(string text)
+        [InlineData(-1)]
+        [InlineData(128)]
+        [InlineData(int.MinValue)]
+        [InlineData(int.MaxValue)]
+        public static void JsonWriterOptions_IndentSize_OutOfRange(int size)
         {
             var options = new JsonWriterOptions();
-            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentText = text);
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentSize = size);
         }
     }
 }
