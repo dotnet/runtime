@@ -5,26 +5,27 @@ namespace Mono.Linker.Tests.Cases.Warnings
 {
 	[ExpectNonZeroExitCode (1)]
 	[SkipKeptItemsValidation]
+	[Define("IN_TEST_BUILD")]
 	[SetupLinkerSubstitutionFile ("CanWarnAsErrorSubstitutions.xml")]
 	[SetupLinkerArgument ("--verbose")]
-	[SetupLinkerArgument ("--warnaserror-")]
-	[SetupLinkerArgument ("--warnaserror+", "IL2011,IgnoreThis")]
-	[SetupLinkerArgument ("--warnaserror", "IL2012,CS4321,IgnoreThisToo")]
-	[SetupLinkerArgument ("--warnaserror", "IL2010")]
-	[SetupLinkerArgument ("--warnaserror-", "IL2010")]
-	[LogContains ("warning IL2007")]
-	[LogContains ("warning IL2008")]
-	[LogContains ("warning IL2009")]
-	[LogContains ("warning IL2010")]
+	[SetupLinkerArgument ("--warnaserror")]
+	[LogContains ("error IL2007")]
+	[LogContains ("error IL2008")]
+	[LogContains ("error IL2009")]
+	[LogContains ("error IL2010")]
 	[LogContains ("error IL2011")]
 	[LogContains ("error IL2012")]
 	[NoLinkedOutput]
-	public class CanWarnAsError
+	public class CanWarnAsErrorGlobal
 	{
 		public static void Main ()
 		{
 		}
+	}
 
+#if IN_TEST_BUILD
+	public class CanWarnAsError
+	{
 		class HelperClass
 		{
 			private int helperField = 0;
@@ -34,4 +35,5 @@ namespace Mono.Linker.Tests.Cases.Warnings
 			}
 		}
 	}
+#endif
 }
