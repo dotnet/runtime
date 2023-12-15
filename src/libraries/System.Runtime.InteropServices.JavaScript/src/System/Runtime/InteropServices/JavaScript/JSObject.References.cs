@@ -79,18 +79,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            var currentContext = JSProxyContext.AssertCurrentContext();
-
             if (value is JSObject jsObject)
             {
-                if (jsObject.ProxyContext != currentContext)
+                if (!jsObject.ProxyContext.IsCurrentThread())
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
             }
             else if (value is JSException jsException)
             {
-                if (jsException.jsException != null && jsException.jsException.ProxyContext != currentContext)
+                if (jsException.jsException != null && !jsException.jsException.ProxyContext.IsCurrentThread())
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
@@ -112,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
-                if (ProxyContext == JSProxyContext.CurrentThreadContext)
+                if (ProxyContext.IsCurrentThread())
                 {
                     JSProxyContext.ReleaseCSOwnedObject(this, skipJS);
                     return;

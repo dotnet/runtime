@@ -174,7 +174,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
                 throw new PlatformNotSupportedException();
 
-            return BindJSFunctionImpl(functionName, moduleName, signatures);
+            return BindJSImportImpl(functionName, moduleName, signatures);
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
 #if FEATURE_WASM_THREADS
-            JSProxyContext.AssertCurrentContext();
+            JSProxyContext.AssertIsInteropThread();
 #endif
 
             if (signature.IsAsync)
@@ -252,10 +252,10 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
+        internal static unsafe JSFunctionBinding BindJSImportImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
 #if FEATURE_WASM_THREADS
-            JSProxyContext.AssertCurrentContext();
+            JSProxyContext.AssertIsInteropThread();
 #endif
 
             var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);

@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // this callback will arrive on the target thread, called from mono_background_exec
         private static void BackgroundJobHandler()
         {
-            var ctx = JSProxyContext.AssertCurrentContext();
+            var ctx = JSProxyContext.AssertIsInteropThread();
             ctx.SynchronizationContext.Pump();
         }
 

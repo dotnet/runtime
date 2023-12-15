@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
-            if (holder.ProxyContext == JSProxyContext.CurrentThreadContext)
+            if (holder.ProxyContext.IsCurrentThread())
             {
                 _CancelPromise(holder.GCHandle);
                 return;
@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
-            if (holder.ProxyContext == JSProxyContext.CurrentThreadContext)
+            if (holder.ProxyContext.IsCurrentThread())
             {
                 _CancelPromise(holder.GCHandle);
                 callback.Invoke(state);

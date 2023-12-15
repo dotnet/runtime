@@ -211,13 +211,16 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void InstallWebWorkerInterop(bool isMainThread)
         {
             var ctx = new JSSynchronizationContext(isMainThread);
-            JSProxyContext.CurrentThreadContext = ctx.ProxyContext;
-            if (isMainThread)
-            {
-                JSProxyContext.MainThreadContext = ctx.ProxyContext;
-            }
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
+
+            var proxyContext = ctx.ProxyContext;
+            JSProxyContext.CurrentThreadContext = proxyContext;
+            JSProxyContext.ExecutionContext = proxyContext;
+            if (isMainThread)
+            {
+                JSProxyContext.MainThreadContext = proxyContext;
+            }
 
             ctx.AwaitNewData();
         }

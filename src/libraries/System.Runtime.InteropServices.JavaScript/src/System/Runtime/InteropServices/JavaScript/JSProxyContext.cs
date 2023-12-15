@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 PopOperation();
             }
 
-            var current = AssertCurrentContext();
+            var current = AssertIsInteropThread();
             stack.Add(new PendingOperation { CapturedContext = current });
             return current;
         }
@@ -190,14 +190,18 @@ namespace System.Runtime.InteropServices.JavaScript
             pendingOperation.CapturedContext = capturedContext;
         }
 
-        // Context of the current thread or async task. Could be null on threads which don't have JS interop, like managed thread pool threads.
+        // Context flowing from parent thread into child tasks.
+        // Could be null on threads which don't have JS interop, like managed thread pool threads. Unless they inherit it from the current Task
         // TODO flow it also with ExecutionContext to child threads ?
         private static readonly AsyncLocal<JSProxyContext?> _currentThreadContext = new AsyncLocal<JSProxyContext?>();
-        public static JSProxyContext? CurrentThreadContext
+        public static JSProxyContext? ExecutionContext
         {
             get => _currentThreadContext.Value;
             set => _currentThreadContext.Value = value;
         }
+
+        [ThreadStatic]
+        public static JSProxyContext? CurrentThreadContext;
 
         // This is context to dispatch into. In order of preference
         // - captured context by arguments of current/pending JSImport call
@@ -216,11 +220,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     return pendingOperation.CapturedContext;
                 }
                 // it could happen that we are in operation, in which we didn't capture target thread/context
-                var currentThreadContext = CurrentThreadContext;
-                if (currentThreadContext != null)
+                var executionContext = ExecutionContext;
+                if (executionContext != null)
                 {
-                    // we could will call JS on the current thread, if it has the JS interop installed
-                    return currentThreadContext;
+                    // we could will call JS on the current thread (or child task), if it has the JS interop installed
+                    return executionContext;
                 }
                 // otherwise we will call JS on the main thread, which always has JS interop
                 return MainThreadContext;
@@ -230,7 +234,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static JSProxyContext AssertCurrentContext()
+        public static JSProxyContext AssertIsInteropThread()
         {
 #if FEATURE_WASM_THREADS
             var ctx = CurrentThreadContext;
