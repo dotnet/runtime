@@ -5291,6 +5291,21 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
+    // The VM assumes that the PInvoke frame in IL Stub is only going to be used
+    // for the PInvoke target call. The PInvoke frame cannot be reused by marshalling helper
+    // calls (see InlinedCallFrame::GetActualInteropMethodDesc and related stackwalking code).
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+    {
+        // This does not apply to the raw pinvoke call that is inside the no marshalling R2R compiled
+        // pinvoke ILStub. In this case, we have to inline the raw pinvoke call into the stub, otherwise
+        // we would end up with a stub that recursively calls itself, and end up with a stack overflow.
+        if (opts.IsReadyToRun())
+        {
+            return true;
+        }
+        return false;
+    }
+
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     // For platforms that use per-P/Invoke InlinedCallFrame initialization,
     // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
@@ -5301,18 +5316,6 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
     if (block->hasTryIndex())
     {
-        // This does not apply to the raw pinvoke call that is inside the pinvoke
-        // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
-        // otherwise we would end up with a stub that recursively calls itself, and end
-        // up with a stack overflow.
-        // This works correctly because the runtime never emits a catch block in a managed-to-native
-        // IL stub. If the runtime ever emits a catch block into a managed-to-native stub when using
-        // P/Invoke helpers, this condition will need to be revisited.
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
-        {
-            return true;
-        }
-
         // Check if this block's try block or any containing try blocks have catch handlers.
         // If any of the containing try blocks have catch handlers,
         // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
