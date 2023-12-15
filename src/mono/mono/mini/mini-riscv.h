@@ -240,8 +240,6 @@ typedef enum {
 #endif
 	ArgOnStackR4,
 	ArgOnStackR8,
-	ArgStructByVal,
-	ArgStructByAddr,
 	/*
 	 * Vtype passed in consecutive int registers.
 	 */

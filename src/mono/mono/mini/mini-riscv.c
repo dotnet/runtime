@@ -800,6 +800,8 @@ add_farg (CallInfo *cinfo, ArgInfo *ainfo, gboolean single)
 	} else {
 		ainfo->storage = single ? ArgOnStackR4 : ArgOnStackR8;
 		ainfo->slot_size = size;
+		ainfo->offset = cinfo->stack_usage;
+		cinfo->stack_usage += size;
 	}
 }
 
