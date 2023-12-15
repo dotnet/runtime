@@ -3,7 +3,6 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
-#include "GCMemoryHelpers.inl"
 #include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "slist.h"
@@ -18,6 +17,9 @@
 #include "CachedInterfaceDispatch.h"
 #include "shash.h"
 #include <minipal/cpufeatures.h>
+
+#include "CommonMacros.inl"
+#include "GCMemoryHelpers.inl"
 
 class AsmOffsets
 {

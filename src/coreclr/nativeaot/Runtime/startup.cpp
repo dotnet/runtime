@@ -86,6 +86,11 @@ extern "C" volatile GSCookie __security_cookie = 0;
 
 #endif // TARGET_UNIX
 
+static RhConfig g_sRhConfig;
+RhConfig* g_pRhConfig = &g_sRhConfig;
+
+bool InitializeSubsystems();
+
 static bool InitDLL(HANDLE hPalInstance)
 {
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
@@ -146,7 +151,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    if (!RedhawkGCInterface::InitializeSubsystems())
+    if (!InitializeSubsystems())
         return false;
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);

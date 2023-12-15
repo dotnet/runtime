@@ -9,9 +9,11 @@
 #include "gcenv.h"
 #include "gcenv.ee.h"
 #include "gcheaputilities.h"
+#include "gchandleutilities.h"
 #include "RestrictedCallouts.h"
 
-#include "RedhawkGCInterface.h"
+#include "forward_declarations.h"
+#include "RhConfig.h"
 
 #include "PalRedhawkCommon.h"
 #include "slist.h"
@@ -28,6 +30,72 @@
 #include "gcdesc.h"
 
 #define RH_LARGE_OBJECT_SIZE 85000
+
+MethodTable g_FreeObjectEEType;
+GPTR_DECL(MethodTable, g_pFreeObjectEEType);
+
+GPTR_IMPL(Thread, g_pFinalizerThread);
+
+bool RhInitializeFinalization();
+
+// Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcrhenv.
+// The boolean parameter should be true if a server GC is required and false for workstation. Returns true on
+// success or false if a subsystem failed to initialize.
+static bool InitializeSubsystems()
+{
+    // Initialize the special MethodTable used to mark free list entries in the GC heap.
+    g_FreeObjectEEType.InitializeAsGcFreeType();
+    g_pFreeObjectEEType = &g_FreeObjectEEType;
+
+#ifdef FEATURE_SVR_GC
+    g_heap_type = (g_pRhConfig->GetgcServer() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
+#else
+    g_heap_type = GC_HEAP_WKS;
+#endif
+
+    if (g_pRhConfig->GetgcConservative())
+    {
+        GetRuntimeInstance()->EnableConservativeStackReporting();
+    }
+
+    HRESULT hr = GCHeapUtilities::InitializeGC();
+    if (FAILED(hr))
+        return false;
+
+    // Apparently the Windows linker removes global variables if they are never
+    // read from, which is a problem for g_gcDacGlobals since it's expected that
+    // only the DAC will read from it. This forces the linker to include
+    // g_gcDacGlobals.
+    volatile void* _dummy = g_gcDacGlobals;
+
+    // Initialize the GC subsystem.
+    hr = g_pGCHeap->Initialize();
+    if (FAILED(hr))
+        return false;
+
+    if (!RhInitializeFinalization())
+        return false;
+
+    // Initialize HandleTable.
+    if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
+        return false;
+
+    return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+// Used only by GC initialization, this initializes the MethodTable used to mark free entries in the GC heap. It
+// should be an array type with a component size of one (so the GC can easily size it as appropriate) and
+// should be marked as not containing any references. The rest of the fields don't matter: the GC does not
+// query them and the rest of the runtime will never hold a reference to free object.
+
+
+void MethodTable::InitializeAsGcFreeType()
+{
+    m_uFlags = ParameterizedEEType | HasComponentSizeFlag;
+    m_usComponentSize = 1;
+    m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
+}
 
 EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {

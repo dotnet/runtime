@@ -16,13 +16,10 @@ struct REGDISPLAY;
 enum GCRefKind : unsigned char;
 class ICodeManager;
 
+
 class RedhawkGCInterface
 {
 public:
-    // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in
-    // gcrhenv. Returns true on success or false if a subsystem failed to initialize.
-    static bool InitializeSubsystems();
-
     static void EnumGcRef(PTR_OBJECTREF pRef, GCRefKind kind, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
     static void EnumGcRefConservatively(PTR_OBJECTREF pRef, ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData);
 
