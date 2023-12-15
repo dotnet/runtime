@@ -4,29 +4,4 @@
     provides basic info needed for restore and build with the vanilla SDK.
   -->
 
-  <!-- TODO: Remove when the SDK understands the net8.0 tfm. -->
-  <PropertyGroup>
-    <NETCoreAppMaximumVersion>9.0</NETCoreAppMaximumVersion>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <KnownFrameworkReference Include="Microsoft.NETCore.App"
-                             DefaultRuntimeFrameworkVersion="8.0.0-rc.1.23415.6"
-                             LatestRuntimeFrameworkVersion="8.0.0-rc.1.23415.6"
-                             RuntimeFrameworkName="Microsoft.NETCore.App"
-                             RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.**RID**"
-                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86"
-                             TargetFramework="$(NetCoreAppCurrent)"
-                             TargetingPackName="Microsoft.NETCore.App.Ref"
-                             TargetingPackVersion="8.0.0-rc.1.23415.6"
-                             Condition="'@(KnownFrameworkReference)' == '' or !@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
-
-    <KnownAppHostPack Include="Microsoft.NETCore.App"
-                      ExcludedRuntimeIdentifiers="android"
-                      AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
-                      AppHostPackVersion="8.0.0-rc.1.23415.6"
-                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86"
-                      TargetFramework="$(NetCoreAppCurrent)"
-                      Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
-  </ItemGroup>
 </Project>
