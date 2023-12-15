@@ -284,10 +284,32 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
         }
     }
 
+    return EnsureInstantiation(inst) || fNewReferenceNeeded;
+}
+
+BOOL LoaderAllocator::EnsureInstantiation(Instantiation inst)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    BOOL fNewReferenceNeeded = FALSE;
+
+    // Check if this lock can be taken in all places that the function is called
+    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+
+    if (!IsCollectible())
+        return FALSE;
+
+    CrstHolder ch(GetDomain()->GetLoaderAllocatorReferencesLock());
+
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
         TypeHandle arg = inst[i];
-        LoaderAllocator *pOtherLA = arg.GetLoaderModule()->GetLoaderAllocator();
+        LoaderAllocator *pOtherLA = arg.GetLoaderAllocator();
 
         if (pOtherLA == this)
             continue;
@@ -299,6 +321,36 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
     }
 
     return fNewReferenceNeeded;
+}
+
+BOOL LoaderAllocator::EnsureInstantiation(LoaderAllocator *pDefiningLoaderAllocator, Instantiation inst)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    BOOL fNewReferenceNeeded = FALSE;
+
+    // Check if this lock can be taken in all places that the function is called
+    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+
+    if (!IsCollectible())
+        return FALSE;
+
+    CrstHolder ch(GetDomain()->GetLoaderAllocatorReferencesLock());
+
+    if (pDefiningLoaderAllocator->IsCollectible())
+    {
+        if (pDefiningLoaderAllocator != this)
+        {
+            fNewReferenceNeeded = CheckAddReference_Unlocked(pDefiningLoaderAllocator) || fNewReferenceNeeded;
+        }
+    }
+
+    return EnsureInstantiation(inst) || fNewReferenceNeeded;
 }
 
 bool LoaderAllocator::Marked()

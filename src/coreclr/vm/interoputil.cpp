@@ -1898,7 +1898,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         MethodTable::InterfaceMapIterator it = pClassMT->IterateInterfaceMap();
         while (it.Next())
         {
-            MethodTable *pItfMT = it.GetInterfaceInfo()->GetApproxMethodTable(pClassMT->GetLoaderModule());
+            MethodTable *pItfMT = it.GetInterfaceInfo()->GetApproxMethodTable();
 
             // Skip generic interfaces. Classic COM interop does not support these and we don't
             // use the result of this function in WinRT scenarios. WinRT parameter marshaling

@@ -17,6 +17,16 @@ inline mdTypeDef TypeHandle::GetCl() const
     return GetMethodTable()->GetCl();
 }
 
+inline bool TypeHandle::IsCollectible() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (IsTypeDesc())
+        return AsTypeDesc()->IsCollectible();
+    else
+        return AsMethodTable()->Collectible();
+}
+
+
 inline PTR_MethodTable TypeHandle::GetMethodTable() const
 {
     LIMITED_METHOD_DAC_CONTRACT;

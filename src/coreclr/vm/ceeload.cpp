@@ -341,6 +341,11 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
 
     PREFIX_ASSUME(pAssembly != NULL);
 
+    LoaderAllocator* pLoaderAllocator = pAssembly->GetLoaderAllocator();
+    if (pLoaderAllocator != NULL && pLoaderAllocator->IsCollectible())
+    {
+        ((AssemblyLoaderAllocator*)pAssembly->GetLoaderAllocator())->SetModule(this);
+    }
     m_loaderAllocator = NULL;
     m_pAssembly = pAssembly;
     m_pPEAssembly      = pPEAssembly;

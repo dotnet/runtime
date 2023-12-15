@@ -399,7 +399,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     for (WORD iItf = 0; iItf < wNumInterfaces; iItf++)
     {
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
-        pInterfaceMap[iItf].SetMethodTable(pOldIMap[iItf].GetApproxMethodTable(pOldMT->GetLoaderModule()));
+        pInterfaceMap[iItf].SetMethodTable(pOldIMap[iItf].GetApproxMethodTable());
     }
 
     // Set the interface map pointer stored in the main section of the vtable (actually

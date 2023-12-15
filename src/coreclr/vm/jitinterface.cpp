@@ -7911,8 +7911,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     // The original caller is the current method
     MethodDesc *  pOrigCaller;
     pOrigCaller = m_pMethodBeingCompiled;
-    Module *      pOrigCallerModule;
-    pOrigCallerModule = pOrigCaller->GetLoaderModule();
 
     if (pCallee->IsNotInline())
     {

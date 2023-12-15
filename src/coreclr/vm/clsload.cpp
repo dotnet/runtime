@@ -128,21 +128,15 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
     {
         TypeHandle classArg = classInst[i];
-        Module* pModule = classArg.GetLoaderModule();
-        if (pModule->IsCollectible())
+        if (classArg.IsCollectible())
             goto ComputeCollectibleLoaderModule;
-        if (pLoaderModule == NULL)
-            pLoaderModule = pModule;
     }
 
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeHandle methodArg = methodInst[i];
-        Module *pModule = methodArg.GetLoaderModule();
-        if (pModule->IsCollectible())
+        if (methodArg.IsCollectible())
             goto ComputeCollectibleLoaderModule;
-        if (pLoaderModule == NULL)
-            pLoaderModule = pModule;
     }
 
     if (pLoaderModule == NULL)
@@ -173,14 +167,13 @@ ComputeCollectibleLoaderModule:
             else
                 arg = methodInst[i - classArgsCount];
 
-            Module *pModuleCheck = arg.GetLoaderModule();
-            LoaderAllocator *pLoaderAllocatorCheck = pModuleCheck->GetLoaderAllocator();
+            LoaderAllocator *pLoaderAllocatorCheck = arg.GetLoaderAllocator();
 
             if (pLoaderAllocatorCheck != pLoaderAllocatorOfDefiningType &&
                 pLoaderAllocatorCheck->IsCollectible() &&
                 pLoaderAllocatorCheck->GetCreationNumber() > oldestFoundAge)
             {
-                pOldestLoaderModule = pModuleCheck;
+                pOldestLoaderModule = pLoaderAllocatorCheck->GetModule();
                 pOldestLoaderAllocator = pLoaderAllocatorCheck;
                 oldestFoundAge = pLoaderAllocatorCheck->GetCreationNumber();
             }
@@ -2947,12 +2940,12 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
         PREFIX_ASSUME(pLoaderModule != NULL);
-        pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
+        pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
-        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes()));
+        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes(), pLoaderModule->IsCollectible()));
     }
     else
     {

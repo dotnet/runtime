@@ -452,7 +452,7 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
     callConvsArg.Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, callConvsType);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    DomainAssembly* domainAssembly = pMD->GetModule()->GetDomainAssembly();
     IfFailThrow(Attribute::ParseAttributeArgumentValues(
         pData,
         cData,
@@ -527,7 +527,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    DomainAssembly* domainAssembly = pMD->GetModule()->GetDomainAssembly();
     IfFailThrow(Attribute::ParseAttributeArgumentValues(
         pData,
         cData,

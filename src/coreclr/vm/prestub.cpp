@@ -2103,7 +2103,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     PCCOR_SIGNATURE pSig;
     DWORD cbSig;
     pTargetMD->GetSig(&pSig,&cbSig);
-    PTR_Module pLoaderModule = pTargetMD->GetLoaderModule();
     MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pTargetMD->GetLoaderAllocator(),
                                                             pStubMT,
                                                             ILSTUB_INSTANTIATINGSTUB,

@@ -336,8 +336,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
     LoaderAllocator * pAllocator = pExactMDLoaderModule->GetLoaderAllocator();
 
     // Create LoaderAllocator to LoaderAllocator links for members of the instantiations of this method
-    pAllocator->EnsureInstantiation(pExactMT->GetLoaderModule(), pExactMT->GetInstantiation());
-    pAllocator->EnsureInstantiation(pGenericMDescInRepMT->GetLoaderModule(), methodInst);
+    pAllocator->EnsureInstantiation(pExactMT->GetLoaderAllocator(), pExactMT->GetInstantiation());
+    pAllocator->EnsureInstantiation(pGenericMDescInRepMT->GetLoaderAllocator(), methodInst);
 
     {
         // Acquire crst to prevent tripping up other threads searching in the same hashtable

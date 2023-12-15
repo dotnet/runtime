@@ -32,10 +32,12 @@ class TypeDesc
 {
 public:
 #ifndef DACCESS_COMPILE
-    TypeDesc(CorElementType type) {
+    TypeDesc(CorElementType type, bool isCollectible) {
         LIMITED_METHOD_CONTRACT;
 
         m_typeAndFlags = type;
+        if (isCollectible)
+            m_typeAndFlags |= enum_flag_IsCollectible;
     }
 #endif
 
@@ -138,6 +140,12 @@ public:
         return (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
     }
 
+    bool IsCollectible() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_typeAndFlags & enum_flag_IsCollectible;
+    }
+
     VOID SetIsFullyLoaded()
     {
         LIMITED_METHOD_CONTRACT;
@@ -177,6 +185,9 @@ public:
     {
         SUPPORTS_DAC;
 
+        if (!IsCollectible())
+            return SystemDomain::GetGlobalLoaderAllocator();
+
         return GetLoaderModule()->GetLoaderAllocator();
     }
 
@@ -189,7 +200,7 @@ public:
     enum
     {
         // unused                        = 0x00000100,
-        // unused                        = 0x00000200,
+        enum_flag_IsCollectible          = 0x00000200,
         enum_flag_Unrestored             = 0x00000400,
         enum_flag_UnrestoredTypeKey      = 0x00000800,
         enum_flag_IsNotFullyLoaded       = 0x00001000,
@@ -221,7 +232,7 @@ class ParamTypeDesc : public TypeDesc {
 public:
 #ifndef DACCESS_COMPILE
     ParamTypeDesc(CorElementType type, TypeHandle arg)
-        : TypeDesc(type), m_Arg(arg), m_hExposedClassObject(0) {
+        : TypeDesc(type, arg.IsCollectible()), m_Arg(arg), m_hExposedClassObject(0) {
 
         LIMITED_METHOD_CONTRACT;
 
@@ -323,7 +334,7 @@ public:
 #ifndef DACCESS_COMPILE
 
     TypeVarTypeDesc(PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token) :
-        TypeDesc(TypeFromToken(typeOrMethodDef) == mdtTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR)
+        TypeDesc(TypeFromToken(typeOrMethodDef) == mdtTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR, pModule->IsCollectible())
     {
         CONTRACTL
         {
@@ -482,8 +493,8 @@ class FnPtrTypeDesc : public TypeDesc
 
 public:
 #ifndef DACCESS_COMPILE
-    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes)
-        : TypeDesc(ELEMENT_TYPE_FNPTR), m_NumArgs(numArgs), m_CallConv(callConv)
+    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes, bool isCollectible)
+        : TypeDesc(ELEMENT_TYPE_FNPTR, isCollectible), m_NumArgs(numArgs), m_CallConv(callConv)
     {
         LIMITED_METHOD_CONTRACT;
         for (DWORD i = 0; i <= numArgs; i++)

@@ -4375,7 +4375,7 @@ namespace
         if (callConv == CorInfoCallConvExtension::Thiscall)
             ndirectflags |= NDirectMethodDesc::kThisCall;
 
-        if (pNMD->GetLoaderModule()->IsSystem() && (strcmp(libName, "QCall") == 0))
+        if (pNMD->GetModule()->IsSystem() && (strcmp(libName, "QCall") == 0))
         {
             ndirectflags |= NDirectMethodDesc::kIsQCall;
         }

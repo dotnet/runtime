@@ -199,6 +199,8 @@ public:
 #endif
     }
 
+    bool IsCollectible() const;
+
     BOOL IsEnum() const;
 
     BOOL IsFnPtrType() const;

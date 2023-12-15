@@ -633,7 +633,7 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule)
+PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable()
 {
     CONTRACTL
     {
@@ -8226,7 +8226,7 @@ MethodTable::GetMethodDataHelper(
             _ASSERTE(nInterfaceIndex <= cImplInterfaceMap);
             {
                 OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
-                _ASSERTE(rgImplInterfaceMap[nInterfaceIndex].GetApproxMethodTable(pMTImpl->GetLoaderModule())->HasSameTypeDefAs(pMTDecl));
+                _ASSERTE(rgImplInterfaceMap[nInterfaceIndex].GetApproxMethodTable()->HasSameTypeDefAs(pMTDecl));
             }
         }
     }

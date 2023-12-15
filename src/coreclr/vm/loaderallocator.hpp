@@ -280,6 +280,7 @@ template <typename ELEMENT>
 class ListLockEntryBase;
 typedef ListLockEntryBase<void*> ListLockEntry;
 class UMEntryThunkCache;
+class Module;
 
 #ifdef FEATURE_COMINTEROP
 class ComCallWrapperCache;
@@ -320,6 +321,9 @@ protected:
     PTR_LoaderHeap      m_pNewStubPrecodeHeap;
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
+protected:
+    Module*             m_pModule = NULL; // Module associated with LoaderAllocator. Set to NULL for all LoaderAllocators except for AssemblyLoaderAllocators
+public:
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
     // The LoaderAllocator specific string literal map.
     StringLiteralMap   *m_pStringLiteralMap;
@@ -361,6 +365,12 @@ public:
     void * m_pLastUsedCodeHeap;
     void * m_pLastUsedDynamicCodeHeap;
     void * m_pJumpStubCache;
+
+    Module* GetModule() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pModule;
+    }
 
     // LoaderAllocator GC Structures
     PTR_LoaderAllocator m_pLoaderAllocatorDestroyNext; // Used in LoaderAllocator GC process (during sweeping)
@@ -551,6 +561,14 @@ public:
     // Ensure this LoaderAllocator has a reference to every LoaderAllocator of the types
     // in an instantiation
     BOOL EnsureInstantiation(Module *pDefiningModule, Instantiation inst);
+
+    // Ensure this LoaderAllocator has a reference to every LoaderAllocator of the types
+    // in an instantiation
+    BOOL EnsureInstantiation(LoaderAllocator *pDefiningAllocator, Instantiation inst);
+
+    // Ensure this LoaderAllocator has a reference to every LoaderAllocator of the types
+    // in an instantiation
+    BOOL EnsureInstantiation(Instantiation inst);
 
     // Given typeId and slotNumber, GetDispatchToken will return a DispatchToken
     // representing <typeId, slotNumber>. If the typeId is big enough, this
@@ -920,6 +938,13 @@ public:
     ShuffleThunkCache* GetShuffleThunkCache()
     {
         return m_pShuffleThunkCache;
+    }
+
+    void SetModule(Module *pModule)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(m_pModule == NULL);
+        m_pModule = pModule;
     }
 
 #if !defined(DACCESS_COMPILE)

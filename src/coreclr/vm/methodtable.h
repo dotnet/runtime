@@ -140,7 +140,7 @@ public:
     }
 
     // Get approximate method table. This is used by the type loader before the type is fully loaded.
-    PTR_MethodTable GetApproxMethodTable(Module * pContainingModule);
+    PTR_MethodTable GetApproxMethodTable();
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE

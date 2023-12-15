@@ -186,14 +186,12 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     //         MT of the original object (i.e., array) itself must not be getting
     //         unloaded either, since the MTs of arrays and of their elements are
     //         allocated on the same loader allocator.
-    Module * pLoaderModule = pMT->GetLoaderModule();
-
     // Don't look up types that are unloading due to Collectible Assemblies. Haven't been
     // able to find a case where we actually encounter objects like this that can cause
     // problems; however, it seems prudent to add this protection just in case.
-    LoaderAllocator * pLoaderAllocator = pLoaderModule->GetLoaderAllocator();
-    _ASSERTE(pLoaderAllocator != NULL);
-    if ((pLoaderAllocator->IsCollectible()) &&
+
+    LoaderAllocator* pLoaderAllocator;
+    if (pMT->Collectible() && (pLoaderAllocator = pMT->GetLoaderAllocator(), pLoaderAllocator->IsCollectible()) &&
         (ObjectHandleIsNull(pLoaderAllocator->GetLoaderAllocatorObjectHandle())))
     {
         return NULL;

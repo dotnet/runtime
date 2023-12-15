@@ -335,7 +335,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     else
     {
         // Generics are involved so we need to search for all related MethodDescs.
-        Module* module = pMethod->GetLoaderModule();
+        Module* module = pMethod->GetModule();
         AppDomain* appDomain = module->GetDomain()->AsAppDomain();
         mdMethodDef tkMethod = pMethod->GetMemberDef();
 
@@ -1040,7 +1040,7 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
     _ASSERTE(getOnly == TRUE);
 #endif // DACCESS_COMPILE
 
-    Module* loaderModule = pMT->GetLoaderModule();
+    Module* loaderModule = pMT->GetModule();
     DPTR(PTR_EnCEEClassData) ppData = loaderModule->m_ClassList.Table();
     DPTR(PTR_EnCEEClassData) ppLast = ppData + loaderModule->m_ClassList.Count();
 

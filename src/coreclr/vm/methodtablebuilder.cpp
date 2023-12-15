@@ -608,7 +608,7 @@ MethodTableBuilder::LoadApproxInterfaceMap()
                 // Compare TypeDefs of the parent's interface and this interface (full MT comparison is in
                 // code:#ExactInterfaceMap_SupersetOfParent)
                 OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
-                _ASSERTE(parentInterfacesIterator.GetInterfaceInfo()->GetApproxMethodTable(pParentMT->GetLoaderModule())->HasSameTypeDefAs(
+                _ASSERTE(parentInterfacesIterator.GetInterfaceInfo()->GetApproxMethodTable()->HasSameTypeDefAs(
                     bmtInterface->pInterfaceMap[nInterfaceIndex].GetInterfaceType()->GetMethodTable()));
                 nInterfaceIndex++;
             }
@@ -9580,7 +9580,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                 // The interface instantiations of parent can be different (see
                 // code:#InterfaceMap_CanonicalSupersetOfParent, and SpecialMarkerType), therefore we cannot compare
                 // MethodTables exactly
-                _ASSERTE(parentInterfacesIterator.GetInterfaceInfo()->GetApproxMethodTable(pParentMT->GetLoaderModule())->HasSameTypeDefAs(
+                _ASSERTE(parentInterfacesIterator.GetInterfaceInfo()->GetApproxMethodTable()->HasSameTypeDefAs(
                     bmtExactInterface.pExactMTs[nInterfaceIndex]));
                 nInterfaceIndex++;
             }
