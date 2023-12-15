@@ -2963,10 +2963,37 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2) const
     return true;
 }
 
+void emitter::emitDispBranchOffset(instrDesc* id, insGroup*  ig) const
+{
+    static const auto signFn = [](int offset) { return offset >= 0 ? "+" : ""; };
+
+    int instrCount = id->idAddr()->iiaGetInstrCount();
+    if (ig == nullptr)
+    {
+        printf("pc%s%d instructions", signFn(instrCount), instrCount);
+        return;
+    }
+    unsigned insNum = emitFindInsNum(ig, id);
+    UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
+    UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
+    ssize_t relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(dstOffs));
+    printf("pc%s%d (%d instructions)", signFn(relOffs), static_cast<int>(relOffs), instrCount);
+}
+
+void emitter::emitDispBranchLabel(const instrDesc* id) const
+{
+    if (id->idIsBound())
+    {
+        return emitPrintLabel(id->idAddr()->iiaIGlabel);
+    }
+    printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+}
+
 bool emitter::emitDispBranch(unsigned         opcode2,
                              const char*      register1Name,
                              const char*      register2Name,
-                             const instrDesc* id) const
+                            instrDesc* id,
+                            insGroup*  ig) const
 {
     if (!emitDispBranchInstrType(opcode2))
     {
@@ -2974,13 +3001,15 @@ bool emitter::emitDispBranch(unsigned         opcode2,
     }
     printf("           %s, %s, ", register1Name, register2Name);
     assert(id != nullptr);
-    if (id->idIsBound())
+    if (id->idAddr()->iiaHasInstrCount())
     {
-        emitPrintLabel(id->idAddr()->iiaIGlabel);
+        // Branch is jumping to some non-labeled offset
+        emitDispBranchOffset(id, ig);
     }
     else
     {
-        printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+        // Branch is jumping to the labeled offset
+        emitDispBranchLabel(id);
     }
     printf("\n");
     return true;
@@ -3019,7 +3048,7 @@ static const char* const RegNames[] =
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id)
+void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id, insGroup* ig)
 {
     const BYTE* insAdr = addr - writeableOffset;
 
@@ -3340,7 +3369,7 @@ void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigne
             // {
             //     offset |= 0xfffff000;
             // }
-            if (!emitDispBranch(opcode2, rs1, rs2, id))
+            if (!emitDispBranch(opcode2, rs1, rs2, id, ig))
             {
                 emitDispIllegalInstruction(code);
             }
@@ -3985,7 +4014,7 @@ void emitter::emitDispIns(
         instrSize = sizeof(code_t);
         code_t instruction;
         memcpy(&instruction, instr, instrSize);
-        emitDispInsName(instruction, instr, doffs, offset, id);
+        emitDispInsName(instruction, instr, doffs, offset, id, ig);
     }
 }
 

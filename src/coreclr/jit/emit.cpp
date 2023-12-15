@@ -4328,7 +4328,7 @@ void emitter::emitDispJumpList()
 //   id - the pointer to the current instrDesc
 //   idSize - the size of the current instrDesc
 //
-void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
+void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const
 {
     assert(idSize == emitSizeOfInsDsc(*id));
     char* idData = reinterpret_cast<char*>(*id);
@@ -4346,7 +4346,7 @@ void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
 // Returns:
 //   A pointer to the first instrDesc.
 //
-emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData)
+emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData) const
 {
     return reinterpret_cast<instrDesc*>(idData + m_debugInfoSize);
 }
@@ -7664,7 +7664,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
  *  instruction number for this instruction
  */
 
-unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
+unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch) const
 {
     instrDesc* id = emitFirstInstrDesc(ig->igData);
 
@@ -7700,7 +7700,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
  *  to find the true offset by looking for the instruction within the group.
  */
 
-UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
+UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum) const
 {
     instrDesc*     id = emitFirstInstrDesc(ig->igData);
     UNATIVE_OFFSET of = 0;

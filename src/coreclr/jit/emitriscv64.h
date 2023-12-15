@@ -60,9 +60,11 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
-void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id);
+void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id, insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
-bool emitDispBranch(unsigned opcode2, const char* register1Name, const char* register2Name, const instrDesc* id) const;
+bool emitDispBranch(unsigned opcode2, const char* register1Name, const char* register2Name, instrDesc* id, insGroup* ig) const;
+void emitDispBranchOffset(instrDesc* id, insGroup* ig) const;
+void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2) const;
 void emitDispIllegalInstruction(code_t instructionCode);
 
