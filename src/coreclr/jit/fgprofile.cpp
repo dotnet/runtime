@@ -488,7 +488,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -949,7 +949,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // some new keying scheme. For now we just
                 // ignore this (rare) case.
                 //
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
                     // This block should be the only pred of the continuation.
                     //
@@ -1076,11 +1076,11 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     BasicBlock* const target = block->GetSucc(0, this);
                     if (BlockSetOps::IsMember(this, marked, target->bbNum))
                     {
-                        // We can't instrument in the call always pair tail block
+                        // We can't instrument in the call finally pair tail block
                         // so treat this as a critical edge.
                         //
                         visitor->VisitNonTreeEdge(block, target,
-                                                  block->isBBCallAlwaysPairTail()
+                                                  block->isBBCallFinallyPairTail()
                                                       ? SpanningTreeVisitor::EdgeKind::CriticalEdge
                                                       : SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                     }
@@ -1661,7 +1661,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             //
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -4428,6 +4428,10 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 {
                     bOnlyNext = bDst->GetTarget();
                 }
+                else if (bDst->KindIs(BBJ_CALLFINALLYRET)) // TODO-Quirk: remove (was added to reduce asmdiffs)
+                {
+                    bOnlyNext = bDst->GetFinallyContinuation();
+                }
                 else
                 {
                     bOnlyNext = nullptr;
@@ -4662,6 +4666,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
                 case BBJ_CALLFINALLY:
+                case BBJ_CALLFINALLYRET:
                     // We know the exact edge weight
                     assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
                     assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, bDst, slop, &usedSlop);

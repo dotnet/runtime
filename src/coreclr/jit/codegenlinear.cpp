@@ -535,7 +535,7 @@ void CodeGen::genCodeForBBlist()
         /* Is this the last block, and are there any open scopes left ? */
 
         bool isLastBlockProcessed;
-        if (block->isBBCallAlwaysPair())
+        if (block->isBBCallFinallyPair())
         {
             isLastBlockProcessed = block->Next()->IsLast();
         }
@@ -806,7 +806,7 @@ void CodeGen::genCodeForBBlist()
             // and 16 bytes for arm64.
 
             assert(ShouldAlignLoops());
-            assert(!block->isBBCallAlwaysPairTail());
+            assert(!block->isBBCallFinallyPairTail());
 #if FEATURE_EH_CALLFINALLY_THUNKS
             assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS

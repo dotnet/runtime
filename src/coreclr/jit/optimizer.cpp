@@ -2137,9 +2137,9 @@ private:
             return nullptr;
         }
 
-        // Advancing the insertion point is ok, except that we can't split up any CallFinally/BBJ_ALWAYS
+        // Advancing the insertion point is ok, except that we can't split up any call finally
         // pair, so if we've got such a pair recurse to see if we can move past the whole thing.
-        return (newMoveAfter->isBBCallAlwaysPair() ? TryAdvanceInsertionPoint(newMoveAfter) : newMoveAfter);
+        return (newMoveAfter->isBBCallFinallyPair() ? TryAdvanceInsertionPoint(newMoveAfter) : newMoveAfter);
     }
 
     //------------------------------------------------------------------------
@@ -2653,6 +2653,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_ALWAYS:
         case BBJ_LEAVE:
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
             // All of these have a single jump destination to update.
             if (redirectMap->Lookup(blk->GetTarget(), &newJumpDest))
             {
@@ -2761,30 +2762,6 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
     }
 }
 
-// TODO-Cleanup: This should be a static member of the BasicBlock class.
-void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
-{
-    // copy the jump destination(s) from "from" to "to".
-    switch (from->GetKind())
-    {
-        case BBJ_SWITCH:
-            to->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(this, from->GetSwitchTargets()));
-            break;
-        case BBJ_EHFINALLYRET:
-            to->SetEhf(new (this, CMK_BasicBlock) BBehfDesc(this, from->GetEhfTargets()));
-            break;
-        case BBJ_COND:
-            to->SetCond(from->GetTrueTarget());
-            break;
-        default:
-            to->SetKindAndTarget(from->GetKind(), from->GetTarget());
-            to->CopyFlags(from, BBF_NONE_QUIRK);
-            break;
-    }
-
-    assert(to->KindIs(from->GetKind()));
-}
-
 // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
 bool Compiler::optIsLoopEntry(BasicBlock* block) const
 {
@@ -2878,10 +2855,10 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
 
     // Normally, `head` either falls through to the `top` or branches to a non-`top` middle
-    // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
-    // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
+    // entry block. If the `head` branches to `top` because it is the BBJ_CALLFINALLYRET of a
+    // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, we canonicalize by introducing a new fall-through
     // head block. See FindEntry() for the logic that allows this.
-    if (h->KindIs(BBJ_ALWAYS) && h->TargetIs(t) && h->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (h->KindIs(BBJ_CALLFINALLYRET) && h->TargetIs(t))
     {
         // Insert new head
 
@@ -2898,7 +2875,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         optUpdateLoopHead(loopInd, h, newH);
 
         JITDUMP("in optCanonicalizeLoop: " FMT_LP " head " FMT_BB
-                " is BBJ_ALWAYS of BBJ_CALLFINALLY/BBJ_ALWAYS pair that targets top " FMT_BB
+                " is BBJ_CALLFINALLYRET of BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair that targets top " FMT_BB
                 ". Replacing with new BBJ_ALWAYS head " FMT_BB ".",
                 loopInd, h->bbNum, t->bbNum, newH->bbNum);
 
@@ -4300,7 +4277,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 for (BasicBlock* block = loop.lpTop; !loop.lpBottom->NextIs(block); block = block->Next())
                 {
                     // Don't set a jump target for now.
-                    // Compiler::optCopyBlkDest() will fix the jump kind/target in the loop below.
+                    // BasicBlock::CopyTarget() will fix the jump kind/target in the loop below.
                     BasicBlock* newBlock = insertAfter = fgNewBBafter(BBJ_ALWAYS, insertAfter, /*extendRegion*/ true);
                     blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
 
@@ -4368,7 +4345,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     assert(!newBlock->HasInitializedTarget());
 
                     // Now copy the jump kind/target
-                    optCopyBlkDest(block, newBlock);
+                    newBlock->CopyTarget(this, block);
                     optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
                 }
 
@@ -4719,7 +4696,12 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Does the BB end with an unconditional jump?
 
-    if (!block->KindIs(BBJ_ALWAYS) || block->JumpsToNext() || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (!block->KindIs(BBJ_ALWAYS) || block->JumpsToNext())
+    {
+        return false;
+    }
+
+    if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         // It can't be one of the ones we use for our exception magic
         return false;
@@ -5408,8 +5390,8 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
                 continue;
             }
 
-            // We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops.
-            if (!bottom->KindIs(BBJ_COND, BBJ_ALWAYS))
+            // We only consider back-edges of these kinds for loops.
+            if (!bottom->KindIs(BBJ_COND, BBJ_ALWAYS, BBJ_CALLFINALLYRET))
             {
                 continue;
             }
