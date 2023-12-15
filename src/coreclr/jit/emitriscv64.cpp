@@ -2145,7 +2145,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ code_t emitter::insEncodeRTypeInstr(unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7) const
+/*static*/ emitter::code_t emitter::insEncodeRTypeInstr(
+    unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7)
 {
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
@@ -2154,6 +2155,27 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(rs2, 5);
     assertCodeLength(funct7, 7);
     return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (funct7 << 25);
+}
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 I-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  I-Type layout:
+ *  31----------------------15-14------12-11-----------7-6------------0
+ *  |        imm[11:0]        |  funct3  |      rd      |   opcode    |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeITypeInstr(
+    unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned imm12)
+{
+    assertCodeLength(opcode, 7);
+    assertCodeLength(rd, 5);
+    assertCodeLength(funct3, 3);
+    assertCodeLength(imm12, 12);
+    return opcode | (rd << 7) | (funct3 << 12) | (imm12 << 15);
 }
 
 /*****************************************************************************
