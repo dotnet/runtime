@@ -2170,12 +2170,12 @@ static void assertCodeLength(unsigned code, uint8_t size)
  */
 
 /*static*/ emitter::code_t emitter::insEncodeITypeInstr(
-    unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned imm12)
+    unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, int imm12)
 {
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
     assertCodeLength(funct3, 3);
-    assertCodeLength(imm12, 12);
+    isValidSimm12(imm12);
 
     return opcode | (rd << 7) | (funct3 << 12) | (imm12 << 15);
 }
@@ -2192,7 +2192,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
  */
 
 /*static*/ emitter::code_t emitter::insEncodeSTypeInstr(
-    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12)
+    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm12)
 {
     static constexpr unsigned kLoMask = 0x1f; // 0b00011111
     static constexpr unsigned kHiMask = 0x7f; // 0b01111111
@@ -2201,7 +2201,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
-    assertCodeLength(imm12, 12);
+    isValidSimm12(imm12);
+
     unsigned imm12Lo = imm12 & kLoMask;
     unsigned imm12Hi = (imm12 >> 5) & kHiMask;
 
@@ -2219,11 +2220,11 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ emitter::code_t emitter::insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20)
+/*static*/ emitter::code_t emitter::insEncodeUTypeInstr(unsigned opcode, unsigned rd, int imm20)
 {
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
-    assertCodeLength(imm20, 20);
+    isValidSimm20(imm20);
 
     return opcode | (rd << 7) | (imm20 << (12 + 12));
 }
@@ -2240,7 +2241,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
  */
 
 /*static*/ emitter::code_t emitter::insEncodeBTypeInstr(
-    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13)
+    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm13)
 {
     static constexpr unsigned kLoSectionMask = 0x0f; // 0b00001111
     static constexpr unsigned kHiSectionMask = 0x3f; // 0b00111111
@@ -2250,7 +2251,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
-    assertCodeLength(imm13, 13);
+    isValidSimm13(imm13);
+
     unsigned imm12          = imm13 >> 1;
     unsigned imm12LoSection = imm12 & kLoSectionMask;
     unsigned imm12LoBit     = (imm12 >> 10) & kBitMask;
@@ -2272,14 +2274,15 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21)
+/*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21)
 {
     static constexpr unsigned kSectionMask = 0x3ff; // 0b1111111111
     static constexpr unsigned kBitMask     = 0x01;
 
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
-    assertCodeLength(imm21, 21);
+    isValidSimm21(imm21);
+
     unsigned imm20          = imm21 >> 1;
     unsigned imm20HiSection = imm20 & kSectionMask;
     unsigned imm20HiBit     = (imm20 >> 19) & kBitMask;
