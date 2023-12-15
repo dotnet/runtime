@@ -17219,14 +17219,17 @@ void emitter::emitDispInsHelp(
             emitDispImm(emitGetInsSC(id), false);                           // iiii
             break;
 
+        // none
         case IF_SVE_DQ_0A: // ................ ................ -- SVE FFR initialise
             break;
 
+        // <Pn>.B
         case IF_SVE_DR_1A: // ................ .......NNNN..... -- SVE FFR write from predicate
             emitDispPredicateReg(id->idReg1(), PREDICATE_NONE, false); // NNNN
             emitDispArrangement(id->idInsOpt());                       // .B
             break;
 
+        // <R><n>, <R><m>
         case IF_SVE_DS_2A: // .........x.mmmmm ......nnnnn..... -- SVE conditionally terminate scalars
             emitDispReg(id->idReg1(), id->idOpSize(), true);  // nnnnn
             emitDispReg(id->idReg2(), id->idOpSize(), false); // mmmmm
