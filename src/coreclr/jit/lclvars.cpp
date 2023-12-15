@@ -4091,9 +4091,9 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             return;
         }
 
-        if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
+        if ((m_domTree != nullptr) && IsDominatedByExceptionalEntry(block))
         {
-            SetVolatileHint(varDsc);
+            SetHasExceptionalUsesHint(varDsc);
         }
 
         if (tree->OperIs(GT_STORE_LCL_VAR))
@@ -4169,19 +4169,19 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 //
 bool Compiler::IsDominatedByExceptionalEntry(BasicBlock* block)
 {
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     return block->IsDominatedByExceptionalEntryFlag();
 }
 
 //------------------------------------------------------------------------
-// SetVolatileHint: Set a local var's volatile hint.
+// SetHasExceptionalUsesHint: Set that a local var has exceptional uses.
 //
 // Arguments:
 //    varDsc - the local variable that needs the hint.
 //
-void Compiler::SetVolatileHint(LclVarDsc* varDsc)
+void Compiler::SetHasExceptionalUsesHint(LclVarDsc* varDsc)
 {
-    varDsc->lvVolatileHint = true;
+    varDsc->lvHasExceptionalUsesHint = true;
 }
 
 //------------------------------------------------------------------------

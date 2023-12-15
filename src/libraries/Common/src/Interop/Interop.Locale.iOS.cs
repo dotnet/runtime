@@ -11,7 +11,7 @@ internal static partial class Interop
         internal static partial string GetDefaultLocaleNameNative();
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoStringNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial string GetLocaleInfoStringNative(string localeName, uint localeStringData);
+        internal static partial string GetLocaleInfoStringNative(string localeName, uint localeStringData, string? uiLocaleName = null);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoIntNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int GetLocaleInfoIntNative(string localeName, uint localeNumberData);

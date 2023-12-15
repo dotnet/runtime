@@ -4632,7 +4632,6 @@ void emitter::emitRemoveJumpToNextInst()
 #if DEBUG
             assert(jmp->idInsFmt() == IF_LABEL);
             assert(emitIsUncondJump(jmp));
-            assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
             assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
                    ((jmpGroup->igNum == previousJumpIgNum) && (jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum)));
             previousJumpIgNum  = jmpGroup->igNum;
@@ -4646,6 +4645,8 @@ void emitter::emitRemoveJumpToNextInst()
 
             if ((jmpGroup->igNext == targetGroup) && ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) != 0))
             {
+                assert(!jmpGroup->endsWithAlignInstr());
+
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
                 CLANG_FORMAT_COMMENT_ANCHOR
@@ -4736,11 +4737,6 @@ void emitter::emitRemoveJumpToNextInst()
                     JITDUMP("IG%02u IN%04x jump target is not set!, keeping.\n", jmpGroup->igNum,
                             jmp->idDebugOnlyInfo()->idNum);
                 }
-                else if ((jmpGroup->igFlags & IGF_HAS_ALIGN) != 0)
-                {
-                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
-                            jmp->idDebugOnlyInfo()->idNum);
-                }
                 else if (jmpGroup->igNext != targetGroup)
                 {
                     JITDUMP("IG%02u IN%04x does not jump to the next instruction group, keeping.\n", jmpGroup->igNum,
@@ -4751,6 +4747,11 @@ void emitter::emitRemoveJumpToNextInst()
                     JITDUMP("IG%02u IN%04x containing instruction group is not marked with IGF_HAS_REMOVABLE_JMP, "
                             "keeping.\n",
                             jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum);
+                }
+                else if (jmpGroup->endsWithAlignInstr())
+                {
+                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
                 }
 #endif // DEBUG
             }
@@ -5984,7 +5985,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
-    // We don't rely on (block->GetJumpDest()->bbNum <= block->bbNum) because the basic
+    // We don't rely on (block->GetTarget()->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {

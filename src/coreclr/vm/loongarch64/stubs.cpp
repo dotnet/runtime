@@ -1499,8 +1499,8 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xffffff0f/*badcode*/; p += 4; }\
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)pStart
+    ClrFlushInstructionCache(pStartRX, cbAligned); \
+    return (PCODE)pStartRX
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
@@ -1651,7 +1651,7 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
     *(DWORD*)p = 0x18000015;// pcaddi  $r21,0
     p += 4;
-    *(DWORD*)p = 0x28c042a4;// ld.d  $v0,$r21,16
+    *(DWORD*)p = 0x28c042a4;// ld.d  $a0,$r21,16
     p += 4;
     *(DWORD*)p = 0x4c000020;// jirl  $r0,$ra,0
     p += 4;
@@ -1674,11 +1674,11 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
 
     *(DWORD*)p = 0x18000015;// pcaddi  $r21,0
     p += 4;
-    *(DWORD*)p = 0x28c062a4;// ld.d  $v0,$r21,24
+    *(DWORD*)p = 0x28c062a4;// ld.d  $a0,$r21,24
     p += 4;
-    *(DWORD*)p = 0x28c00084;// ld.d  $v0,$v0,0
+    *(DWORD*)p = 0x28c00084;// ld.d  $a0,$a0,0
     p += 4;
-    *(DWORD*)p = 0x02c00084 | ((offset & 0xfff)<<10);// addi.d  $v0,$v0,offset
+    *(DWORD*)p = 0x02c00084 | ((offset & 0xfff)<<10);// addi.d  $a0,$a0,offset
     p += 4;
     *(DWORD*)p = 0x4c000020;// jirl  $r0,$ra,0
     p += 4;

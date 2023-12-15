@@ -25,6 +25,7 @@
     <_TargetFrameworkForNETCoreTasks>net8.0</_TargetFrameworkForNETCoreTasks>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     <SelfContained>true</SelfContained>
+    <WasmCommonTargetsPath>$(_WasmTargetsDir)</WasmCommonTargetsPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">

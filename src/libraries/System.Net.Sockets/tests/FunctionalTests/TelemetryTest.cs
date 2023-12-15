@@ -193,9 +193,10 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
-            if (connectMethod == "Sync" && PlatformDetection.IsLinux)
+            // Skip test on Linux kernels that may have a regression that was fixed in 6.6.
+            // See TcpReceiveSendGetsCanceledByDispose test for additional information.
+            if (connectMethod == "Sync" && PlatformDetection.IsLinux && Environment.OSVersion.Version < new Version(6, 6))
             {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
                 return;
             }
 

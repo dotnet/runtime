@@ -18,9 +18,6 @@ PhaseStatus Compiler::fgSsaBuild()
         fgResetForSsa();
     }
 
-    // Reset BlockPredsWithEH cache.
-    m_blockToEHPreds = nullptr;
-
     SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
@@ -1251,7 +1248,7 @@ void SsaBuilder::RenameVariables()
     };
 
     SsaRenameDomTreeVisitor visitor(m_pCompiler, this, &m_renameStack);
-    visitor.WalkTree(m_pCompiler->fgSsaDomTree);
+    visitor.WalkTree(m_pCompiler->m_domTree);
 }
 
 //------------------------------------------------------------------------
@@ -1284,18 +1281,10 @@ void SsaBuilder::RenameVariables()
 //
 void SsaBuilder::Build()
 {
-#ifdef DEBUG
-    if (m_pCompiler->verbose)
-    {
-        printf("*************** In SsaBuilder::Build()\n");
-    }
-#endif
+    JITDUMP("*************** In SsaBuilder::Build()\n");
 
     m_visitedTraits = m_pCompiler->m_dfsTree->PostOrderTraits();
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
-
-    m_pCompiler->fgSsaDomTree = FlowGraphDominatorTree::Build(m_pCompiler->m_dfsTree);
-    EndPhase(PHASE_BUILD_SSA_DOMS);
 
     // Compute liveness on the graph.
     m_pCompiler->fgLocalVarLiveness();

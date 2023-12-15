@@ -33,10 +33,8 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WORKER;
 
     // threads
-    if (MonoWasmThreads) {
-        if (replacements.pthreadReplacements) {
-            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
-        }
+    if (MonoWasmThreads && replacements.modulePThread) {
+        replaceEmscriptenPThreadLibrary(replacements.modulePThread);
     }
 }
 

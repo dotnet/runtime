@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef DACCESS_COMPILE
+// Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
+// in assembly code. Do not use anywhere else.
 inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
@@ -10,6 +12,8 @@ inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransiti
     m_pDeferredTransitionFrame = pTransitionFrame;
 }
 
+// Setup the m_pDeferredTransitionFrame field for GC helpers entered via regular PInvoke.
+// Do not use anywhere else.
 inline void Thread::DeferTransitionFrame()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
