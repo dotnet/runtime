@@ -814,23 +814,23 @@ namespace Test
         [Fact]
         public static void NoCrashWithNonNameUsingAlias()
         {
-            string source = """
-                using System;
-                using System.Text.Json.Serialization;
-                using Point = (int x, int y);
+            string source = @"
+using System;
+using System.Text.Json.Serialization;
+using Point = (int x, int y);
 
-                namespace Test
-                {
-                    [JsonSerializable(typeof(C))]
-                    public partial class JsonContext : JsonSerializerContext { }
+namespace Test
+{
+    [JsonSerializable(typeof(C))]
+    public partial class JsonContext : JsonSerializerContext { }
 
-                    public class C
-                    {
-                        [JsonIgnore]
-                        public string @event { get; set; }
-                    }
-                }
-                """;
+    public class C
+    {
+        [JsonIgnore]
+        public string @event { get; set; }
+    }
+}
+";
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGenerator generator = new JsonSourceGenerator();
