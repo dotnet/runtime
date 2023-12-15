@@ -71,7 +71,7 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
     return options;
 }
 
-NSString *ConvertToKatakana(NSString *input)
+static NSString *ConvertToKatakana(NSString *input)
 {
     NSMutableString *mutableString = [input mutableCopy];
     CFStringTransform((__bridge CFMutableStringRef)mutableString, NULL, kCFStringTransformHiraganaKatakana, false);
