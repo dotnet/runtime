@@ -82,24 +82,17 @@ inline BOOL MethodTable::IsClassPointerValid()
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pLoaderModule;
+    return !Collectible() ? GetModule() : ((AssemblyLoaderAllocator*)dac_cast<TADDR>(GetLoaderAllocator()))->GetModule();
 }
 
 inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetLoaderModule()->GetLoaderAllocator();
+    return !Collectible() ? SystemDomain::GetGlobalLoaderAllocator() : *dac_cast<PTR_PTR_LoaderAllocator>(dac_cast<TADDR>(m_pWriteableData) - sizeof (TADDR));
 }
-
-
 
 #ifndef DACCESS_COMPILE
 //==========================================================================================
-inline void MethodTable::SetLoaderModule(Module* pModule)
-{
-    WRAPPER_NO_CONTRACT;
-    m_pLoaderModule = pModule;
-}
 
 inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
 {

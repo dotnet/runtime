@@ -322,7 +322,7 @@ protected:
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
 protected:
-    Module*             m_pModule = NULL; // Module associated with LoaderAllocator. Set to NULL for all LoaderAllocators except for AssemblyLoaderAllocators
+    PTR_Module          m_pModule = NULL; // Module associated with LoaderAllocator. Set to NULL for all LoaderAllocators except for AssemblyLoaderAllocators
 public:
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
     // The LoaderAllocator specific string literal map.
@@ -366,7 +366,7 @@ public:
     void * m_pLastUsedDynamicCodeHeap;
     void * m_pJumpStubCache;
 
-    Module* GetModule() const
+    PTR_Module GetModule() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_pModule;
@@ -940,6 +940,7 @@ public:
         return m_pShuffleThunkCache;
     }
 
+#if !defined(DACCESS_COMPILE)
     void SetModule(Module *pModule)
     {
         LIMITED_METHOD_CONTRACT;
@@ -947,7 +948,6 @@ public:
         m_pModule = pModule;
     }
 
-#if !defined(DACCESS_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();

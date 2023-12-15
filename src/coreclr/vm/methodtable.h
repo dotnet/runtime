@@ -565,7 +565,20 @@ public:
     static void         CallFinalizer(Object *obj);
 
 public:
-    PTR_Module GetModule();
+    PTR_Module GetModule()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pModule;
+    }
+
+#ifndef DACCESS_COMPILE
+    void SetModule(Module* pModule)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pModule = pModule;
+    }
+#endif
+
     Assembly *GetAssembly();
 
     PTR_Module GetModuleIfLoaded();
@@ -587,7 +600,6 @@ public:
     PTR_Module GetLoaderModule();
     PTR_LoaderAllocator GetLoaderAllocator();
 
-    void SetLoaderModule(Module* pModule);
     void SetLoaderAllocator(LoaderAllocator* pAllocator);
 
     // Get the domain local module - useful for static init checks
@@ -2743,12 +2755,7 @@ public:
     // ------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    inline void SetWriteableData(PTR_MethodTableWriteableData pMTWriteableData)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(pMTWriteableData);
-        m_pWriteableData = pMTWriteableData;
-    }
+    void AllocateWriteableData(LoaderAllocator *pAllocator, AllocMemTracker *pamTracker);
 #endif
 
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
@@ -3470,8 +3477,8 @@ private:
         enum_flag_HasInterfaceMap           = 0x0002,
         enum_flag_HasDispatchMapSlot        = 0x0004,
         enum_flag_HasNonVirtualSlots        = 0x0008,
-        enum_flag_HasModuleOverride         = 0x0010,
 
+        // unused                           = 0x0010,
         // unused                           = 0x0020,
         // unused                           = 0x0040,
 
@@ -3578,7 +3585,7 @@ private:
 
     PTR_MethodTable m_pParentMethodTable;
 
-    PTR_Module      m_pLoaderModule;
+    PTR_Module      m_pModule;
 
     PTR_MethodTableWriteableData m_pWriteableData;
 
@@ -3608,7 +3615,7 @@ private:
     // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive
     // JITed code and JIT helpers. However, they are frequently not present. The space is used by other
     // multipurpose slots on first come first served basis if the fixed ones are not present. The other
-    // multipurpose are DispatchMapSlot, NonVirtualSlots, ModuleOverride (see enum_flag_MultipurposeSlotsMask).
+    // multipurpose are DispatchMapSlot, and NonVirtualSlots (see enum_flag_MultipurposeSlotsMask).
     // The multipurpose slots that do not fit are stored after vtable slots.
 
     union
@@ -3741,7 +3748,6 @@ private:
 
     static const BYTE c_DispatchMapSlotOffsets[];
     static const BYTE c_NonVirtualSlotsOffsets[];
-    static const BYTE c_ModuleOverrideOffsets[];
 
     static const BYTE c_OptionalMembersStartOffsets[]; // total sizes of optional slots
 
@@ -3753,20 +3759,6 @@ private:
         _ASSERTE((m_wFlags2 & enum_flag_MultipurposeSlotsMask) == 0);
         m_wFlags2 |= (WORD)dwMask;
     }
-
-    BOOL HasModuleOverride()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_HasModuleOverride);
-    }
-
-    DPTR(PTR_Module) GetModuleOverridePtr()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<DPTR(PTR_Module)>(GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets));
-    }
-
-    void SetModule(Module * pModule);
 
 public:
 
@@ -3781,7 +3773,7 @@ WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wM
 #endif // defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 
 MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
-                                      LoaderHeap* pCreationHeap,
+                                      LoaderAllocator* pLoaderAllocator,
                                       AllocMemTracker* pamTracker);
 
 #endif // !_METHODTABLE_H_

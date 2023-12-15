@@ -97,6 +97,7 @@
 #include <daccess.h>
 
 typedef VPTR(class LoaderAllocator)     PTR_LoaderAllocator;
+typedef DPTR(PTR_LoaderAllocator)       PTR_PTR_LoaderAllocator;
 typedef VPTR(class AppDomain)           PTR_AppDomain;
 typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
