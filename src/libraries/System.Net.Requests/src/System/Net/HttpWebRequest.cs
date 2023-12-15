@@ -1222,6 +1222,12 @@ namespace System.Net
                     response);
             }
 
+            if (_disposeRequired)
+            {
+                _httpClient?.Dispose();
+                _httpClient = null;
+            }
+
             return response;
         }
 
