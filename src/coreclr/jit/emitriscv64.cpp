@@ -2119,12 +2119,13 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
     return sizeof(code_t);
 }
 
-void emitter::emitOutputInstrJumpSizeHelper(const insGroup* ig,
-                                            instrDescJmp*   jmp,
-                                            UNATIVE_OFFSET& dstOffs,
-                                            const BYTE*&    dstAddr) const
+void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
+                                                instrDescJmp*   jmp,
+                                                UNATIVE_OFFSET& dstOffs,
+                                                const BYTE*&    dstAddr) const
 {
-    // bug
+    // TODO-RISCV64-BUG: iiaEncodedInstrCount is not set by the riscv impl making distinguishing the jumps to label and
+    // an instruction-count based jumps impossible
     if (jmp->idAddr()->iiaHasInstrCount())
     {
         assert(ig != nullptr);
@@ -2143,7 +2144,7 @@ void emitter::emitOutputInstrJumpSizeHelper(const insGroup* ig,
     dstAddr = emitOffsetToPtr(dstOffs);
 }
 
-ssize_t emitter::emitOutputInstrJumpSize(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
+ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
 {
     UNATIVE_OFFSET srcOffs = emitCurCodeOffs(src);
     const BYTE*    srcAddr = emitOffsetToPtr(srcOffs);
@@ -2152,8 +2153,8 @@ ssize_t emitter::emitOutputInstrJumpSize(const BYTE* dst, const BYTE* src, const
 
     UNATIVE_OFFSET dstOffs{};
     const BYTE*    dstAddr = nullptr;
-    emitOutputInstrJumpSizeHelper(ig, jmp, dstOffs, dstAddr);
-    ;
+    emitOutputInstrJumpDistanceHelper(ig, jmp, dstOffs, dstAddr);
+
     ssize_t distVal = static_cast<ssize_t>(dstAddr - srcAddr);
 
     if (dstOffs > srcOffs)
@@ -2571,7 +2572,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regNumber reg1 = id->idReg1();
             {
-                ssize_t imm = emitOutputInstrJumpSize(dstRW, dst, ig, jmp);
+                ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, jmp);
                 imm -= 4;
 
                 assert((imm & 0x3) == 0);
@@ -2740,7 +2741,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         break;
         case INS_OPTS_J_cond:
         {
-            ssize_t imm = emitOutputInstrJumpSize(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
+            ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
             assert(isValidSimm13(imm));
             assert(!(imm & 1));
 
@@ -2761,7 +2762,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             {
-                ssize_t imm = emitOutputInstrJumpSize(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
+                ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
                 assert((imm & 3) == 0);
 
                 ins  = id->idIns();
