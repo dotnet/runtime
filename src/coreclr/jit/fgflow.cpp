@@ -349,6 +349,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
     switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:

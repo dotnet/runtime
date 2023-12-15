@@ -426,8 +426,14 @@ static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
+// Returns the encoding for a shift instruction, ready for insertion into an instruction.
+static code_t insEncodeShiftImmediate(emitAttr size, bool isRightShift, ssize_t shiftAmount);
+
 // Returns the encoding for ASIMD Shift instruction.
-static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
+static code_t insEncodeVectorShift(emitAttr size, bool isRightShift, ssize_t shiftAmount)
+{
+    return insEncodeShiftImmediate(size, isRightShift, shiftAmount) << 16;
+}
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
@@ -474,6 +480,10 @@ static code_t insEncodeSveElemsize(emitAttr size);
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+
+// Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
+// This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
+static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
