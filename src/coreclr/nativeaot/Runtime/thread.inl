@@ -58,3 +58,8 @@ inline void Thread::PopGCFrameRegistration(GCFrameRegistration* pRegistration)
     ASSERT(m_pGCFrameRegistrations == pRegistration);
     m_pGCFrameRegistrations = pRegistration->m_pNext;
 }
+
+inline gc_alloc_context* Thread::GetAllocContext()
+{
+    return (gc_alloc_context*)m_rgbAllocContextBuffer;
+}

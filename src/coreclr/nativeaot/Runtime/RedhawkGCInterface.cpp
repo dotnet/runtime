@@ -239,6 +239,7 @@ void RedhawkGCInterface::WaitForGCCompletion()
 // should be marked as not containing any references. The rest of the fields don't matter: the GC does not
 // query them and the rest of the runtime will never hold a reference to free object.
 
+
 void MethodTable::InitializeAsGcFreeType()
 {
     m_uFlags = ParameterizedEEType | HasComponentSizeFlag;
@@ -380,8 +381,6 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager* pCodeManager,
         &ctx,
         isActiveStackFrame);
 }
-
-#ifndef DACCESS_COMPILE
 
 // static
 GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize)

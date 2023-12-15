@@ -19,6 +19,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "eventtrace_etw.h"
 #include "eventtracebase.h"
