@@ -2127,6 +2127,35 @@ AGAIN:
     return sizeof(code_t);
 }
 
+static void assertCodeLength(unsigned code, uint8_t size)
+{
+#ifdef DEBUG
+    assert(code < (1u << size));
+#endif // DEBUG
+}
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 R-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  R-Type layout:
+ *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
+ *  | funct7   |  rs2  | rs1  |  funct3  |      rd      |   opcode    |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ code_t emitter::insEncodeRTypeInstr(unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7) const
+{
+    assertCodeLength(opcode, 7);
+    assertCodeLength(rd, 5);
+    assertCodeLength(funct3, 3);
+    assertCodeLength(rs1, 5);
+    assertCodeLength(rs2, 5);
+    assertCodeLength(funct7, 7);
+    return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (funct7 << 25);
+}
+
 /*****************************************************************************
 *
  *  Append the machine code corresponding to the given instruction descriptor

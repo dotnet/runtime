@@ -79,6 +79,13 @@ bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src
 bool IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
+static code_t insEncodeRTypeInstr(unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7) const;
+static code_t insEncodeITypeInstr(unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned imm12) const;
+static code_t insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12) const;
+static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20) const;
+static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12) const;
+static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm20) const;
+
 /************************************************************************/
 /*           Public inline informational methods                        */
 /************************************************************************/
