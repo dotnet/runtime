@@ -169,10 +169,6 @@
              TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
-  <UsingTask Condition="'$(InstallWorkloadForTesting)' == 'true'"
-             TaskName="GenerateFileFromTemplate"
-             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
-
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
@@ -193,7 +189,7 @@
       " />
 
     <MSBuild Projects="%(_NuGetsToBuild.Project)"
-             Properties="%(_NuGetsToBuild.Properties)"
+             Properties="%(_NuGetsToBuild.Properties);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore" />
     <MSBuild Projects="%(_NuGetsToBuild.Project)"
              Properties="%(_NuGetsToBuild.Properties)"

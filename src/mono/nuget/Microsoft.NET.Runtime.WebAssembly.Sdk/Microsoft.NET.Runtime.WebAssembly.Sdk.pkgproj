@@ -36,7 +36,7 @@
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/Sdk.targets.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(SdkTargetsPath)" />
 
     <ItemGroup>

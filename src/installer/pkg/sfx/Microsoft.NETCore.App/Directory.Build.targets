@@ -12,7 +12,5 @@
     <PackageReference Condition="'$(SkipInstallersPackageReference)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
   </ItemGroup>
 
-  <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
-
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>
