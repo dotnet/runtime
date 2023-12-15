@@ -44,7 +44,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-BZ", "dd/MM/yyyy" };
             yield return new object[] { "en-CA", "yyyy-MM-dd" };
             yield return new object[] { "en-CC", "dd/MM/yyyy" };
-            yield return new object[] { "en-CH", PlatformDetection.IsNodeJSOnWindows ? "dd/MM/yyyy" : "dd.MM.yyyy" }; // "dd/MM/yyyy"
+            yield return new object[] { "en-CH", "dd.MM.yyyy" }; // "dd/MM/yyyy"
             yield return new object[] { "en-CK", "dd/MM/yyyy" };
             yield return new object[] { "en-CM", "dd/MM/yyyy" };
             yield return new object[] { "en-CX", "dd/MM/yyyy" };

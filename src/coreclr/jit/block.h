@@ -68,6 +68,7 @@ enum BBKinds : BYTE
     BBJ_ALWAYS,      // block always jumps to the target
     BBJ_LEAVE,       // block always jumps to the target, maybe out of guarded region. Only used until importing.
     BBJ_CALLFINALLY, // block always calls the target finally
+    BBJ_CALLFINALLYRET, // block targets the return from finally, aka "finally continuation". Always paired with BBJ_CALLFINALLY.
     BBJ_COND,        // block conditionally jumps to the target
     BBJ_SWITCH,      // block ends with a switch statement
 
@@ -85,6 +86,7 @@ const char* const bbKindNames[] = {
     "BBJ_ALWAYS",
     "BBJ_LEAVE",
     "BBJ_CALLFINALLY",
+    "BBJ_CALLFINALLYRET",
     "BBJ_COND",
     "BBJ_SWITCH",
     "BBJ_COUNT"
@@ -406,14 +408,12 @@ enum BasicBlockFlags : unsigned __int64
     BBF_HAS_NEWOBJ           = MAKE_BBFLAG(23), // BB contains 'new' of an object type.
 
     BBF_RETLESS_CALL                   = MAKE_BBFLAG(24), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                                          // BBJ_ALWAYS); see isBBCallAlwaysPair().
+                                                          // BBJ_CALLFINALLYRET); see isBBCallFinallyPair().
     BBF_LOOP_PREHEADER                 = MAKE_BBFLAG(25), // BB is a loop preheader block
     BBF_COLD                           = MAKE_BBFLAG(26), // BB is cold
     BBF_PROF_WEIGHT                    = MAKE_BBFLAG(27), // BB weight is computed from profile data
     BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(28), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                                          // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                                          // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                                          // finally.
+                                                          // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally.
     BBF_HAS_CALL                       = MAKE_BBFLAG(29), // BB contains a call
     BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(30), // Block is dominated by exceptional entry.
     BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(31), // BB is surrounded by a backward jump/switch arc
@@ -633,7 +633,8 @@ public:
     bool HasTarget() const
     {
         // These block types should always have bbTarget set
-        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
+        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_CALLFINALLYRET, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET,
+                      BBJ_LEAVE);
     }
 
     BasicBlock* GetTarget() const
@@ -778,6 +779,21 @@ public:
         assert(ehfTarget != nullptr);
         bbKind       = BBJ_EHFINALLYRET;
         bbEhfTargets = ehfTarget;
+    }
+
+    // BBJ_CALLFINALLYRET uses the `bbTarget` field. However, also treat it specially:
+    // for callers that know they want a continuation, use this function instead of the
+    // general `GetTarget()` to allow asserting on the block kind.
+    BasicBlock* GetFinallyContinuation() const
+    {
+        assert(KindIs(BBJ_CALLFINALLYRET));
+        return bbTarget;
+    }
+
+    void SetFinallyContinuation(BasicBlock* finallyContinuation)
+    {
+        assert(KindIs(BBJ_CALLFINALLYRET));
+        bbTarget = finallyContinuation;
     }
 
 private:
@@ -1021,13 +1037,13 @@ public:
 
     bool isValid() const;
 
-    // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
+    // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair --
     // a block corresponding to an exit from the try of a try/finally.
-    bool isBBCallAlwaysPair() const;
+    bool isBBCallFinallyPair() const;
 
-    // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
+    // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair --
     // a block corresponding to an exit from the try of a try/finally.
-    bool isBBCallAlwaysPairTail() const;
+    bool isBBCallFinallyPairTail() const;
 
     bool KindIs(BBKinds kind) const
     {
@@ -1658,6 +1674,9 @@ public:
     static bool CloneBlockState(
         Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
 
+    // Copy the block kind and targets.
+    void CopyTarget(Compiler* compiler, const BasicBlock* from);
+
     void MakeLIR(GenTree* firstNode, GenTree* lastNode);
     bool IsLIR() const;
 
@@ -1917,6 +1936,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             break;
 
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
