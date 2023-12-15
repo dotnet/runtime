@@ -256,7 +256,11 @@ C_FUNC(\Name\()_End):
 
     __PWTB_FloatArgumentRegisters = \extraLocals
 
-    .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
+    // Note, stack (see __PWTB_StackAlloc variable) must be 16 byte aligned,
+    // SIZEOF__FloatArgumentRegisters (0x40) is 16 byte aligned, that mean initial
+    // __PWTB_FloatArgumentRegisters value must be not 16 byte aligned and
+    // after add (120 + 64) provide 16 byte aligned result.
+    .if ((__PWTB_FloatArgumentRegisters % 16) == 0)
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
     .endif
 

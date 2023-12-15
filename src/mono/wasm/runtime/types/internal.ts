@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI } from ".";
+import type { PThreadLibrary } from "../pthreads/shared/emscripten-internals";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -306,17 +307,12 @@ export type GlobalObjects = {
 export type EmscriptenReplacements = {
     fetch: any,
     require: any,
-    pthreadReplacements: PThreadReplacements | undefined | null
+    modulePThread: PThreadLibrary | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;
 }
 export interface ExitStatusError {
     new(status: number): any;
-}
-export type PThreadReplacements = {
-    loadWasmModuleToWorker(worker: Worker): Promise<Worker>,
-    threadInitTLS: () => void,
-    allocateUnusedWorker: () => void,
 }
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable

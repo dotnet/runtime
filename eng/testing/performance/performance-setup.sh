@@ -307,7 +307,7 @@ if [[ "$internal" == true ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
-            queue=Ubuntu.1804.Amd64.Owl.Perf
+            queue=Ubuntu.2204.Amd64.Owl.Perf
         elif [[ "$logical_machine" == "perftiger_crossgen" ]]; then
             queue=Ubuntu.1804.Amd64.Tiger.Perf
         else

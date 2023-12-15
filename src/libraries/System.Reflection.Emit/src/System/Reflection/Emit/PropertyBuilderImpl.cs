@@ -17,7 +17,7 @@ namespace System.Reflection.Emit
         private PropertyAttributes _attributes;
         private MethodInfo? _getMethod;
         private MethodInfo? _setMethod;
-        internal List<MethodInfo>? _otherMethods;
+        internal HashSet<MethodInfo>? _otherMethods;
 
         internal PropertyDefinitionHandle _handle;
         internal List<CustomAttributeWrapper>? _customAttributes;
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(mdBuilder);
             _containingType.ThrowIfCreated();
 
-            _otherMethods ??= new List<MethodInfo>();
+            _otherMethods ??= new HashSet<MethodInfo>();
             _otherMethods.Add(mdBuilder);
         }
 
