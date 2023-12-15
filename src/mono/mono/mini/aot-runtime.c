@@ -1216,13 +1216,14 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			}
 			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL: {
 				MonoMethodSignature *sig = decode_signature_with_target (module, NULL, p, &p);
-
 				/*
 				 * Can't decode sig into a runtime invoke wrapper since mono_marshal_get_runtime_invoke_for_sig () returns
 				 * a different method right now.
 				 */
-				if (!target)
+				if (!target) {
+					g_free (sig);
 					return FALSE;
+				}
 				info = mono_marshal_get_wrapper_info (target);
 				g_assert (info);
 
