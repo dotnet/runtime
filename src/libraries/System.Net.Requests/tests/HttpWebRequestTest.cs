@@ -2080,45 +2080,52 @@ namespace System.Net.Tests
         [Fact]
         public async Task SendHttpPostRequest_ConnectionShouldStartWithRequestStream()
         {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                request.Method = "POST";
-                var stream = request.BeginGetRequestStream(null, null);
-                Exception? exception = await Record.ExceptionAsync(() => server.AcceptConnectionAsync(_ =>
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
                 {
-                    return Task.CompletedTask;
-                }));
-                Assert.Null(exception);
-            }).WaitAsync(TestHelper.PassingTestTimeout);
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    var stream = await request.GetRequestStreamAsync();
+                },
+                async (server) => 
+                {
+                    Exception? exception = await Record.ExceptionAsync(() => server.AcceptConnectionAsync(_ =>
+                    {
+                        return Task.CompletedTask;
+                    }));
+                    Assert.Null(exception);
+                }
+            );
         }
 
         [Fact]
         public async Task SendHttpPostRequest_AllowWriteBufferingFalse_ConnectionShouldStartWithRequestStream()
         {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                const int size = 1048576 * 2;
-                const string text = "Hello World!!!!\n";
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                request.ContentType = "application/text";
-                request.ContentLength = size;
-                request.Method = "POST";
-                request.AllowWriteStreamBuffering = false;
-                var stream = request.GetRequestStream();
-                await server.AcceptConnectionAsync(async connection =>
+            const string text = "Hello World!!!!\n";
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
                 {
+                    const int size = 1048576 * 2;
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.ContentType = "application/text";
+                    request.ContentLength = size;
+                    request.Method = "POST";
+                    request.AllowWriteStreamBuffering = false;
+                    using var stream = await request.GetRequestStreamAsync();
                     for (int i = 0; i < size / 16; i++)
                     {
                         await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
                     }
-                    stream.Dispose();
-
-                    var data = await connection.ReadRequestDataAsync();
-                    Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
-
-                });
-            }).WaitAsync(TestHelper.PassingTestTimeout.Add(TimeSpan.FromSeconds(120)));
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var data = await connection.ReadRequestDataAsync();
+                        Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
+                    });
+                }
+            );
         }
 
         [Theory]
@@ -2128,7 +2135,7 @@ namespace System.Net.Tests
         {
             const string text = "Hello World!!!!\n";
             await LoopbackServer.CreateClientAndServerAsync(
-                async uri =>
+                async (uri) =>
                 {
                     const int size = 1048576 / 4;
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
@@ -2147,7 +2154,7 @@ namespace System.Net.Tests
                         }
                     }
                 },
-                async server =>
+                async (server) =>
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
