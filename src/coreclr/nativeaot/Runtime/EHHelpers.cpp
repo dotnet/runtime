@@ -7,7 +7,7 @@
 #include "daccess.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "RedhawkGCInterface.h"
+#include "GcEnum.h"
 #include "shash.h"
 #include "TypeManager.h"
 #include "varint.h"

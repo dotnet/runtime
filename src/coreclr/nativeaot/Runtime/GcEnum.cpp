@@ -5,7 +5,7 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
-#include "RedhawkGCInterface.h"
+#include "GcEnum.h"
 
 #include "thread.h"
 #include "threadstore.h"
@@ -57,8 +57,7 @@ static void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Obj
     }
 }
 
-// static
-void RedhawkGCInterface::EnumGcRefsInRegionConservatively(PTR_OBJECTREF pLowerBound,
+void EnumGcRefsInRegionConservatively(PTR_OBJECTREF pLowerBound,
                                                           PTR_OBJECTREF pUpperBound,
                                                           ScanFunc* pfnEnumCallback,
                                                           ScanContext* pvCallbackData)
@@ -82,8 +81,7 @@ static void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, ScanFunc* fnGcEnu
         fnGcEnumRef(ppObj, pSc, flags);
 }
 
-// static
-void RedhawkGCInterface::EnumGcRef(PTR_OBJECTREF pRef, GCRefKind kind, ScanFunc* fnGcEnumRef, ScanContext* pSc)
+void EnumGcRef(PTR_OBJECTREF pRef, GCRefKind kind, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     ASSERT((GCRK_Object == kind) || (GCRK_Byref == kind));
 
@@ -97,8 +95,7 @@ void RedhawkGCInterface::EnumGcRef(PTR_OBJECTREF pRef, GCRefKind kind, ScanFunc*
     GcEnumObject(pRef, flags, fnGcEnumRef, pSc);
 }
 
-// static
-void RedhawkGCInterface::EnumGcRefConservatively(PTR_OBJECTREF pRef, ScanFunc* fnGcEnumRef, ScanContext* pSc)
+void EnumGcRefConservatively(PTR_OBJECTREF pRef, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
     // Only report potential references in the promotion phase. Since we report everything as pinned there
     // should be no work to do in the relocation phase.
@@ -125,8 +122,7 @@ static void EnumGcRefsCallback(void* hCallback, PTR_PTR_VOID pObject, uint32_t f
     GcEnumObject((PTR_OBJECTREF)pObject, flags, pCtx->f, pCtx->sc);
 }
 
-// static
-void RedhawkGCInterface::EnumGcRefs(ICodeManager* pCodeManager,
+void EnumGcRefs(ICodeManager* pCodeManager,
     MethodInfo* pMethodInfo,
     PTR_VOID safePointAddress,
     REGDISPLAY* pRegisterSet,
