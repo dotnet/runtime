@@ -118,7 +118,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 
-	size = 768;
+	size = 632;
 	start = code = mono_global_codeman_reserve (size);
 
 	/* Compute stack frame size and offsets */
